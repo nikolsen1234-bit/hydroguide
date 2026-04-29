@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+coverage/
+*.tsbuildinfo
+frontend/src/generated/build-info.json
+test-deploy/
+
+# Environment & secrets
+.env
+.env.*
+.dev.vars
+*.local
+
+# Cloudflare
+.wrangler/
+.mf/
+
+# AI agent state — almost everything in .ai/ is local-only.
+# Use the "ignore contents, whitelist what we keep" pattern so that the
+# placeholder worklog (.ai/agent-worklog.md) can still be tracked for the
+# pre-commit hook. The real worklog lives in .ai/agent-worklog.local.md and
+# is gitignored via *.local.
+.ai/*
+.ai/.*
+!.ai/agent-worklog.md
+.codex/
+/AGENTS.md
+/CLAUDE.md
+/CODEX.md
+docs/superpowers/
+
+# Editor & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs & caches
+*.log
+__pycache__/
+*.pyc
+.pytest_cache/
+.eslintcache
+.npm/
+worker-configuration.d.ts
+tools/minstevann/.data/
+*.nc
+*.cast
+
+# Tests (kept locally, not pushed)
+*.test.mjs
+*.test.js
+*.test.ts
+test_*.py
+*_test.py
+tools/minstevann/tests.py
+.ai/scripts/agent-track.test.mjs
+
+# Python virtual environments
+.venv/
+venv/
+*.egg-info/
+
+# Token files (safety net)
+*.token
+.hydroguide-admin-token
+
+# PDFs (large binary files — keep in separate storage)
+*.pdf

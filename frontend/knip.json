@@ -1,0 +1,29 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/index.css",
+    "scripts/**/*.mjs",
+    "../backend/_middleware.js",
+    "../backend/api/**/*.js",
+    "../backend/api-worker/index.js",
+    "../backend/api/**/*.test.mjs",
+    "../backend/api-worker/**/*.test.mjs"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "../backend/api/**/*.js",
+    "../backend/api-worker/**/*.js",
+    "scripts/**/*.mjs"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": ["wrangler"],
+  "wrangler": {
+    "config": [
+      "../backend/api-worker/wrangler.jsonc",
+      "../backend/config/wrangler.jsonc"
+    ]
+  },
+  "rules": {
+    "duplicates": "off"
+  }
+}

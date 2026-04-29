@@ -1,0 +1,2 @@
+# Encrypt secrets file with git-crypt
+.secrets filter=git-crypt diff=git-crypt

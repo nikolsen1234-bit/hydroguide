@@ -1,0 +1,77 @@
+{
+  "prompt:system:v1": "Rapportutdraget er allereie skrive av ein fagperson. Du skal skrive eit kort fagleg tillegg som underbyggjer loysinga med relevant kunnskap fraa NVE-veilederutdraga.\n\nREGLAR\n1. Ikkje gjenfortel rapportutdraget. Det er allereie skrive - lesaren har det framfor seg.\n2. Ikkje skriv heile loysinga paa nytt. Bruk plassen paa fagleg underbygging.\n3. Bruk veilederutdraga aktivt men noekternt. Knyt loysinga til konkrete krav, raad eller faglege omsyn fraa veiledaren.\n4. Dersom veilederutdraga ikkje gir klar stotte for eit poeng, lat det vere.\n5. Kontrollmaaling (verifikasjon kvart 3. aar) og ordinaer minstevassfoeringsmaaling (kontinuerleg) er to ulike ting. IKKJE bland dei.\n6. Ikkje bruk oppblaast AI-spraak: 'dette byggjer paa', 'operasjonell vidarefoering', 'robust maalesituasjon', 'stottar NVE sitt raad om', 'er i traad med'.\n7. Skriv konkret og noekternt, som ein fagperson.\n8. Bruk konsekvent nynorsk.\n\nFORMAT\n2-4 setningar, maks 90 ord.\nStart rett paa underbygginga. Ikkje innleiing, ikkje overskrift, ikkje punktliste.\nTeksten skal kunne limast inn etter rapportutdraget utan at lesaren opplever repetisjon.",
+  "prompt:user_template:v1": "Rapportutdrag:\n{{rapportutdrag}}\n\nProsjektdata:\n{{documented_project_data}}\n\nRelevante NVE-veilederutdrag:\n{{nve_snippets}}\n\nSkriv eit kort tillegg (2-4 setningar, maks 90 ord) som byggjer vidare paa rapportutdraget og underbyggjer loysinga med relevant veilederkunnskap. Ikkje gjenfortel rapportutdraget.",
+  "rules:ai:v1": {
+    "max_input_tokens_target": 3000,
+    "max_input_tokens_hard": 4000,
+    "max_output_tokens": 350,
+    "max_words": 90,
+    "target_words_min": 40,
+    "target_words_max": 90,
+    "max_nve_references": 3,
+    "max_nve_snippets": 8,
+    "max_sentences": 4,
+    "style": "kort, sakleg og rapportnaer",
+    "primary_source": "rapportutdrag",
+    "secondary_sources": [
+      "documented_project_data",
+      "supplementary_project_data",
+      "nve_snippets"
+    ],
+    "allow_new_topics": false,
+    "allow_independent_assessment": false,
+    "allow_side_topics": false,
+    "side_topics_blocklist": [
+      "generell miljoeffekt",
+      "generell konsesjonspraksis",
+      "tema som ikkje er omtala i rapportutdraget"
+    ],
+    "forbidden_phrases_without_explanation": [
+      "er ivareteke",
+      "er robust",
+      "samsvarer med",
+      "er i trad med"
+    ]
+  },
+  "mapping:keywords:v1": {
+    "pipeArrangement": ["ror", "varegrind", "inntak", "reguleringsventil", "revisjonsventil", "elektromagnet", "ultralyd", "vassforingsmalar", "vannforingsmalar", "flowmalar", "slipp gjennom ror", "rorslipp"],
+    "pipeCalibration": ["kalibrering", "kalibreringsmaling", "kontrollmaling", "manuell kontrollmaling", "rorkapasitet", "teoretisk rorkapasitet", "verifikasjon"],
+    "instrumentation": ["logger", "loggar", "sensor", "sensorar", "backup", "reserve-logger", "alarm", "varsling", "kommunikasjon", "fjernoverforing", "datatilgang", "driftssikkerheit", "97 %", "97%", "malefrekvens", "timefrekvens", "kvar time", "pluss/minus 5", "+/-5"],
+    "stageMeasurement": ["vassstand", "vannstand", "maalestav", "fastmerke", "nn2000", "vasstandsintervall", "vasstandssensor"],
+    "stageCurve": ["vassforingskurve", "vannforingskurve", "kurve", "profil", "maleprofil", "samanheng mellom vasstand og vassforing"],
+    "downstreamControl": ["nedstroms", "malepunkt", "kontrollpunkt", "ror gjennom dam", "luke", "utsparing", "kontroll nedstroms"],
+    "reporting": ["rapportering", "rapporteres", "rapporterast", "amis", "hira", "innrapportering", "tidsserie", "sendast inn"],
+    "planning": ["plan", "sluttrapport", "teknisk skildring", "teknisk beskrivelse", "dokumentasjon", "sensorplassering", "innmaling", "utm", "maalestasjon"]
+  },
+
+  "nve:topic:pipeArrangement": "[Veileder 3/2020, kap. 4 og 6.2] NVE anbefaler primaert minstevassforing via ror etter varegrind i frostfritt rom med vassforingsmalar og reguleringsventil. Ror via inntaket skjermer utstyr mot tilstopping, is og fukt og gir meir stabil maling enn losingar som er avhengige av varierande vasstand. Alternative slipp via luke, tapperor eller utsparing krev normalt eit kontrollert malepunkt nedstroms dersom dei skal dokumenterast godt.",
+  "nve:topic:pipeCalibration": "[Retningslinje for registrering av konsesjonspalagte minstevassforingar (2024), pkt. 4.2] Ved maling av vassforing i ror skal det gjerast kalibreringsmaling ved etablering og kontrollmaling minst kvart tredje ar. Dersom vassforinga i roret er basert pa vasstand i dam eller inntak, maa teoretisk rorkapasitet stadfestast med manuell kontrollmaling.",
+  "nve:topic:instrumentation": "[Retningslinje for registrering av konsesjonspalagte minstevassforingar (2024), pkt. 4.1] Malesystemet maa ha instrumentering og rutinar for periodisk kontroll som sikrar kontinuerleg drift og tilgang pa data. NVE tilradd to sensorar som standard, backup-logger pa vanskeleg tilgjengelege stasjonar, minst timefrekvens og driftssikkerheit slik at registreringa er korrekt og komplett minst 97 % av aret.",
+  "nve:topic:stageMeasurement": "[Retningslinje for registrering av vassforing i elver (2024), pkt. 4.2] For vasstandsbaserte stasjonar skal malesystemet dekkje heile det aktuelle vasstandsintervallet, og total instrumentunoyaktigheit skal normalt ikkje vere storre enn pluss/minus 1 cm. Nye malestasjonar skal knytast til NN2000, og NVE tilradd to sensorar som standard.",
+  "nve:topic:stageCurve": "[Retningslinje for registrering av konsesjonspalagte minstevassforingar (2024), pkt. 4.3] Ved berekning av vassforing fra vasstand maa det etablerast ein entydig samanheng mellom vasstand og vassforing. Vassforingskurva maa ha god kvalitet i omradet rundt minstevassforingskravet, og det er vasstanden som skal rapporterast for denne typen stasjon medan kurva sendast inn separat.",
+  "nve:topic:downstreamControl": "[Retningslinje for registrering av konsesjonspalagte minstevassforingar (2024), pkt. 4.4] Ved slipp gjennom ror i dam, luke eller utsparing krev NVE vanlegvis eit malepunkt nedstroms slippstaden for aa kontrollere at palagd minstevassforing faktisk blir slept i elva. Teoretisk kapasitet aleine er ikkje nok dersom losinga ikkje kan verifiserast i felt.",
+  "nve:topic:reporting": "[Retningslinje for innrapportering av hydrologiske data (2024), pkt. 4.2] Tidsseriar skal rapporterast i AMIS, medan kontrollverdiar, arskontrollar og vassforingsmalingar skal rapporterast i HIRA. For minstevassforingsstasjonar baserte pa vasstand skal tilhoyrande vassforingskurve sendast inn til NVE.",
+  "nve:topic:planning": "[Veiledning for etablering av palagt vassforingsstasjon (2024), kap. 3] Plan for ny malestasjon skal gjere greie for tekniske losingar og innehalde relevant dokumentasjon. Sluttrapporten skal mellom anna beskrive instrumentering, sensorar, fastmerke, sentrale hogder og annan dokumentasjon som er nodvendig for aa kvalitetssikre stasjonen.",
+
+  "nve:krav:oppetid": "[Retningslinje 2024, pkt. 4.1] Malesystemet skal ha driftssikkerheit slik at registreringa er korrekt og komplett minst 97 % av aaret. Malefrekvens skal vere minst ein gong per time.",
+  "nve:krav:noyaktigheit": "[Retningslinje 2024, pkt. 4.1-4.2] For roermaaling skal total usikkerheit normalt ikkje overstige pluss/minus 5 %. For vasstandsbaserte stasjonar skal instrumentunoyaktigheit ikkje vere storre enn pluss/minus 1 cm.",
+  "nve:krav:kontrollintervall": "[Retningslinje 2024, pkt. 4.2] Kontrollmaaling skal gjerast ved etablering og minst kvart tredje aar. Dette er verifikasjonsmaaling — ikkje den ordinaere minstevassfoeringsmaalinga som gaar kontinuerleg.",
+  "nve:krav:dokumentasjon": "[Retningslinje 2024, pkt. 4.2] Tidsseriar skal rapporterast i AMIS. Kontrollverdiar og arskontrollar skal rapporterast i HIRA. Vassforingskurve sendast inn separat.",
+  "nve:krav:sensorredundans": "[Retningslinje 2024, pkt. 4.1] NVE tilradd to sensorar som standard. Backup-logger paa vanskeleg tilgjengelege stasjonar. Reserve sikrar datakontinuitet ved sensorfeil.",
+
+  "nve:metode:rormaaling": "[Veileder 3/2020, kap. 4 og 6.2] Mengdemaalear i roer etter varegrind i frostfritt rom gir den mest stabile maalinga. Roeret skjermer utstyr mot tilstopping, is og fukt. Reguleringsventil og mengdemaalear gir aktiv kontroll og sporbar dokumentasjon.",
+  "nve:metode:vasstand_kurve": "[Retningslinje 2024, pkt. 4.2-4.3] Vasstandssensor med vassforingskurve krev entydig samanheng mellom vasstand og vassforing. Kurva maa ha god kvalitet i omraadet rundt minstevassforingskravet. Vasstanden rapporterast, kurva sendast inn separat.",
+  "nve:metode:volumtid": "[Retningslinje 2024, pkt. 4.2] For svaert smaa vassforingar (under 2 l/s) kan volum/tid-maaling i behaldar nyttast som kontrollmetode. Krev kjent volum og repeterbar toemmetid.",
+  "nve:metode:overloep": "[Veileder 3/2020, kap. 6] Slipp over definert overloapskant med kjent geometri kan nyttast dersom vassforingskurva er etablert og kontrollert. Krev stabilt profil og god tilkomst for kontrollmaaling.",
+  "nve:metode:luke_tapperoyr": "[Retningslinje 2024, pkt. 4.4] Slipp via luke eller tappeleidning krev normalt eit kontrollert maalepunkt nedstraams. Teoretisk kapasitet alaeine er ikkje nok — verifisering i felt er paakrevd.",
+
+  "nve:valgkrit:ror_vs_utvendig": "[Veileder 3/2020, kap. 4] Roerslipp gjev betre kontroll paa maaling og regulering, spesielt i frostfritt rom. Utvendig slipp via luke eller overloap krev nedstraams maalepunkt og er meir utsett for ytre paaverknad.",
+  "nve:valgkrit:volumtid_grense": "[Retningslinje 2024, pkt. 4.2] Volum/tid-maaling er berre eigna ved svaert smaa vassforingar (typisk under 2 l/s). For storre vassforingar krevst andre metodar.",
+  "nve:valgkrit:profil": "[Retningslinje 2024, pkt. 4.4] Naturleg stabilt maaleprofil er fyrste val for kontrollmaaling nedstraams. Dersom dette ikkje finst, kan kunstig profil byggjast. Utan eigna profil maa andre kontrollmetodar vurderast.",
+  "nve:valgkrit:aktiv_vs_passiv": "[Veileder 3/2020, kap. 6.2] Sesongkrav eller tilsigsstyrt minstevassforing krev aktiv regulering med ventil og sporbar styring. Fast minstevassforing kan bruke enklare passiv struping.",
+
+  "nve:risiko:is_frost": "[Digital vannforingsstasjon 2023, kap. 7] Flottoersensor frys ved isdanning. Trykkcelle held seg under isen og gir meir paaliteleg maaling i vinterforhold. Ved eksponerte stasjonar tilraadast frostsikra sensorhus eller varmekabel.",
+  "nve:risiko:sediment_tilstopping": "[Veileder 3/2020, kap. 4] Sediment, drivgods og tilstopping kan blokkere inntak og maaleutstyr. Varegrind og grovfilter er naudsynt. Sjoelvreinsande inntak reduserer vedlikehaldsbehovet.",
+  "nve:risiko:kontroll_vs_ordinaer": "[Retningslinje 2024, pkt. 4.2] Kontrollmaaling (verifikasjon kvart 3. aar) er IKKJE det same som den ordinaere minstevassfoeringsmaalinga (kontinuerleg, timefrekvens, 97 % oppetid). Desse to maa ikkje blandast i dokumentasjonen.",
+  "nve:risiko:ikkje_stabilt_profil": "[Retningslinje 2024, pkt. 4.4] Utan stabilt maaleprofil nedstraams aukar usikkerheita i kontrollmaalingane. NVE kan krevje strengare dokumentasjon eller alternative verifikasjonsmetodar."
+}

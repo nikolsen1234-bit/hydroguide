@@ -1,0 +1,56 @@
+{
+  "$schema": "../../frontend/node_modules/wrangler/config-schema.json",
+  "name": "hydroguide-api",
+  "main": "./index.js",
+  "compatibility_date": "2026-04-29",
+  "workers_dev": true,
+  "r2_buckets": [
+    {
+      "binding": "MINIMUMFLOW_R2",
+      "bucket_name": "hydroguide-api-data"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "API_KEYS",
+      "id": "REPLACE_WITH_KV_API_KEYS_NAMESPACE_ID"
+    }
+  ],
+  "vars": {
+    "MINIMUMFLOW_OBJECT_KEY": "api/minimumflow.json"
+  },
+  "routes": [
+    {
+      "pattern": "hydroguide.no/api/health*",
+      "zone_name": "hydroguide.no"
+    },
+    {
+      "pattern": "hydroguide.no/api/nveid*",
+      "zone_name": "hydroguide.no"
+    },
+    {
+      "pattern": "hydroguide.no/api/place-suggestions*",
+      "zone_name": "hydroguide.no"
+    },
+    {
+      "pattern": "hydroguide.no/api/terrain-profile*",
+      "zone_name": "hydroguide.no"
+    },
+    {
+      "pattern": "hydroguide.no/api/pvgis-tmy*",
+      "zone_name": "hydroguide.no"
+    },
+    {
+      "pattern": "hydroguide.no/api/calculations*",
+      "zone_name": "hydroguide.no"
+    },
+    {
+      "pattern": "hydroguide.no/api/docs*",
+      "zone_name": "hydroguide.no"
+    },
+    {
+      "pattern": "hydroguide.no/api/keys*",
+      "zone_name": "hydroguide.no"
+    }
+  ]
+}

@@ -1,0 +1,1692 @@
+﻿<!doctype html>
+<html lang="nn">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NVE Kart \u2014 standalone</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js" integrity="sha384-twf8YFpk0FSzm0AmW2GRJjjnqIuQ2y86vZXh2roYI8O+kFbEBjSUDUT6U72w8shL" crossorigin="anonymous"></script>
+<script>
+  (function () {
+    const I18N = {
+      nn: {
+        emptyTitle: "Ingen kraftverk valt",
+        emptySub: "Opne lokasjons-seksjonen under og sok etter eit kraftverk for a sja detaljar her.",
+        powerPlant: "kraftverk",
+        concessionCase: "Konsesjonssak",
+        location: "Lokasjon",
+        searchPlaceholder: "Sok adresse, stad eller kraftverk...",
+        showHideLayers: "Vis/skjul NVE-lag",
+        layers: "Lag",
+        all: "Alle",
+        none: "Ingen",
+        owner: "Eigar",
+        place: "Sted",
+        maxOutput: "Maks ytelse",
+        grossHead: "Bruttofallhogde",
+        production: "Produksjon",
+        commissioned: "Idriftsatt",
+        minFlow: "Minstevassforing",
+        intake: "Inntak",
+        mainIntake: "Hovudinntak",
+        sideIntake: "Sideinntak",
+        intakePoint: "Inntakspunkt",
+        noData: "Ingen data for",
+        noWikiImage: "Ingen Wikipedia-bilete funne",
+        powerStation: "Kraftstasjon",
+        outlet: "Utlop",
+        dam: "Dam",
+        waterway: "Vannvei",
+        reservoir: "Magasin",
+        address: "Adresse",
+        place2: "Stad",
+        riverPlant: "Elvekraftverk - ingen magasin",
+        prodUnit: "GWh/\u00e5r",
+        nveLayers: "NVE-lag",
+        showMap: "Vis kart",
+        hideMap: "Skjul kart"
+      },
+      en: {
+        emptyTitle: "No power plant selected",
+        emptySub: "Open the location section below and search for a power plant to see details here.",
+        powerPlant: "power plant",
+        concessionCase: "Concession case",
+        location: "Location",
+        searchPlaceholder: "Search address, place or power plant...",
+        showHideLayers: "Show/hide NVE layers",
+        layers: "Layers",
+        all: "All",
+        none: "None",
+        owner: "Owner",
+        place: "Location",
+        maxOutput: "Max output",
+        grossHead: "Gross head",
+        production: "Production",
+        commissioned: "Commissioned",
+        minFlow: "Minimum water flow",
+        intake: "Intake",
+        mainIntake: "Main intake",
+        sideIntake: "Side intake",
+        intakePoint: "Intake point",
+        noData: "No data for",
+        noWikiImage: "No Wikipedia image found",
+        powerStation: "Power station",
+        outlet: "Outlet",
+        dam: "Dam",
+        waterway: "Waterway",
+        reservoir: "Reservoir",
+        address: "Address",
+        place2: "Place",
+        riverPlant: "Run-of-river plant - no reservoir",
+        prodUnit: "GWh/yr",
+        nveLayers: "NVE layers",
+        showMap: "Show map",
+        hideMap: "Hide map"
+      }
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const lang = params.get("lang") === "en" ? "en" : "nn";
+    const collapsed = params.get("collapsed");
+    window.__i18n = I18N[lang];
+    window.__startCollapsed = collapsed === "1" || collapsed === "true";
+  })();
+</script>
+
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: auto; min-height: 0; margin: 0; }
+  :root {
+    --hg-text-strong: #0f172a;
+    --hg-text: #1e293b;
+    --hg-text-muted: #64748b;
+    --hg-text-soft: #475569;
+    --hg-border: #e2e8f0;
+    --hg-border-strong: #cbd5e1;
+    --hg-brand: #0369a1;
+    --hg-brand-strong: #0c4a6e;
+    --hg-brand-bg: #eff6ff;
+    --hg-brand-border: #bfdbfe;
+  }
+  body {
+    font: 14px/1.45 "Manrope", "Manrope Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: transparent;
+    color: var(--hg-text-strong);
+  }
+  input, button, select, textarea { font: inherit; }
+  .wrap {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  #coords { font-size: 12px; line-height: 1.1; font-weight: 600; color: var(--hg-text-soft); }
+
+  /* Lokasjon-seksjon */
+  .location-section {
+    background: transparent;
+    border: 0;
+    overflow: visible;
+  }
+  .location-header { display: none; }
+  .location-body {
+    max-height: 0;
+    overflow: hidden;
+  }
+  .location-section.open .location-body {
+    max-height: none;
+    overflow: visible;
+  }
+
+  /* Search \u2014 overlay inside map */
+  .search-wrap {
+    position: absolute;
+    top: 10px; left: 10px;
+    width: min(360px, calc(100% - 120px));
+    z-index: 1000;
+    margin: 0;
+  }
+  .search-wrap input {
+    width: 100%;
+    padding: 10px 36px 10px 36px;
+    border: 1px solid var(--hg-border-strong);
+    border-radius: 12px;
+    font-size: 14px;
+    outline: none;
+    background: rgba(255,255,255,.95);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  }
+  .search-wrap input:focus { border-color: var(--hg-brand); box-shadow: 0 0 0 3px rgba(3,105,161,.15); }
+  .search-wrap .icon { position: absolute; left: 12px; top: 12px; width: 16px; height: 16px; color: var(--hg-text-muted); }
+  .search-wrap .spinner {
+    position: absolute; right: 12px; top: 13px;
+    width: 14px; height: 14px;
+    border: 2px solid #cbd5e1; border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    display: none;
+  }
+  .searching .spinner { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #suggestions {
+    position: absolute; z-index: 1100; top: 100%; left: 0; right: 0;
+    margin: 4px 0 0; padding: 0;
+    background: #fff;
+    border: 1px solid var(--hg-border);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(15,23,42,.12);
+    list-style: none;
+    overflow: hidden;
+    display: none;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+  #suggestions.open { display: block; }
+  #suggestions button {
+    width: 100%;
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px;
+    background: none; border: none;
+    text-align: left; font-size: 13px; font-weight: 600; color: var(--hg-text);
+    cursor: pointer;
+  }
+  #suggestions button:hover { background: #f8fafc; }
+  .kind {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+  }
+  .kind.kraftverk { background: #fef3c7; color: #92400e; }
+  .kind.adresse  { background: #e0f2fe; color: #0369a1; }
+  .kind.stad     { background: #d1fae5; color: #065f46; }
+  .sugg-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Map */
+  .map-wrap {
+    position: relative;
+    height: 380px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: height .25s ease;
+  }
+  .map-wrap.expanded { height: 760px; }
+  #map { height: 100%; width: 100%; }
+  #map,
+  #map .leaflet-container,
+  #map .leaflet-pane,
+  #map .leaflet-overlay-pane,
+  #map .leaflet-interactive,
+  #map.leaflet-grab,
+  #map .leaflet-grab,
+  #map.leaflet-dragging,
+  #map .leaflet-dragging {
+    cursor: default !important;
+  }
+
+  /* Controls */
+  .controls { position: absolute; top: 56px; left: 12px; z-index: 540; display: flex; gap: 8px; }
+  .ctrl-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    border: 1px solid var(--hg-border-strong);
+    background: rgba(255,255,255,.96);
+    color: var(--hg-text);
+    border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer;
+  }
+  .ctrl-btn:hover { background: #fff; }
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; padding: 0 4px;
+    background: #fef3c7; color: #92400e;
+    border-radius: 999px;
+    font-size: 10px; font-weight: 700;
+  }
+
+  /* Layers panel */
+  .layers-panel {
+    position: absolute; top: calc(100% + 8px); left: 0;
+    width: 220px;
+    background: #fff;
+    border: 1px solid var(--hg-border);
+    border-radius: 14px;
+    box-shadow: 0 20px 40px rgba(15,23,42,.15);
+    overflow: hidden;
+    display: none;
+  }
+  .layers-panel.open { display: block; }
+  .layers-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 11px; font-weight: 700; line-height: 1.4;
+    text-transform: uppercase; letter-spacing: .04em; color: var(--hg-text-muted);
+  }
+  .layers-header .actions { display: flex; gap: 8px; text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .layers-header button { background: none; border: none; color: var(--hg-text-muted); cursor: pointer; font-size: 11px; padding: 0; }
+  .layers-header button:hover { color: var(--hg-text-strong); }
+  .layers-list { list-style: none; margin: 0; padding: 6px 0; }
+  .layers-list button {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 12px;
+    background: none; border: none;
+    cursor: pointer; font-size: 13px; font-weight: 600; color: var(--hg-text); text-align: left;
+  }
+  .layers-list button:hover { background: #f8fafc; }
+  .check {
+    width: 16px; height: 16px;
+    border: 1px solid #cbd5e1; border-radius: 4px;
+    background: #fff; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .check.on { background: #f59e0b; border-color: #f59e0b; }
+  .check.on::after {
+    content: ""; width: 4px; height: 8px;
+    border: solid #fff; border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-1px,-1px);
+  }
+
+  /* Popup */
+  .popup-wrap { max-height: 220px; overflow-y: auto; min-width: 240px; max-width: 300px; }
+  .map-wrap.expanded .popup-wrap { max-height: 600px; }
+  .popup-wrap .title { font-size: 13px; line-height: 1.35; font-weight: 700; color: var(--hg-brand-strong); margin-bottom: 2px; }
+  .popup-wrap .sub { font-size: 10px; font-weight: 600; color: var(--hg-text-muted); margin-bottom: 6px; }
+  .popup-wrap table { border-collapse: collapse; width: 100%; }
+  .popup-wrap td { font-size: 11px; padding: 3px 10px 3px 0; vertical-align: top; }
+  .popup-wrap td.k { color: var(--hg-text-soft); white-space: nowrap; }
+  .popup-wrap td.v { color: var(--hg-text-strong); font-weight: 700; }
+  /* "Detached" popup (NVE-stil) \u2014 popup under objektet, utan pil */
+  .nve-detached-popup .leaflet-popup-tip-container { display: none; }
+  .nve-detached-popup .leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, .2);
+  }
+  .popup-konsesjon {
+    display: inline-flex; align-items: center; gap: 2px;
+    margin-left: 6px;
+    padding: 2px 8px;
+    font-size: 10px; line-height: 1.2; font-weight: 700;
+    background: #fef3c7; color: #92400e;
+    border-radius: 999px;
+    text-decoration: none;
+    vertical-align: middle;
+  }
+  .popup-konsesjon:hover { background: #fde68a; }
+
+  /* Plant card */
+  #plant-card {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .plant-empty {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: var(--hg-text-muted);
+  }
+  #plant-card.has-plant .plant-empty { display: none; }
+  .plant-empty-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    opacity: .5;
+  }
+  .plant-empty-title { font-size: 15px; font-weight: 700; color: var(--hg-text-strong); margin-bottom: 2px; }
+  .plant-empty-sub { font-size: 13px; color: var(--hg-text-muted); }
+  .map-toggle-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-left: auto; flex-shrink: 0; align-self: flex-start;
+    padding: 7px 14px;
+    border: 1px solid var(--hg-brand-border);
+    background: var(--hg-brand-bg);
+    color: #1d4ed8;
+    border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  .map-toggle-btn:hover { background: #dbeafe; border-color: #93c5fd; }
+  .map-toggle-chevron { transition: transform .25s ease; }
+  .location-section.open ~ .map-toggle-btn .map-toggle-chevron,
+  .plant-card-map-open .map-toggle-chevron { transform: rotate(180deg); }
+  .plant-body { display: none; }
+  #plant-card.has-plant .plant-body { display: block; }
+  .plant-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .plant-head h2 {
+    font-size: 18px; margin: 0; color: var(--hg-text-strong); font-weight: 800;
+    display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px;
+  }
+  .plant-id-tag {
+    display: inline-block;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--hg-text-strong);
+    font-size: 12.6875px; line-height: 1.25; letter-spacing: -0.01em; font-weight: 600;
+    white-space: nowrap;
+  }
+  .plant-link-list {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .plant-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600;
+    color: var(--hg-brand);
+    text-decoration: none;
+  }
+  .plant-link:hover { color: var(--hg-brand-strong); }
+  .plant-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 640px) { .plant-grid { grid-template-columns: 1fr; } }
+  .plant-img {
+    position: relative;
+    aspect-ratio: 3/2;
+    background: #f0f9ff;
+    border: 1px solid #e0f2fe;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .plant-img img { width: 100%; height: 100%; object-fit: cover; }
+  .plant-img .loading,
+  .plant-img .empty {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #94a3b8; font-size: 11px; font-weight: 600; text-align: center; padding: 12px;
+  }
+  .plant-img .loading::after {
+    content: ""; width: 20px; height: 20px;
+    border: 2px solid #cbd5e1; border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  .wiki-link { color: #475569; }
+  .plant-rows {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 0;
+    align-items: start;
+  }
+  .plant-rows-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .plant-rows-col > div { display: flex; flex-direction: column; }
+  .plant-rows dt { font-size: 14.5px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 700; color: var(--hg-text-strong); }
+  .plant-rows dd { margin: 0; color: var(--hg-text-strong); font-size: 12.6875px; line-height: 1.25; letter-spacing: -0.01em; font-weight: 700; }
+  .plant-rows dd .unit { color: var(--hg-text-strong); font-size: 12.6875px; line-height: 1.25; letter-spacing: -0.01em; font-weight: 600; margin-left: 3px; }
+  .plant-rows .nve-pan {
+    background: none; border: none; padding: 0;
+    font-size: 12.6875px; font-weight: 700; color: var(--hg-brand);
+    text-align: left; cursor: pointer;
+    text-decoration: none;
+  }
+  .plant-rows .nve-pan:hover { color: var(--hg-brand-strong); text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div id="nve-embed-root" class="wrap">
+  <div id="plant-card">
+    <div id="plant-empty" class="plant-empty">
+      <div>
+        <div class="plant-empty-title" id="plant-empty-title"></div>
+        <div class="plant-empty-sub" id="plant-empty-sub"></div>
+      </div>
+      <button type="button" class="map-toggle-btn" id="map-toggle-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="map-toggle-label"></span>
+        <svg class="map-toggle-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+    <div id="plant-body" class="plant-body">
+      <div class="plant-head">
+        <h2>
+          <span id="plant-name"></span> <span id="plant-suffix"></span>
+          <span id="plant-id-tag" class="plant-id-tag" style="display:none"></span>
+        </h2>
+        <button type="button" class="map-toggle-btn" id="map-toggle-btn-body">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span id="map-toggle-label-body"></span>
+          <svg class="map-toggle-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="plant-grid">
+        <div>
+          <div class="plant-img" id="plant-img"></div>
+          <div class="plant-link-list">
+            <a id="wiki-link" class="plant-link wiki-link" target="_blank" rel="noopener noreferrer" style="display:none">
+              Wikipedia
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+            <a id="konsesjon-link" class="plant-link" target="_blank" rel="noopener noreferrer" style="display:none">
+              <span id="konsesjon-text"></span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+          </div>
+        </div>
+        <dl class="plant-rows" id="plant-rows"></dl>
+      </div>
+    </div>
+  </div>
+
+  <section class="location-section" id="location-section">
+    <button type="button" class="location-header" id="location-header">
+      <span class="location-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="location-label"></span>
+      </span>
+      <span class="location-meta">
+        <span id="coords"></span>
+        <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </button>
+
+    <div class="location-body" id="location-body">
+      <div class="map-wrap" id="map-wrap">
+        <div id="map"></div>
+        <div id="search-wrap" class="search-wrap">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="search-input" type="text" placeholder="" autocomplete="off" />
+          <div class="spinner"></div>
+          <ul id="suggestions"></ul>
+        </div>
+        <div class="controls">
+          <div id="layers-wrap" style="position:relative;">
+            <button class="ctrl-btn" id="layers-btn" title="">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+              <span id="layers-label"></span> <span class="badge" id="layers-count">6</span>
+            </button>
+            <div class="layers-panel" id="layers-panel">
+              <div class="layers-header">
+                <span id="nve-layers-title"></span>
+                <div class="actions">
+                  <button type="button" id="layers-all"></button>
+                  <span>Â·</span>
+                  <button type="button" id="layers-none"></button>
+                </div>
+              </div>
+              <ul class="layers-list" id="layers-list"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<script>
+/* ======================================================================
+   NVE-kart \u2014 standalone. Alt i éi fil: Kartverket topo + NVE overlay +
+   søk (Geonorge adresse/stad + NVE kraftverk) + "Valt kraftverk"-kort
+   med Wikipedia-bilete. Krev internett til unpkg, Kartverket, Geonorge,
+   NVE og Wikipedia. Bytt onLocationChange() nedst for integrasjon.
+   ====================================================================== */
+
+const NVE_MAPSERVER = "https://gis3.nve.no/map/rest/services/Mapservices/VassdragsreguleringVannkraft/MapServer";
+const KONSESJON_URL = id => `https://www.nve.no/konsesjon/konsesjonssaker/konsesjonssak?id=${id}&type=V-1`;
+const DEFAULT_CENTER = [60.472, 8.4689];
+const LOCATION_ZOOM = 13;
+
+const T = window.__i18n || {};
+
+const NVE_CATEGORIES = [
+  { key: "kraftstasjon", label: T.powerStation || "Kraftstasjon", layers: [1, 11] },
+  { key: "inntak",       label: T.intake || "Inntak",       layers: [2, 12] },
+  { key: "utlop",        label: T.outlet || "Utl\u00f8p",        layers: [3, 14] },
+  { key: "dam",          label: T.dam || "Dam",          layers: [4, 5, 6, 15, 16, 17] },
+  { key: "vannvei",      label: T.waterway || "Vannvei",      layers: [7, 13] },
+  { key: "magasin",      label: T.reservoir || "Magasin",      layers: [9, 18] },
+];
+
+const HIDDEN_KEYS = new Set([
+  "OBJECTID", "SHAPE", "SHAPE.LEN", "SHAPE.AREA", "Shape",
+  "Shape.STArea()", "Shape.STLength()",
+  "kdbNr", "konsesjonStatus", "konsesjonStatusDato", "konsesjonTypeID",
+  "magasinFormalIDer", "delfeltNr", "tilgangNr",
+  "vannkraftverkNr", "vannkraftStasjonNr", "damNr", "magasinNr",
+  "vatnLnr", "hoydeReferanseSystem",
+]);
+
+const enabledCats = { kraftstasjon: true, inntak: true, utlop: true, dam: true, vannvei: true, magasin: true };
+const NVEID_DATA_URL = "/api/nveid";
+
+/* ---- Søk ---- */
+async function fetchJson(url) {
+  const r = await fetch(url);
+  return r.ok ? r.json() : null;
+}
+
+async function searchAddress(q) {
+  const d = await fetchJson(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=10&utkoordsys=4326`);
+  // Behald berre adresser der adressetekst *startar* med søkestrengen.
+  // "bergen" skal ikkje matcha "Lille Bergen 1" fordi brukaren ikkje har
+  // skrive "lille". Søkestrengen må vera prefiks av gatenamnet.
+  const needle = q.trim().toLowerCase();
+  return (d?.adresser ?? [])
+    .filter(a => (a.adressetekst ?? "").toLowerCase().startsWith(needle))
+    .map(a => ({
+      display_name: `${a.adressetekst}, ${a.poststed ?? a.kommunenavn}`,
+      lat: a.representasjonspunkt?.lat,
+      lon: a.representasjonspunkt?.lon,
+      kind: "adresse",
+    }))
+    .filter(s => s.lat && s.lon);
+}
+
+// Zoom-nivå tilpassa kor stort staden er. Store ting som Fylke/Kommune/By
+// treng låg zoom (breitt view), småting som Bekk/Seter/Bygning høg zoom.
+const PLACE_ZOOM = {
+  "Fylke": 8, "Kommune": 10, "By": 12, "Tettsted": 13,
+  "Bygd": 14, "Grend": 14, "Gard": 15,
+  "Elv": 13, "Vann": 13, "Innsjø": 13,
+  "Fjell": 13, "Dal": 13, "Ã˜y": 13,
+  "Bekk": 15, "Foss": 15,
+  "Seter/støl": 15, "Seter": 15, "Støl": 15,
+  "Industriområde": 14, "Bygning": 16,
+};
+
+async function searchPlace(q) {
+  const d = await fetchJson(`https://ws.geonorge.no/stedsnavn/v1/navn?sok=${encodeURIComponent(q)}*&treffPerSide=20&utkoordsys=4326`);
+  const needle = q.trim().toLowerCase();
+  const feats = (d?.navn ?? []).filter(n =>
+    n.representasjonspunkt?.nord && n.representasjonspunkt?.["øst"]
+  );
+
+  const toItem = n => ({
+    display_name: `${n["skrivemåte"]} (${n.navneobjekttype}, ${
+      n.navneobjekttype === "Kommune"
+        ? (n.fylker?.[0]?.fylkesnavn ?? "")
+        : (n.kommuner?.[0]?.kommunenavn ?? "")
+    })`,
+    lat: n.representasjonspunkt.nord,
+    lon: n.representasjonspunkt["øst"],
+    kind: "stad",
+    placeType: n.navneobjekttype,
+  });
+
+  // Viss det finst ein Kommune som startar med søket \u2014 returner berre den.
+  // "bergen" â†’ "Bergen kommune"; "stord" â†’ "Stord kommune"; "bømlo" â†’ "Bømlo kommune".
+  // Dedupliser på kommunenavn fordi fleire oppslag ("Stord" + "Stord kommune")
+  // kan begge ha navneobjekttype=Kommune og same kommunenavn.
+  const kommuner = feats.filter(n =>
+    n.navneobjekttype === "Kommune" &&
+    (n.kommuner?.[0]?.kommunenavn ?? "").toLowerCase().startsWith(needle)
+  );
+  if (kommuner.length) {
+    const seen = new Set();
+    return kommuner.filter(n => {
+      const k = (n.kommuner?.[0]?.kommunenavn ?? "").toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).map(toItem);
+  }
+
+  // Ingen kommune-match: fall tilbake til andre typar, dedupliser på skrivemåte.
+  const byName = new Map();
+  for (const n of feats) {
+    const key = (n["skrivemåte"] ?? "").toLowerCase();
+    if (!key || byName.has(key)) continue;
+    byName.set(key, n);
+  }
+  return [...byName.values()].map(toItem);
+}
+
+// Heile NVE-kraftverklista (~1878) blir henta éin gong og cacha lokalt.
+const normalize = s => (s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+const wordsOf = s => normalize(s).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+
+let nvePlantsCache = null;
+async function loadNvePlants() {
+  if (nvePlantsCache) return nvePlantsCache;
+  const d = await fetchJson(`${NVE_MAPSERVER}/1/query?where=1%3D1&outFields=*&f=json&returnGeometry=true&outSR=4326&resultRecordCount=2000`);
+  nvePlantsCache = (d?.features ?? [])
+    .filter(f => f.geometry?.x && f.geometry?.y)
+    .map(f => {
+      const a = f.attributes ?? {};
+      const name = a.vannkraftStasjonNavn ?? "";
+      return {
+        lat: f.geometry.y,
+        lon: f.geometry.x,
+        name,
+        nameLc: normalize(name),
+        nameWords: wordsOf(name),
+        kommuneLc: normalize(a.kommuneNavn ?? ""),
+        display_name: `${name} ${T.powerPlant || "kraftverk"} (${a.kommuneNavn ?? ""})`,
+        kind: "kraftverk",
+        plant: {
+          navn: name,
+          eigar: a.vannkraftverkEier,
+          kommune: a.kommuneNavn,
+          fylke: a.fylke,
+          maksYtelseMW: a.maksYtelse_MW,
+          bruttoFallhoydeM: a.bruttoFallhoyde_m,
+          produksjonGWh: a.produksjonGWh_Aar,
+          idriftsattAar: a.idriftsattAar,
+          type: a.vannkraftverkType,
+          regulertVolumMm3: a.sumRegulertVolumMagasiner_Mm3 ?? a.regulertVolumMagasiner_Mm3,
+          kdbNr: a.kdbNr,
+          vannkraftverkNr: a.vannkraftverkNr,
+        },
+      };
+    });
+  return nvePlantsCache;
+}
+
+// Google-style match: alle søkjeord må matcha namn eller kommune. Eit ord
+// matchar anten eksakt (heilt ord i namn) eller som prefiks av siste ord
+// medan brukaren skriv. Score prioriterer eksakte ord-treff framfor
+// substring, så "blåfalli v" returnerer berre "Blåfalli V" (V = heilt ord)
+// og ikkje "Blåfalli Vik" eller "Blåfalli IV".
+// Ã‰i regel: søkestrengen må finnast som substring i "{namn} kraftverk {kommune}".
+// Rangering: tidlegare posisjon vinn, kortare namn vinn ved likt treff.
+async function searchNveHydro(q) {
+  if (q.length < 2) return [];
+  const plants = await loadNvePlants();
+  const needle = normalize(q);
+  const haystack = p => `${p.nameLc} kraftverk ${p.nameLc} ${T.powerPlant || ""} ${p.kommuneLc}`;
+  return plants
+    .map(p => ({ p, idx: haystack(p).indexOf(needle) }))
+    .filter(x => x.idx >= 0)
+    .sort((a, b) => a.idx - b.idx || a.p.nameLc.length - b.p.nameLc.length)
+    .slice(0, 8)
+    .map(x => x.p);
+}
+
+async function searchAll(query) {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const [nve, adresse, stad] = await Promise.all([
+    searchNveHydro(q).catch(() => []),
+    searchAddress(q).catch(() => []),
+    searchPlace(q).catch(() => []),
+  ]);
+  // Interleave: fyrst 3 stader, så 3 adresser, så kraftverk.
+  // Garanterer at brukarar som søker "bergen" / "gravdalsrinden 42"
+  // alltid ser stad/adresse-treff før NVE-substring-match i kommuneNavn.
+  return [...stad.slice(0, 3), ...adresse.slice(0, 3), ...nve].slice(0, 10);
+}
+
+/* ---- Wikipedia (for "valt kraftverk" bilde + link) ---- */
+async function fetchWikipedia(name) {
+  const terms = [`${name} kraftverk`, `${name} kraftstasjon`, name];
+  for (const host of ["no.wikipedia.org", "nn.wikipedia.org", "en.wikipedia.org"]) {
+    for (const term of terms) {
+      try {
+        const search = await fetchJson(`https://${host}/w/api.php?action=opensearch&format=json&origin=*&limit=1&search=${encodeURIComponent(term)}`);
+        const title = search?.[1]?.[0];
+        if (!title) continue;
+        const sum = await fetchJson(`https://${host}/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+        const orig = sum?.originalimage?.source;
+        const small = sum?.thumbnail?.source;
+        const thumb = orig ?? (small ? small.replace(/\/\d+px-/, "/800px-") : null);
+        if (!thumb) continue;
+        return {
+          title: sum.title ?? title,
+          thumbnail: thumb,
+          url: sum.content_urls?.desktop?.page ?? `https://${host}/wiki/${encodeURIComponent(title)}`,
+        };
+      } catch {}
+    }
+  }
+  return null;
+}
+
+/* ---- Popup-format ---- */
+function fmtKey(k) {
+  return k.replace(/_/g, " ")
+    .replace(/([a-zæøå])([A-ZÃ†Ã˜Ã…])/g, "$1 $2")
+    .replace(/\b([a-z])/g, m => m.toUpperCase());
+}
+function fmtVal(k, v) {
+  if (v == null || v === "" || v === "Null" || v === "null") return null;
+  if (/dato/i.test(k) && typeof v === "number" && v > 1e11) return new Date(v).toLocaleDateString("nn-NO");
+  if (typeof v === "number") return Number.isInteger(v) ? String(v) : v.toFixed(2);
+  return String(v);
+}
+function buildPopupHtml(f) {
+  const a = f.properties ?? f.attributes ?? {};
+  const layerName = f.layerName ?? f.layer?.name ?? "NVE-objekt";
+  const rows = Object.entries(a)
+    .map(([k, v]) => [k, HIDDEN_KEYS.has(k) ? null : fmtVal(k, v)])
+    .filter(([, v]) => v != null)
+    .map(([k, v]) => `<tr><td class="k">${escapeHtml(fmtKey(k))}</td><td class="v">${escapeHtml(v)}</td></tr>`)
+    .join("");
+  if (!rows) return `<div style="font-size:12px;color:#475569">${escapeHtml(T.noData || "Ingen data for")} ${escapeHtml(layerName)}</div>`;
+  const title = a.vannkraftStasjonNavn || a.vannkraftverkNavn || a.magasinNavn || a.damNavn || a.objektType || layerName;
+  const sub = layerName !== title ? `<div class="sub">${escapeHtml(layerName)}</div>` : "";
+  const extIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-left:2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+  const konsesjon = a.kdbNr
+    ? ` <a href="${KONSESJON_URL(encodeURIComponent(a.kdbNr))}" target="_blank" rel="noopener noreferrer" class="popup-konsesjon">${escapeHtml(T.concessionCase || "Konsesjonssak")} ${extIcon}</a>`
+    : "";
+  return `<div class="popup-wrap"><div class="title">${escapeHtml(title)}${konsesjon}</div>${sub}<table>${rows}</table></div>`;
+}
+
+/* ---- Kart ---- */
+const map = L.map("map", { maxZoom: 19, zoomControl: false }).setView(DEFAULT_CENTER, 5);
+window.__leafletMap = map;
+L.control.zoom({ position: "bottomright" }).addTo(map);
+L.tileLayer("https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png", {
+  attribution: "&copy; Kartverket",
+  maxZoom: 19,
+}).addTo(map);
+
+const nveLayer = L.esri.dynamicMapLayer({
+  url: NVE_MAPSERVER,
+  opacity: 0.85,
+  f: "image",
+  format: "png32",
+  transparent: true,
+  layers: NVE_CATEGORIES.flatMap(c => c.layers),
+}).addTo(map);
+
+const popupFeaturePriority = (feature) => {
+  const attrs = feature?.attributes ?? feature?.properties ?? {};
+  const layerName = String(feature?.layerName ?? feature?.layer?.name ?? "");
+  const objectType = String(attrs.objektType ?? "");
+  if (objectType === "Inntakspunkt" || layerName === "Inntakspunkt") return 0;
+  if (objectType === "Dam" || layerName === "Dam") return 1;
+  if (layerName === "Magasin") return 2;
+  if (layerName === "Vannvei") return 3;
+  return 10;
+};
+
+function getActiveLayerIds() {
+  return NVE_CATEGORIES.filter(c => enabledCats[c.key]).flatMap(c => c.layers);
+}
+
+function pickPopupFeature(results) {
+  return [...(results ?? [])].sort((a, b) => popupFeaturePriority(a) - popupFeaturePriority(b))[0] ?? null;
+}
+
+map.on("click", (event) => {
+  const active = getActiveLayerIds();
+  if (!active.length) return;
+  L.esri.identifyFeatures({ url: NVE_MAPSERVER })
+    .on(map)
+    .at(event.latlng)
+    .layers(`visible:${active.join(",")}`)
+    .tolerance(18)
+    .run((error, _featureCollection, response) => {
+      if (error) return;
+      const feature = pickPopupFeature(response?.results);
+      if (!feature) return;
+      L.popup({
+        maxWidth: 320,
+        autoPan: true,
+        autoPanPadding: [20, 20],
+        keepInView: true,
+        className: "nve-detached-popup",
+        closeButton: true,
+      })
+        .setLatLng(event.latlng)
+        .setContent(buildPopupHtml(feature))
+        .openOn(map);
+    });
+});
+
+setTimeout(() => map.invalidateSize(), 50);
+
+/* ---- DOM-refs ---- */
+const $ = id => document.getElementById(id);
+const input = $("search-input");
+const suggestionsEl = $("suggestions");
+const searchWrap = $("search-wrap");
+const coordsEl = $("coords");
+const plantCard = $("plant-card");
+const plantNameEl = $("plant-name");
+const plantImgEl = $("plant-img");
+const plantRowsEl = $("plant-rows");
+const wikiLinkEl = $("wiki-link");
+const konsesjonLinkEl = $("konsesjon-link");
+const plantIdTagEl = $("plant-id-tag");
+
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+/* ---- i18n: populate static text from injected translations ---- */
+$("plant-empty-title").textContent = T.emptyTitle || "Ingen kraftverk valt";
+$("plant-empty-sub").textContent = T.emptySub || "";
+$("map-toggle-label").textContent = T.hideMap || "Skjul kart";
+$("plant-suffix").textContent = T.powerPlant || "kraftverk";
+$("konsesjon-text").textContent = T.concessionCase || "Konsesjonssak";
+$("location-label").textContent = T.location || "Lokasjon";
+input.placeholder = T.searchPlaceholder || "";
+$("layers-btn").title = T.showHideLayers || "";
+$("layers-label").textContent = T.layers || "Lag";
+$("nve-layers-title").textContent = T.nveLayers || "NVE-lag";
+$("layers-all").textContent = T.all || "Alle";
+$("layers-none").textContent = T.none || "Ingen";
+
+
+/* ---- Søk-UI ---- */
+let searchTimer, currentSuggestions = [];
+
+input.addEventListener("input", e => {
+  clearTimeout(searchTimer);
+  if (e.target.value.trim().length < 2) return renderSuggestions([]);
+  searchTimer = setTimeout(async () => {
+    searchWrap.classList.add("searching");
+    renderSuggestions(await searchAll(e.target.value));
+    searchWrap.classList.remove("searching");
+  }, 300);
+});
+
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && currentSuggestions.length) selectSuggestion(currentSuggestions[0]);
+});
+
+document.addEventListener("mousedown", e => {
+  if (!searchWrap.contains(e.target)) renderSuggestions([]);
+  if (!$("layers-wrap").contains(e.target)) layersPanel.classList.remove("open");
+});
+
+function renderSuggestions(list) {
+  currentSuggestions = list;
+  if (!list.length) {
+    suggestionsEl.classList.remove("open");
+    suggestionsEl.innerHTML = "";
+    return;
+  }
+  const labels = { kraftverk: T.powerPlant || "Kraftverk", adresse: T.address || "Adresse", stad: T.place2 || "Stad" };
+  suggestionsEl.innerHTML = list.map((s, i) =>
+    `<li><button type="button" data-idx="${i}">
+      <span class="kind ${s.kind}">${labels[s.kind]}</span>
+      <span class="sugg-name">${escapeHtml(s.display_name)}</span>
+    </button></li>`
+  ).join("");
+  suggestionsEl.classList.add("open");
+  suggestionsEl.querySelectorAll("button").forEach(btn => {
+    btn.onclick = () => selectSuggestion(currentSuggestions[+btn.dataset.idx]);
+  });
+}
+
+let addressMarker = null;
+function clearAddressMarker() {
+  if (addressMarker) {
+    map.removeLayer(addressMarker);
+    addressMarker = null;
+  }
+}
+map.on("click", clearAddressMarker);
+
+function selectSuggestion(s) {
+  const lat = +Number(s.lat).toFixed(6);
+  const lng = +Number(s.lon).toFixed(6);
+  const name = s.display_name.split(",").slice(0, 3).join(", ");
+  input.value = name;
+  renderSuggestions([]);
+  coordsEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  let zoom = LOCATION_ZOOM;
+  if (s.kind === "adresse") zoom = 17;
+  else if (s.kind === "stad") zoom = PLACE_ZOOM[s.placeType] ?? 13;
+  map.setView([lat, lng], zoom, { animate: true });
+
+  clearAddressMarker();
+  if (s.kind === "adresse") {
+    addressMarker = L.marker([lat, lng]).addTo(map).bindPopup(escapeHtml(name)).openPopup();
+  }
+  showPlant(s.plant ?? null);
+  onLocationChange({ name, lat, lng, hydroPlant: s.plant ?? null });
+}
+
+/* ---- Valt kraftverk ---- */
+const fmtNumber = (v, digits = 2) =>
+  v == null ? "\u2014" : new Intl.NumberFormat("nn-NO", { maximumFractionDigits: digits }).format(v);
+
+async function loadNveIdData(nveId) {
+  if (!nveId) return null;
+  return fetchJson(`${NVEID_DATA_URL}/${encodeURIComponent(nveId)}`).catch(() => null);
+}
+
+function formatFlowValue(value) {
+  if (!value || typeof value !== "object") return null;
+  if (value.ls != null) return `${fmtNumber(value.ls, value.ls < 10 ? 2 : 0)} l/s`;
+  if (value.m3s != null) return `${fmtNumber(value.m3s, 2)} m\u00B3/s`;
+  return null;
+}
+
+function formatSeasonFlow(intake, field) {
+  const details = intake?.[`${field}_delperioder`];
+  if (Array.isArray(details) && details.length) {
+    return details
+      .map(detail => {
+        if (detail?.ls == null) return null;
+        const flow = `${fmtNumber(detail.ls, detail.ls < 10 ? 2 : 0)} l/s`;
+        return detail.periode ? `${flow} (${detail.periode})` : flow;
+      })
+      .filter(Boolean);
+  }
+
+  const ls = intake?.[`${field}_ls`];
+  if (ls != null) {
+    const flow = `${fmtNumber(ls, ls < 10 ? 2 : 0)} l/s`;
+    const period = intake?.[`${field}_periode`];
+    return [period ? `${flow} (${period})` : flow];
+  }
+
+  if (typeof intake?.[field] === "string" && intake[field].trim()) return [intake[field].trim()];
+  return [];
+}
+
+function formatMinFlowEntry(entry) {
+  if (!entry) return { text: "Ikke indeksert", items: null };
+  if (!entry.funnet) return { text: "Ingen krav registrert", items: null };
+  if (!Array.isArray(entry.inntak) || !entry.inntak.length) return { text: "Ingen krav registrert", items: null };
+
+  const seasonLabels = {
+    heileAret: "heile året",
+    heleAret: "hele året",
+    var: "vår",
+    sommer: "sommar",
+    host: "haust",
+    høst: "haust",
+    vinter: "vinter",
+  };
+  const order = ["heileAret", "heleAret", "var", "sommer", "host", "høst", "vinter"];
+  const items = [];
+
+  for (const intake of entry.inntak) {
+    if (!intake || typeof intake !== "object") continue;
+    const title = intake.navn || intake.inntakFunksjon || T.intakePoint || "Inntakspunkt";
+
+    if (typeof intake.verdier === "string") {
+      items.push({ name: `${title}: ${intake.verdier}` });
+      continue;
+    }
+
+    const parts = [];
+    for (const value of formatSeasonFlow(intake, "sommer")) {
+      parts.push(`sommar: ${value}`);
+    }
+    for (const value of formatSeasonFlow(intake, "vinter")) {
+      parts.push(`vinter: ${value}`);
+    }
+    for (const key of order) {
+      const value = intake[key];
+      const flow = formatFlowValue(value);
+      if (!flow) continue;
+      parts.push(`${seasonLabels[key] ?? key}: ${flow}`);
+    }
+    for (const [key, value] of Object.entries(intake)) {
+      if (key === "navn" || key === "verdier" || order.includes(key)) continue;
+      const flow = formatFlowValue(value);
+      if (!flow) continue;
+      parts.push(`${key}: ${flow}`);
+    }
+    if (parts.length) items.push({ name: `${title}: ${parts.join(", ")}` });
+  }
+
+  return items.length ? { text: null, items } : { text: "Ingen krav registrert", items: null };
+}
+
+function formatLiveMinFlowResults(results) {
+  if (!results || !results.length) return { text: null, items: null };
+  const seasonLabels = { 1: "heile året", 2: "vår", 3: "sommar", 4: "haust", 5: "vinter" };
+  const grouped = new Map();
+  for (const r of results) {
+    const flow = r.minFlowLs != null
+      ? `${fmtNumber(r.minFlowLs, r.minFlowLs < 10 ? 2 : 0)} l/s`
+      : r.minFlowM3s != null
+        ? `${fmtNumber(r.minFlowM3s, 2)} m\u00B3/s`
+        : null;
+    if (!flow) continue;
+    const flowWithPeriod = r.period ? `${flow} (${r.period})` : flow;
+    const label = r.locationDescription || T.intakePoint || "Inntakspunkt";
+    const parts = grouped.get(label) ?? [];
+    const season = seasonLabels[r.season] ?? "periode";
+    parts.push(r.season && r.season !== 1 ? `${season}: ${flowWithPeriod}` : flowWithPeriod);
+    grouped.set(label, parts);
+  }
+  const items = [...grouped.entries()].map(([label, parts]) => ({ name: `${label}: ${parts.join(", ")}` }));
+  return items.length ? { text: null, items } : { text: null, items: null };
+}
+
+const PLANT_ROWS = [
+  { label: T.owner || "Eigar",             get: p => p.eigar ?? "\u2014" },
+  { label: T.place || "Sted",              get: p => `${p.kommune ?? "\u2014"}${p.fylke ? `, ${p.fylke}` : ""}` },
+  { label: T.maxOutput || "Maks ytelse",       get: p => fmtNumber(p.maksYtelseMW),        unit: "MW"     },
+  { label: T.grossHead || "Bruttofallh\u00f8gde",   get: p => fmtNumber(p.bruttoFallhoydeM, 0), unit: "m"      },
+  { label: T.production || "Produksjon",        get: p => fmtNumber(p.produksjonGWh),       unit: T.prodUnit || "GWh/\u00e5r" },
+  { label: T.commissioned || "Idriftsatt",        get: p => p.idriftsattAar ? String(p.idriftsattAar) : "\u2014" },
+  { label: T.minFlow || "Minstevannf\u00f8ring",  get: _ => "\u2014" },
+  // Dynamiske rader som ventar på loadPlantExtras:
+  { label: p => `${T.intake || "Inntak"}${p.extras?.inntakCount != null ? ` (${p.extras.inntakCount})` : ""}`,
+    get: p => p.extras?.inntakItems ?? (p.extras ? [{ name: "\u2014" }] : [{ name: "â€¦" }]), items: true },
+  { label: p => `Magasin${p.extras?.magasinCount != null ? ` (${p.extras.magasinCount})` : ""}`,
+    get: p => p.extras?.magasinItems ?? (p.extras ? [{ name: "\u2014" }] : [{ name: "â€¦" }]), items: true },
+];
+
+function geometryBoundsCenter(pointsGroups) {
+  if (!pointsGroups?.length) return null;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const group of pointsGroups) for (const [x, y] of group) {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  }
+  return [(minY + maxY) / 2, (minX + maxX) / 2];
+}
+
+function geometryLatLngBounds(geom) {
+  const groups = geom?.rings?.length ? geom.rings : geom?.paths?.length ? geom.paths : null;
+  if (!groups?.length) return null;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const group of groups) for (const [x, y] of group) {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  }
+  return [[minY, minX], [maxY, maxX]];
+}
+
+// Slår opp dammar (fleire damlag) og magasin via vannkraftverkNr og
+// returnerer objekt med {name, latlng, layerName, attributes} per rad \u2014
+// kartet panorerer til latlng og opnar popup når brukaren klikkar.
+// Hentar *alle* felt slik at popup-innhaldet blir likt som ved vanleg klikk.
+async function loadPlantExtras(verkNr) {
+  if (verkNr == null) return null;
+  const base = NVE_MAPSERVER;
+  const damLayers = [4, 5, 6, 15, 16, 17];
+  const where = encodeURIComponent(`vannkraftverkNr=${verkNr}`);
+  const [inntakDrift, magasin, inntakPlan, ...damResponses] = await Promise.all([
+    fetchJson(`${base}/2/query?where=${where}&outFields=*&f=json&returnGeometry=true&outSR=4326`),
+    fetchJson(`${base}/9/query?where=${where}&outFields=*&f=json&returnGeometry=true&outSR=4326`),
+    fetchJson(`${base}/12/query?where=${where}&outFields=*&f=json&returnGeometry=true&outSR=4326`),
+    ...damLayers.map(layer =>
+      fetchJson(`${base}/${layer}/query?where=${where}&outFields=*&f=json&returnGeometry=true&outSR=4326`)
+    ),
+  ]);
+
+  const getLatLng = (g) => {
+    if (g?.x != null && g?.y != null) return [g.y, g.x];
+    if (g?.rings?.length) return geometryBoundsCenter(g.rings);
+    if (g?.paths?.length) return geometryBoundsCenter(g.paths);
+    return null;
+  };
+  const dedupeItems = items => {
+    const seen = new Set();
+    const out = [];
+    for (const item of items ?? []) {
+      const name = (item?.name ?? "").trim();
+      const key = name.toLowerCase();
+      if (!name || seen.has(key)) continue;
+      seen.add(key);
+      out.push(item);
+    }
+    return out;
+  };
+
+  const mapNamedItems = (feats, getName, layerName) => dedupeItems((feats ?? []).map(f => {
+    const name = (getName(f.attributes ?? {}) ?? "").trim();
+    if (!name) return null;
+    return {
+      name,
+      latlng: getLatLng(f.geometry),
+      bounds: geometryLatLngBounds(f.geometry),
+      attributes: f.attributes,
+      layerName,
+    };
+  }).filter(Boolean));
+
+  const formatIntakeFunction = (raw) => {
+    const value = (raw ?? "").trim().toLowerCase();
+    if (!value) return "";
+    if (value === "hoved") return T.mainIntake || "Hovudinntak";
+    if (value === "side") return T.sideIntake || "Sideinntak";
+    return `${raw} ${T.intake || "Inntak"}`;
+  };
+
+  const formatIntakeName = (attrs, includeId = true) => {
+    const role = formatIntakeFunction(attrs.inntakFunksjon);
+    if (role && includeId && attrs.inntakNr != null) return `${role} (${attrs.inntakNr})`;
+    if (role) return role;
+    if (attrs.inntakNr != null) return includeId ? `${T.intakePoint || "Inntakspunkt"} ${attrs.inntakNr}` : (T.intakePoint || "Inntakspunkt");
+    return "";
+  };
+
+  const damFeatures = damResponses.flatMap(r => r?.features ?? []);
+  const damItems = mapNamedItems(damFeatures, attrs => attrs.damNavn, T.dam || "Dam");
+  const magasinItems = mapNamedItems(magasin?.features, attrs => attrs.magasinNavn, "Magasin");
+  const magasinByDelfelt = new Map(
+    (magasin?.features ?? [])
+      .map(f => {
+        const attrs = f.attributes ?? {};
+        const delfeltNr = attrs.delfeltNr;
+        const magasinNavn = (attrs.magasinNavn ?? "").trim();
+        return delfeltNr != null && magasinNavn ? [String(delfeltNr), {
+          name: magasinNavn,
+          latlng: getLatLng(f.geometry),
+          bounds: geometryLatLngBounds(f.geometry),
+          attributes: attrs,
+          layerName: "Magasin",
+        }] : null;
+      })
+      .filter(Boolean)
+  );
+
+  const queryIntersectingLabel = async (latlng, layerIds) => {
+    if (!latlng) return "";
+    const [lat, lng] = latlng;
+    const point = `${lng},${lat}`;
+    const results = await Promise.all(layerIds.map(layerId =>
+      fetchJson(`${base}/${layerId}/query?where=1%3D1&geometry=${encodeURIComponent(point)}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=10&units=esriSRUnit_Meter&outFields=*&f=json&returnGeometry=false`)
+    ));
+    for (const result of results) {
+      const attrs = result?.features?.[0]?.attributes;
+      if (!attrs) continue;
+      const magasinName = (attrs.magasinNavn ?? "").trim();
+      const damName = (attrs.damNavn ?? "").trim();
+      if (magasinName) return magasinName;
+      if (damName) return damName;
+    }
+    return "";
+  };
+
+  const intakeFeatures = [...(inntakDrift?.features ?? []), ...(inntakPlan?.features ?? [])];
+  const intakeLabels = await Promise.all(intakeFeatures.map(f => queryIntersectingLabel(getLatLng(f.geometry), damLayers)));
+
+  const inntakItems = dedupeItems(intakeFeatures.map((f, index) => {
+    const latlng = getLatLng(f.geometry);
+    const attrs = f.attributes ?? {};
+    const delfeltMagasin = attrs.delfeltNr != null ? magasinByDelfelt.get(String(attrs.delfeltNr)) : null;
+    const fallbackMagasin = magasinItems.length === 1 ? magasinItems[0] : null;
+    const relatedLabel = intakeLabels[index] || delfeltMagasin?.name || fallbackMagasin?.name || "";
+    const baseName = formatIntakeName(f.attributes ?? {}, !relatedLabel);
+    const name = relatedLabel ? `${baseName} (${relatedLabel})` : baseName;
+    if (!name) return null;
+    const focusItem = delfeltMagasin || fallbackMagasin;
+    return {
+      name,
+      latlng,
+      bounds: focusItem?.bounds ?? null,
+      focusLatLng: focusItem?.latlng ?? null,
+      attributes: f.attributes,
+      layerName: T.intakePoint || "Inntakspunkt",
+    };
+  }).filter(Boolean)).sort((a, b) => {
+    const aFn = (a.attributes?.inntakFunksjon ?? "").trim().toLowerCase();
+    const bFn = (b.attributes?.inntakFunksjon ?? "").trim().toLowerCase();
+    const aLabel = (a.name.match(/\(([^()]*)\)\s*$/)?.[1] ?? "").trim();
+    const bLabel = (b.name.match(/\(([^()]*)\)\s*$/)?.[1] ?? "").trim();
+    const hasText = value => /[^\d\s]+/.test(value);
+    const aRank = aFn === "hoved" ? 0 : hasText(aLabel) ? 1 : 2;
+    const bRank = bFn === "hoved" ? 0 : hasText(bLabel) ? 1 : 2;
+    return aRank - bRank || a.name.localeCompare(b.name, "nb");
+  });
+
+  const fallbackDamItems = inntakItems.length
+    ? []
+    : [];
+  const inntak = inntakItems.length ? inntakItems : fallbackDamItems;
+
+  return {
+    inntakCount: inntak.length,
+    inntakItems: inntak.length ? inntak : [{ name: "\u2014", latlng: null }],
+    magasinCount: magasinItems.length,
+    magasinItems: magasinItems.length
+      ? magasinItems
+      : [{ name: T.riverPlant || "Elvekraftverk \u2014 ingen magasin", latlng: null }],
+  };
+}
+
+let wikiReqId = 0;
+let extrasReqId = 0;
+let minFlowReqId = 0;
+
+// Lagrar klikkbare NVE-objekt mellombels slik at button-klikk kan slå
+// opp rett feature og opna popup direkte.
+let panIndex = [];
+
+function renderPlantRows(plant) {
+  panIndex = [];
+  const leftRows = [];
+  const rightRows = [];
+
+  PLANT_ROWS.forEach((r, index) => {
+    const label = typeof r.label === "function" ? r.label(plant) : r.label;
+    const v = r === PLANT_ROWS[6] ? (plant.minFlowItems ?? plant.minFlowText ?? "-") : r.get(plant);
+    let html;
+    if ((r.items && Array.isArray(v)) || (r === PLANT_ROWS[6] && Array.isArray(v))) {
+      const lines = v.map(it => {
+        if (!it.latlng) return `<div>${escapeHtml(it.name)}</div>`;
+        const idx = panIndex.push(it) - 1;
+        return `<div><button type="button" class="nve-pan" data-idx="${idx}">${escapeHtml(it.name)}</button></div>`;
+      }).join("");
+      html = `<div class="items-cell"><dt>${escapeHtml(label)}</dt><dd>${lines}</dd></div>`;
+    } else {
+      const unit = r.unit && v !== "\u2014" && v !== "â€¦" ? `<span class="unit">${r.unit}</span>` : "";
+      html = `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(v)}${unit}</dd></div>`;
+    }
+    (index % 2 === 0 ? leftRows : rightRows).push(html);
+  });
+
+  plantRowsEl.innerHTML = `
+    <div class="plant-rows-col">${leftRows.join("")}</div>
+    <div class="plant-rows-col">${rightRows.join("")}</div>
+  `;
+
+  plantRowsEl.querySelectorAll(".nve-pan").forEach(btn => {
+    btn.onclick = () => panToNveObject(panIndex[+btn.dataset.idx]);
+  });
+}
+
+function panToNveObject(item) {
+  if (!item?.latlng) return;
+  const [lat, lng] = item.latlng;
+  const feature = { attributes: item.attributes, layerName: item.layerName };
+  const html = buildPopupHtml(feature);
+  const getReservoirViewport = boundsLike => {
+    const bounds = L.latLngBounds(boundsLike);
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    const midLatRad = ((sw.lat + ne.lat) / 2) * Math.PI / 180;
+    const latSpan = Math.abs(ne.lat - sw.lat);
+    const lngSpan = Math.abs(ne.lng - sw.lng) * Math.cos(midLatRad);
+    const span = Math.max(latSpan, lngSpan);
+    const padRatio = span < 0.003 ? 0.12 : span < 0.01 ? 0.09 : span < 0.03 ? 0.06 : 0.04;
+    const paddingPx = span < 0.003 ? 36 : span < 0.01 ? 42 : 48;
+    const maxZoom = span < 0.0015 ? 15 : span < 0.008 ? 14 : 13;
+    return {
+      bounds: bounds.pad(padRatio),
+      options: { padding: [paddingPx, paddingPx], maxZoom, animate: true },
+    };
+  };
+
+  const openPopup = () => {
+    L.popup({
+      maxWidth: 320,
+      autoPan: true,
+      keepInView: true,
+      autoPanPaddingTopLeft: [24, 72],
+      autoPanPaddingBottomRight: [24, 24],
+      className: "nve-detached-popup",
+      closeButton: true,
+    })
+      .setLatLng([lat, lng])
+      .setContent(html)
+      .openOn(map);
+    setTimeout(() => {
+      document.querySelectorAll(".nve-detached-popup .popup-wrap").forEach(el => { el.scrollTop = 0; });
+    }, 50);
+  };
+
+  const centerAndOpen = () => {
+    map.stop();
+    map.closePopup();
+    map.invalidateSize({ pan: false, debounceMoveend: false });
+    const targetLatLng = item.focusLatLng ?? [lat, lng];
+    const targetBounds = item.bounds;
+    const reservoirBounds = targetBounds && (item.layerName === "Magasin" || item.focusLatLng);
+    const center = map.getCenter();
+    const alreadyCentered = !targetBounds && map.getZoom() === 17
+      && Math.abs(center.lat - targetLatLng[0]) < 1e-6
+      && Math.abs(center.lng - targetLatLng[1]) < 1e-6;
+    if (alreadyCentered) {
+      openPopup();
+      return;
+    }
+    let done = false;
+    let settleTimer = null;
+    let fallbackTimer = null;
+    let noEventTimer = null;
+    const cleanup = () => {
+      map.off("moveend", queueFinish);
+      map.off("zoomend", queueFinish);
+      if (settleTimer) clearTimeout(settleTimer);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (noEventTimer) clearTimeout(noEventTimer);
+    };
+    const finish = () => {
+      if (done) return;
+      done = true;
+      cleanup();
+      openPopup();
+    };
+    const queueFinish = () => {
+      if (done) return;
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(finish, 120);
+    };
+    map.on("moveend", queueFinish);
+    map.on("zoomend", queueFinish);
+    if (targetBounds) {
+      if (reservoirBounds) {
+        const viewport = getReservoirViewport(targetBounds);
+        map.fitBounds(viewport.bounds, viewport.options);
+      } else {
+        map.fitBounds(targetBounds, { padding: [40, 40], maxZoom: 14, animate: true });
+      }
+    } else {
+      map.setView(targetLatLng, 17, { animate: true });
+    }
+    // Leaflet can occasionally skip move/zoom lifecycle events when the
+    // requested viewport is already very close to the current one. In that
+    // case we still want the popup auto-pan to run on the first click.
+    noEventTimer = setTimeout(queueFinish, 320);
+    fallbackTimer = setTimeout(finish, 1200);
+  };
+
+  if (!locationSection.classList.contains("open")) {
+    locationSection.classList.add("open");
+    syncMapToggle();
+    if (window.__postHeight) window.__postHeight();
+    setTimeout(() => {
+      map.invalidateSize({ pan: false, debounceMoveend: false });
+      centerAndOpen();
+      if (window.__postHeight) window.__postHeight();
+    }, 320);
+  } else {
+    centerAndOpen();
+  }
+}
+
+function showPlant(plant) {
+  if (!plant) {
+    plantCard.classList.remove("has-plant");
+    return;
+  }
+  plantCard.classList.add("has-plant");
+  plantNameEl.textContent = plant.navn;
+  const stationId = plant.vannkraftverkNr ?? null;
+  if (stationId != null) {
+    plantIdTagEl.textContent = `StasjonID ${stationId}`;
+    plantIdTagEl.style.display = "inline-block";
+  } else {
+    plantIdTagEl.style.display = "none";
+  }
+  const minFlowNveId = plant.vannkraftverkNr ?? null;
+  plant.minFlowText = minFlowNveId ? "..." : "-";
+  renderPlantRows(plant);
+
+  if (plant.kdbNr) {
+    konsesjonLinkEl.href = KONSESJON_URL(plant.kdbNr);
+    konsesjonLinkEl.style.display = "inline-flex";
+  } else {
+    konsesjonLinkEl.style.display = "none";
+  }
+
+  // Asynkron henting av inntak + magasin via vannkraftverkNr.
+  const extrasReq = ++extrasReqId;
+  loadPlantExtras(plant.vannkraftverkNr).then(extras => {
+    if (extrasReq !== extrasReqId) return;
+    plant.extras = extras ?? { inntakSummary: "\u2014", hovedInntak: "\u2014", magasinSummary: "\u2014" };
+    renderPlantRows(plant);
+  });
+
+  const minFlowReq = ++minFlowReqId;
+  (async () => {
+    if (minFlowReq !== minFlowReqId) return;
+    let text = null;
+    let items = null;
+    if (minFlowNveId) {
+      const data = await loadNveIdData(minFlowNveId);
+      ({ text, items } = formatMinFlowEntry(data?.minimumFlow ?? null));
+    }
+    if (minFlowReq !== minFlowReqId) return;
+    plant.minFlowText = text ?? "Ikke indeksert";
+    plant.minFlowItems = items ?? null;
+    renderPlantRows(plant);
+    if (window.__postHeight) window.__postHeight();
+  })();
+
+  plantImgEl.innerHTML = `<div class="loading"></div>`;
+  wikiLinkEl.style.display = "none";
+
+  const myReq = ++wikiReqId;
+  fetchWikipedia(plant.navn).then(wiki => {
+    if (myReq !== wikiReqId) return;
+    if (wiki?.thumbnail) {
+      const img = document.createElement("img");
+      img.src = wiki.thumbnail;
+      img.alt = wiki.title;
+      img.loading = "lazy";
+      plantImgEl.textContent = "";
+      plantImgEl.appendChild(img);
+      wikiLinkEl.href = wiki.url && wiki.url.startsWith("https://") ? wiki.url : "#";
+      wikiLinkEl.style.display = "inline-flex";
+    } else {
+      plantImgEl.innerHTML = `<div class="empty">âš¡<br/>${T.noWikiImage || "Ingen Wikipedia-bilete funne"}</div>`;
+    }
+  });
+}
+
+/* ---- NVE lag-toggling ---- */
+const layersPanel = $("layers-panel");
+const layersListEl = $("layers-list");
+const layersCountEl = $("layers-count");
+
+$("layers-btn").onclick = () => layersPanel.classList.toggle("open");
+
+function renderLayersList() {
+  layersListEl.innerHTML = NVE_CATEGORIES.map(c =>
+    `<li><button type="button" data-key="${c.key}">
+      <span class="check ${enabledCats[c.key] ? "on" : ""}"></span>
+      <span>${c.label}</span>
+    </button></li>`
+  ).join("");
+  layersListEl.querySelectorAll("button").forEach(btn => {
+    btn.onclick = () => {
+      enabledCats[btn.dataset.key] = !enabledCats[btn.dataset.key];
+      applyNveLayers();
+      renderLayersList();
+    };
+  });
+  layersCountEl.textContent = NVE_CATEGORIES.filter(c => enabledCats[c.key]).length;
+}
+
+function applyNveLayers() {
+  const active = NVE_CATEGORIES.filter(c => enabledCats[c.key]).flatMap(c => c.layers);
+  if (!active.length) {
+    if (map.hasLayer(nveLayer)) map.removeLayer(nveLayer);
+    return;
+  }
+  if (!map.hasLayer(nveLayer)) nveLayer.addTo(map);
+  nveLayer.setLayers?.(active);
+}
+
+function setAll(value) {
+  NVE_CATEGORIES.forEach(c => enabledCats[c.key] = value);
+  applyNveLayers();
+  renderLayersList();
+}
+$("layers-all").onclick = () => setAll(true);
+$("layers-none").onclick = () => setAll(false);
+renderLayersList();
+
+/* ---- Lokasjon-seksjon kollaps/open ---- */
+const locationSection = $("location-section");
+const toggleBtns = [$("map-toggle-btn"), $("map-toggle-btn-body")].filter(Boolean);
+
+function syncMapToggle() {
+  const isOpen = locationSection.classList.contains("open");
+  const label = isOpen ? (T.hideMap || "Skjul kart") : (T.showMap || "Vis kart");
+  toggleBtns.forEach(btn => {
+    const lbl = btn.querySelector("[id^='map-toggle-label']");
+    const chev = btn.querySelector(".map-toggle-chevron");
+    if (lbl) lbl.textContent = label;
+    if (chev) chev.style.transform = isOpen ? "rotate(180deg)" : "";
+  });
+}
+
+function toggleMap() {
+  locationSection.classList.toggle("open");
+  syncMapToggle();
+  if (locationSection.classList.contains("open")) {
+    setTimeout(() => map.invalidateSize(), 320);
+  }
+  setTimeout(() => { if (window.__postHeight) window.__postHeight(); }, 50);
+}
+
+toggleBtns.forEach(btn => { btn.onclick = toggleMap; });
+$("location-header").onclick = toggleMap;
+// Open/closed basert på startCollapsed
+if (!window.__startCollapsed) {
+  locationSection.classList.add("open");
+}
+syncMapToggle();
+setTimeout(() => map.invalidateSize(), 100);
+
+/* ---- Integrasjon-hook ---- */
+function onLocationChange(location) {
+  // document.dispatchEvent(new CustomEvent("nve-location", { detail: location }));
+}
+</script>
+<script>
+  (function () {
+    const SET_LOCATION_MESSAGE = "hydroguide:set-location";
+    const LOCATION_MESSAGE = "hydroguide:nve-location";
+    const HEIGHT_MESSAGE = "hydroguide:nve-map-height";
+
+    const PARENT_ORIGIN = location.origin;
+    function postToParent(type, payload) {
+      try {
+        window.parent.postMessage(Object.assign({ type }, payload || {}), PARENT_ORIGIN);
+      } catch {}
+    }
+
+    function measureHeight() {
+      const root = document.getElementById("nve-embed-root") || document.querySelector(".wrap");
+      const body = document.body;
+      const doc = document.documentElement;
+      return Math.ceil(Math.max(
+        root ? root.getBoundingClientRect().height : 0,
+        root ? root.offsetHeight : 0,
+        body ? body.getBoundingClientRect().height : 0,
+        body ? body.offsetHeight : 0,
+        doc ? doc.getBoundingClientRect().height : 0,
+        doc ? doc.offsetHeight : 0
+      ));
+    }
+
+    function postHeight() {
+      postToParent(HEIGHT_MESSAGE, { height: measureHeight() });
+    }
+
+    const originalOnLocationChange = typeof window.onLocationChange === "function" ? window.onLocationChange : null;
+    window.__postHeight = postHeight;
+    window.onLocationChange = function (location) {
+      if (originalOnLocationChange) {
+        originalOnLocationChange(location);
+      }
+      postToParent(LOCATION_MESSAGE, { detail: location });
+      window.setTimeout(postHeight, 40);
+    };
+
+    window.addEventListener("message", function (event) {
+      if (event.origin !== PARENT_ORIGIN) return;
+      const data = event && event.data;
+      if (!data || data.type !== SET_LOCATION_MESSAGE) {
+        return;
+      }
+
+      const detail = data.detail || {};
+      const hasCoords = typeof detail.lat === "number" && typeof detail.lng === "number";
+      let nextNveId = detail.nveId == null ? null : Number(detail.nveId);
+      if (!Number.isFinite(nextNveId)) {
+        nextNveId = null;
+      }
+      if (!hasCoords && !nextNveId) {
+        return;
+      }
+
+      const currentMap = window.__leafletMap;
+      const currentCenter = currentMap ? currentMap.getCenter() : null;
+      if (
+        hasCoords &&
+        currentCenter &&
+        Math.abs(currentCenter.lat - detail.lat) < 0.000005 &&
+        Math.abs(currentCenter.lng - detail.lng) < 0.000005
+      ) {
+        return;
+      }
+
+      const label =
+        typeof detail.name === "string" && detail.name.trim()
+          ? detail.name.trim()
+          : hasCoords
+            ? `${detail.lat.toFixed(6)}, ${detail.lng.toFixed(6)}`
+            : "";
+
+      function applySelection(plant, useLat, useLng) {
+        if (typeof window.selectSuggestion === "function") {
+          window.selectSuggestion({
+            display_name: plant ? plant.display_name : label,
+            lat: useLat,
+            lon: useLng,
+            kind: plant ? "kraftverk" : "stad",
+            plant: plant ? plant.plant : null
+          });
+        }
+        window.setTimeout(postHeight, 40);
+      }
+
+      if (nextNveId && typeof window.loadNvePlants === "function") {
+        window.loadNvePlants().then(function (plants) {
+          let match = null;
+          for (let i = 0; i < plants.length; i += 1) {
+            if (plants[i].plant && plants[i].plant.vannkraftverkNr === nextNveId) {
+              match = plants[i];
+              break;
+            }
+          }
+          const useLat = hasCoords ? detail.lat : (match ? match.lat : 0);
+          const useLng = hasCoords ? detail.lng : (match ? match.lon : 0);
+          applySelection(match, useLat, useLng);
+        });
+        return;
+      }
+
+      if (hasCoords) {
+        applySelection(null, detail.lat, detail.lng);
+      }
+    });
+
+    if (typeof ResizeObserver !== "undefined" && document.body) {
+      new ResizeObserver(postHeight).observe(document.body);
+    } else {
+      window.addEventListener("resize", postHeight);
+    }
+
+    window.addEventListener("load", function () {
+      // Re-apply open state after full load in case something toggled it closed.
+      if (!window.__startCollapsed) {
+        var sec = document.getElementById("location-section");
+        if (sec && !sec.classList.contains("open")) {
+          sec.classList.add("open");
+          if (window.__leafletMap) window.__leafletMap.invalidateSize();
+        }
+      }
+      window.setTimeout(postHeight, 120);
+      window.setTimeout(postHeight, 500);
+    });
+    window.setTimeout(postHeight, 250);
+    window.setTimeout(postHeight, 600);
+  })();
+</script>
+</body>
+</html>

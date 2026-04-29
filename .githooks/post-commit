@@ -1,0 +1,9 @@
+#!/bin/sh
+# Post-commit hook for HydroGuide.
+#
+# Records the commit in the local agent-sync log IF the agent toolkit is present.
+# .ai/ is gitignored, so fresh clones will skip silently.
+
+if command -v node >/dev/null 2>&1 && [ -f .ai/scripts/record-agent-commit.mjs ]; then
+  node .ai/scripts/record-agent-commit.mjs
+fi

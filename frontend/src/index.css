@@ -1,0 +1,57 @@
+@import "@fontsource-variable/manrope";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #020617;
+  background-color: #f8fafc;
+  font-size: 14.5px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #f8fafc 0%, #eef2ff 22%, #f8fafc 55%, #eef6ff 100%);
+  font-family: "Manrope Variable", Manrope, system-ui, sans-serif;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-number-spin::-webkit-outer-spin-button,
+.hide-number-spin::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.hide-number-spin[type="number"] {
+  appearance: textfield;
+}
+
+mjx-container[jax="SVG"] {
+  display: block;
+  max-width: 100%;
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"] > svg {
+  max-width: 100%;
+  height: auto;
+}
+
+mjx-container[display="true"] {
+  margin: 0 !important;
+  text-align: left !important;
+}

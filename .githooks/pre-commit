@@ -1,0 +1,21 @@
+#!/bin/sh
+# Pre-commit hook for HydroGuide.
+#
+# Runs local agent-tracking + secret checks IF the agent toolkit (.ai/scripts/)
+# is present. The .ai/ folder is intentionally local-only (gitignored), so
+# contributors who clone fresh will not have these scripts and the hook will
+# silently skip — that is the intended behaviour. The maintainer's machine
+# keeps .ai/ around and runs the full check.
+
+if ! command -v node >/dev/null 2>&1; then
+  # Node missing: skip silently, do not block the commit.
+  exit 0
+fi
+
+if [ -f .ai/scripts/check-secrets.mjs ]; then
+  node .ai/scripts/check-secrets.mjs --staged || exit 1
+fi
+
+if [ -f .ai/scripts/check-agent-tracking.mjs ]; then
+  node .ai/scripts/check-agent-tracking.mjs --staged || exit 1
+fi

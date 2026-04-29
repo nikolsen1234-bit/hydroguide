@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="nn">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Solcelleplassering</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js" integrity="sha384-twf8YFpk0FSzm0AmW2GRJjjnqIuQ2y86vZXh2roYI8O+kFbEBjSUDUT6U72w8shL" crossorigin="anonymous"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  #map { width: 100%; height: 100%; }
+
+  .layer-toggle {
+    position: absolute; top: 10px; right: 10px; z-index: 1000;
+    display: flex; gap: 2px; background: #fff; border-radius: 8px;
+    padding: 2px; box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  }
+  .layer-toggle button {
+    border: none; background: transparent; padding: 5px 10px;
+    font-size: 11px; font-weight: 500; color: #94a3b8; cursor: pointer;
+    border-radius: 6px; transition: all .15s;
+  }
+  .layer-toggle button.active { background: #f1f5f9; color: #1e293b; }
+
+  /* Search */
+  .search-wrap {
+    position: absolute; top: 10px; left: 10px;
+    width: min(340px, calc(100% - 120px));
+    z-index: 1000;
+  }
+  .search-wrap input {
+    width: 100%;
+    padding: 10px 36px 10px 36px;
+    border: 1px solid #cbd5e1; border-radius: 12px;
+    font-size: 14px; outline: none;
+    background: rgba(255,255,255,.95);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  }
+  .search-wrap input:focus { border-color: #0369a1; box-shadow: 0 0 0 3px rgba(3,105,161,.15); }
+  .search-wrap .icon { position: absolute; left: 12px; top: 12px; width: 16px; height: 16px; color: #64748b; }
+  .search-wrap .spinner {
+    position: absolute; right: 12px; top: 13px;
+    width: 14px; height: 14px;
+    border: 2px solid #cbd5e1; border-top-color: transparent;
+    border-radius: 50%; animation: spin .8s linear infinite; display: none;
+  }
+  .searching .spinner { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #suggestions {
+    position: absolute; z-index: 1100; top: 100%; left: 0; right: 0;
+    margin: 4px 0 0; padding: 0; background: #fff;
+    border: 1px solid #e2e8f0; border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(15,23,42,.12);
+    list-style: none; overflow: hidden; display: none;
+    max-height: 240px; overflow-y: auto;
+  }
+  #suggestions.open { display: block; }
+  #suggestions button {
+    width: 100%; display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; background: none; border: none;
+    text-align: left; font-size: 13px; color: #0f172a; cursor: pointer;
+  }
+  #suggestions button:hover { background: #f8fafc; }
+  .kind {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+  }
+  .kind.adresse   { background: #e0f2fe; color: #0369a1; }
+  .kind.stad      { background: #d1fae5; color: #065f46; }
+  .kind.kraftverk { background: #fef3c7; color: #92400e; }
+  .sugg-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* NVE layer controls */
+  .controls { position: absolute; top: 56px; left: 12px; z-index: 540; display: flex; gap: 8px; }
+  .ctrl-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border: 1px solid #cbd5e1;
+    background: rgba(255,255,255,.96); color: #0f172a;
+    border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer;
+  }
+  .ctrl-btn:hover { background: #fff; }
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; padding: 0 4px;
+    background: #fef3c7; color: #92400e;
+    border-radius: 999px; font-size: 10px; font-weight: 700;
+  }
+  .layers-panel {
+    position: absolute; top: calc(100% + 8px); left: 0; width: 220px;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+    box-shadow: 0 20px 40px rgba(15,23,42,.15); overflow: hidden; display: none;
+  }
+  .layers-panel.open { display: block; }
+  .layers-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px 8px; border-bottom: 1px solid #f1f5f9;
+    font-size: 11px; font-weight: 700; line-height: 1.4; font-family: system-ui, sans-serif;
+    text-transform: uppercase; letter-spacing: .04em; color: #64748b;
+  }
+  .layers-header .actions { display: flex; gap: 8px; text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .layers-header button { background: none; border: none; color: #64748b; cursor: pointer; font-size: 11px; padding: 0; }
+  .layers-header button:hover { color: #0f172a; }
+  .layers-list { list-style: none; margin: 0; padding: 6px 0; }
+  .layers-list button {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    padding: 6px 12px; background: none; border: none;
+    cursor: pointer; font-size: 13px; color: #0f172a; text-align: left;
+  }
+  .layers-list button:hover { background: #f8fafc; }
+  .check {
+    width: 16px; height: 16px; border: 1px solid #cbd5e1; border-radius: 4px;
+    background: #fff; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .check.on { background: #f59e0b; border-color: #f59e0b; }
+  .check.on::after {
+    content: ""; width: 4px; height: 8px;
+    border: solid #fff; border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-1px,-1px);
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="layer-toggle">
+  <button id="btn-topo" class="active">Kart</button>
+  <button id="btn-ortho">Flyfoto</button>
+</div>
+
+<div id="search-wrap" class="search-wrap">
+  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+  <input id="search-input" type="text" placeholder="Søk stad, adresse, kraftverk eller koordinat..." autocomplete="off" />
+  <div class="spinner"></div>
+  <ul id="suggestions"></ul>
+</div>
+
+<div class="controls">
+  <div id="layers-wrap" style="position:relative;">
+    <button class="ctrl-btn" id="layers-btn" title="Vis/skjul NVE-lag">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      <span>Lag</span> <span class="badge" id="layers-count">6</span>
+    </button>
+    <div class="layers-panel" id="layers-panel">
+      <div class="layers-header">
+        <span>NVE-lag</span>
+        <div class="actions">
+          <button type="button" id="layers-all">Alle</button>
+          <span>&middot;</span>
+          <button type="button" id="layers-none">Ingen</button>
+        </div>
+      </div>
+      <ul class="layers-list" id="layers-list"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const DEFAULT_CENTER = [62.0, 10.0];
+const DEFAULT_ZOOM = 5;
+const NVE_MAPSERVER = "https://gis3.nve.no/map/rest/services/Mapservices/VassdragsreguleringVannkraft/MapServer";
+const initialParams = new URLSearchParams(window.location.search);
+const initialLat = Number(initialParams.get("lat"));
+const initialLng = Number(initialParams.get("lng"));
+const initialZoom = Number(initialParams.get("zoom"));
+const initialName = initialParams.get("name") || "";
+const hasInitialCoords = Number.isFinite(initialLat) && Number.isFinite(initialLng);
+const mapStartCenter = hasInitialCoords ? [initialLat, initialLng] : DEFAULT_CENTER;
+const mapStartZoom = hasInitialCoords && Number.isFinite(initialZoom) ? initialZoom : DEFAULT_ZOOM;
+
+/* ---- Map setup ---- */
+const topoUrl = "https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png";
+const orthoUrl = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const labelsUrl = "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}@2x.png";
+const topoLayer = L.tileLayer(topoUrl, { attribution: "&copy; Kartverket", maxZoom: 19 });
+const orthoLayer = L.tileLayer(orthoUrl, { attribution: "&copy; Esri, Maxar, Earthstar Geographics", maxZoom: 19 });
+const labelsLayer = L.tileLayer(labelsUrl, { subdomains: "abcd", attribution: "&copy; CartoDB", maxZoom: 19 });
+
+const map = L.map("map", { maxZoom: 19, zoomControl: false }).setView(mapStartCenter, mapStartZoom);
+L.control.zoom({ position: "bottomright" }).addTo(map);
+topoLayer.addTo(map);
+const solarMarkerIconUrl = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="41" viewBox="0 0 28 41">
+    <path fill="#ef4444" stroke="#ffffff" stroke-width="2" d="M14 1C7.373 1 2 6.373 2 13c0 10.084 12 27 12 27s12-16.916 12-27C26 6.373 20.627 1 14 1z"/>
+    <circle cx="14" cy="13" r="4.5" fill="#ffffff"/>
+  </svg>
+`)}`;
+L.Marker.prototype.options.icon = L.icon({
+  iconUrl: solarMarkerIconUrl,
+  iconSize: [28, 41],
+  iconAnchor: [14, 41],
+  popupAnchor: [0, -34],
+  tooltipAnchor: [16, -28]
+});
+
+let activeBaseLayer = "topo";
+const baseBtns = { topo: $("btn-topo"), ortho: $("btn-ortho") };
+
+function switchLayer(name) {
+  if (activeBaseLayer === name) return;
+  if (activeBaseLayer === "topo") map.removeLayer(topoLayer);
+  else { map.removeLayer(orthoLayer); map.removeLayer(labelsLayer); }
+  if (name === "topo") topoLayer.addTo(map);
+  else { orthoLayer.addTo(map); labelsLayer.addTo(map); }
+  baseBtns[activeBaseLayer].classList.remove("active");
+  baseBtns[name].classList.add("active");
+  activeBaseLayer = name;
+}
+baseBtns.topo.addEventListener("click", () => switchLayer("topo"));
+baseBtns.ortho.addEventListener("click", () => switchLayer("ortho"));
+
+/* ---- NVE overlay ---- */
+const NVE_CATEGORIES = [
+  { key: "kraftstasjon", label: "Kraftstasjon", layers: [1, 11] },
+  { key: "inntak",       label: "Inntak",       layers: [2, 12] },
+  { key: "utlop",        label: "Utløp",        layers: [3, 14] },
+  { key: "dam",          label: "Dam",           layers: [4, 5, 6, 15, 16, 17] },
+  { key: "vannvei",      label: "Vannvei",       layers: [7, 13] },
+  { key: "magasin",      label: "Magasin",       layers: [9, 18] },
+];
+const enabledCats = { kraftstasjon: true, inntak: true, utlop: true, dam: true, vannvei: true, magasin: true };
+
+const nveLayer = L.esri.dynamicMapLayer({ url: NVE_MAPSERVER, opacity: 0.7, useCors: true });
+nveLayer.addTo(map);
+
+function applyNveLayers() {
+  const active = NVE_CATEGORIES.filter(c => enabledCats[c.key]).flatMap(c => c.layers);
+  if (!active.length) { if (map.hasLayer(nveLayer)) map.removeLayer(nveLayer); return; }
+  if (!map.hasLayer(nveLayer)) nveLayer.addTo(map);
+  nveLayer.setLayers(active);
+}
+
+const layersPanel = $("layers-panel");
+const layersListEl = $("layers-list");
+const layersCountEl = $("layers-count");
+
+$("layers-btn").onclick = () => layersPanel.classList.toggle("open");
+
+function renderLayersList() {
+  layersListEl.innerHTML = NVE_CATEGORIES.map(c =>
+    `<li><button type="button" data-key="${c.key}">
+      <span class="check ${enabledCats[c.key] ? "on" : ""}"></span>
+      <span>${c.label}</span>
+    </button></li>`
+  ).join("");
+  layersListEl.querySelectorAll("button").forEach(btn => {
+    btn.onclick = () => { enabledCats[btn.dataset.key] = !enabledCats[btn.dataset.key]; applyNveLayers(); renderLayersList(); };
+  });
+  layersCountEl.textContent = NVE_CATEGORIES.filter(c => enabledCats[c.key]).length;
+}
+function setAll(v) { NVE_CATEGORIES.forEach(c => enabledCats[c.key] = v); applyNveLayers(); renderLayersList(); }
+$("layers-all").onclick = () => setAll(true);
+$("layers-none").onclick = () => setAll(false);
+renderLayersList();
+applyNveLayers();
+
+/* ---- Marker ---- */
+let marker = null;
+
+const PARENT_ORIGIN = location.origin;
+function updateCoords(lat, lng, name) {
+  window.parent.postMessage({
+    type: "hydroguide:solar-location",
+    detail: { lat: parseFloat(lat.toFixed(6)), lng: parseFloat(lng.toFixed(6)), name: name || searchInput.value || "", zoom: map.getZoom() }
+  }, PARENT_ORIGIN);
+}
+
+function placeMarker(lat, lng, fly, notify = true) {
+  if (marker) marker.setLatLng([lat, lng]);
+  else {
+    marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+    marker.on("dragend", () => { const p = marker.getLatLng(); updateCoords(p.lat, p.lng); });
+  }
+  if (notify) updateCoords(lat, lng);
+  if (fly) map.flyTo([lat, lng], Math.max(map.getZoom(), 13), { duration: 0.8 });
+}
+
+map.on("click", e => {
+  placeMarker(e.latlng.lat, e.latlng.lng, false);
+  searchInput.value = `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+});
+
+window.addEventListener("message", e => {
+  if (e.origin !== PARENT_ORIGIN) return;
+  const d = e.data;
+  if (d && d.type === "hydroguide:set-solar-location" && d.detail) {
+    const { lat, lng, name, zoom } = d.detail;
+    // notify=false: don't send coords back to parent (avoids infinite loop)
+    if (typeof lat === "number" && typeof lng === "number") {
+      // Use saved zoom instead of default 13
+      const targetZoom = typeof zoom === "number" ? zoom : Math.max(map.getZoom(), 13);
+      if (marker) marker.setLatLng([lat, lng]);
+      else {
+        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        marker.on("dragend", () => { const p = marker.getLatLng(); updateCoords(p.lat, p.lng); });
+      }
+      map.setView([lat, lng], targetZoom, { animate: false });
+    }
+    if (name) searchInput.value = name;
+  }
+});
+
+// Report zoom changes to parent
+map.on("zoomend", () => {
+  window.parent.postMessage({ type: "hydroguide:solar-map-zoom", zoom: map.getZoom() }, PARENT_ORIGIN);
+});
+
+// Close layers panel on outside click
+document.addEventListener("mousedown", e => {
+  if (!$("layers-wrap").contains(e.target)) layersPanel.classList.remove("open");
+});
+
+/* ---- Report height ---- */
+function reportHeight() {
+  window.parent.postMessage({ type: "hydroguide:solar-map-height", height: document.body.scrollHeight }, PARENT_ORIGIN);
+}
+new ResizeObserver(reportHeight).observe(document.body);
+reportHeight();
+
+/* ---- Search ---- */
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+async function fetchJson(url) { const r = await fetch(url); return r.ok ? r.json() : null; }
+
+async function searchAddress(q) {
+  const d = await fetchJson(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=10&utkoordsys=4326`);
+  const needle = q.trim().toLowerCase();
+  return (d?.adresser ?? [])
+    .filter(a => (a.adressetekst ?? "").toLowerCase().startsWith(needle))
+    .map(a => ({
+      display_name: `${a.adressetekst}, ${a.poststed ?? a.kommunenavn}`,
+      lat: a.representasjonspunkt?.lat, lon: a.representasjonspunkt?.lon, kind: "adresse",
+    }))
+    .filter(s => s.lat && s.lon);
+}
+
+const PLACE_ZOOM = {
+  "Fylke": 8, "Kommune": 10, "By": 12, "Tettsted": 13,
+  "Bygd": 14, "Grend": 14, "Gard": 15,
+  "Elv": 13, "Vann": 13, "Innsjø": 13,
+  "Fjell": 13, "Dal": 13, "Øy": 13,
+  "Bekk": 15, "Foss": 15,
+  "Seter/støl": 15, "Seter": 15, "Støl": 15,
+  "Industriområde": 14, "Bygning": 16,
+};
+
+async function searchPlace(q) {
+  const d = await fetchJson(`https://ws.geonorge.no/stedsnavn/v1/navn?sok=${encodeURIComponent(q)}*&treffPerSide=20&utkoordsys=4326`);
+  const needle = q.trim().toLowerCase();
+  const feats = (d?.navn ?? []).filter(n => n.representasjonspunkt?.nord && n.representasjonspunkt?.["øst"]);
+  const toItem = n => ({
+    display_name: `${n["skrivemåte"]} (${n.navneobjekttype}, ${
+      n.navneobjekttype === "Kommune" ? (n.fylker?.[0]?.fylkesnavn ?? "") : (n.kommuner?.[0]?.kommunenavn ?? "")
+    })`,
+    lat: n.representasjonspunkt.nord, lon: n.representasjonspunkt["øst"],
+    kind: "stad", placeType: n.navneobjekttype,
+  });
+  const kommuner = feats.filter(n => n.navneobjekttype === "Kommune" && (n.kommuner?.[0]?.kommunenavn ?? "").toLowerCase().startsWith(needle));
+  if (kommuner.length) {
+    const seen = new Set();
+    return kommuner.filter(n => { const k = (n.kommuner?.[0]?.kommunenavn ?? "").toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }).map(toItem);
+  }
+  const byName = new Map();
+  for (const n of feats) { const key = (n["skrivemåte"] ?? "").toLowerCase(); if (!key || byName.has(key)) continue; byName.set(key, n); }
+  return [...byName.values()].map(toItem);
+}
+
+/* NVE kraftverk search */
+const normalize = s => (s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+let nvePlantsCache = null;
+async function loadNvePlants() {
+  if (nvePlantsCache) return nvePlantsCache;
+  const d = await fetchJson(`${NVE_MAPSERVER}/1/query?where=1%3D1&outFields=vannkraftStasjonNavn,kommuneNavn&f=json&returnGeometry=true&outSR=4326&resultRecordCount=2000`);
+  nvePlantsCache = (d?.features ?? []).filter(f => f.geometry?.x && f.geometry?.y).map(f => {
+    const a = f.attributes ?? {}, name = a.vannkraftStasjonNavn ?? "";
+    return { lat: f.geometry.y, lon: f.geometry.x, nameLc: normalize(name), kommuneLc: normalize(a.kommuneNavn ?? ""),
+      display_name: `${name} kraftverk (${a.kommuneNavn ?? ""})`, kind: "kraftverk" };
+  });
+  return nvePlantsCache;
+}
+async function searchNveHydro(q) {
+  if (q.length < 2) return [];
+  const plants = await loadNvePlants();
+  const needle = normalize(q);
+  return plants.map(p => ({ p, idx: `${p.nameLc} kraftverk ${p.nameLc} ${p.kommuneLc}`.indexOf(needle) }))
+    .filter(x => x.idx >= 0).sort((a, b) => a.idx - b.idx || a.p.nameLc.length - b.p.nameLc.length)
+    .slice(0, 8).map(x => x.p);
+}
+
+/* Coordinate parsing — supports "60.39, 5.32" and "60.39 5.32" */
+function parseCoords(q) {
+  const m = q.trim().match(/^(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)$/);
+  if (!m) return null;
+  const lat = parseFloat(m[1]), lon = parseFloat(m[2]);
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+  return { lat, lon };
+}
+
+async function searchAll(query) {
+  const q = query.trim();
+  if (q.length < 2) return [];
+
+  // Check for coordinate input first
+  const coords = parseCoords(q);
+  if (coords) return [{ display_name: `${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}`, lat: coords.lat, lon: coords.lon, kind: "koordinat" }];
+
+  const [nve, adresse, stad] = await Promise.all([
+    searchNveHydro(q).catch(() => []),
+    searchAddress(q).catch(() => []),
+    searchPlace(q).catch(() => []),
+  ]);
+  return [...stad.slice(0, 3), ...adresse.slice(0, 3), ...nve].slice(0, 10);
+}
+
+/* ---- Search UI ---- */
+const searchInput = $("search-input");
+const suggestionsEl = $("suggestions");
+const searchWrap = $("search-wrap");
+let searchTimer, currentSuggestions = [];
+
+if (hasInitialCoords) {
+  placeMarker(initialLat, initialLng, false, false);
+  if (initialName) searchInput.value = initialName;
+}
+
+searchInput.addEventListener("input", e => {
+  clearTimeout(searchTimer);
+  const v = e.target.value.trim();
+  if (v.length < 2) return renderSuggestions([]);
+  // Instant for coordinates, debounced for text search
+  const coords = parseCoords(v);
+  if (coords) { renderSuggestions([{ display_name: `${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}`, lat: coords.lat, lon: coords.lon, kind: "koordinat" }]); return; }
+  searchTimer = setTimeout(async () => {
+    searchWrap.classList.add("searching");
+    renderSuggestions(await searchAll(e.target.value));
+    searchWrap.classList.remove("searching");
+  }, 300);
+});
+
+searchInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" && currentSuggestions.length) selectSuggestion(currentSuggestions[0]);
+});
+
+document.addEventListener("mousedown", e => {
+  if (!searchWrap.contains(e.target)) renderSuggestions([]);
+  if (!$("layers-wrap").contains(e.target)) layersPanel.classList.remove("open");
+});
+
+function renderSuggestions(list) {
+  currentSuggestions = list;
+  if (!list.length) { suggestionsEl.classList.remove("open"); suggestionsEl.innerHTML = ""; return; }
+  const labels = { adresse: "Adresse", stad: "Stad", kraftverk: "Kraftverk", koordinat: "Koordinat" };
+  const kindCls = { adresse: "adresse", stad: "stad", kraftverk: "kraftverk", koordinat: "stad" };
+  suggestionsEl.innerHTML = list.map((s, i) =>
+    `<li><button type="button" data-idx="${i}">
+      <span class="kind ${kindCls[s.kind]}">${labels[s.kind]}</span>
+      <span class="sugg-name">${escapeHtml(s.display_name)}</span>
+    </button></li>`
+  ).join("");
+  suggestionsEl.classList.add("open");
+  suggestionsEl.querySelectorAll("button").forEach(btn => {
+    btn.onclick = () => selectSuggestion(currentSuggestions[+btn.dataset.idx]);
+  });
+}
+
+function selectSuggestion(s) {
+  const lat = +Number(s.lat).toFixed(6);
+  const lng = +Number(s.lon).toFixed(6);
+  const name = s.display_name.split(",").slice(0, 3).join(", ");
+  searchInput.value = name;
+  renderSuggestions([]);
+
+  let zoom = 14;
+  if (s.kind === "adresse") zoom = 17;
+  else if (s.kind === "stad") zoom = PLACE_ZOOM[s.placeType] ?? 13;
+  else if (s.kind === "koordinat") zoom = 15;
+
+  placeMarker(lat, lng, false);
+  map.flyTo([lat, lng], zoom, { duration: 0.4 });
+}
+</script>
+</body>
+</html>

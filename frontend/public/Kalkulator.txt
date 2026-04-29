@@ -1,0 +1,94 @@
+{
+  "engineMode": "standard",
+  "name": "Markåni kraftverk — Forenkla",
+  "location": "Markåni kraftverk (Vaksdal)",
+  "nveId": 2034,
+  "systemparametere": {
+    "4gCoverage": true,
+    "nbIotCoverage": true,
+    "lineOfSightUnder15km": true,
+    "inspectionsPerYear": 3,
+    "hasBackupSource": true,
+    "batteryMode": "ah",
+    "batteryValue": 600
+  },
+  "sol": {
+    "panelPowerWp": 425,
+    "panelCount": 2,
+    "systemEfficiency": 0.8,
+    "lifetimeYears": 10
+  },
+  "batteri": {
+    "nominalVoltage": 12.8,
+    "maxDepthOfDischarge": 0.8
+  },
+  "brenselcelle": {
+    "purchaseCost": 88000,
+    "powerW": 42,
+    "fuelConsumptionPerKWh": 0.9,
+    "fuelPrice": 65,
+    "lifetime": 6500,
+    "annualMaintenance": 100
+  },
+  "diesel": {
+    "purchaseCost": 35000,
+    "powerW": 3500,
+    "fuelConsumptionPerKWh": 0.5,
+    "fuelPrice": 30,
+    "lifetime": 43800,
+    "annualMaintenance": 6500
+  },
+  "andre": {
+    "co2Methanol": 1.088,
+    "co2Diesel": 2.68,
+    "evaluationHorizonYears": 10
+  },
+  "solinnstraling": {
+    "jan": 0.11,
+    "feb": 1.02,
+    "mar": 21.44,
+    "apr": 61.44,
+    "mai": 79.35,
+    "jun": 79.3,
+    "jul": 80.63,
+    "aug": 71.42,
+    "sep": 37.71,
+    "okt": 3.06,
+    "nov": 0.26,
+    "des": 0.02
+  },
+  "effektbudsjett": {
+    "displayUnit": "wh",
+    "useRuntimeHoursPerDay": true,
+    "showPurchaseCost": false
+  },
+  "siktlinjeRadio": {
+    "pointA": {
+      "coordinate": "60.61540, 5.80658",
+      "antennaHeight": 10,
+      "heightScale": "AGL"
+    },
+    "pointB": {
+      "coordinate": "60.62914, 5.81839",
+      "antennaHeight": 10,
+      "heightScale": "AGL"
+    },
+    "frequencyMHz": 868.5,
+    "fresnelFactor": 0.6,
+    "kFactor": "4/3",
+    "polarization": "horizontal",
+    "rainFactor": 25
+  },
+  "utstyr": [
+    { "aktiv": true, "namn": "Victron BMS", "innkjopsprisKr": "", "effektW": 0.1, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "VICTRON Lynx Distributor", "innkjopsprisKr": "", "effektW": 2.4, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "VICTRON Orion TR Omformer DC-DC", "innkjopsprisKr": "", "effektW": 1.2, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Victron Cerbo GX - MK2", "innkjopsprisKr": "", "effektW": 2.8, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "VICTRON SmartSolar MPPT 250/100", "innkjopsprisKr": "", "effektW": 0.042, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Siemens FMS5020", "innkjopsprisKr": "", "effektW": 6.45, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Teltonika RUT956", "innkjopsprisKr": "", "effektW": 7, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Efoy Pro 1800", "innkjopsprisKr": "", "effektW": 0.5, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Efoy Fuel Manager FM4", "innkjopsprisKr": "", "effektW": 0.0374, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Dataloggar", "innkjopsprisKr": "", "effektW": 7, "timarPerDag": 24 }
+  ]
+}

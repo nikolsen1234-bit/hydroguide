@@ -59,8 +59,23 @@ function parseArgs(args) {
   return parsed;
 }
 
-function sha256Hex(text) {
-  return crypto.createHash("sha256").update(text, "utf8").digest("hex");
+const API_KEY_HASH_ITERATIONS = 310000;
+const API_KEY_HASH_KEYLEN = 32;
+const API_KEY_HASH_DIGEST = "sha512";
+
+function deriveApiKeyHash(text) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto
+    .pbkdf2Sync(text, salt, API_KEY_HASH_ITERATIONS, API_KEY_HASH_KEYLEN, API_KEY_HASH_DIGEST)
+    .toString("hex");
+
+  return {
+    hash,
+    salt,
+    iterations: API_KEY_HASH_ITERATIONS,
+    keylen: API_KEY_HASH_KEYLEN,
+    digest: API_KEY_HASH_DIGEST
+  };
 }
 
 function parseBooleanArg(value, fieldName) {
@@ -170,14 +185,20 @@ function createKey(args, namespaceId, locationArgs) {
   const windowMs = parseInt(args["rate-window-ms"] ?? "60000", 10);
 
   const rawKey = generateApiKey();
-  const keyHash = sha256Hex(rawKey);
+  const keyHashData = deriveApiKeyHash(rawKey);
+  const keyHash = keyHashData.hash;
 
   const record = {
     name,
     tier,
     rateLimit: { max: rateMax, windowMs },
     createdAt: new Date().toISOString(),
-    active: true
+    active: true,
+    hashAlgorithm: "pbkdf2",
+    hashSalt: keyHashData.salt,
+    hashIterations: keyHashData.iterations,
+    hashKeyLength: keyHashData.keylen,
+    hashDigest: keyHashData.digest
   };
 
   wranglerPut(`key:${keyHash}`, JSON.stringify(record), namespaceId, locationArgs);

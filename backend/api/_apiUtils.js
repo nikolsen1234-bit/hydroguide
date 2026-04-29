@@ -25,10 +25,19 @@ const CORS_HEADERS = {
 
 const ALLOWED_ORIGINS = new Set(["https://hydroguide.no", "https://www.hydroguide.no"]);
 
+// API responses are JSON only — they should never load scripts, frames, or
+// other resources. The default-src 'none' base denies everything and we add
+// back only what JSON error pages legitimately need (none, in practice).
+// frame-ancestors 'none' prevents the API responses from being embedded in any
+// frame, which doubles up with x-frame-options for older browsers.
+const API_CSP =
+  "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+
 const SECURITY_HEADERS = {
   "referrer-policy": "same-origin",
   "x-content-type-options": "nosniff",
-  "x-frame-options": "DENY"
+  "x-frame-options": "DENY",
+  "content-security-policy": API_CSP
 };
 
 // ---------------------------------------------------------------------------

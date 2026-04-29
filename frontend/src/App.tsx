@@ -147,7 +147,7 @@ function SidebarContent({ onNavigate, titleId }: { onNavigate?: () => void; titl
     <>
       <div className="shrink-0 flex flex-col items-center py-3">
         <Link to="/" aria-label={t("app.goToWelcome")} className="flex w-full justify-center">
-          <HydroGuideLogo className="block h-auto w-full max-w-[200px] object-contain" />
+          <HydroGuideLogo />
         </Link>
         {titleId ? <p id={titleId} className="sr-only">HydroGuide</p> : null}
       </div>

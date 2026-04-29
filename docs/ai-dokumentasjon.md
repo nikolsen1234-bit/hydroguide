@@ -11,11 +11,30 @@ Alt KI-relatert i HydroGuide — rapportgenerering (Cloudflare), minstevannføri
 ### Flyt
 
 ```
-Bruker fyller ut skjema → Frontend bygger payload → POST /api/polish-report
-→ Pages Function validerer eksportkode + rate-limiter
-→ Service binding til AI Worker (hydroguide-w-r2)
-→ Worker henter evidens → bygger prompt → kaller modell → returnerer tekst
-→ Frontend viser rapporten
+  Frontend                              Pages Functions          AI Worker (hydroguide-w-r2)
+     │                                       │                         │
+     │  POST /api/polish-report              │                         │
+     │  { tilgangskodeHash, prosjekt, ... }  │                         │
+     ▼                                       │                         │
+     ─────────────────────────────────────►   │                         │
+                                             │                         │
+                                    ┌────────┴────────┐                │
+                                    │ polish-report.js │                │
+                                    │ • rate limit     │                │
+                                    │ • valider kode   │                │
+                                    │ • service-binding ├──────────────►│
+                                    └─────────────────┘                │
+                                                              ┌───────┴────────────────┐
+                                                              │ 1. Bygg query          │
+                                                              │ 2. Hent evidens:       │
+                                                              │    AutoRAG / KV / Vec. │
+                                                              │ 3. Bygg prompt         │
+                                                              │ 4. OpenAI via Gateway  │
+                                                              │    (cache + retry)     │
+                                                              │ 5. Self-feedback       │
+                                                              │ 6. Return { text }     │
+                                                              └───────┬────────────────┘
+     ◄────────────────────────────────────────────────────────────────┘
 ```
 
 ### Retrieval

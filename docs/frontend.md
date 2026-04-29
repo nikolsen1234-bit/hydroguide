@@ -1,72 +1,86 @@
-# Frontend
+# Frontend-dokumentasjon
 
 Oppdatert: 2026-04-29
 
-React/Vite SPA som kjører på Cloudflare Pages. TypeScript, Tailwind CSS, Leaflet for kart.
+React/Vite SPA på Cloudflare Pages. TypeScript, Tailwind CSS, Leaflet for kart.
+
+---
 
 ## Sider
 
 | Side | Rute | Beskrivelse |
 |------|------|-------------|
 | `WelcomePage` | `/` | Landingsside |
-| `MainPage` | `/system` | Hovedkonfigurasjon — spørsmålsbasert wizard for anleggsoppsett |
-| `SystemPage` | `/system/results` | Systemresultater og dimensjonering |
-| `AnalysisPage` | `/analysis` | Solstråling, horisontprofil, solposisjon |
-| `BudgetPage` | `/budget` | Energibudsjett og batteriautonomi |
+| `MainPage` | `/system` | Spørsmålsbasert wizard (Q1–Q9) for klassifisering av inntak |
+| `SystemPage` | `/system/results` | Systemkonfigurasjon: sol, batteri, backup, utstyrslast |
+| `AnalysisPage` | `/analysis` | Detaljert energianalyse med timesoppløsning og pålitelighet |
+| `BudgetPage` | `/budget` | Utstyrsbudsjett — effekt og energiforbruk per enhet |
 | `OverviewPage` | `/overview` | Sammendrag av konfigurasjon |
-| `SiktlinjeRadioPage` | `/siktlinje` | Radiolink-beregning med kart |
-| `DocumentationPage` | `/docs` | NVE-dokumentasjon og referanser |
+| `SiktlinjeRadioPage` | `/siktlinje` | Radiolink-beregning med Fresnel-sone og terrengprofil |
 | `ApiPage` | `/api` | Swagger UI iframe (`/api/docs?ui`) |
-| `ContactPage` | `/contact` | Kontaktinformasjon |
 
-## Komponenter
+---
 
-| Komponent | Funksjon |
-|-----------|----------|
-| `FormFields` | Gjenbrukbare input-felt for wizard |
-| `WorkspaceSection` / `WorkspaceHeader` / `WorkspaceActions` | Layout-rammeverk for arbeidsområder |
-| `HorizonChart` | SVG-chart for horisontprofil |
-| `PanoramicHorizon` | 360°-panoramavisning av horisont |
-| `SolarPositionChart` | Solbane gjennom året |
-| `ReliabilityCharts` | Pålitelighets- og autonomi-grafer |
-| `SystemCharts` | Systemdimensjonering-visualisering |
-| `NveStandaloneMap` | NVE-kart i iframe (vannkraftverk) |
-| `RadioLinkMap` | Leaflet-kart for siktlinjeberegning |
-| `ImportDropZone` | Drag-and-drop for filimport |
-| `BuildInfoBadge` | Viser build-info (commit, timestamp) |
+## Spørsmål og anbefaling (Q1–Q9)
 
-## Beregninger (lib/)
+Brukeren svarer på 9 spørsmål om inntaket (anleggstype, vannføring, slippmetode, sediment/is, fiskepassasje, bypass, måleprofil, kontroll). Basert på svarene klassifiserer `recommendation.ts` anlegget og anbefaler hovedløsning, kontrollmetode og konfidensgrad.
 
-| Modul | Ansvar |
-|-------|--------|
-| `solarEngine` | Solposisjon, irradians, timesoppløsning |
-| `batterySimulator` | Batteriautonomi og last-simulering |
-| `horizonProfile` | Beregning og lagring av horisontprofil |
-| `horizonStore` | Persistent lagring av horisontdata |
-| `metClient` | Henting av klimadata fra MET API |
+Vannføringsgrenser: liten ≤30 l/s, middels ≤120 l/s, stor >120 l/s.
 
-## Internasjonalisering (i18n/)
+---
 
-Støtter norsk (nynorsk) og engelsk. Språk velges i UI, strings i `nn.ts` og `en.ts`. `dynamicStrings.ts` genererer kontekstavhengige labels basert på brukerens konfigurasjon.
+## Beregninger
+
+### Moduser
+
+| Modus | Beskrivelse |
+|-------|-------------|
+| Standard | Månedlig modell, ingen eksterne kall |
+| Detaljert | Timesberegning med PVGIS-data, batterisimulering, pålitelighetsanalyse |
+
+### Solstråling (solarEngine.ts)
+
+TypeScript-port av PVGIS 6.0 (EUPL-1.2). Kjører i nettleseren. Beregner timesvis GTI (Global Tilted Irradiance) for hele året med solposisjon, horisontskygge, AOI-tap, modultemperatur og PV-effektivitet.
+
+Henter klimadata (GHI, DHI, temperatur, vind) fra EU JRC PVGIS 5.3 via `metClient.ts`.
+
+### Horisontprofil (horizonProfile.ts)
+
+Henter terrengdata fra Kartverkets 1m DTM direkte fra nettleseren. 360 retninger × 40 avstander. Brukes av solmotoren for å beregne skyggetap gjennom dagen.
+
+### Batterisimulering (batterySimulator.ts)
+
+Simulerer 8760 timer SOC (state of charge) for off-grid sol+batteri. Tracker underskudd, overskudd, backup-bruk (brenselcelle/diesel) og drivstofforbruk.
+
+### Energibalanse (systemResults.ts)
+
+Summerer utstyrsbudsjett (Wh/dag), beregner batterikapasitet, månedlig sol vs. last, årstotaler (kWh, drivstoff, CO₂) og TCO-sammenligning mellom backup-kilder.
+
+### Radiolink (radioLink.ts)
+
+Siktlinje- og Fresnel-sone-beregning mellom to punkter for trådløs telemetri. Henter terrengprofil fra Kartverket.
+
+---
 
 ## Standalone-kart
 
-To HTML-filer i `public/` som kjører uavhengig av React-appen:
+**nve-kart-standalone.html** — vannkraftverk med minstevannføring-data, Wikipedia-bilder, konsesjonslenker (Leaflet + NVE ArcGIS)
 
-- **nve-kart-standalone.html** — NVE-vannkraftverk med minstevannføring-data, Wikipedia-bilder, konsesjonslenker. Bruker Leaflet + NVE ArcGIS.
-- **solar-location-map.html** — Lokasjonspicker for solenergianlegg. Kommuniserer med React via `postMessage`.
+**solar-location-map.html** — lokasjonspicker, kommuniserer med React via `postMessage`
 
-Begge har egne CSP-regler i `_middleware.js` fordi de laster tiles fra NVE og Kartverket.
+---
+
+## Rapport
+
+`report.ts` genererer HTML-rapport med søylediagram, kostnadssammenligninger, anbefalinger og KI-polert tekst fra `/api/polish-report`.
+
+---
 
 ## Build
 
 ```bash
 cd frontend
-npm install          # dependencies + git hooks (prepare-script)
+npm install          # dependencies + git hooks
 npm run dev          # Vite dev server (localhost:5173)
-npm run build        # produksjons-build til dist/
 npm run build:test   # build + kopier til test-deploy/
-npm run check:knip   # finn unused exports
 ```
-
-`vite.config.ts` setter opp dev-proxyer for `/api/*`-ruter mot lokal wrangler eller fallback til produksjon.

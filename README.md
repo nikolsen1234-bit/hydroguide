@@ -46,9 +46,11 @@ Se [KI-dokumentasjon](docs/ki-dokumentasjon.md) for detaljer om pipeline-arkitek
 
 ## Dokumentasjon
 
-- [KI-dokumentasjon](docs/ki-dokumentasjon.md) — rapportgenerering og minstevannføring-pipeline
-- [Cloudflare-dokumentasjon](docs/cloudflare-dokumentasjon.md) — infrastruktur, endepunkter og deploy
-- [Systemdokumentasjon](docs/system-dokumentasjon.md) — deploy-pakke og build-prosess
+- [Arkitektur](docs/arkitektur.md) — oversikt over hele systemet
+- [Frontend](docs/frontend.md) — React-app, sider, komponenter, build
+- [Cloudflare](docs/cloudflare-dokumentasjon.md) — workers, bindings, storage, deploy, sikkerhet
+- [AI](docs/ai-dokumentasjon.md) — rapportgenerering, minstevannføring-pipeline, OCR
+- [Backend](docs/backend-dokumentasjon.md) — API-logikk, beregningskjerne, data, skript
 
 ## Dependencies
 

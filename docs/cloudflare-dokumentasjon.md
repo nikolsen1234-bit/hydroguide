@@ -34,6 +34,51 @@ hydroguide.no
   generation), egne hemmeligheter, og et annet livssyklusbehov enn det vanlige
   API-et.
 
+## Systemoversikt
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Brukerens nettleser                                                │
+│  hydroguide.no (React SPA)                                          │
+└────────────────┬────────────────────────────────────────────────────┘
+                 │
+       ┌─────────▼─────────────────────────────────────────────┐
+       │  Cloudflare Edge                                      │
+       │                                                       │
+       │  ┌────────────────────┐  ┌─────────────────────────┐  │
+       │  │ hydroguide-api     │  │ Pages Functions         │  │
+       │  │ (Worker)           │  │                         │  │
+       │  │                    │  │ /api/polish-report ─────┼──┐
+       │  │ /api/nveid         │  │                         │  │
+       │  │ /api/calculations  │  └─────────────────────────┘  │
+       │  │ /api/pvgis-tmy     │                               │
+       │  │ /api/docs          │  ┌─────────────────────────┐  │
+       │  │ /api/health        │  │ hydroguide-w-r2         │◄─┘
+       │  │ ...                │  │ (AI Worker)             │  │
+       │  └────────┬───────────┘  │ • RAG mot NVE-korpus    │  │
+       │           │              │ • OpenAI / Workers AI   │  │
+       │           │              └───────────┬─────────────┘  │
+       │           │                          │                │
+       │           ▼                          ▼                │
+       │  ┌──────────────────────────────────────────────────┐ │
+       │  │ Lagring                                          │ │
+       │  │ KV (API_KEYS, PROMPT_KV)                         │ │
+       │  │ R2 (api-data, korpus, assets)                    │ │
+       │  │ AI Gateway (caching/retry mot OpenAI)            │ │
+       │  └──────────────────────────────────────────────────┘ │
+       └───────────────────────────────────────────────────────┘
+
+       ┌───────────────────────────────────────────────────────┐
+       │  Lokalt (utviklermaskin)                              │
+       │                                                       │
+       │  Minstevannføring-pipeline                            │
+       │  NVE → PDF → OpenDataLoader → Ollama → JSON           │
+       │                                                       │
+       │  Output: backend/data/minimumflow.json                │
+       │  Lastes opp til R2 → serveres via /api/nveid          │
+       └───────────────────────────────────────────────────────┘
+```
+
 ## Endepunkter
 
 ### Offentlig API

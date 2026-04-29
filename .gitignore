@@ -60,6 +60,8 @@ test_*.py
 tools/minstevann/tests.py
 .ai/scripts/agent-track.test.mjs
 !backend/api/_apiUtils.test.mjs
+!backend/api/keys/index.test.mjs
+!backend/api-worker/wrangler-routes.test.mjs
 !frontend/scripts/manage-api-keys.test.mjs
 
 # Python virtual environments

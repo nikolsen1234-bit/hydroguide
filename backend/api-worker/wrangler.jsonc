@@ -3,7 +3,7 @@
   "name": "hydroguide-api",
   "main": "./index.js",
   "compatibility_date": "2026-04-29",
-  "workers_dev": true,
+  "workers_dev": false,
   "r2_buckets": [
     {
       "binding": "MINIMUMFLOW_R2",

@@ -218,12 +218,14 @@ function listKeys(args, namespaceId, locationArgs) {
 
   for (const entry of apiKeys) {
     const hash = entry.name.replace("key:", "");
+    const maskedHash =
+      hash.length > 10 ? `${hash.slice(0, 6)}...${hash.slice(-4)}` : "[redacted]";
     try {
       const value = wranglerGet(`key:${hash}`, namespaceId, locationArgs);
       const record = JSON.parse(value);
       const status = record.active === false ? "REVOKED" : "ACTIVE";
       console.log(`  [${status}] ${record.name ?? "unknown"}`);
-      console.log(`    Hash:       ${hash}`);
+      console.log(`    Hash:       ${maskedHash}`);
       console.log(`    Tier:       ${record.tier ?? "free"}`);
       console.log(`    Rate limit: ${record.rateLimit?.max ?? "?"} / ${(record.rateLimit?.windowMs ?? 60000) / 1000}s`);
       console.log(`    Created:    ${record.createdAt ?? "?"}`);

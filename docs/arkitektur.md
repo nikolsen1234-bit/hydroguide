@@ -73,20 +73,20 @@ To KI-flyter: én lokal som bygger datagrunnlaget, én i sky som genererer rappo
   │                                                │              │
   │                                                ▼              │
   │                         ┌─────────────────────────────────┐   │
-  │                         │ Filtrer relevante setninger      │  │
-  │                         │ (minstevann / slipp-keywords)    │  │
+  │                         │ Filtrer relevante setninger     │   │
+  │                         │ (minstevann / slipp-keywords)   │   │
   │                         └──────────────┬──────────────────┘   │
   │                                        │                      │
   │                                        ▼                      │
   │                         ┌─────────────────────────────────┐   │
   │                         │ Ollama (gemma4:e4b-it-q4_K_M)   │   │
-  │                         │ → strukturerte claims (JSON)     │  │
+  │                         │ → strukturerte claims (JSON)    │   │
   │                         └──────────────┬──────────────────┘   │
   │                                        │                      │
   │                                        ▼                      │
   │                         ┌─────────────────────────────────┐   │
-  │                         │ Assembler til NVEID-format       │  │
-  │                         │ (sommer/vinter, l/s, periode)    │  │
+  │                         │ Assembler til NVEID-format      │   │
+  │                         │ (sommer/vinter, l/s, periode)   │   │
   │                         └──────────────┬──────────────────┘   │
   │                                        │                      │
   │                                        ▼                      │
@@ -116,15 +116,15 @@ To KI-flyter: én lokal som bygger datagrunnlaget, én i sky som genererer rappo
   │  • service-binding  ┼──────────────────────────►│
   └─────────────────────┘                           │
                                 ┌───────────────────┴──────────────┐
-                                │ 1. Bygg query fra brukerens svar  │
-                                │ 2. Hent evidens:                  │
-                                │    AutoRAG / KV / Vectorize       │
-                                │ 3. Bygg prompt med evidens        │
-                                │ 4. OpenAI via AI Gateway          │
-                                │    (cache + retry)                │
-                                │ 5. Self-feedback: verifiser       │
-                                │    at fakta matcher evidens       │
-                                │ 6. Returner { text }              │
+                                │ 1. Bygg query fra brukerens svar │
+                                │ 2. Hent evidens:                 │
+                                │    AutoRAG / KV / Vectorize      │
+                                │ 3. Bygg prompt med evidens       │
+                                │ 4. OpenAI via AI Gateway         │
+                                │    (cache + retry)               │
+                                │ 5. Self-feedback: verifiser      │
+                                │    at fakta matcher evidens      │
+                                │ 6. Returner { text }             │
                                 └───────────────────┬──────────────┘
                                                     │
      ◄──────────────────────────────────────────────┘

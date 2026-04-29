@@ -30,6 +30,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 // ---------------------------------------------------------------------------
 // Config — set your KV namespace ID here or pass --namespace-id
@@ -59,22 +60,30 @@ function parseArgs(args) {
   return parsed;
 }
 
-const API_KEY_HASH_ITERATIONS = 310000;
-const API_KEY_HASH_KEYLEN = 32;
-const API_KEY_HASH_DIGEST = "sha512";
+export function sha256Hex(text) {
+  return crypto.createHash("sha256").update(text, "utf8").digest("hex");
+}
 
-function deriveApiKeyHash(text) {
-  const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto
-    .pbkdf2Sync(text, salt, API_KEY_HASH_ITERATIONS, API_KEY_HASH_KEYLEN, API_KEY_HASH_DIGEST)
-    .toString("hex");
+export function hmacSha256Hex(text) {
+  const secret = process.env.API_KEY_HASH_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("API_KEY_HASH_SECRET must be set to at least 32 characters.");
+  }
+  return crypto.createHmac("sha256", secret).update(text, "utf8").digest("hex");
+}
 
+export function createApiKeyRecord(rawKey, { name, tier, rateLimit, createdAt = new Date().toISOString() }) {
   return {
-    hash,
-    salt,
-    iterations: API_KEY_HASH_ITERATIONS,
-    keylen: API_KEY_HASH_KEYLEN,
-    digest: API_KEY_HASH_DIGEST
+    keyHash: sha256Hex(rawKey),
+    record: {
+      name,
+      tier,
+      rateLimit,
+      createdAt,
+      active: true,
+      hashAlgorithm: "hmac-sha256",
+      hashDigest: hmacSha256Hex(rawKey)
+    }
   };
 }
 
@@ -185,21 +194,12 @@ function createKey(args, namespaceId, locationArgs) {
   const windowMs = parseInt(args["rate-window-ms"] ?? "60000", 10);
 
   const rawKey = generateApiKey();
-  const keyHashData = deriveApiKeyHash(rawKey);
-  const keyHash = keyHashData.hash;
-
-  const record = {
+  const { keyHash, record } = createApiKeyRecord(rawKey, {
     name,
     tier,
     rateLimit: { max: rateMax, windowMs },
-    createdAt: new Date().toISOString(),
-    active: true,
-    hashAlgorithm: "pbkdf2",
-    hashSalt: keyHashData.salt,
-    hashIterations: keyHashData.iterations,
-    hashKeyLength: keyHashData.keylen,
-    hashDigest: keyHashData.digest
-  };
+    createdAt: new Date().toISOString()
+  });
 
   wranglerPut(`key:${keyHash}`, JSON.stringify(record), namespaceId, locationArgs);
 
@@ -353,40 +353,42 @@ function deleteKey(args, namespaceId, locationArgs) {
 // Main
 // ---------------------------------------------------------------------------
 
-const args = parseArgs(process.argv.slice(2));
-const command = args._positional[0];
-const namespaceId = args["namespace-id"] ?? DEFAULT_KV_NAMESPACE_ID;
-const locationArgs = resolveLocationArgs(args);
+function main(argv = process.argv.slice(2)) {
+  const args = parseArgs(argv);
+  const command = args._positional[0];
+  const namespaceId = args["namespace-id"] ?? DEFAULT_KV_NAMESPACE_ID;
+  const locationArgs = resolveLocationArgs(args);
 
-if (!namespaceId) {
-  console.error(
-    "Error: KV namespace ID is required.\n" +
-    "  Either set KV_NAMESPACE_ID env var, edit DEFAULT_KV_NAMESPACE_ID in this script,\n" +
-    "  or pass --namespace-id <id>.\n\n" +
-    "  To create a namespace:\n" +
-    "    npx wrangler kv namespace create API_KEYS"
-  );
-  process.exit(1);
-}
+  if (!namespaceId) {
+    console.error(
+      "Error: KV namespace ID is required.\n" +
+      "  Either set KV_NAMESPACE_ID env var, edit DEFAULT_KV_NAMESPACE_ID in this script,\n" +
+      "  or pass --namespace-id <id>.\n\n" +
+      "  API_KEY_HASH_SECRET must also match the Worker secret of the same name.\n\n" +
+      "  To create a namespace:\n" +
+      "    npx wrangler kv namespace create API_KEYS"
+    );
+    process.exit(1);
+  }
 
-switch (command) {
-  case "create":
-    createKey(args, namespaceId, locationArgs);
-    break;
-  case "list":
-    listKeys(args, namespaceId, locationArgs);
-    break;
-  case "update":
-    updateKey(args, namespaceId, locationArgs);
-    break;
-  case "revoke":
-    revokeKey(args, namespaceId, locationArgs);
-    break;
-  case "delete":
-    deleteKey(args, namespaceId, locationArgs);
-    break;
-  default:
-    console.log(`
+  switch (command) {
+    case "create":
+      createKey(args, namespaceId, locationArgs);
+      break;
+    case "list":
+      listKeys(args, namespaceId, locationArgs);
+      break;
+    case "update":
+      updateKey(args, namespaceId, locationArgs);
+      break;
+    case "revoke":
+      revokeKey(args, namespaceId, locationArgs);
+      break;
+    case "delete":
+      deleteKey(args, namespaceId, locationArgs);
+      break;
+    default:
+      console.log(`
 HydroGuide API Key Management
 
 Usage:
@@ -404,6 +406,14 @@ Options:
   --rate-window-ms <ms>  Rate limit window in ms (default: 60000)
   --active <bool>        true or false (update only)
   --local                Use local Wrangler KV state instead of remote Cloudflare KV
+
+Environment:
+  API_KEY_HASH_SECRET    Required for create. Must match the Worker secret.
 `);
-    break;
+      break;
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
 }

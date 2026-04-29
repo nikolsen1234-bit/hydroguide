@@ -59,6 +59,8 @@ test_*.py
 *_test.py
 tools/minstevann/tests.py
 .ai/scripts/agent-track.test.mjs
+!backend/api/_apiUtils.test.mjs
+!frontend/scripts/manage-api-keys.test.mjs
 
 # Python virtual environments
 .venv/

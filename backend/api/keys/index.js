@@ -15,6 +15,7 @@ import {
   authenticateRequest,
   createRestrictedApiResponse,
   createErrorResponse,
+  createApiKeyRecord,
   sha256Hex,
   checkAdminRateLimit,
   handleRestrictedCorsOptions,
@@ -68,21 +69,28 @@ async function handleRotate(request, env) {
   if (!oldRaw) return createErrorResponse("Key not found.", 404);
 
   const oldRecord = JSON.parse(oldRaw);
+  const newKey = generateRawKey();
+  let newHash;
+  let newRecord;
+  try {
+    ({ keyHash: newHash, record: newRecord } = await createApiKeyRecord(newKey, {
+      name: oldRecord.name,
+      tier: oldRecord.tier,
+      rateLimit: oldRecord.rateLimit,
+      createdAt: new Date().toISOString(),
+      env
+    }));
+  } catch {
+    return createErrorResponse("API key hashing is not configured.", 503);
+  }
+
+  newRecord.rotatedFrom = oldHash.slice(0, 12);
+  await kv.put(`key:${newHash}`, JSON.stringify(newRecord));
+
   oldRecord.active = false;
   oldRecord.revokedAt = new Date().toISOString();
   oldRecord.revokedBy = "self-rotate";
   await kv.put(`key:${oldHash}`, JSON.stringify(oldRecord));
-
-  const newKey = generateRawKey();
-  const newHash = await sha256Hex(newKey);
-  await kv.put(`key:${newHash}`, JSON.stringify({
-    name: oldRecord.name,
-    tier: oldRecord.tier,
-    rateLimit: oldRecord.rateLimit,
-    createdAt: new Date().toISOString(),
-    active: true,
-    rotatedFrom: oldHash.slice(0, 12)
-  }));
 
   return createRestrictedApiResponse(request, {
     rotated: true,
@@ -103,14 +111,21 @@ async function handleCreate(request, env, body) {
   if (!kv) return createErrorResponse("KV unavailable.", 503);
 
   const rawKey = generateRawKey();
-  const keyHash = await sha256Hex(rawKey);
-  await kv.put(`key:${keyHash}`, JSON.stringify({
-    name,
-    tier: body?.tier?.trim() || "free",
-    rateLimit: { max: Number(body?.rate_limit) || 100, windowMs: Number(body?.rate_window_ms) || 60000 },
-    createdAt: new Date().toISOString(),
-    active: true
-  }));
+  let keyHash;
+  let record;
+  try {
+    ({ keyHash, record } = await createApiKeyRecord(rawKey, {
+      name,
+      tier: body?.tier?.trim() || "free",
+      rateLimit: { max: Number(body?.rate_limit) || 100, windowMs: Number(body?.rate_window_ms) || 60000 },
+      createdAt: new Date().toISOString(),
+      env
+    }));
+  } catch {
+    return createErrorResponse("API key hashing is not configured.", 503);
+  }
+
+  await kv.put(`key:${keyHash}`, JSON.stringify(record));
 
   return createRestrictedApiResponse(request, {
     created: true,

@@ -96,10 +96,11 @@ export function handleRestrictedCorsOptions(request) {
 /**
  * KV schema for an API key entry:
  *   key   = "key:<sha256-hex>"
- *   value = JSON { name, tier, rateLimit, createdAt, active }
+ *   value = JSON { name, tier, rateLimit, createdAt, active, hashAlgorithm, hashDigest }
  *
  * The Authorization header carries: `Bearer <raw-api-key>`
- * We hash it with SHA-256 and look it up in KV.
+ * We hash it with SHA-256 for deterministic KV lookup, then verify the keyed
+ * digest stored in the record with API_KEY_HASH_SECRET.
  */
 
 export async function sha256Hex(text) {
@@ -108,6 +109,70 @@ export async function sha256Hex(text) {
   return Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+async function hmacSha256Hex(secret, text) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function constantTimeHexEquals(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (!/^[a-f0-9]+$/i.test(a) || !/^[a-f0-9]+$/i.test(b)) return false;
+
+  const left = a.toLowerCase();
+  const right = b.toLowerCase();
+  const maxLength = Math.max(left.length, right.length);
+  let diff = left.length ^ right.length;
+
+  for (let i = 0; i < maxLength; i++) {
+    diff |= (left.charCodeAt(i) || 0) ^ (right.charCodeAt(i) || 0);
+  }
+
+  return diff === 0;
+}
+
+async function verifyApiKeyRecord(rawKey, record, env) {
+  if (record?.hashAlgorithm !== "hmac-sha256") {
+    return false;
+  }
+
+  const secret = String(env?.API_KEY_HASH_SECRET ?? "");
+  if (secret.length < 32 || !record.hashDigest) {
+    return false;
+  }
+
+  const expected = await hmacSha256Hex(secret, rawKey);
+  return constantTimeHexEquals(expected, record.hashDigest);
+}
+
+export async function createApiKeyRecord(rawKey, { name, tier, rateLimit, createdAt = new Date().toISOString(), env }) {
+  const keyHash = await sha256Hex(rawKey);
+  const secret = String(env?.API_KEY_HASH_SECRET ?? "");
+  if (secret.length < 32) {
+    throw new Error("API_KEY_HASH_SECRET is not configured.");
+  }
+
+  const record = {
+    name,
+    tier,
+    rateLimit,
+    createdAt,
+    active: true
+  };
+  record.hashAlgorithm = "hmac-sha256";
+  record.hashDigest = await hmacSha256Hex(secret, rawKey);
+
+  return { keyHash, record };
 }
 
 async function readApiKeyRecord(kv, keyHash) {
@@ -168,7 +233,7 @@ export async function authenticateRequest(request, env) {
   const keyHash = await sha256Hex(rawKey);
   const { record } = await readApiKeyRecord(kv, keyHash);
 
-  if (!record || record.active === false) {
+  if (!record || record.active === false || !(await verifyApiKeyRecord(rawKey, record, env))) {
     return {
       authenticated: false,
       error: "Authentication failed.",

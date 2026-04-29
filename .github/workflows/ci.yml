@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend build and API-key tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run API-key CLI tests
+        run: node scripts/manage-api-keys.test.mjs
+
+      - name: Build frontend
+        run: npm run build
+
+  backend:
+    name: Backend route and auth tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run backend tests
+        run: |
+          node backend/api/_apiUtils.test.mjs
+          node backend/api/nveid.test.mjs
+          node backend/api/pvgis-tmy.test.mjs
+          node backend/api-worker/wrangler-routes.test.mjs
+
+  minstevann:
+    name: Minstevann tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run minstevann unit tests
+        run: python -m unittest tests
+        working-directory: tools/minstevann

@@ -5,6 +5,7 @@
 OPENAI_API_KEY=replace-me
 AI_SEARCH_API_TOKEN=replace-me
 AI_GATEWAY_AUTH_TOKEN=replace-me
+API_KEY_HASH_SECRET=replace-with-at-least-32-random-characters
 
 # === CLOUDFLARE INFRASTRUCTURE IDs ===
 # Find these in the Cloudflare dashboard or ask the project lead

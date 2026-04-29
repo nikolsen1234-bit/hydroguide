@@ -142,6 +142,7 @@ Bindinger (det Worker-en faktisk har tilgang til ved kjøretid):
 | Binding | Type | Resource | Hva den brukes til |
 |---------|------|----------|--------------------|
 | `API_KEYS` | KV | KV-namespace `API_KEYS` | slå opp kunde-API-nøkler for `/api/calculations` og admin |
+| `API_KEY_HASH_SECRET` | Secret | — | HMAC-verifisering av nye API-nøkkel-records |
 | `MINIMUMFLOW_R2` | R2 | bucket `hydroguide-api-data` | les `minimumflow.json` for `/api/nveid` |
 | `MINIMUMFLOW_OBJECT_KEY` | env | `api/minimumflow.json` | filsti-konfig (gjør det enkelt å bytte uten kode-endring) |
 

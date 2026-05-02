@@ -4,87 +4,111 @@ Oppdatert: 2026-05-02
 
 ## Arkitektur
 
-HydroGuide bruker tre Cloudflare-overflater:
+HydroGuide har én offentlig nettadresse, men Cloudflare kjører ikke all kode på
+samme sted. Det er nyttig å skille mellom tre ting:
+
+- **API-rute**: URL-en nettleseren kaller, for eksempel `/api/nveid` eller
+  `/api/polish-report`.
+- **Worker / Pages Function**: koden Cloudflare kjører for en rute.
+- **Binding**: et internt navn i Cloudflare som kode bruker for å nå KV, R2,
+  secrets eller en annen Worker. En binding er ikke en offentlig URL.
 
 ```
 hydroguide.no
 │
-├── Cloudflare Pages              statisk frontend (React/Vite SPA)
-│   └── Pages Functions           fallback for ruter Worker-en ikke fanger
-│       └── /api/polish-report    KI-rapportgenerering (eneste rute her)
+├── Frontend
+│   └── Cloudflare Pages          leverer React/Vite-appen til nettleseren
 │
-├── Worker: hydroguide-api        fanger eksplisitte /api-ruter via route patterns
-│   └── /api/{health,calculations,nveid,docs,keys,
-│            place-suggestions,pvgis-tmy,terrain-profile}
+├── API-ruter på hydroguide.no
+│   ├── /api/polish-report        kjøres av Pages Function
+│   │                             tar rapportgrunnlag fra frontend
+│   │                             sjekker tilgangskode
+│   │                             sender jobben videre via bindingen AI_WORKER
+│   │
+│   ├── /api/health               kjøres av Worker-en hydroguide-api
+│   ├── /api/calculations         kjøres av Worker-en hydroguide-api
+│   ├── /api/nveid                kjøres av Worker-en hydroguide-api
+│   ├── /api/docs                 kjøres av Worker-en hydroguide-api
+│   ├── /api/place-suggestions    kjøres av Worker-en hydroguide-api
+│   ├── /api/pvgis-tmy            kjøres av Worker-en hydroguide-api
+│   └── /api/terrain-profile      kjøres av Worker-en hydroguide-api
 │
-└── Worker: hydroguide-w-r2       AI Worker (RAG mot NVE-korpus)
-    └── intern service-binding fra polish-report
+├── Worker: hydroguide-api        svarer på API-rutene over, bortsett fra polish-report
+│
+├── Pages Function                /api/polish-report
+│   └── bruker AI_WORKER-bindingen for å sende rapportjobben til hydroguide-w-r2
+│
+└── Worker: hydroguide-w-r2       tar imot rapportgrunnlag fra polish-report
+    └── bruker prompt, regler og NVE-korpus til å returnere KI-tekst
 ```
 
 **Hvorfor delt opp i flere lag:**
 
-- **Worker-en** håndterer de API-rutene som er listet i
-  `backend/api-worker/wrangler.jsonc`. Den tar NVEID, beregninger, helsesjekk,
-  dokumentasjon, nøkkeladministrasjon og noen frontend-proxyer.
-- **Pages Functions** følger filbasert routing i deploy-pakken. I normal drift
-  er `/api/polish-report` den viktige API-ruten her, fordi `hydroguide-api`
-  ikke har route pattern for den. Den kaller AI Worker via service binding.
-- **AI Worker** er separat fordi rapportgenerering og retrieval har egne
-  bindinger, egne hemmeligheter og en annen deploy-syklus enn det vanlige
-  API-et.
+- **Cloudflare Pages** leverer selve frontend-appen.
+- **hydroguide-api** kjører de API-rutene som er satt opp som route patterns i
+  `backend/api-worker/wrangler.jsonc`.
+- **/api/polish-report** ligger som Pages Function fordi den hører til
+  rapportflyten i frontend-deployen. Den validerer tilgangskode og sender bare
+  godkjent rapportgrunnlag videre.
+- **hydroguide-w-r2** lager KI-teksten. Den blir kalt fra `polish-report`
+  gjennom bindingen `AI_WORKER`.
+- **/api/keys** finnes også i `hydroguide-api`, men er admin/auth og er derfor
+  ikke med i førstediagrammet.
 
 ## Systemoversikt
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Brukerens nettleser                                                │
-│  hydroguide.no (React SPA)                                          │
-└────────────────┬────────────────────────────────────────────────────┘
-                 │
-       ┌─────────▼─────────────────────────────────────────────┐
-       │  Cloudflare Edge                                      │
-       │                                                       │
-       │  ┌────────────────────┐  ┌─────────────────────────┐  │
-       │  │ hydroguide-api     │  │ Pages Functions         │  │
-       │  │ (Worker)           │  │                         │  │
-       │  │                    │  │ /api/polish-report ─────┼──┐
-       │  │ /api/nveid         │  │                         │  │
-       │  │ /api/calculations  │  └─────────────────────────┘  │
-       │  │ /api/pvgis-tmy     │                               │
-       │  │ /api/docs          │  ┌─────────────────────────┐  │
-       │  │ /api/health        │  │ hydroguide-w-r2         │◄─┘
-       │  │ ...                │  │ (AI Worker)             │  │
-       │  └────────┬───────────┘  │ • RAG mot NVE-korpus    │  │
-       │           │              │ • OpenAI / Workers AI   │  │
-       │           │              └───────────┬─────────────┘  │
-       │           │                          │                │
-       │           ▼                          ▼                │
-       │  ┌──────────────────────────────────────────────────┐ │
-       │  │ Lagring                                          │ │
-       │  │ KV (API_KEYS, PROMPT_KV)                         │ │
-       │  │ R2 (minimumflow-data, NVE-korpus)                │ │
-       │  │ AI Gateway (caching/retry mot OpenAI)            │ │
-       │  └──────────────────────────────────────────────────┘ │
-       └───────────────────────────────────────────────────────┘
+Nettleser
+  |
+  |  hydroguide.no
+  v
+Cloudflare
+  |
+  +-- Cloudflare Pages
+  |     +-- statisk React/Vite-frontend
+  |     +-- Pages Function: /api/polish-report
+  |           +-- validerer tilgangskode
+  |           +-- sender rapportgrunnlag til hydroguide-w-r2 via AI_WORKER
+  |
+  +-- Worker: hydroguide-api
+  |     +-- /api/health
+  |     +-- /api/calculations
+  |     +-- /api/nveid
+  |     +-- /api/docs
+  |     +-- /api/place-suggestions
+  |     +-- /api/pvgis-tmy
+  |     +-- /api/terrain-profile
+  |     +-- /api/keys (admin/auth)
+  |
+  +-- Worker: hydroguide-w-r2
+        +-- mottar rapportgrunnlag fra /api/polish-report
+        +-- finner relevante utdrag i NVE-korpuset
+        +-- bruker OpenAI via AI Gateway til å lage KI-tekst
 
-       ┌───────────────────────────────────────────────────────┐
-       │  Lokalt (utviklermaskin)                              │
-       │                                                       │
-       │  Minstevannføring-pipeline                            │
-       │  NVE → PDF → OpenDataLoader → Ollama → JSON           │
-       │                                                       │
-       │  Output: backend/data/minimumflow.json                │
-       │  Lastes opp til R2 → serveres via /api/nveid          │
-       └───────────────────────────────────────────────────────┘
+Lagring og interne ressurser
+  +-- KV: API_KEYS, PROMPT_KV
+  +-- R2: minimumflow-data, NVE-korpus
+  +-- Cloudflare AI: embeddings og AutoRAG/AI Search-kall
+  +-- AI Gateway: caching, retry og logging for OpenAI-kall
+
+Lokalt på utviklermaskin
+  +-- Minstevannføring-pipeline
+  +-- NVE -> PDF -> OpenDataLoader -> Ollama -> JSON
+  +-- Output: backend/data/minimumflow.json
 ```
+
+`AI_WORKER` er en service binding. Det betyr at Pages Function-en kan kalle
+Worker-en `hydroguide-w-r2` inne i Cloudflare. Nettleseren kaller aldri
+`hydroguide-w-r2` direkte.
 
 ## Endepunkter
 
 ### Offentlig API
 
-`/api/docs?ui` viser Swagger UI for OpenAPI-spesifikasjonen. Den dekker NVEID
-og `POST /api/calculations`. Andre kallbare ruter er listet her fordi de finnes
-i runtime, men de er ikke nødvendigvis med i Swagger.
+`/api/docs?ui` viser Swagger UI for OpenAPI-spesifikasjonen. Swagger dekker
+NVEID-rutene og `POST /api/calculations`. Andre ruter kan være åpne for appen,
+men skal ikke presenteres som offentlig API-kontrakt bare fordi de finnes i
+runtime.
 
 | Metode | Rute | Beskrivelse |
 |--------|------|-------------|
@@ -92,7 +116,7 @@ i runtime, men de er ikke nødvendigvis med i Swagger.
 | GET | `/api/docs?ui` | Swagger UI |
 | GET | `/api/health` | Helsesjekk for uptime-monitorering |
 | GET | `/api/calculations` | Endepunkt-info |
-| POST | `/api/calculations` | Energiberegning (krever Bearer-token) |
+| POST | `/api/calculations` | Beregner energibehov, sol, batteri og reservekraft (krever Bearer-token) |
 | GET | `/api/nveid` | Oversikt over tilgjengelige NVEID-endepunkter |
 | GET | `/api/nveid/{nveID}` | Meny for én stasjon |
 | GET | `/api/nveid/{nveID}/minimum-flow` | Minstevannføring-data |
@@ -101,14 +125,13 @@ i runtime, men de er ikke nødvendigvis med i Swagger.
 
 ### Frontend-hjelpere
 
-Kallbare fra appen, ikke listet i Swagger fordi de er frontend-spesifikke
-proxyer mot Geonorge, Kartverket og AI Worker:
+Kallbare fra appen, ikke listet i Swagger fordi de er laget for frontend-flyten:
 
 | Metode | Rute | Beskrivelse |
 |--------|------|-------------|
-| POST | `/api/place-suggestions` | Stedsnavn-oppslag (Geonorge) |
-| POST | `/api/terrain-profile` | Terrengprofil (Kartverket) |
-| POST | `/api/polish-report` | KI-rapportgenerering (Pages Functions) |
+| POST | `/api/place-suggestions` | Søker etter sted og adresse i GeoNorge sine stedsnavn- og adresse-API-er |
+| POST | `/api/terrain-profile` | Henter høydedata/terrengprofil fra Kartverket |
+| POST | `/api/polish-report` | Tar rapportgrunnlag fra frontend og sender jobben videre til `hydroguide-w-r2` |
 
 ### Admin
 
@@ -127,8 +150,9 @@ Hovedinngangen for API-rutene som har route pattern i `wrangler.jsonc`.
 **Source:** `backend/api-worker/index.js`
 **Config:** `backend/api-worker/wrangler.jsonc`
 
-Route patterns (i wrangler.jsonc) — Worker-en starter kun for URL-er som matcher
-disse, alt annet faller tilbake til Pages:
+Route patterns i `wrangler.jsonc`. `hydroguide-api` starter bare for URL-er som
+matcher disse mønstrene. Andre URL-er på `hydroguide.no` håndteres av
+Pages-prosjektet.
 - `hydroguide.no/api/health*`
 - `hydroguide.no/api/nveid*`
 - `hydroguide.no/api/place-suggestions*`
@@ -150,24 +174,33 @@ Bindinger (det Worker-en faktisk har tilgang til ved kjøretid):
 
 ### Pages Functions
 
-Pages-deployen får `functions/`-mappen fra `test-deploy/`. Worker-rutene over
-tar mesteparten av `/api/*`, men `/api/polish-report` går via Pages Functions i
-normal drift.
+Pages-deployen får `functions/`-mappen fra `test-deploy/`. I dagens oppsett er
+`/api/polish-report` den viktige Pages Function-ruten i produksjon.
+
+Flyten er:
+
+1. Frontend sender rapportgrunnlag til `/api/polish-report`.
+2. Pages Function-en validerer tilgangskode og plukker ut feltene AI-en får lov
+   til å bruke.
+3. Den lager en intern request og kaller `context.env.AI_WORKER.fetch(...)`.
+4. Cloudflare sender det kallet til Worker-en `hydroguide-w-r2`.
+5. Svaret fra `hydroguide-w-r2` sendes tilbake til frontend.
 
 Bindinger som trengs for `/api/polish-report`:
 
 | Binding | Type | Hva den brukes til |
 |---------|------|--------------------|
-| `AI_WORKER` | Service binding | intern kall til `hydroguide-w-r2` |
+| `AI_WORKER` | Service binding | internt navn som peker på Worker-en `hydroguide-w-r2` |
 | `WORKER_API_KEY` | Secret | Bearer-token sendt fra Pages Function til AI Worker |
 | `AI_EXPORT_PASSWORD_HASH` | Secret | validerer eksportkoden før KI-kallet kjøres |
 
 ### hydroguide-w-r2 (AI Worker)
 
-Worker for rapportgenerering og NVE-retrieval. Den henter evidens fra KV,
-AI Search/AutoRAG eller Vectorize og bruker OpenAI via AI Gateway til selve
-tekstgenereringen. Workers AI brukes til embeddings og fallback-relaterte
-retrieval-operasjoner, ikke som hovedgenerator i dagens kode.
+Worker for selve KI-jobben. Den tar imot rapportgrunnlaget fra
+`/api/polish-report`, henter relevante utdrag fra NVE-korpuset, bygger prompt
+med regler fra KV og bruker OpenAI via AI Gateway til å lage teksten som
+returneres til frontend. Workers AI brukes til embeddings og enkelte
+søk/retrieval-operasjoner, ikke som hovedgenerator i dagens kode.
 
 **Source:** `backend/services/ai/index.ts`
 **Config:** `backend/config/wrangler.jsonc`
@@ -178,7 +211,7 @@ Bindinger:
 |---------|------|----------|--------------------|
 | `AI` | Workers AI | (managed) | embeddings og `env.AI.autorag(...)` |
 | `R2_BUCKET` | R2 | bucket `hydroguide-r2` | NVE-korpus med pre-genererte embeddings |
-| `PROMPT_KV` | KV | KV-namespace `PROMPT_KV` | bucket-inndelt evidens for raskt oppslag |
+| `PROMPT_KV` | KV | KV-namespace `PROMPT_KV` | prompt, regler, nøkkelord og korte NVE-utdrag |
 | `WORKER_API_KEY` | Secret | — | Bearer-auth som beskytter worker-en fra alt unntatt polish-report |
 | `AI_GATEWAY_AUTH_TOKEN` | Secret | — | auth mot Cloudflare AI Gateway |
 | `AI_SEARCH_API_TOKEN` | Secret | — | auth mot AutoRAG/AI Search |
@@ -199,7 +232,7 @@ Lavt latency for lesing, perfekt for små data som ofte trengs.
 | Namespace | Bruk |
 |-----------|------|
 | `API_KEYS` | API-nøkler for `/api/calculations` og `/api/keys` |
-| `PROMPT_KV` | Bucketed NVE-evidens for RAG-retrieval |
+| `PROMPT_KV` | Prompt, regler, nøkkelord og korte NVE-utdrag for rapport-AI |
 
 ### R2-buckets
 
@@ -219,8 +252,8 @@ Cloudflare-docs anbefaler nå egne `ai_search` / `ai_search_namespaces`-bindinge
 Ved neste AI Search-oppgradering bør koden enten flyttes til de bindingene, eller
 denne dokumentasjonen må si tydelig at prosjektet fortsatt bruker legacy
 `env.AI.autorag(...)`. Hvis AI Search ikke gir treff eller ikke er konfigurert,
-kan retrieval falle tilbake til
-bucketert evidens i `PROMPT_KV` og eventuelt Vectorize når det er aktivert.
+kan koden bruke NVE-utdragene i `PROMPT_KV` og eventuelt Vectorize når det er
+aktivert.
 
 ### AI Gateway
 

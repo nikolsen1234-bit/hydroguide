@@ -12,19 +12,19 @@ Alt KI-relatert i HydroGuide — rapportgenerering (Cloudflare), minstevannføri
 
 ```
   Frontend                              Pages Functions          AI Worker (hydroguide-w-r2)
-     │                                       │                         │
-     │  POST /api/polish-report              │                         │
-     │  { tilgangskodeHash, prosjekt, ... }  │                         │
-     ▼                                       │                         │
-     ─────────────────────────────────────►  │                         │
-                                             │                         │
-                                    ┌────────┴────────┐                │
-                                    │ polish-report.js │               │
-                                    │ • rate limit     │               │
-                                    │ • valider kode   │               │
-                                    │ • service-binding ├─────────────►│
-                                    └─────────────────┘                │
-                                                              ┌───────┴────────────────┐
+     │                                       │                           │
+     │  POST /api/polish-report              │                           │
+     │  { tilgangskodeHash, prosjekt, ... }  │                           │
+     ▼                                       │                           │
+     ─────────────────────────────────────►  │                           │
+                                             │                           │
+                                    ┌────────┴──────────┐                │
+                                    │ polish-report.js  │                │
+                                    │ • rate limit      │                │
+                                    │ • valider kode    │                │
+                                    │ • service-binding ├───────────────►│ 
+                                    └───────────────────┘                │
+                                                              ┌──────────┴─────────────┐
                                                               │ 1. Bygg query          │
                                                               │ 2. Hent evidens:       │
                                                               │    AutoRAG / KV / Vec. │

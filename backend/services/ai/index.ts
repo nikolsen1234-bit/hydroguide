@@ -34,6 +34,12 @@ function checkGenerationRateLimit(request: Request): { allowed: boolean; retryAf
 
   bucket.push(now);
   generationBuckets.set(ip, bucket);
+
+  // Prevent unbounded growth under active attack (Memory Leak DoS protection)
+  if (generationBuckets.size > 10000) {
+    generationBuckets.clear();
+  }
+
   return { allowed: true, retryAfterSeconds: 0 };
 }
 

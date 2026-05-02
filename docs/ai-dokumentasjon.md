@@ -16,13 +16,13 @@ Alt KI-relatert i HydroGuide — rapportgenerering (Cloudflare), minstevannføri
      │  POST /api/polish-report              │                         │
      │  { tilgangskodeHash, prosjekt, ... }  │                         │
      ▼                                       │                         │
-     ─────────────────────────────────────►   │                         │
+     ─────────────────────────────────────►  │                         │
                                              │                         │
                                     ┌────────┴────────┐                │
-                                    │ polish-report.js │                │
-                                    │ • rate limit     │                │
-                                    │ • valider kode   │                │
-                                    │ • service-binding ├──────────────►│
+                                    │ polish-report.js │               │
+                                    │ • rate limit     │               │
+                                    │ • valider kode   │               │
+                                    │ • service-binding ├─────────────►│
                                     └─────────────────┘                │
                                                               ┌───────┴────────────────┐
                                                               │ 1. Bygg query          │

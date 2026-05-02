@@ -4,6 +4,15 @@
   "main": "./index.js",
   "compatibility_date": "2026-04-29",
   "workers_dev": false,
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": false
+    }
+  },
   "r2_buckets": [
     {
       "binding": "MINIMUMFLOW_R2",

@@ -18,6 +18,8 @@ test-deploy/
 # Cloudflare
 .wrangler/
 .mf/
+backend/api-worker/wrangler.generated.jsonc
+backend/config/wrangler.generated.jsonc
 
 # AI agent state — almost everything in .ai/ is local-only.
 # Use the "ignore contents, whitelist what we keep" pattern so that the

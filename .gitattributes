@@ -1,2 +1,3 @@
 # Encrypt secrets file with git-crypt
 .secrets filter=git-crypt diff=git-crypt
+backend/config/cloudflare.private.json filter=git-crypt diff=git-crypt

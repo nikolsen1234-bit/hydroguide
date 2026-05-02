@@ -284,19 +284,22 @@ kun det som faktisk trengs i runtime — ingen dokumentasjon eller dev-skript.
 
 ### Workers
 
-Bruk wrangler:
+GitHub deployer begge Worker-ane med `.github/workflows/cloudflare-workers.yml`.
+Workflowen les ekte verdiar frå GitHub Secrets, lagar midlertidige
+`wrangler.generated.jsonc`-filer og køyrer `wrangler deploy`.
+
+På lokal maskin kan same generering brukast med git-crypt-fila
+`backend/config/cloudflare.private.json`:
 
 ```bash
-cd backend/api-worker
-wrangler deploy
-
-cd backend/services/ai
-wrangler deploy --config ../../config/wrangler.jsonc
+node backend/scripts/build-cloudflare-worker-config.mjs --write-deploy-config
+cd frontend
+npx wrangler deploy --config ../backend/api-worker/wrangler.generated.jsonc
+npx wrangler deploy --config ../backend/config/wrangler.generated.jsonc
 ```
 
-`wrangler deploy --dry-run` validerer config og binding-oppsett uten å publisere.
-Bruk dette først for å fange feilstavet binding-navn og config-feil. Faktiske
-hemmeligheter må fortsatt være satt i Cloudflare/Secrets Store før runtime virker.
+De genererte `wrangler.generated.jsonc`-filene er gitignored. Dei skal ikkje
+committast, fordi dei kan innehalde faktiske Cloudflare-ID-ar.
 
 ## Konfigurasjon
 
@@ -306,8 +309,22 @@ kan committes til en offentlig repo uten at faktiske Cloudflare-IDer lekker:
 - `backend/api-worker/wrangler.jsonc`
 - `backend/config/wrangler.jsonc`
 
-Faktiske ID-er og hemmeligheter ligger i `.secrets` (kryptert med git-crypt) og
-`.dev.vars` (gitignored). Mal i `backend/config/.dev.vars.example`.
+Repoet har også `backend/config/cloudflare.public.json`, som viser Worker-oppsett,
+ruter, observability og bindingar med sensitive verdiar sett til `OMIT`.
+
+Faktiske ID-ar og token kan ligge i `backend/config/cloudflare.private.json`
+(kryptert med git-crypt) for lokal bruk. GitHub Actions bruker GitHub Secrets
+med desse namna i staden:
+
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN`
+- `KV_API_KEYS_NAMESPACE_ID`
+- `KV_PROMPT_NAMESPACE_ID`
+- `SECRETS_STORE_ID`
+
+Vanlege runtime-hemmeligheiter ligg framleis i Cloudflare Secrets/Secrets Store.
+`.dev.vars` er berre lokal utvikling og er gitignored. Mal ligg i
+`backend/config/.dev.vars.example`.
 
 For lokal utvikling:
 

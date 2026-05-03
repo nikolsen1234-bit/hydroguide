@@ -1,19 +1,18 @@
 # HydroGuide Arkitektur
 
-Oppdatert: 2026-05-02
+Oppdatert: 2026-05-03
 
 HydroGuide er delt i tre hovuddelar:
 
-1. Ei React/Vite-nettside på Cloudflare Pages.
+1. Ein statisk React/Vite-frontend på `hydroguide.no`.
 2. Fire Cloudflare Workers med tydelege ansvar.
-3. Ein lokal NVE-pipeline som byggjer minstevassforing-data.
+3. Ein lokal NVE-pipeline som byggjer minstevassføring-data.
 
 ## Cloudflare
 
 ```text
 hydroguide.no
-  -> Cloudflare Pages
-     -> statisk frontend
+  -> statisk frontend
 
   -> hydroguide-api
      -> /api/health
@@ -33,30 +32,31 @@ hydroguide.no
      -> /admin/*
 ```
 
-`hydroguide-ai` er intern. Nettsida kallar ikkje han direkte.
+`hydroguide-ai` har ingen offentleg route. Nettsida kallar `hydroguide-report`.
 
 ## Lagring
 
 | Lagring | Namn | Bruk |
 |---------|------|------|
-| KV | `API_KEYS` | API-noklar og rate limit |
+| KV | `API_KEYS` | API-nøklar, status og rate limit |
 | KV | `REPORT_RULES` | Rapportreglar og faste utdrag |
-| R2 | `hydroguide-minimum-flow` | `api/minimumflow.json` |
-| R2 | `hydroguide-ai-reference` | AI-referansar og embeddings |
+| R2 | `hydroguide-minimum-flow` | `api/minimumflow.json` for NVEID-ruter |
+| R2 | `hydroguide-ai-reference` | NVE-referansar og embeddings |
+| R2 | `hydroguide-assets` | Offentlege filer under `files.hydroguide.no` |
 
 ## Dataflyt
 
 ### Bereknings-API
 
 ```text
-Kunde/app
+Kunde eller app
   -> POST /api/calculations
   -> hydroguide-api
   -> API_KEYS
   -> calculation core
 ```
 
-### Minstevassforing
+### Minstevassføring
 
 ```text
 Lokal pipeline
@@ -64,6 +64,8 @@ Lokal pipeline
   -> R2 hydroguide-minimum-flow
   -> GET /api/nveid/{nveID}/minimum-flow
 ```
+
+Rotrutene for NVEID viser meny og neste steg.
 
 ### Rapport
 
@@ -85,7 +87,7 @@ Operator
   -> API_KEYS
 ```
 
-Admin er med vilje ikkje under `/api/*`.
+Admin-ruter ligg under `/admin/*`.
 
 ## Dokumentasjon
 
@@ -94,4 +96,4 @@ Admin er med vilje ikkje under `/api/*`.
 | [Frontend](frontend.md) | React-app, sider, rapport og build |
 | [Backend](backend-dokumentasjon.md) | Endpoint-handlarar og scripts |
 | [Cloudflare](cloudflare-dokumentasjon.md) | Workers, bindings, deploy og sikkerheit |
-| [AI](ai-dokumentasjon.md) | Rapport-AI og lokal minstevassforing-pipeline |
+| [AI](ai-dokumentasjon.md) | Rapport-AI og lokal minstevassføring-pipeline |

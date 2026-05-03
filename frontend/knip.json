@@ -5,22 +5,27 @@
     "scripts/**/*.mjs",
     "../backend/_middleware.js",
     "../backend/api/**/*.js",
-    "../backend/api-worker/index.js",
+    "../backend/admin/**/*.js",
+    "../backend/workers/**/*.js",
+    "../backend/workers/**/*.ts",
     "../backend/api/**/*.test.mjs",
-    "../backend/api-worker/**/*.test.mjs"
+    "../backend/cloudflare/**/*.test.mjs"
   ],
   "project": [
     "src/**/*.{ts,tsx}",
     "../backend/api/**/*.js",
-    "../backend/api-worker/**/*.js",
+    "../backend/admin/**/*.js",
+    "../backend/workers/**/*.{js,ts}",
     "scripts/**/*.mjs"
   ],
   "ignoreExportsUsedInFile": true,
   "ignoreDependencies": ["wrangler"],
   "wrangler": {
     "config": [
-      "../backend/api-worker/wrangler.jsonc",
-      "../backend/config/wrangler.jsonc"
+      "../backend/cloudflare/api.wrangler.jsonc",
+      "../backend/cloudflare/report.wrangler.jsonc",
+      "../backend/cloudflare/ai.wrangler.jsonc",
+      "../backend/cloudflare/admin.wrangler.jsonc"
     ]
   },
   "rules": {

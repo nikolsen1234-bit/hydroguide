@@ -24,7 +24,7 @@ export const STORAGE_KEYS = {
 } as const;
 
 export const API_ENDPOINTS = {
-  AI_REPORT: "/api/polish-report",
+  AI_REPORT: "/api/report",
 } as const;
 
 export const FEEDBACK_TIMEOUT_MS = 3000;

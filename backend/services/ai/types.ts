@@ -60,8 +60,8 @@ export interface SecretStoreBinding {
 }
 
 export interface Env {
-  PROMPT_KV: KVNamespaceLike;
-  WORKER_API_KEY?: string | SecretStoreBinding;
+  REPORT_RULES: KVNamespaceLike;
+  REPORT_WORKER_TOKEN?: string | SecretStoreBinding;
   AI_SEARCH_API_TOKEN?: string | SecretStoreBinding;
   AI_GATEWAY_AUTH_TOKEN?: string | SecretStoreBinding;
   OPENAI_MODEL?: string;
@@ -85,7 +85,7 @@ export interface Env {
   AI_GATEWAY_RETRY_BACKOFF?: string;
   AI?: AiNamespaceLike;
   VECTORIZE_INDEX?: VectorizeIndex;
-  R2_BUCKET?: R2Bucket;
+  AI_REFERENCE_BUCKET?: R2Bucket;
   RETRIEVAL_STRATEGY?: string;
   NARRATIVE_MODE?: string;
   NARRATIVE_MAX_WORDS?: string;

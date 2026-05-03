@@ -246,13 +246,13 @@ function readFirstPositiveInteger(...values) {
 }
 
 function readObjectKey(env) {
-  return String(env?.MINIMUMFLOW_OBJECT_KEY ?? DEFAULT_OBJECT_KEY).trim() || DEFAULT_OBJECT_KEY;
+  return String(env?.MINIMUM_FLOW_OBJECT_KEY ?? DEFAULT_OBJECT_KEY).trim() || DEFAULT_OBJECT_KEY;
 }
 
 async function readMinimumFlowData(env) {
-  const bucket = env?.MINIMUMFLOW_R2;
+  const bucket = env?.MINIMUM_FLOW_BUCKET;
   if (!bucket || typeof bucket.get !== "function") {
-    throw new Error("MINIMUMFLOW_R2 binding is not configured.");
+    throw new Error("MINIMUM_FLOW_BUCKET binding is not configured.");
   }
 
   const objectKey = readObjectKey(env);

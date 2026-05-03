@@ -431,7 +431,7 @@ export async function runSelfFeedback(
   const maxOutputTokens = 200;
 
   // Load feedback prompt from KV
-  let feedbackPrompt = await env.PROMPT_KV?.get("prompt:self_feedback:v1");
+  let feedbackPrompt = await env.REPORT_RULES?.get("prompt:self_feedback:v1");
   if (!feedbackPrompt) {
     feedbackPrompt = `Vurder denne teksten på ein skala frå 1-5. Returner JSON: {"score": N, "flags": ["..."]}
 Krav: Teksten skal vere på nynorsk, 120-250 ord, underbygge løysinga med NVE-kjelder, ikkje blande kontrollmåling med primærmåling, og vere sjølvberande (lesbar utan resten av rapporten).`;
@@ -481,18 +481,18 @@ export async function handleUserFeedback(
   });
 
   // Store individual feedback (90 day TTL)
-  await env.PROMPT_KV?.put(feedbackKey, feedbackData, { expirationTtl: 90 * 86400 });
+  await env.REPORT_RULES?.put(feedbackKey, feedbackData, { expirationTtl: 90 * 86400 });
 
   // Append to monthly log
   const monthKey = `feedback:log:${new Date().toISOString().slice(0, 7)}`;
-  const existing = (await env.PROMPT_KV?.get(monthKey)) ?? "[]";
+  const existing = (await env.REPORT_RULES?.get(monthKey)) ?? "[]";
   try {
     const log = JSON.parse(existing);
     log.push({ token, rating, comment, timestamp: new Date().toISOString() });
-    await env.PROMPT_KV?.put(monthKey, JSON.stringify(log));
+    await env.REPORT_RULES?.put(monthKey, JSON.stringify(log));
   } catch {
     // If log is corrupt, start fresh
-    await env.PROMPT_KV?.put(monthKey, JSON.stringify([{ token, rating, comment, timestamp: new Date().toISOString() }]));
+    await env.REPORT_RULES?.put(monthKey, JSON.stringify([{ token, rating, comment, timestamp: new Date().toISOString() }]));
   }
 
   return jsonResponse({ ok: true }, 200, corsHeaders);

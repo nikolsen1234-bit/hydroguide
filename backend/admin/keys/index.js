@@ -1,5 +1,5 @@
 /**
- * POST /api/keys - unified key management endpoint.
+ * POST /admin/keys - unified key management endpoint.
  *
  * Actions:
  *   "rotate"  - self-service: caller sends Bearer token, gets new key back, old revoked
@@ -8,7 +8,7 @@
  *   "revoke"  - admin: requires x-admin-token + key_hash
  *   "delete"  - admin: requires x-admin-token + key_hash
  *
- * GET /api/keys - admin: list all keys (requires x-admin-token)
+ * GET /admin/keys - admin: list all keys (requires x-admin-token)
  */
 
 import {
@@ -21,7 +21,7 @@ import {
   checkApiRateLimit,
   handleRestrictedCorsOptions,
   readApiJsonBody
-} from "../_apiUtils.js";
+} from "../../api/_apiUtils.js";
 
 // Per-key rotate rate limit. Keyed on the OLD keyHash being retired, so an
 // attacker with a stolen Bearer token cannot mint fresh hashes to escape the
@@ -45,7 +45,7 @@ async function constantTimeEquals(a, b) {
 }
 
 async function requireAdmin(request, env) {
-  const expected = String(env?.INTERNAL_SERVICE_TOKEN ?? "").trim();
+  const expected = String(env?.ADMIN_TOKEN ?? "").trim();
   if (!expected) return "Admin endpoint not configured.";
   const provided = (request.headers.get("x-admin-token") ?? "").trim();
   if (!provided || !(await constantTimeEquals(provided, expected))) return "Unauthorized.";

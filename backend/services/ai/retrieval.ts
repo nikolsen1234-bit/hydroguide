@@ -308,7 +308,7 @@ export async function getSelectedSnippetsFromKv(
   const snippets = await Promise.all(
     limitedTopics.map(async (topic) => ({
       topic,
-      value: await env.PROMPT_KV.get(`nve:topic:${topic}`),
+      value: await env.REPORT_RULES.get(`nve:topic:${topic}`),
     }))
   );
 
@@ -557,7 +557,7 @@ export async function getBucketedKvEvidence(
     // Try each keyword as a KV key with bucket prefix
     const snippetPromises = keywords.slice(0, 4).map(async (keyword) => {
       const key = `nve:${bucket}:${keyword}`;
-      const value = await env.PROMPT_KV.get(key);
+      const value = await env.REPORT_RULES.get(key);
       if (value && value.trim()) {
         return { id: key, source: keyword, text: value.trim(), score: null as number | null };
       }
@@ -580,7 +580,7 @@ export async function getBucketedKvEvidence(
     const searchText = normalizeSearchText(body);
     const legacyTopics = ["pipeArrangement", "pipeCalibration", "instrumentation", "stageMeasurement", "stageCurve", "downstreamControl", "reporting", "planning"];
     for (const topic of legacyTopics) {
-      const value = await env.PROMPT_KV.get(`nve:topic:${topic}`);
+      const value = await env.REPORT_RULES.get(`nve:topic:${topic}`);
       if (value && value.trim() && searchText.includes(topic.toLowerCase().slice(0, 5))) {
         const bucket = topic.includes("Calibration") || topic.includes("reporting") ? "krav"
           : topic.includes("Arrangement") || topic.includes("stage") ? "metode"
@@ -785,9 +785,9 @@ export async function searchVectorize(env: Env, queryText: string, rules: Rules)
       }
 
       // Fallback: try to fetch chunk text from R2 by key
-      if (env.R2_BUCKET && match.id) {
+      if (env.AI_REFERENCE_BUCKET && match.id) {
         try {
-          const r2Object = await env.R2_BUCKET.get(match.id);
+          const r2Object = await env.AI_REFERENCE_BUCKET.get(match.id);
           if (r2Object) {
             const r2Text = (await r2Object.text()).trim();
             if (r2Text.length > 0) {

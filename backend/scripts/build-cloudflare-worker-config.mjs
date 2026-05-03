@@ -11,23 +11,42 @@ const publicConfigPath = resolve(rootDir, "backend/config/cloudflare.public.json
 const workers = [
   {
     key: "api_worker",
-    description: "hydroguide-api handles explicit /api routes except /api/polish-report.",
-    sourcePath: "backend/api-worker/wrangler.jsonc",
-    generatedPath: "backend/api-worker/wrangler.generated.jsonc",
+    description: "hydroguide-api serves the public API and frontend data helper routes.",
+    sourcePath: "backend/cloudflare/api.wrangler.jsonc",
+    generatedPath: "backend/cloudflare/api.generated.wrangler.jsonc",
     placeholders: {
       REPLACE_WITH_KV_API_KEYS_NAMESPACE_ID: "KV_API_KEYS_NAMESPACE_ID",
     },
+    requiredSecrets: ["API_KEY_HASH_SECRET"],
   },
   {
     key: "ai_worker",
-    description: "hydroguide-w-r2 receives report jobs from /api/polish-report and writes AI report text.",
-    sourcePath: "backend/config/wrangler.jsonc",
-    generatedPath: "backend/config/wrangler.generated.jsonc",
+    description: "hydroguide-ai is the internal report AI worker. It has no public route.",
+    sourcePath: "backend/cloudflare/ai.wrangler.jsonc",
+    generatedPath: "backend/cloudflare/ai.generated.wrangler.jsonc",
     placeholders: {
       REPLACE_WITH_ACCOUNT_ID: "CLOUDFLARE_ACCOUNT_ID",
-      REPLACE_WITH_KV_NAMESPACE_ID: "KV_PROMPT_NAMESPACE_ID",
-      REPLACE_WITH_SECRETS_STORE_ID: "SECRETS_STORE_ID",
+      REPLACE_WITH_KV_REPORT_RULES_NAMESPACE_ID: "KV_REPORT_RULES_NAMESPACE_ID",
     },
+    requiredSecrets: ["REPORT_WORKER_TOKEN", "AI_GATEWAY_AUTH_TOKEN", "AI_SEARCH_API_TOKEN"],
+  },
+  {
+    key: "report_worker",
+    description: "hydroguide-report receives /api/report requests and calls hydroguide-ai through a service binding.",
+    sourcePath: "backend/cloudflare/report.wrangler.jsonc",
+    generatedPath: "backend/cloudflare/report.generated.wrangler.jsonc",
+    placeholders: {},
+    requiredSecrets: ["REPORT_ACCESS_CODE_HASH", "REPORT_WORKER_TOKEN"],
+  },
+  {
+    key: "admin_worker",
+    description: "hydroguide-admin keeps API key management out of the public API.",
+    sourcePath: "backend/cloudflare/admin.wrangler.jsonc",
+    generatedPath: "backend/cloudflare/admin.generated.wrangler.jsonc",
+    placeholders: {
+      REPLACE_WITH_KV_API_KEYS_NAMESPACE_ID: "KV_API_KEYS_NAMESPACE_ID",
+    },
+    requiredSecrets: ["ADMIN_TOKEN", "API_KEY_HASH_SECRET"],
   },
 ];
 
@@ -35,15 +54,13 @@ const deployRequiredNames = [
   "CLOUDFLARE_ACCOUNT_ID",
   "CLOUDFLARE_API_TOKEN",
   "KV_API_KEYS_NAMESPACE_ID",
-  "KV_PROMPT_NAMESPACE_ID",
-  "SECRETS_STORE_ID",
+  "KV_REPORT_RULES_NAMESPACE_ID",
 ];
 
 const deployConfigRequiredNames = [
   "CLOUDFLARE_ACCOUNT_ID",
   "KV_API_KEYS_NAMESPACE_ID",
-  "KV_PROMPT_NAMESPACE_ID",
-  "SECRETS_STORE_ID",
+  "KV_REPORT_RULES_NAMESPACE_ID",
 ];
 
 const omitValues = new Set(["", "OMIT", "REPLACE_ME"]);
@@ -281,6 +298,14 @@ function summarizeWorker(worker) {
     }));
   }
 
+  if (config.services) {
+    bindingSummary.services = config.services.map((binding) => ({
+      binding: binding.binding,
+      service: binding.service,
+      entrypoint: binding.entrypoint,
+    }));
+  }
+
   if (config.vars) {
     bindingSummary.vars = redactValue("vars", config.vars);
   }
@@ -297,12 +322,13 @@ function summarizeWorker(worker) {
     observability: config.observability,
     routes: config.routes ?? [],
     bindings: bindingSummary,
+    required_secrets: worker.requiredSecrets ?? [],
   };
 }
 
 function buildPublicConfig() {
   return {
-    note: "Public, redacted Cloudflare Worker configuration for HydroGuide. Real account IDs, namespace IDs, store IDs, API tokens and secrets are omitted.",
+    note: "Public, redacted Cloudflare Worker configuration for HydroGuide. Real account IDs, namespace IDs, API tokens and secret values are omitted.",
     generated_by: "backend/scripts/build-cloudflare-worker-config.mjs",
     private_config: "backend/config/cloudflare.private.json (git-crypt)",
     github_secrets: deployRequiredNames,

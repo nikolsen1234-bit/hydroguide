@@ -6,10 +6,10 @@ import react from "@vitejs/plugin-react";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const MINIMUMFLOW_LOCAL_PATH = path.join(__dirname, "..", "backend", "data", "minimumflow.json");
-const minimumFlowR2Stub = {
+const MINIMUM_FLOW_LOCAL_PATH = path.join(__dirname, "..", "backend", "data", "minimumflow.json");
+const minimumFlowBucketStub = {
   async get(_key: string) {
-    const text = readFileSync(MINIMUMFLOW_LOCAL_PATH, "utf8");
+    const text = readFileSync(MINIMUM_FLOW_LOCAL_PATH, "utf8");
     return {
       async json() {
         return JSON.parse(text);
@@ -45,12 +45,12 @@ const functionRoutes = new Map([
   ["/api/health", path.join(__dirname, "..", "backend", "api", "health.js")],
   ["/api/docs", path.join(__dirname, "..", "backend", "api", "docs.js")],
   ["/api/calculations", path.join(__dirname, "..", "backend", "api", "calculations.js")],
-  ["/api/keys", path.join(__dirname, "..", "backend", "api", "keys", "index.js")],
+  ["/admin/keys", path.join(__dirname, "..", "backend", "admin", "keys", "index.js")],
   ["/api/nveid", path.join(__dirname, "..", "backend", "api", "nveid.js")],
   ["/api/place-suggestions", path.join(__dirname, "..", "backend", "api", "place-suggestions.js")],
   ["/api/terrain-profile", path.join(__dirname, "..", "backend", "api", "terrain-profile.js")],
   ["/api/pvgis-tmy", path.join(__dirname, "..", "backend", "api", "pvgis-tmy.js")],
-  ["/api/polish-report", path.join(__dirname, "..", "backend", "api", "polish-report.js")]
+  ["/api/report", path.join(__dirname, "..", "backend", "api", "report.js")]
 ]);
 
 type BridgeRequest = NodeJS.ReadableStream & {
@@ -92,7 +92,7 @@ function functionsDevBridge() {
     const requestBody = method === "GET" || method === "HEAD" ? undefined : await readRequestBody(req);
     const response = await handler({
       request: new Request(requestUrl.toString(), { method, headers, body: requestBody }),
-      env: { ...process.env, MINIMUMFLOW_R2: minimumFlowR2Stub }
+      env: { ...process.env, MINIMUM_FLOW_BUCKET: minimumFlowBucketStub }
     });
 
     res.statusCode = response.status;

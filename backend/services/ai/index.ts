@@ -64,22 +64,22 @@ export default {
     try {
       const url = new URL(request.url);
 
-      // --- Auth gate: admin/management routes require WORKER_API_KEY ---
+      // --- Auth gate: admin/management routes require REPORT_WORKER_TOKEN ---
       const adminPaths = new Set(["/upload", "/list", "/batch-embed", "/delete-prefix"]);
       if (adminPaths.has(url.pathname)) {
-        if (!env.WORKER_API_KEY) {
-          return jsonResponse({ error: "Admin routes require WORKER_API_KEY." }, 503, corsHeaders);
+        if (!env.REPORT_WORKER_TOKEN) {
+          return jsonResponse({ error: "Admin routes require REPORT_WORKER_TOKEN." }, 503, corsHeaders);
         }
         const authHeader = request.headers.get("authorization") ?? "";
         const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-        const expectedKey = (await resolveSecret(env.WORKER_API_KEY))?.trim();
+        const expectedKey = (await resolveSecret(env.REPORT_WORKER_TOKEN))?.trim();
         if (!expectedKey || !constantTimeEquals(token, expectedKey)) {
           return jsonResponse({ error: "Ugyldig eller manglande API-nøkkel." }, 401, corsHeaders);
         }
       }
 
       // --- R2 upload route (for corpus management) ---
-      if (url.pathname === "/upload" && request.method === "POST" && env.R2_BUCKET) {
+      if (url.pathname === "/upload" && request.method === "POST" && env.AI_REFERENCE_BUCKET) {
         const declaredLength = parseInt(request.headers.get("content-length") || "0", 10);
         if (declaredLength > 65536) {
           return jsonResponse({ error: "Request body too large." }, 413, corsHeaders);
@@ -112,7 +112,7 @@ export default {
           text: body.text,
           embedding: embedding,
         });
-        await env.R2_BUCKET.put(body.key, payload, {
+        await env.AI_REFERENCE_BUCKET.put(body.key, payload, {
           httpMetadata: { contentType: "application/json; charset=utf-8" },
           customMetadata: meta,
         });
@@ -132,23 +132,23 @@ export default {
           }
         }
 
-        const head = await env.R2_BUCKET.head(body.key);
+        const head = await env.AI_REFERENCE_BUCKET.head(body.key);
         return jsonResponse({ ok: true, key: body.key, size: head?.size, customMetadata: head?.customMetadata, vectorized, dims: embedding?.length }, 200, corsHeaders);
       }
 
       // --- R2 list route ---
-      if (url.pathname === "/list" && request.method === "GET" && env.R2_BUCKET) {
+      if (url.pathname === "/list" && request.method === "GET" && env.AI_REFERENCE_BUCKET) {
         const prefix = url.searchParams.get("prefix") || "";
         if (prefix && !validateR2Key(prefix)) {
           return jsonResponse({ error: "Invalid prefix." }, 400, corsHeaders);
         }
         const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") || "50"), 1), 200);
-        const listed = await env.R2_BUCKET.list({ prefix, limit });
+        const listed = await env.AI_REFERENCE_BUCKET.list({ prefix, limit });
         return jsonResponse({ count: listed.objects.length, truncated: listed.truncated, objects: listed.objects }, 200, corsHeaders);
       }
 
       // --- Batch embed + upload route ---
-      if (url.pathname === "/batch-embed" && request.method === "POST" && env.R2_BUCKET && env.AI) {
+      if (url.pathname === "/batch-embed" && request.method === "POST" && env.AI_REFERENCE_BUCKET && env.AI) {
         const declaredLength = parseInt(request.headers.get("content-length") || "0", 10);
         if (declaredLength > 524288) {
           return jsonResponse({ error: "Request body too large." }, 413, corsHeaders);
@@ -212,11 +212,11 @@ export default {
             embedding: embResult.data[i],
           });
           const key = `${prefix}${chunk.id}.json`;
-          await env.R2_BUCKET!.put(key, payload, {
+          await env.AI_REFERENCE_BUCKET!.put(key, payload, {
             httpMetadata: { contentType: "application/json; charset=utf-8" },
             customMetadata: meta,
           });
-          const head = await env.R2_BUCKET!.head(key);
+          const head = await env.AI_REFERENCE_BUCKET!.head(key);
           results.push({ id: chunk.id, ok: true, key, size: head?.size });
         });
         await Promise.all(putPromises);
@@ -255,7 +255,7 @@ export default {
       }
 
       // --- Delete by prefix route ---
-      if (url.pathname === "/delete-prefix" && request.method === "POST" && env.R2_BUCKET) {
+      if (url.pathname === "/delete-prefix" && request.method === "POST" && env.AI_REFERENCE_BUCKET) {
         const declaredLength = parseInt(request.headers.get("content-length") || "0", 10);
         if (declaredLength > 1024) {
           return jsonResponse({ error: "Request body too large." }, 413, corsHeaders);
@@ -271,10 +271,10 @@ export default {
         let deleted = 0;
         let truncated = true;
         while (truncated) {
-          const listed = await env.R2_BUCKET.list({ prefix: body.prefix, limit: 100 });
+          const listed = await env.AI_REFERENCE_BUCKET.list({ prefix: body.prefix, limit: 100 });
           if (listed.objects.length === 0) break;
           const delPromises = listed.objects.map(async (obj: { key: string }) => {
-            await (env.R2_BUCKET as any).delete(obj.key);
+            await (env.AI_REFERENCE_BUCKET as any).delete(obj.key);
             deleted++;
           });
           await Promise.all(delPromises);
@@ -300,25 +300,25 @@ export default {
         }
       }
 
-      if (!env.WORKER_API_KEY) {
+      if (!env.REPORT_WORKER_TOKEN) {
         return jsonResponse({ error: "Tenesta er ikkje konfigurert." }, 503, corsHeaders);
       }
       if (!isServiceBinding) {
         const authHeader = request.headers.get("authorization") ?? "";
         const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-        const expectedKey = (await resolveSecret(env.WORKER_API_KEY))?.trim();
+        const expectedKey = (await resolveSecret(env.REPORT_WORKER_TOKEN))?.trim();
         if (!expectedKey || !constantTimeEquals(token, expectedKey)) {
           return jsonResponse({ error: "Ugyldig eller manglande API-nøkkel." }, 401, corsHeaders);
         }
       }
 
       const [systemPrompt, userTemplate, rules, keywordMap, narrativeSystemPrompt, narrativeUserTemplate] = await Promise.all([
-        env.PROMPT_KV.get("prompt:system:v1"),
-        env.PROMPT_KV.get("prompt:user_template:v1"),
-        env.PROMPT_KV.get("rules:ai:v1", "json") as Promise<Rules | null>,
-        env.PROMPT_KV.get("mapping:keywords:v1", "json") as Promise<KeywordMap | null>,
-        env.PROMPT_KV.get("prompt:system:narrative:v1"),
-        env.PROMPT_KV.get("prompt:user_template:narrative:v1"),
+        env.REPORT_RULES.get("prompt:system:v1"),
+        env.REPORT_RULES.get("prompt:user_template:v1"),
+        env.REPORT_RULES.get("rules:ai:v1", "json") as Promise<Rules | null>,
+        env.REPORT_RULES.get("mapping:keywords:v1", "json") as Promise<KeywordMap | null>,
+        env.REPORT_RULES.get("prompt:system:narrative:v1"),
+        env.REPORT_RULES.get("prompt:user_template:narrative:v1"),
       ]);
 
       if (!systemPrompt || !userTemplate || !rules) {

@@ -1,21 +1,12 @@
 {
-  "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "hydroguide-w-r2",
-  // account_id: set via CLOUDFLARE_ACCOUNT_ID env var or wrangler login
-  "main": "../services/ai/index.ts",
-  "compatibility_date": "2026-03-29",
+  "$schema": "../../frontend/node_modules/wrangler/config-schema.json",
+  "name": "hydroguide-ai",
+  "main": "../workers/ai/index.ts",
+  "compatibility_date": "2026-05-02",
+  "workers_dev": false,
   "observability": {
-    "logs": {
-      "enabled": true,
-      "invocation_logs": true
-    },
-    "traces": {
-      "enabled": false
-    }
-  },
-  "dev": {
-    "ip": "127.0.0.1",
-    "port": 8788
+    "enabled": true,
+    "head_sampling_rate": 1
   },
   "ai": {
     "binding": "AI",
@@ -23,37 +14,15 @@
   },
   "kv_namespaces": [
     {
-      "binding": "PROMPT_KV",
-      "id": "REPLACE_WITH_KV_NAMESPACE_ID",
+      "binding": "REPORT_RULES",
+      "id": "REPLACE_WITH_KV_REPORT_RULES_NAMESPACE_ID",
       "remote": true
-    }
-  ],
-  "secrets_store_secrets": [
-    {
-      "binding": "WORKER_API_KEY",
-      "store_id": "REPLACE_WITH_SECRETS_STORE_ID",
-      "secret_name": "WORKER_API_KEY"
-    },
-    {
-      "binding": "AI_GATEWAY_AUTH_TOKEN",
-      "store_id": "REPLACE_WITH_SECRETS_STORE_ID",
-      "secret_name": "AI_GATEWAY_AUTH_TOKEN"
-    },
-    {
-      "binding": "AI_SEARCH_API_TOKEN",
-      "store_id": "REPLACE_WITH_SECRETS_STORE_ID",
-      "secret_name": "AI_SEARCH_API_TOKEN"
-    },
-    {
-      "binding": "AI_EXPORT_PASSWORD_HASH",
-      "store_id": "REPLACE_WITH_SECRETS_STORE_ID",
-      "secret_name": "AI_EXPORT_PASSWORD_HASH"
     }
   ],
   "r2_buckets": [
     {
-      "binding": "R2_BUCKET",
-      "bucket_name": "hydroguide-r2"
+      "binding": "AI_REFERENCE_BUCKET",
+      "bucket_name": "hydroguide-ai-reference"
     }
   ],
   "vars": {

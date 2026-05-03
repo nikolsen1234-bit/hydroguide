@@ -1,10 +1,10 @@
-# Frontend-Dokumentasjon
+# Frontend-dokumentasjon
 
 Oppdatert: 2026-05-03
 
-Frontend er React/Vite-appen for `hydroguide.no`. Han brukar TypeScript, Tailwind, React Router og Leaflet. Teksten er nynorsk med engelsk som alternativ.
+Frontend er React/Vite-appen for `hydroguide.no`. Den bruker TypeScript, Tailwind, React Router og Leaflet. Teksten er nynorsk med engelsk som alternativ.
 
-## Brukarflyt
+## Brukerflyt
 
 ```mermaid
 flowchart LR
@@ -31,149 +31,149 @@ flowchart LR
     welcome -.-> contact
 ```
 
-Hovudflyten er "5-trinns konfigurasjon": Velkomst → Oversikt → Parameter → System → Budsjett → Analyse. Sidesporene (radiolink, dokumentasjon, API, kontakt) er tilgjengelege heile tida.
+Hovedflyten er "5-trinns konfigurasjon": Velkomst → Oversikt → Parameter → System → Budsjett → Analyse. Sidesporene (radiolink, dokumentasjon, API, kontakt) er tilgjengelige hele tiden.
 
 ## Sider
 
-| Side | Rute | Kjelde | Beskrivelse |
+| Side | Rute | Kilde | Beskrivelse |
 |------|------|--------|-------------|
-| `WelcomePage` | `/` | `frontend/src/pages/WelcomePage.tsx` | Landingsside og modusveljar |
-| `OverviewPage` | `/oversikt` | `OverviewPage.tsx` | Samandrag av konfigurasjon |
+| `WelcomePage` | `/` | `frontend/src/pages/WelcomePage.tsx` | Landingsside og modusvelger |
+| `OverviewPage` | `/oversikt` | `OverviewPage.tsx` | Sammendrag av konfigurasjon |
 | `MainPage` | `/parametere` | `MainPage.tsx` | Spørsmål Q1-Q9 om inntaket |
 | `SystemPage` | `/system` | `SystemPage.tsx` | Sol, batteri, reservekraft |
 | `BudgetPage` | `/effektbudsjett` | `BudgetPage.tsx` | Utstyrsbudsjett, effekt og forbruk |
 | `AnalysisPage` | `/analyse` | `AnalysisPage.tsx` | Energianalyse time for time, tilråding |
 | `SiktlinjeRadioPage` | `/siktlinje-radio` | `SiktlinjeRadioPage.tsx` | Siktlinje og Fresnel-sone for radiolink |
-| `DocumentationPage` | `/dokumentasjon` | `DocumentationPage.tsx` | Teknisk bakgrunn med formlar |
+| `DocumentationPage` | `/dokumentasjon` | `DocumentationPage.tsx` | Teknisk bakgrunn med formler |
 | `ContactPage` | `/kontakt` | `ContactPage.tsx` | Prosjektgruppe og kontakt |
-| `ApiPage` | `/api` | `ApiPage.tsx` | Innebygd visning av offentleg API |
+| `ApiPage` | `/api` | `ApiPage.tsx` | Innebygd visning av offentlig API |
 
 ## Tilstand
 
-Brukarvalgene lever i éin React Context-modul:
+Brukervalgene lever i én React Context-modul:
 
-- `frontend/src/context/ConfigurationContext.tsx` — multi-config state-maskin. Tek vare på fleire parallelle konfigurasjonar slik at brukaren kan samanlikne scenario.
-- `frontend/src/i18n/LanguageContext.tsx` — språkval (nynorsk eller engelsk).
+- `frontend/src/context/ConfigurationContext.tsx` — multi-config tilstandsmaskin. Tar vare på flere parallelle konfigurasjoner slik at brukeren kan sammenligne scenarier.
+- `frontend/src/i18n/LanguageContext.tsx` — språkvalg (nynorsk eller engelsk).
 
-Konfigurasjonane blir persistert til `localStorage`, slik at refresh midt i ein analyse ikkje mister data. Når ein ny konfigurasjon blir oppretta, får han eigen ID, og rute-state held styr på kva konfig som er aktiv.
+Konfigurasjonene blir persistert til `localStorage`, slik at refresh midt i en analyse ikke mister data. Når en ny konfigurasjon blir opprettet, får den egen ID, og rute-state holder styr på hvilken konfig som er aktiv.
 
 ## Komponentlag
 
-Felles komponentar i `frontend/src/components/` (gjenbrukt på fleire sider):
+Felles komponenter i `frontend/src/components/` (gjenbrukt på flere sider):
 
 | Komponent | Bruk |
 |-----------|------|
 | `FormFields.tsx` | `SelectField`, `NumberField`, `JaNeiField` osv. — felles input-stil |
-| `WorkspaceHeader.tsx`, `WorkspaceSection.tsx`, `WorkspaceActions.tsx` | Standard side-layout |
-| `SystemCharts.tsx`, `ReliabilityCharts.tsx`, `HorizonChart.tsx`, `SolarPositionChart.tsx` | Eigenutvikla SVG-diagram (ingen chart-bibliotek) |
-| `RadioLinkMap.tsx`, `NveStandaloneMap.tsx`, `PanoramicHorizon.tsx` | Kartvisningar |
-| `ImportDropZone.tsx` | Import av lagra konfigurasjon |
-| `BuildInfoBadge.tsx` | Synleg build-versjon (genererast av `prebuild`-script) |
+| `WorkspaceHeader.tsx`, `WorkspaceSection.tsx`, `WorkspaceActions.tsx` | Standard sidelayout |
+| `SystemCharts.tsx`, `ReliabilityCharts.tsx`, `HorizonChart.tsx`, `SolarPositionChart.tsx` | Egenutviklede SVG-diagrammer (ingen chart-bibliotek) |
+| `RadioLinkMap.tsx`, `NveStandaloneMap.tsx`, `PanoramicHorizon.tsx` | Kartvisninger |
+| `ImportDropZone.tsx` | Import av lagret konfigurasjon |
+| `BuildInfoBadge.tsx` | Synlig build-versjon (genereres av `prebuild`-script) |
 | `HydroGuideLogo.tsx` | Logo |
 
-Felles Tailwind-klassar er sentralisert i `frontend/src/styles/`.
+Felles Tailwind-klasser er sentralisert i `frontend/src/styles/`.
 
-## Spørsmål Og Anbefaling
+## Spørsmål og anbefaling
 
-Brukaren svarar på ni spørsmål om inntaket. Logikken som tolkar svara og foreslår løysing for slepp og måling ligg i `frontend/src/utils/recommendation.ts`.
+Brukeren svarer på ni spørsmål om inntaket. Logikken som tolker svarene og foreslår løsning for slipp og måling ligger i `frontend/src/utils/recommendation.ts`.
 
-Vassføringsgrenser:
+Vannføringsgrenser:
 
-- liten: opp til 30 l/s
-- middels: opp til 120 l/s
+- liten: opptil 30 l/s
+- middels: opptil 120 l/s
 - stor: over 120 l/s
 
-## Berekningsmodular
+## Beregningsmoduler
 
-Berekningane er delt opp etter ansvar. Same modulnamn er brukt konsekvent i `frontend/src/utils/`.
+Beregningene er delt opp etter ansvar. Samme modulnavn er brukt konsekvent i `frontend/src/utils/`.
 
-### Modusar
+### Modi
 
 | Modus | Beskrivelse |
 |-------|-------------|
-| Rask | Forenkla månadsmodell med lokale standardverdiar |
-| Detaljert | Timesvis simulering med soldata, batteri og pålitelegheitsanalyse |
-| Kombinert | Forenkla oversikt + detaljert pålitelegheitsanalyse |
+| Rask | Forenklet månedsmodell med lokale standardverdier |
+| Detaljert | Timesvis simulering med soldata, batteri og pålitelighetsanalyse |
+| Kombinert | Forenklet oversikt + detaljert pålitelighetsanalyse |
 
 ### Solstråling
 
-Reknar ut kor mykje sol som treffer panelet kvar time gjennom året. Modellen tek omsyn til solposisjon, horisontskugge, panelvinkel, modultemperatur og verkningsgrad. Klimadata kjem frå EU sitt PVGIS-arkiv via proxyen `/api/pvgis-tmy`.
+Regner ut hvor mye sol som treffer panelet hver time gjennom året. Modellen tar hensyn til solposisjon, horisontskygge, panelvinkel, modultemperatur og virkningsgrad. Klimadata kommer fra EU sitt PVGIS-arkiv via proxyen `/api/pvgis-tmy`.
 
-Implementert i `solarEngine.ts` med data frå `metClient.ts`.
+Implementert i `solarEngine.ts` med data fra `metClient.ts`.
 
 ### Horisontprofil
 
-Hentar høgdedata for terrenget rundt staden frå Kartverket og brukar dei til å rekne ut når sola står bak ein åskam.
+Henter høydedata for terrenget rundt stedet fra Kartverket og bruker dem til å regne ut når sola står bak en åskam.
 
-Implementert i `horizonProfile.ts`. Han samplar 360 retningar og 40 avstandar frå Kartverkets terrengmodell.
+Implementert i `horizonProfile.ts`. Den sampler 360 retninger og 40 avstander fra Kartverkets terrengmodell.
 
 ### Batterisimulering
 
-Simulerer batteriet time for time gjennom eit heilt år. Resultatet viser lagra energi, brukt energi, tomt batteri, behov for reservekraft og drivstoffkostnad.
+Simulerer batteriet time for time gjennom et helt år. Resultatet viser lagret energi, brukt energi, tomt batteri, behov for reservekraft og drivstoffkostnad.
 
 Implementert i `batterySimulator.ts`.
 
 ### Energibalanse
 
-Summerer utstyrsbudsjettet, dimensjonerer batteriet, samanliknar sol mot last månad for månad, og reknar ut årstotalar for energi, drivstoff og CO2. Han samanliknar òg totalkostnaden over levetida mellom reservekjeldene.
+Summerer utstyrsbudsjettet, dimensjonerer batteriet, sammenligner sol mot last måned for måned, og regner ut årstotaler for energi, drivstoff og CO2. Den sammenligner også totalkostnaden over levetiden mellom reservekildene.
 
-Implementert i `systemResults.ts`. Same modul finst i `backend/services/calculations/` slik at API og frontend brukar éin felles berekningskjerne.
+Implementert i `systemResults.ts`. Samme modul finnes i `backend/services/calculations/` slik at API og frontend bruker én felles beregningskjerne.
 
 ### Radiolink
 
-Reknar ut om to punkt har fri sikt for trådlaust samband, og om Fresnel-sona er klar. Terrengprofilen mellom punkta blir henta frå Kartverket.
+Regner ut om to punkter har fri sikt for trådløst samband, og om Fresnel-sonen er klar. Terrengprofilen mellom punktene blir hentet fra Kartverket.
 
 Implementert i `radioLink.ts`.
 
-## Standalone-Kart
+## Standalone-kart
 
-Det finst to statiske HTML-kart utanfor React-treet:
+Det finnes to statiske HTML-kart utenfor React-treet:
 
-- `frontend/public/nve-kart-standalone.html` — NVE-kart over vasskraftverk med minstevassføring, Wikipedia-bilete og lenker til konsesjonsdokument.
-- `frontend/public/solar-location-map.html` — Lokasjonskart for solanalyse. Sender koordinatar tilbake til React med `postMessage`.
+- `frontend/public/nve-kart-standalone.html` — NVE-kart over vannkraftverk med minstevassføring, Wikipedia-bilder og lenker til konsesjonsdokument.
+- `frontend/public/solar-location-map.html` — Lokasjonskart for solanalyse. Sender koordinater tilbake til React med `postMessage`.
 
-**Kvifor standalone i staden for React-komponent:** karta brukar Leaflet med tunge plugins som er enklare å laste isolert utan å påverke bundle-storleik på resten av appen. `postMessage` gir reint api mellom iframe og React utan å dele tilstand.
+**Hvorfor standalone i stedet for React-komponent:** kartene bruker Leaflet med tunge plugins som er enklere å laste isolert uten å påvirke bundle-størrelse på resten av appen. `postMessage` gir rent api mellom iframe og React uten å dele tilstand.
 
 ## Internasjonalisering
 
-Tekstar er definert i `frontend/src/i18n/`:
+Tekster er definert i `frontend/src/i18n/`:
 
 - `nn.ts` — nynorsk (default)
 - `en.ts` — engelsk
-- `types.ts` — typebeskriving av nøklar
-- `dynamicStrings.ts` — runtime-genererte tekstar (eks. tabellrad-overskrifter)
-- `LanguageContext.tsx` — runtime-veljar
+- `types.ts` — typebeskrivelse av nøkler
+- `dynamicStrings.ts` — runtime-genererte tekster (eks. tabellrad-overskrifter)
+- `LanguageContext.tsx` — runtime-velger
 
-UI-språk er nynorsk. Engelsk er valgbart for sensor eller eksterne lesarar.
+UI-språk er nynorsk. Engelsk er valgbart for sensor eller eksterne lesere.
 
 ## Rapport
 
-Frontend genererer ein HTML-rapport med diagram, kostnadssamanlikning, tilrådingar og AI-tekst som forklarar valet i klart språk.
+Frontend genererer en HTML-rapport med diagrammer, kostnadssammenligning, tilrådinger og AI-tekst som forklarer valget i klart språk.
 
-Implementert i `report.ts`. AI-teksten kjem frå `POST /api/report` (sjå [ai-rapport.md](ai-rapport.md)).
+Implementert i `report.ts`. AI-teksten kommer fra `POST /api/report` (se [ai-rapport.md](ai-rapport.md)).
 
-## Bygg Og Deploy
+## Bygg og deploy
 
 ```bash
 cd frontend
-npm ci              # installer nøyaktige låste pakkar
-npm run dev         # Vite-utviklingstenar på localhost:5173
+npm ci              # installer nøyaktige låste pakker
+npm run dev         # Vite-utviklingstjener på localhost:5173
 npm run build       # TypeScript-check + Vite-build til dist/
 npm run build:test  # bygg og kopier til test-deploy/
 ```
 
-Frontend blir deploya som statiske filer til Cloudflare. Workers-deploy går via Cloudflare Workers Builds (sjå [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md)).
+Frontend blir deployet som statiske filer til Cloudflare. Workers-deploy går via Cloudflare Workers Builds (se [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md)).
 
-`scripts/update-build-info.mjs` køyrer som `prebuild` og legg inn build-versjon som `BuildInfoBadge` viser i UI.
+`scripts/update-build-info.mjs` kjører som `prebuild` og legger inn build-versjon som `BuildInfoBadge` viser i UI.
 
 ## Lokal API-bridge
 
-I `npm run dev`-modus mappar `vite.config.ts` `/api/*`-kall lokalt til handlarar i `backend/api/*.js`. Det gjer at frontend kan teste mot ekte handler-kode utan å deploye Workers. Bridge-rutene er definert i `vite.config.ts`.
+I `npm run dev`-modus mapper `vite.config.ts` `/api/*`-kall lokalt til handlere i `backend/api/*.js`. Det gjør at frontend kan teste mot ekte handler-kode uten å deploye Workers. Bridge-rutene er definert i `vite.config.ts`.
 
-For lokalt oppsett, krav og fellesfeil: sjå [utvikling.md](utvikling.md).
+For lokalt oppsett, krav og fellesfeil: se [utvikling.md](utvikling.md).
 
-## Sjå Òg
+## Se også
 
-- Endepunkt frontend kallar: [backend-dokumentasjon.md](backend-dokumentasjon.md)
+- Endepunkter frontend kaller: [backend-dokumentasjon.md](backend-dokumentasjon.md)
 - Rapport-AI: [ai-rapport.md](ai-rapport.md)
 - Lokal utvikling: [utvikling.md](utvikling.md)

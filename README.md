@@ -1,6 +1,6 @@
 # HydroGuide
 
-HydroGuide hjelper eigarar av små vasskraftverk med å oppfylle NVE-krava til minstevassføring og måling — typisk på avsidesliggjande lokasjonar utan straumnett eller fast samband. Appen hentar krav per kraftverk frå NVE-konsesjonsdokument, foreslår teknisk løysing for slepp og måling ut frå inntaksforhold, og dimensjonerer ein autonom måleinstallasjon: sol, batteri, reservekraft og radiolink for dataoverføring.
+HydroGuide hjelper eiere av små vannkraftverk med å oppfylle NVE-kravene til minstevassføring og måling — typisk på avsidesliggende lokasjoner uten strømnett eller fast samband. Appen henter krav per kraftverk fra NVE-konsesjonsdokument, foreslår teknisk løsning for slipp og måling ut fra inntaksforhold, og dimensjonerer en autonom måleinstallasjon: sol, batteri, reservekraft og radiolink for dataoverføring.
 
 Live: [hydroguide.no](https://hydroguide.no) — API-dokumentasjon: [hydroguide.no/api/docs?ui](https://hydroguide.no/api/docs?ui)
 
@@ -8,7 +8,7 @@ Live: [hydroguide.no](https://hydroguide.no) — API-dokumentasjon: [hydroguide.
 
 ```mermaid
 flowchart LR
-    bruker[Eigar / konsulent]
+    bruker[Bruker]
     nve[NVE ArcGIS]
     pvgis[EU PVGIS]
     kart[Kartverket]
@@ -23,34 +23,34 @@ flowchart LR
     pipeline -->|JSON via R2| hg
 ```
 
-HydroGuide er ein React/Vite-frontend pluss fire Cloudflare Workers (api, report, ai, admin), to KV-namespaces og tre R2-buckets. NVE-konsesjonsdokument blir prosessert lokalt (OCR + LLM) og lasta opp som ferdig JSON. Soldata kjem frå PVGIS, terreng frå Kartverket, og rapporttekst frå Cloudflare AI Gateway.
+HydroGuide er en React/Vite-frontend pluss fire Cloudflare Workers (api, report, ai, admin), to KV-namespaces og tre R2-buckets. NVE-konsesjonsdokument blir prosessert lokalt (OCR + LLM) og lastet opp som ferdig JSON. Soldata kommer fra PVGIS, terreng fra Kartverket, og rapporttekst fra Cloudflare AI Gateway.
 
-Detaljert systemkontekst og containerdiagram: [docs/arkitektur.md](docs/arkitektur.md).
+Detaljert systemkontekst og container-diagram: [docs/arkitektur.md](docs/arkitektur.md).
 
-## Kva Som Ikkje Er Trivielt
+## Hva som ikke er trivielt
 
-For sensor og lesarar som vil sjå "kor jobben ligg":
+For sensor og lesere som vil se "hvor jobben ligger":
 
-- **Fire Workers med skild trust-grenser.** AI-Workeren har ingen offentleg URL — han blir berre kalla via service binding frå rapport-Workeren. Admin er fysisk skild frå offentleg API. Sjå [docs/arkitektur.md](docs/arkitektur.md) og [docs/sikkerheit.md](docs/sikkerheit.md).
-- **Lokal NVE-pipeline med OCR og LLM.** PDF-konsesjonsdokument blir strukturerte til JSON med OpenDataLoader, EasyOCR og Ollama. Køyrer lokalt fordi Workers har 30s CPU-grense. Sjå [tools/minstevann/README.md](tools/minstevann/README.md).
-- **Faktisk timesvis solanalyse** med horisontprofil frå Kartverket (360 retningar × 40 avstandar), batterisimulering time for time gjennom året, og kostnadssamanlikning over levetid mellom reservekjeldene. Berekningskjernen er delt mellom frontend og backend så API og UI ikkje kan kome ut av sync.
-- **API-nøklar er HMAC-hash-a i KV.** Lekka KV-dump gir ikkje brukbare nøklar. Sjå [docs/sikkerheit.md](docs/sikkerheit.md).
-- **WAF, rate limit, CSP, DNSSEC, TLS-strict, cache-bypass for `/api/*`.** Lagdelt forsvar gjennom Cloudflare-sona. Sjå [docs/sikkerheit.md](docs/sikkerheit.md).
-- **Rapport-AI med fast retrieval.** Modellen *supplerer* faste reglar i KV — han tek ikkje avgjerder. Tekstgrense på 250 ord, retrieval-threshold 0.35, modell-fallback. Sjå [docs/ai-strategi.md](docs/ai-strategi.md).
+- **Fire Workers med skilte trust-grenser.** AI-Worker har ingen offentlig URL — den blir bare kalt via service binding fra rapport-Worker. Admin er fysisk skilt fra offentlig API. Se [docs/arkitektur.md](docs/arkitektur.md) og [docs/sikkerheit.md](docs/sikkerheit.md).
+- **Lokal NVE-pipeline med OCR og LLM.** PDF-konsesjonsdokument blir strukturert til JSON med OpenDataLoader, EasyOCR og Ollama. Kjører lokalt fordi Workers har 30s CPU-grense. Se [tools/minstevann/README.md](tools/minstevann/README.md).
+- **Faktisk timesvis solanalyse** med horisontprofil fra Kartverket (360 retninger × 40 avstander), batterisimulering time for time gjennom året, og kostnadssammenligning over levetid mellom reservekildene. Beregningskjernen er delt mellom frontend og backend så API og UI ikke kan komme ut av sync.
+- **API-nøkler er HMAC-hash-et i KV.** Lekket KV-dump gir ikke brukbare nøkler. Se [docs/sikkerheit.md](docs/sikkerheit.md).
+- **WAF, rate limit, CSP, DNSSEC, TLS-strict, cache-bypass for `/api/*`.** Lagdelt forsvar gjennom Cloudflare-sonen. Se [docs/sikkerheit.md](docs/sikkerheit.md).
+- **Rapport-AI med fast retrieval.** Modellen *supplerer* faste regler i KV — den tar ikke avgjørelser. Tekstgrense på 250 ord, retrieval-threshold 0.35, modell-fallback. Se [docs/ai-strategi.md](docs/ai-strategi.md).
 
 ## Struktur
 
 ```text
 frontend/                     React/Vite-app
 backend/
-  api/                        Delte API-handlarar
+  api/                        Delte API-handlere
   workers/                    Cloudflare Worker entrypoints (api, report, ai, admin)
   cloudflare/                 Wrangler-konfig per Worker
   services/ai/                Intern rapport-AI
-  services/calculations/      Delt berekningskjerne (frontend + backend)
+  services/calculations/      Delt beregningskjerne (frontend + backend)
   data/minimumflow.json       Lokal kopi av minstevassføring per NVEID
-  config/                     Generert/offentleg Cloudflare-metadata
-  scripts/                    Vedlikehald for Cloudflare, R2 og KV
+  config/                     Generert/offentlig Cloudflare-metadata
+  scripts/                    Vedlikehold for Cloudflare, R2 og KV
 tools/
   minstevann/                 NVE-dokument -> minstevassføring -> NVEID
   horizon_pdf.py              Horisontprofil PDF-generator
@@ -59,7 +59,7 @@ docs/                         Dokumentasjon
 .ai/                          Lokal agent-dokumentasjon og worklog
 ```
 
-## Kom I Gang
+## Kom i gang
 
 ```bash
 cd frontend
@@ -68,9 +68,9 @@ npm run dev          # Vite på localhost:5173 med /api/* bridge til backend/api
 npm run build:test   # bygg og kopier til test-deploy/
 ```
 
-Komplett oppsett, lokal API-bridge, pipeline, vanlege feil: [docs/utvikling.md](docs/utvikling.md).
+Komplett oppsett, lokal API-bridge, pipeline, vanlige feil: [docs/utvikling.md](docs/utvikling.md).
 
-## Minstevassføring (Pipeline)
+## Minstevassføring (pipeline)
 
 ```bash
 python tools/minstevann/run.py plant 1696
@@ -79,21 +79,20 @@ python tools/minstevann/run.py batch --resume
 python tools/minstevann/run.py export
 ```
 
-Detaljar (Ollama, OCR-oppsett, validering): [tools/minstevann/README.md](tools/minstevann/README.md).
+Detaljer (Ollama, OCR-oppsett, validering): [tools/minstevann/README.md](tools/minstevann/README.md).
 
 ## Dokumentasjon
 
 | Tema | Dokument |
 |------|----------|
-| Onboarding for nye bidragsytarar | [docs/onboarding.md](docs/onboarding.md) |
-| Arkitektur, dataflyt, tekniske val | [docs/arkitektur.md](docs/arkitektur.md) |
-| Frontend (sider, tilstand, berekningsmodular) | [docs/frontend.md](docs/frontend.md) |
-| Backend (domeneinndelt: berekning, NVEID, rapport, admin) | [docs/backend-dokumentasjon.md](docs/backend-dokumentasjon.md) |
+| Lokal utvikling og oppsett | [docs/utvikling.md](docs/utvikling.md) |
+| Arkitektur, dataflyt, tekniske valg | [docs/arkitektur.md](docs/arkitektur.md) |
+| Frontend (sider, tilstand, beregningsmoduler) | [docs/frontend.md](docs/frontend.md) |
+| Backend (domeneinndelt: beregning, NVEID, rapport, admin) | [docs/backend-dokumentasjon.md](docs/backend-dokumentasjon.md) |
 | Cloudflare (workers, deploy, observability) | [docs/cloudflare-dokumentasjon.md](docs/cloudflare-dokumentasjon.md) |
-| Sikkerheit (trusselbilete, forsvar i lag, kjende avgrensingar) | [docs/sikkerheit.md](docs/sikkerheit.md) |
-| Rapport-AI runtime (retrieval, modell, bindingar) | [docs/ai-rapport.md](docs/ai-rapport.md) |
+| Sikkerhet (trusselbilde, forsvar i lag, kjente begrensninger) | [docs/sikkerheit.md](docs/sikkerheit.md) |
+| Rapport-AI runtime (retrieval, modell, bindinger) | [docs/ai-rapport.md](docs/ai-rapport.md) |
 | AI-strategi (hallusinering, kostnad, prompt) | [docs/ai-strategi.md](docs/ai-strategi.md) |
-| Lokal utvikling og vanlege feil | [docs/utvikling.md](docs/utvikling.md) |
 | NVE-pipeline (OCR + LLM-strukturering) | [tools/minstevann/README.md](tools/minstevann/README.md) |
 
 ## Krav
@@ -101,17 +100,16 @@ Detaljar (Ollama, OCR-oppsett, validering): [tools/minstevann/README.md](tools/m
 - Node.js 22 LTS, npm 10+
 - Python 3.13+ for `tools/minstevann/`
 - Java 21 for OpenDataLoader/OCR i pipeline
-- git-crypt (valfritt — for å lese `.secrets` og `cloudflare.private.json`)
+- git-crypt (valgfritt — for å lese `.secrets` og `cloudflare.private.json`)
 
 ## Ordliste
 
-| Ord | Tyder |
+| Ord | Betyr |
 |-----|-------|
-| NVE | Noregs vassdrags- og energidirektorat — gir konsesjon for vasskraftverk |
-| NVEID | NVE sin unike ID for eit kraftverk (eks. 1696) |
-| Konsesjon | Løyve frå NVE til å drive vasskraftverk, med vilkår |
-| Minstevassføring | Minste vassmengd som alltid må sleppast forbi inntaket |
-| Slepp | Måten minstevassføringa blir sluppet forbi inntaket på |
-| Måleinstallasjon | Utstyr i felt som måler at minstevassføringa held seg over kravet |
-| Avsidesliggjande lokasjon | Inntak utan straumnett eller fast samband — typisk fjellet |
-
+| NVE | Norges vassdrags- og energidirektorat — gir konsesjon for vannkraftverk |
+| NVEID | NVE sin unike ID for et kraftverk (eks. 1696) |
+| Konsesjon | Tillatelse fra NVE til å drive vannkraftverk, med vilkår |
+| Minstevassføring | Minste vannmengde som alltid må slippes forbi inntaket |
+| Slipp | Måten minstevassføringa blir sluppet forbi inntaket på |
+| Måleinstallasjon | Utstyr i felt som måler at minstevassføringa holder seg over kravet |
+| Avsidesliggende lokasjon | Inntak uten strømnett eller fast samband — typisk fjellet |

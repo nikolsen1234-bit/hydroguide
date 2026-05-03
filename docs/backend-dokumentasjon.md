@@ -1,221 +1,161 @@
-# Backend-Dokumentasjon
+# Backend-dokumentasjon
 
 Oppdatert: 2026-05-03
 
-Backend-koden er delt i Worker-entrypoints, endpoint-handlarar, intern AI-logikk, berekningskjerne og vedlikehaldsskript. Dette dokumentet er **domeneinndelt** — kvar seksjon dekker eitt arbeidsfelt frå rute til lagring.
+## Hva backend gjør
 
-## Mappestruktur
+Backend er fire Cloudflare Workers som tar imot HTTP-kall og svarer med JSON eller tekst:
+
+- **`hydroguide-api`** svarer på det offentlige API-et (`/api/*`).
+- **`hydroguide-report`** mottar rapport-forespørsler fra nettsiden og kaller AI-en internt.
+- **`hydroguide-ai`** lager rapporttekst med en LLM. Har ingen offentlig URL.
+- **`hydroguide-admin`** håndterer API-nøkler. Skilt ut for å holde admin-overflaten unna det offentlige API-et.
+
+Tre ressurser deles mellom dem: en KV-namespace for nøkler og rate-limiting (`API_KEYS`), en KV-namespace for rapport-regler (`REPORT_RULES`), og to R2-buckets (`hydroguide-minimum-flow` for NVEID-data, `hydroguide-ai-reference` for AI-referanser).
+
+## Hvor finner jeg hva i koden
 
 ```text
 backend/
-  api/                        Delte endpoint-handlarar
-    _apiUtils.js              Auth, rate limit, CORS
-    _constants.js             Felles konstantar
-    _edgeUtils.js             Edge-runtime hjelparar
-    calculations.js           POST /api/calculations
-    docs.js                   GET /api/docs[?ui]
-    health.js                 GET /api/health
-    nveid.js                  GET /api/nveid[/...]
-    place-suggestions.js      POST /api/place-suggestions
-    pvgis-tmy.js              GET /api/pvgis-tmy
-    report.js                 POST /api/report (handler)
-    terrain-profile.js        POST /api/terrain-profile
-    keys/                     (intern bruk frå admin-Worker)
-  admin/keys/index.js         POST/GET/DELETE /admin/keys
-  workers/
-    api/index.js              Public API Worker
-    report/index.js           Report Worker
-    ai/index.ts               Intern AI Worker
-    admin/index.js            Admin Worker
-  cloudflare/                 Wrangler-konfig per Worker
+  workers/                Worker-entrypoints (én fil per Worker)
+    api/index.js
+    report/index.js
+    ai/index.ts
+    admin/index.js
+  api/                    Endpoint-handlere som Workers kaller
+    calculations.js, nveid.js, docs.js, health.js,
+    pvgis-tmy.js, place-suggestions.js, terrain-profile.js, report.js
+    _apiUtils.js          Felles: auth, rate limit, CORS
+  admin/keys/index.js     Handler for /admin/keys
   services/
-    ai/                       Rapport-AI implementasjon
-    calculations/             Delt berekningskjerne (frontend + backend)
+    calculations/         Beregningskjernen (delt mellom frontend og backend)
+    ai/                   Rapport-AI (prompt-bygging, retrieval, modell-kall)
+  cloudflare/             Wrangler-konfig, én per Worker
   data/
-    minimumflow.json          Lokal kopi av NVEID-data
-    cloudflare-kv/            KV seed-data
-    nveid/                    NVEID-pipeline mellomtilstand
-  scripts/                    Cloudflare, R2 og KV-vedlikehald
+    minimumflow.json      Lokal kopi av NVEID-data
+    cloudflare-kv/        KV seed-filer
+  scripts/                Vedlikeholds-CLI for Cloudflare, R2, KV
 ```
 
-## Domene 1 — Berekning
+## API-en delt opp etter formål
 
-**Spørsmål domenet svarer på:** "Gitt eit inntak og eit utstyrsbudsjett, kor mykje energi kan vi rekne med, og er det nok til drift?"
+API-et har tre kategorier endepunkter. Sensor og eksterne brukere skal forholde seg til de **offentlige**. **Frontend-hjelperne** finnes for nettsiden og er ikke ment som offentlig API. **Admin** er fysisk skilt fra det offentlige API-et.
 
-| Element | Lokasjon |
-|---------|----------|
-| Endepunkt | `GET /api/calculations` (skjema), `POST /api/calculations` (berekning) |
-| Worker | `hydroguide-api` |
-| Handler | `backend/api/calculations.js` |
-| Logikk | `backend/services/calculations/_calculationCore.js` |
-| Auth | `Authorization: Bearer <api_key>` (HMAC-verifisering) |
-| Lagring | `API_KEYS` KV (verifisering, rate limit) |
+### Offentlig API (dokumentert i `/api/docs?ui`)
 
-Berekningskjernen er rein logikk brukt av både API og frontend. Han validerer input, reknar utstyrsbudsjett, batterikapasitet, energibalanse og kostnad over levetid. Same modul i `backend/services/calculations/` blir importert av frontend i utviklingsmodus via Vite-bridge, slik at frontend og backend ikkje kan kome ut av sync.
+| Endepunkt | Hva det gjør |
+|-----------|--------------|
+| `GET /api/health` | Helsesjekk. Svarer `{status, timestamp}`. |
+| `GET /api/docs` | OpenAPI-spek. `?ui` gir Swagger UI. |
+| `POST /api/calculations` | Hovedberegning: gitt inntak + utstyr, returnerer energibudsjett, batteristørrelse, kostnad over levetid. |
+| `GET /api/calculations` | Returnerer input-skjema. |
+| `GET /api/nveid` | Liste over tilgjengelige stasjoner (meny, ikke hele datasettet). |
+| `GET /api/nveid/{id}` | Meny for én stasjon. |
+| `GET /api/nveid/{id}/minimum-flow` | Minstevassføring for stasjonen. |
+| `GET /api/nveid/{id}/concession` | Konsesjonslenke for stasjonen. |
+| `GET /api/pvgis-tmy` | Proxy for PVGIS soldata. |
 
-**Feiltilfelle:**
-- 401 dersom API-nøkkel manglar eller er ugyldig.
-- 429 dersom rate limit (40 req per 10s) er overskride.
-- 422 dersom input-skjema feilar validering.
+Krever `Authorization: Bearer <api-key>` på alle unntatt `/api/health` og `/api/docs`.
 
-## Domene 2 — NVEID og Minstevassføring
+### Frontend-hjelpere (kallbare fra nettsiden, ikke offentlig API)
 
-**Spørsmål domenet svarer på:** "Kva krev NVE av dette spesifikke kraftverket?"
+| Endepunkt | Hva det gjør |
+|-----------|--------------|
+| `POST /api/place-suggestions` | Stedssøk via Kartverket. |
+| `POST /api/terrain-profile` | Terrengprofil for radiolink-beregning. |
+| `POST /api/report` | Lager AI-rapport. Krever access-code fra nettsiden. |
 
-| Element | Lokasjon |
-|---------|----------|
-| Endepunkt | `GET /api/nveid`, `GET /api/nveid/{id}`, `GET /api/nveid/{id}/minimum-flow`, `GET /api/nveid/{id}/concession` |
-| Worker | `hydroguide-api` |
-| Handler | `backend/api/nveid.js` |
-| Lagring | `MINIMUM_FLOW_BUCKET` R2 (`api/minimumflow.json`) |
-| Lokal kopi | `backend/data/minimumflow.json` |
+Disse står ikke i Swagger-spekken og er ikke ment for direkte bruk av tredjepart.
 
-**Directory-regel:** rotruter viser meny og neste steg, ikkje heile filinnhaldet.
+### Admin
+
+| Endepunkt | Hva det gjør |
+|-----------|--------------|
+| `GET /admin/keys` | Lister API-nøkler (kun hash). |
+| `POST /admin/keys` | Lager ny nøkkel. |
+| `DELETE /admin/keys/{id}` | Sletter nøkkel. |
+
+Krever `Authorization: Bearer <ADMIN_TOKEN>`. WAF blokkerer `/api/keys*` slik at admin aldri ved et uhell havner på det offentlige API-et.
+
+## Hvordan beregningene henger sammen
+
+Beregningskjernen i `backend/services/calculations/_calculationCore.js` er ren JavaScript-logikk. Den brukes av to steder:
+
+1. `POST /api/calculations` (Worker-handler i `backend/api/calculations.js`).
+2. Frontend, via Vite-bridge i utvikling og direkte import i bygd kode.
+
+Det betyr at beregninger som "kor mye sol treffer panelet i juni" gir samme svar i UI-en og over API-et. Hvis vi rører kjernen, oppdateres begge automatisk.
+
+## Hvordan rapport-flyten fungerer
+
+```text
+Nettsiden                  POST /api/report (access code)
+  -> hydroguide-report     validerer access code, sjekker rate limit
+       service binding     REPORT_AI_WORKER (intern bearer-token)
+  -> hydroguide-ai         henter retrieval-grunnlag fra REPORT_RULES + AI_REFERENCE_BUCKET,
+                           bygger prompt, kaller modell via AI Gateway,
+                           returnerer { text }
+  -> Nettsiden             rendrer HTML-rapport med AI-tekst + diagrammer
+```
+
+`hydroguide-ai` har `workers_dev: false` og ingen route — den er kun nåbar via service binding fra rapport-Worker. Ingen kan kalle AI-en direkte utenfra.
+
+For prompt, retrieval og modellvalg: se [ai-rapport.md](ai-rapport.md) og [ai-strategi.md](ai-strategi.md).
+
+## Hvordan API-nøkler verifiseres
+
+Når et kall kommer inn med `Authorization: Bearer <key>`:
+
+1. Worker tar `<key>`, regner HMAC-SHA-256 med `API_KEY_HASH_SECRET`.
+2. Slår opp resultatet i `API_KEYS` KV.
+3. Hvis treff og nøkkelen er aktiv: kallet slipper gjennom.
+4. Worker oppdaterer rate-limit-telleren for nøkkelen.
+
+KV inneholder kun hash-en, aldri klartekst-nøkkelen. Hvis KV lekkes, kan ingen bruke hash-en til å autentisere — den må reverseres, og det er ikke mulig uten `API_KEY_HASH_SECRET`.
+
+Felles auth-logikk ligger i `backend/api/_apiUtils.js` og brukes av både `hydroguide-api` og `hydroguide-admin`.
+
+## NVEID-mappen returnerer menyer, ikke datadumper
+
+`/api/nveid`-rutene følger en bevisst regel: rot- og mellomnivå-rutene returnerer info om hva som finnes, ikke selve dataene.
 
 | Rute | Returnerer |
 |------|-------------|
-| `/api/nveid` | Endepunkt-info og éin neste-rute: `/api/nveid/{nveID}` |
-| `/api/nveid/{nveID}` | Meny for stasjonen: `minimum-flow`, `concession` |
-| `/api/nveid/{nveID}/minimum-flow` | Berre minstevassføring-seksjonen |
-| `/api/nveid/{nveID}/concession` | Berre konsesjonslenke/mapping |
+| `/api/nveid` | "Bruk `/api/nveid/{id}` for å se en stasjon." |
+| `/api/nveid/{id}` | "For denne stasjonen: `minimum-flow` eller `concession`." |
+| `/api/nveid/{id}/minimum-flow` | Selve minstevassføring-tallene. |
+| `/api/nveid/{id}/concession` | Konsesjonslenke. |
 
-Vi dumpar aldri rå `minimumflow.json` frå rota.
+Det betyr at vi aldri dumper hele `minimumflow.json`-filen fra rot-rutene. En tredjepart må vite hvilken stasjon de vil ha og hvilken seksjon — ikke "gi meg alt".
 
-**Feiltilfelle:**
-- 404 dersom NVEID ikkje finst i datasettet.
-- 503 dersom R2 er utilgjengeleg.
+## Vedlikeholdsskript
 
-## Domene 3 — Rapport
-
-**Spørsmål domenet svarer på:** "Generer ein lesbar rapport som forklarar val og anbefalingar i klart språk."
-
-| Element | Lokasjon |
-|---------|----------|
-| Endepunkt | `POST /api/report` |
-| Worker (front) | `hydroguide-report` |
-| Worker (intern) | `hydroguide-ai` (ingen offentleg route) |
-| Handler | `backend/api/report.js`, `backend/workers/report/index.js`, `backend/workers/ai/index.ts` |
-| Implementasjon | `backend/services/ai/` |
-| Auth (utside) | `REPORT_ACCESS_CODE_HASH` (frå nettsida) |
-| Auth (intern) | `REPORT_WORKER_TOKEN` |
-| Lagring | `REPORT_RULES` KV (faste reglar), `AI_REFERENCE_BUCKET` R2 (NVE-referansar) |
-
-**Flyt:**
-
-```text
-Frontend
-  -> POST /api/report (access code)
-  -> hydroguide-report
-       - validerer access code
-       - rate limit
-       - service binding REPORT_AI_WORKER (REPORT_WORKER_TOKEN)
-  -> hydroguide-ai
-       - retrieval (REPORT_RULES + AI_REFERENCE_BUCKET + AI Search)
-       - prompt-bygg
-       - AI Gateway (cache, retry, modell-fallback)
-       - returnerer { text }
-  -> Frontend renderar HTML-rapport
-```
-
-Detaljar om prompt, retrieval og kostnad: [ai-rapport.md](ai-rapport.md) og [ai-strategi.md](ai-strategi.md).
-
-**Feiltilfelle:**
-- 401 dersom access code er feil.
-- 429 dersom rate limit er overskride.
-- 502 dersom AI-Worker svarer feil eller tek over timeout.
-- Fallback til `gpt-5.4-mini` skjer automatisk i AI-Workeren.
-
-## Domene 4 — Admin
-
-**Spørsmål domenet svarer på:** "Korleis administrerer vi API-nøklar utan å eksponere det offentleg?"
-
-| Element | Lokasjon |
-|---------|----------|
-| Endepunkt | `GET /admin/keys`, `POST /admin/keys`, `DELETE /admin/keys/{id}` |
-| Worker | `hydroguide-admin` (ingen overlapp med `/api/*`) |
-| Handler | `backend/admin/keys/index.js` |
-| Auth | `Authorization: Bearer <ADMIN_TOKEN>` |
-| Lagring | `API_KEYS` KV |
-| Hash-secret | `API_KEY_HASH_SECRET` |
-
-**Kvifor `/admin/*` og ikkje `/api/keys`:**
-- `/api/keys*` er WAF-blokkert med 403. Dette er defense in depth — sjølv om ein Worker ved feil tek `/api/keys`, slepp ikkje requesten gjennom.
-- Admin-overflate er fysisk skild i eigen Worker, slik at offentleg API-kompromittering ikkje gir admin-tilgang.
-
-**Flyt for ny nøkkel:**
-1. POST /admin/keys med metadata.
-2. Workeren genererer klartekst-nøkkel.
-3. Workeren reknar HMAC(klartekst, `API_KEY_HASH_SECRET`).
-4. Berre HMAC-en blir lagra i KV.
-5. Klartekst-nøkkelen blir returnert éin gong, så er han borte.
-
-**Feiltilfelle:**
-- 401 dersom `ADMIN_TOKEN` manglar eller er feil.
-- 404 dersom nøkkel-ID ikkje finst.
-
-## Domene 5 — Frontend-hjelparar
-
-**Spørsmål domenet svarer på:** "Frontend treng små proxy-kall som ikkje skal vere offentleg API."
-
-| Endepunkt | Worker | Handler | Bruk |
-|-----------|--------|---------|------|
-| `POST /api/place-suggestions` | `hydroguide-api` | `backend/api/place-suggestions.js` | Stadsøk via Kartverket |
-| `POST /api/terrain-profile` | `hydroguide-api` | `backend/api/terrain-profile.js` | Terrengprofil for radiolink/horisont |
-| `GET /api/pvgis-tmy` | `hydroguide-api` | `backend/api/pvgis-tmy.js` | PVGIS TMY-soldata |
-
-`place-suggestions` og `terrain-profile` er kallbare frå nettsida, men er **ikkje** dokumentert i `/api/docs?ui` som offentleg API. Dei finst for å skjule eksterne API-detaljar (URL-format, eventuell auth) frå browseren.
-
-`pvgis-tmy` er ein offentleg GET-proxy med rate limit — han er dokumentert.
-
-**Feiltilfelle:**
-- 502 dersom oppstrøms-tenest (Kartverket, PVGIS) feilar.
-- 429 dersom rate limit er overskride.
-
-## Tverrgåande Element
-
-### Auth, rate limit, CORS
-
-`backend/api/_apiUtils.js` har:
-- HMAC-verifisering av API-nøklar mot `API_KEYS` KV.
-- Rate limit-teljing per nøkkel (utfyllande til Cloudflare per-IP rate limit).
-- CORS-handsaming for browserkall.
-- Standardisert feilrespons-format.
-
-Same modul brukes av `hydroguide-api` og `hydroguide-admin`.
-
-### Felles konstantar
-
-`backend/api/_constants.js` har felles tekstar, statuskodar og defaults brukt av fleire handlarar.
-
-### Edge-runtime hjelparar
-
-`backend/api/_edgeUtils.js` har små verktøy som ikkje treng full Node.js-API.
-
-## Vedlikehaldsskript
+Skript som kjøres av maintainer ved behov, ikke automatisk i CI:
 
 | Skript | Bruk |
 |--------|------|
-| `build-cloudflare-worker-config.mjs` | Byggjer og sjekkar generert Cloudflare-konfig |
-| `check-worker-hygiene.mjs` | Pre-commit/CI-sjekk av Worker-konfig og branch-status |
-| `build-ai-search-corpus.mjs` | Byggjer chunks frå NVE-referansar for AI Search |
-| `upload-corpus-to-r2.ps1` | Lastar referansar og embeddings til `AI_REFERENCE_BUCKET` |
-| `seed-kv.ps1` | Seedar `REPORT_RULES` KV |
-| `fix-r2-metadata.mjs` | Reparerer R2-metadata ved behov |
+| `build-cloudflare-worker-config.mjs` | Bygger generert deploy-konfig fra source-config. |
+| `check-worker-hygiene.mjs` | Pre-commit/CI-sjekk: konfig-konsistens og branch-status. |
+| `build-ai-search-corpus.mjs` | Bygger AI-Search-chunks fra NVE-referanser. |
+| `upload-corpus-to-r2.ps1` | Laster opp referanser/embeddings til `AI_REFERENCE_BUCKET`. |
+| `seed-kv.ps1` | Seedar `REPORT_RULES` KV. |
+| `fix-r2-metadata.mjs` | Reparerer R2-metadata ved behov. |
 
 ## Testing
 
-Backend har enheitstestar for handlarar med ikkje-triviell logikk:
+| Test | Hva den dekker |
+|------|----------------|
+| `backend/api/_apiUtils.test.mjs` | Auth + rate limit |
+| `backend/api/nveid.test.mjs` | NVEID-mappen og oppslag |
+| `backend/api/pvgis-tmy.test.mjs` | PVGIS proxy-feilhåndtering |
+| `backend/cloudflare/wrangler-routes.test.mjs` | Rute-mønster i Wrangler-config matcher kontrakt |
 
-- `backend/api/_apiUtils.test.mjs` — auth og rate limit
-- `backend/api/nveid.test.mjs` — directory-regel og NVEID-oppslag
-- `backend/api/pvgis-tmy.test.mjs` — proxy-feilhandtering
-- `backend/cloudflare/wrangler-routes.test.mjs` — at rute-mønstera i Wrangler-config matchar dokumentert kontrakt
+Kjør med `node --test backend/api/<navn>.test.mjs`.
 
-Tester kjørast med `node --test backend/...`.
+## Se også
 
-## Sjå Òg
-
-- Worker-deploy og bindings-detaljar: [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md)
-- Trusselbilete og auth-design: [sikkerheit.md](sikkerheit.md)
-- Rapport-AI runtime: [ai-rapport.md](ai-rapport.md)
-- Lokal utvikling og test: [utvikling.md](utvikling.md)
+- Worker-konfig, deploy, secrets: [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md)
+- Trusselbilde og auth-design: [sikkerheit.md](sikkerheit.md)
+- Rapport-AI (runtime): [ai-rapport.md](ai-rapport.md)
+- Rapport-AI (strategi): [ai-strategi.md](ai-strategi.md)
+- Lokal utvikling: [utvikling.md](utvikling.md)

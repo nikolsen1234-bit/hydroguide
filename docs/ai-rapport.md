@@ -10,16 +10,38 @@ For pipeline som forbereder grunnlagsdata: se [tools/minstevann/README.md](../to
 ## Flyt
 
 ```mermaid
-flowchart LR
-    spa[Frontend] -->|POST /api/report| report[hydroguide-report]
-    report -.service binding.-> ai[hydroguide-ai]
-    ai --> kv[(REPORT_RULES)]
-    ai --> r2[(AI_REFERENCE_BUCKET)]
+flowchart TB
+    spa[Frontend]
+
+    subgraph reportw[hydroguide-report]
+        validate[Valider access code<br/>+ rate limit]
+    end
+
+    subgraph aiw[hydroguide-ai — ingen offentlig route]
+        rules[Hent faste regler<br/>fra REPORT_RULES KV]
+        search[Hent relevante chunks<br/>via AI Search over<br/>R2 ai-reference]
+        merge[Slå sammen prompt:<br/>regler + retrieval + bruker-input]
+        gateway[AI Gateway<br/>cache-treff først]
+        model[Modell: gpt-5.1<br/>fallback gpt-5.4-mini]
+    end
+
+    kv[(KV REPORT_RULES)]
+    r2[(R2 ai-reference)]
+
+    spa -->|POST /api/report<br/>REPORT_ACCESS_CODE_HASH| reportw
+    reportw -.service binding<br/>REPORT_WORKER_TOKEN.-> aiw
+
+    rules --> kv
+    search --> r2
+    rules --> merge
+    search --> merge
+    merge --> gateway
+    gateway -.cache miss<br/>AI_GATEWAY_AUTH_TOKEN.-> model
+    gateway -.cache hit.-> spa
+    model --> spa
 ```
 
-`hydroguide-report` validerer access code fra nettsiden, sjekker rate limit, og kaller AI-Worker via service binding med `REPORT_WORKER_TOKEN`. AI-Worker henter retrieval-grunnlag fra `REPORT_RULES` (faste regler) og `AI_REFERENCE_BUCKET` (NVE-referanser via AI Search), bygger prompt og kaller modell via Cloudflare AI Gateway. Resultatet `{ text }` returneres til frontend som rendrer HTML-rapport.
-
-`hydroguide-ai` har ingen offentlig route. `hydroguide-report` kaller den med service binding.
+`hydroguide-report` validerer access code fra nettsiden og rate-limiter. Den kaller `hydroguide-ai` via en intern service binding — det betyr at AI-Worker aldri trenger en offentlig URL. AI-Worker har tre faser: bygg prompt fra retrieval-kildene, kall modell via AI Gateway (cache-treff returnerer umiddelbart, TTL 1 time), returner `{ text }` til frontend som rendrer HTML-rapport.
 
 ## Bindinger
 
@@ -33,37 +55,6 @@ flowchart LR
 | `AI_REFERENCE_BUCKET` | R2 | Referanser og embeddings |
 | `AI_GATEWAY_AUTH_TOKEN` | Secret | Tilgang til AI Gateway |
 | `AI_SEARCH_API_TOKEN` | Secret | Tilgang til AI Search |
-
-## Innsiden av hydroguide-ai
-
-```mermaid
-flowchart TB
-    inn[Inngang<br/>service binding fra report]
-
-    subgraph build[Bygg prompt]
-        rules[Hent faste regler<br/>fra REPORT_RULES KV]
-        search[Hent relevante chunks<br/>via AI Search<br/>over R2 ai-reference]
-        merge[Slå sammen prompt-blokker<br/>regler + retrieval + bruker-input]
-    end
-
-    subgraph call[Kall modell]
-        gateway[Send via AI Gateway<br/>cache-treff først]
-        model[Modell: gpt-5.1<br/>fallback gpt-5.4-mini]
-    end
-
-    out[Returner text]
-
-    inn --> rules
-    inn --> search
-    rules --> merge
-    search --> merge
-    merge --> gateway
-    gateway -.cache miss.-> model
-    gateway -.cache hit.-> out
-    model --> out
-```
-
-`hydroguide-ai` har tre faser per request: bygg prompt fra retrieval-kildene, kall modellen via AI Gateway (cache-treff returnerer umiddelbart), returner ferdig tekst. Cache TTL er 1 time, så like rapporter koster ingenting etter første kall.
 
 ## Retrieval
 

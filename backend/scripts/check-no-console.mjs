@@ -30,7 +30,7 @@ const EXTS = new Set([".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx"]);
 function git(args) {
   try {
     return execFileSync("git", args, { encoding: "utf8" }).trim();
-  } catch (err) {
+  } catch {
     return "";
   }
 }

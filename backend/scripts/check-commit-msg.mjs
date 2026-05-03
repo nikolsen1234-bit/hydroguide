@@ -11,6 +11,11 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
+const LINE_SPLIT_RE = /\r?\n/;
+const MERGE_LINE_RE = /^Merge\s/;
+const REVERT_LINE_RE = /^Revert\s/;
+const TRAILING_PUNCT_RE = /[.!?]+$/;
+
 const BLOCKLIST = new Set([
   "fix",
   "wip",
@@ -78,11 +83,11 @@ function main() {
   }
 
   const raw = readFileSync(absolutePath, "utf8");
-  const lines = raw.split(/\r?\n/);
+  const lines = raw.split(LINE_SPLIT_RE);
   const firstLine = (lines.find((line) => !line.startsWith("#")) || "").trim();
 
   // Exempt merge and revert commits — git generates these.
-  if (/^Merge\s/.test(firstLine) || /^Revert\s/.test(firstLine)) {
+  if (MERGE_LINE_RE.test(firstLine) || REVERT_LINE_RE.test(firstLine)) {
     process.exit(0);
   }
 
@@ -90,7 +95,7 @@ function main() {
     fail("first line is shorter than 10 characters", firstLine);
   }
 
-  const normalized = firstLine.toLowerCase().replace(/[.!?]+$/, "").trim();
+  const normalized = firstLine.toLowerCase().replace(TRAILING_PUNCT_RE, "").trim();
   if (BLOCKLIST.has(normalized)) {
     fail(`first line is in low-effort blocklist`, firstLine);
   }

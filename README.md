@@ -7,20 +7,44 @@ Live: [hydroguide.no](https://hydroguide.no) — API-dokumentasjon: [hydroguide.
 ## System
 
 ```mermaid
-flowchart LR
+---
+config:
+  layout: elk
+---
+flowchart TB
     bruker[Bruker]
-    nve[NVE ArcGIS]
-    pvgis[EU PVGIS]
-    kart[Kartverket]
-    aigw[Cloudflare AI Gateway]
+    operator[Operatør]
 
-    bruker --> hg[HydroGuide<br/>hydroguide.no]
-    hg --> pvgis
-    hg --> kart
-    hg --> aigw
+    subgraph hg[HydroGuide]
+        spa[Statisk frontend<br/>React/Vite/Tailwind]
 
-    pipeline[Lokal NVE-pipeline] --> nve
-    pipeline -->|JSON via R2| hg
+        subgraph workers[Cloudflare Workers]
+            api[hydroguide-api]
+            report[hydroguide-report]
+            ai[hydroguide-ai<br/>ingen offentlig route]
+            admin[hydroguide-admin]
+        end
+
+        subgraph storage[Cloudflare lagring]
+            kvkeys[(KV API_KEYS)]
+            kvrules[(KV REPORT_RULES)]
+            r2flow[(R2 hydroguide-minimum-flow)]
+            r2ref[(R2 hydroguide-ai-reference)]
+        end
+    end
+
+    bruker --> spa
+    spa -->|/api/*| api
+    spa -->|/api/report| report
+    operator -->|/admin/*| admin
+
+    report -.service binding.-> ai
+
+    api --> kvkeys
+    api --> r2flow
+    admin --> kvkeys
+    ai --> kvrules
+    ai --> r2ref
 ```
 
 HydroGuide er en React/Vite-frontend pluss fire Cloudflare Workers (api, report, ai, admin), to KV-namespaces og tre R2-buckets. NVE-konsesjonsdokument blir prosessert lokalt (OCR + LLM) og lastet opp som ferdig JSON. Soldata kommer fra PVGIS, terreng fra Kartverket, og rapporttekst fra Cloudflare AI Gateway.

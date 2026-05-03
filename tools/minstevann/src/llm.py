@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import re
 import socket
 from pathlib import Path
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 from src.models import DEFAULT_OLLAMA_TIMEOUT, LLM_CACHE_DIR, CHUNK_THRESHOLD
 from src.snippet import _normalize_inntak_navn
+
+logger = logging.getLogger(__name__)
 
 
 class OllamaError(Exception):
@@ -122,6 +126,8 @@ def call_ollama(prompt: str, model: str, host: str, timeout: int = DEFAULT_OLLAM
         },
     }
     url = f"{host.rstrip('/')}/api/generate"
+    if urlparse(url).scheme not in ("http", "https"):
+        raise ValueError(f"Refusing non-http(s) URL: {url}")
     data = json.dumps(payload).encode("utf-8")
     req = Request(url, data=data, headers={"Content-Type": "application/json"})
     try:
@@ -132,8 +138,8 @@ def call_ollama(prompt: str, model: str, host: str, timeout: int = DEFAULT_OLLAM
         detail = ""
         try:
             detail = e.read().decode("utf-8", errors="replace")[:300]
-        except Exception:
-            pass
+        except Exception as read_exc:
+            logger.debug("Could not read HTTPError body: %s", read_exc)
         raise OllamaError(f"HTTP {e.code} from Ollama: {detail or e.reason}") from e
     except URLError as e:
         raise OllamaError(f"Cannot reach Ollama at {host}: {e.reason}") from e

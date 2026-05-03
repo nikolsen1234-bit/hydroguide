@@ -7,14 +7,16 @@ Scanned PDFs get OCR via OpenDataLoader hybrid mode='full'.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import shutil
 import tempfile
-import time
 from pathlib import Path
 
 from src.models import CACHE_DIR
+
+logger = logging.getLogger(__name__)
 
 CONTENT_TYPES = {"heading", "paragraph", "list", "table"}
 
@@ -247,8 +249,8 @@ def append_hybrid_log(entries: list[dict]) -> None:
     if HYBRID_LOG_PATH.exists():
         try:
             existing = json.loads(HYBRID_LOG_PATH.read_text(encoding="utf-8"))
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Could not read hybrid log %s: %s", HYBRID_LOG_PATH, exc)
     seen = {e["file"] for e in existing}
     for entry in entries:
         if entry["file"] not in seen:

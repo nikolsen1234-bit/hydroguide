@@ -9,8 +9,20 @@
 } from "../types";
 import { formatNumber } from "./format";
 
+const AMP_RE = /&/g;
+const LT_RE = /</g;
+const GT_RE = />/g;
+const DQUOTE_RE = /"/g;
+const SQUOTE_RE = /'/g;
+const TRIM_QUOTES_RE = /^["']|["']$/g;
+const FAGLEG_PREFIX_RE = /^Fagleg underbygging:\s*/i;
+const WHITESPACE_RE = /\s+/g;
+const SENTENCE_BOUNDARY_RE = /([.!?])\s+(?=[A-ZÆØÅ])/g;
+const SEMICOLON_SPLIT_RE = /\s*;\s*/;
+const FILENAME_SAFE_RE = /[^a-zA-Z0-9æøåÆØÅ _-]/g;
+
 function esc(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  return s.replace(AMP_RE, "&amp;").replace(LT_RE, "&lt;").replace(GT_RE, "&gt;").replace(DQUOTE_RE, "&quot;").replace(SQUOTE_RE, "&#39;");
 }
 
 function todayFormatted(): string {
@@ -42,9 +54,9 @@ function joinSentences(items: string[]): string {
 function renderAiRecommendationText(text: string): string {
   const normalized = text
     .trim()
-    .replace(/^["']|["']$/g, "")
-    .replace(/^Fagleg underbygging:\s*/i, "")
-    .replace(/\s+/g, " ");
+    .replace(TRIM_QUOTES_RE, "")
+    .replace(FAGLEG_PREFIX_RE, "")
+    .replace(WHITESPACE_RE, " ");
 
   if (!normalized) {
     return "";
@@ -65,7 +77,7 @@ function renderAiRecommendationText(text: string): string {
     sanitized = sanitized.replace(pattern, replacement);
   });
 
-  const parts = sanitized.split(/([.!?])\s+(?=[A-Z\u00C6\u00D8\u00C5])/g);
+  const parts = sanitized.split(SENTENCE_BOUNDARY_RE);
   let paragraphs: string[] = [];
 
   for (let index = 0; index < parts.length; index += 2) {
@@ -77,7 +89,7 @@ function renderAiRecommendationText(text: string): string {
 
   if (paragraphs.length <= 1 && sanitized.includes(";")) {
     paragraphs = sanitized
-      .split(/\s*;\s*/)
+      .split(SEMICOLON_SPLIT_RE)
       .map((paragraph) => paragraph.trim())
       .filter(Boolean);
   }
@@ -369,7 +381,7 @@ export function openReportWindow(
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `${(config.name || "rapport").trim().replace(/[^a-zA-Z0-9\u00e6\u00f8\u00e5\u00c6\u00d8\u00c5 _-]/g, "")}.html`;
+    anchor.download = `${(config.name || "rapport").trim().replace(FILENAME_SAFE_RE, "")}.html`;
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);

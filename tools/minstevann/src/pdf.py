@@ -7,6 +7,7 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 from urllib.error import URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 JAVA_CANDIDATES = [
@@ -63,6 +64,8 @@ def _clean_markdown(text: str) -> str:
 @lru_cache(maxsize=4)
 def _hybrid_server_healthy(base_url: str) -> bool:
     url = base_url.rstrip("/") + "/health"
+    if urlparse(url).scheme not in ("http", "https"):
+        return False
     req = Request(url, headers={"User-Agent": "HydroGuide opendataloader probe"})
     try:
         with urlopen(req, timeout=5) as response:

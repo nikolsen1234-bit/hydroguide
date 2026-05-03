@@ -12,6 +12,8 @@
 // Constants
 // ---------------------------------------------------------------------------
 
+const HEX_STRING_RE = /^[a-f0-9]+$/i;
+
 /** @type {Map<string, number[]>} */
 const rateLimitBuckets = new Map();
 
@@ -136,7 +138,7 @@ async function hmacSha256Hex(secret, text) {
 
 function constantTimeHexEquals(a, b) {
   if (typeof a !== "string" || typeof b !== "string") return false;
-  if (!/^[a-f0-9]+$/i.test(a) || !/^[a-f0-9]+$/i.test(b)) return false;
+  if (!HEX_STRING_RE.test(a) || !HEX_STRING_RE.test(b)) return false;
 
   const left = a.toLowerCase();
   const right = b.toLowerCase();

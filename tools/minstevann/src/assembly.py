@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import re
 
-from src.pdf import normalize_ocr_artefacts
 from src.snippet import (
     _normalize_match_text,
     _normalize_inntak_navn,
     _guess_inntak_funksjon,
-    _sanitize_inventory_name,
     _inventory_key,
     _split_group_inntak_names,
     _looks_like_generic_inntak_name,

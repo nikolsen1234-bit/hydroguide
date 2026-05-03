@@ -23,6 +23,7 @@ const workerFilePatterns = [
 ];
 
 const generatedConfigPattern = /^backend\/cloudflare\/.*\.generated\.wrangler\.jsonc$/;
+const WHITESPACE_RE = /\s+/;
 const privateConfigPaths = [".secrets", "backend/config/cloudflare.private.json"];
 const privateConfigPath = "backend/config/cloudflare.private.json";
 
@@ -148,7 +149,7 @@ function checkBranchIsNotBehindUpstream() {
     return;
   }
 
-  const [behindRaw] = countResult.stdout.trim().split(/\s+/);
+  const [behindRaw] = countResult.stdout.trim().split(WHITESPACE_RE);
   const behind = Number.parseInt(behindRaw, 10);
   if (behind > 0) {
     fail(

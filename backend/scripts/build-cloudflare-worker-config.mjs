@@ -5,6 +5,12 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..", "..");
 
+const REDACT_ID_RE = /^id$/i;
+const REDACT_STORE_ID_RE = /^store_id$/i;
+const REDACT_ACCOUNT_ID_RE = /^[a-z0-9_]{0,64}account_id$/i;
+const REDACT_NAMESPACE_ID_RE = /^[a-z0-9_]{0,64}namespace_id$/i;
+const REDACT_SECRET_KEY_RE = /^[a-z0-9_]{0,64}(?:token|secret|password|hash)[a-z0-9_]{0,64}$/i;
+
 const privateConfigPath = resolve(rootDir, "backend/config/cloudflare.private.json");
 const publicConfigPath = resolve(rootDir, "backend/config/cloudflare.public.json");
 
@@ -248,11 +254,11 @@ function redactValue(key, value) {
   }
 
   if (
-    /^id$/i.test(key) ||
-    /^store_id$/i.test(key) ||
-    /account_id$/i.test(key) ||
-    /namespace_id$/i.test(key) ||
-    /(token|secret|password|hash)/i.test(key)
+    REDACT_ID_RE.test(key) ||
+    REDACT_STORE_ID_RE.test(key) ||
+    REDACT_ACCOUNT_ID_RE.test(key) ||
+    REDACT_NAMESPACE_ID_RE.test(key) ||
+    REDACT_SECRET_KEY_RE.test(key)
   ) {
     return "OMIT";
   }

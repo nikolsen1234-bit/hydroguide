@@ -16,13 +16,12 @@ Usage:
 import argparse
 import json
 import math
-import sys
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
 from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.colors import Color, HexColor, white, black
+from reportlab.lib.colors import Color, HexColor, white
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
@@ -180,7 +179,7 @@ def fetch_elevations(points):
         url = f"{KARTVERKET_URL}?{params}"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
                 data = json.loads(resp.read())
                 pts = data.get("punkter", data.get("points", data if isinstance(data, list) else []))
                 for p in pts:

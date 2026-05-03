@@ -1,6 +1,7 @@
 import type { Env, Rules, KeywordMap } from "./types.js";
 import { buildMetadataRecord, parseBooleanFlag, fillTemplate } from "./utils.js";
 import { constantTimeEquals, resolveSecret, buildCorsHeaders, jsonResponse } from "./auth.js";
+import { createFeedbackToken } from "./feedback-token.js";
 import { retrieveStructuredEvidence } from "./retrieval.js";
 import {
   normalizeBody,
@@ -411,7 +412,7 @@ export default {
 
       // Generate feedback token for user feedback
       const feedbackToken = parseBooleanFlag(env.USER_FEEDBACK_ENABLED, false)
-        ? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+        ? createFeedbackToken()
         : undefined;
 
       return jsonResponse(

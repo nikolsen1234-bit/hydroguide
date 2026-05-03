@@ -1,3 +1,5 @@
+const EQUIPMENT_ROW_KEY_RE = /^equipmentRows\.([^.]+)\.(.+)$/;
+
 const MAX_CONFIGURATION_EQUIPMENT_ROWS = 200;
 const MONTH_KEYS = ["jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des"];
 const MONTH_LABELS = {
@@ -36,17 +38,12 @@ const QUESTION_ALLOWED_VALUES = {
 };
 
 function makeId(prefix = "cfg") {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${crypto.randomUUID()}`;
 }
 
 function round(value, digits = 2) {
   const factor = 10 ** digits;
   return Math.round((value + Number.EPSILON) * factor) / factor;
-}
-
-function roundDown(value, digits = 0) {
-  const factor = 10 ** digits;
-  return Math.floor(value * factor) / factor;
 }
 
 function toNumber(value) {
@@ -566,16 +563,6 @@ function calculateCostComparison(configuration, annualEnergyDeficitKWh) {
   };
 }
 
-function createEmptyScenario(source, totalWhPerDay, totalAhPerDay) {
-  return {
-    source,
-    monthlyEnergyBalance: [],
-    annualTotals: createEmptyAnnualTotals(totalWhPerDay, totalAhPerDay),
-    secondarySourcePowerW: 0,
-    costItem: null
-  };
-}
-
 function createScenario(configuration, source, totalWhPerDay, totalAhPerDay, costItem) {
   const monthlyEnergyBalance = calculateMonthlyEnergyBalance(configuration, totalWhPerDay, source);
 
@@ -808,7 +795,7 @@ function buildCalculationQuestions(validationErrors, configuration) {
       continue;
     }
 
-    const match = key.match(/^equipmentRows\.([^.]+)\.(.+)$/);
+    const match = key.match(EQUIPMENT_ROW_KEY_RE);
     if (!match) {
       continue;
     }
@@ -909,29 +896,3 @@ export function calculateNumericResults(configuration) {
   };
 }
 
-function buildCalculationResponse(raw) {
-  const configuration = normalizeCalculationRequest(raw);
-  const validationErrors = validateCalculationRequest(configuration);
-  const inputsUsed = pickCalculationInputs(configuration);
-  const questions = buildCalculationQuestions(validationErrors, configuration);
-
-  if (Object.keys(validationErrors).length > 0) {
-    return {
-      valid: false,
-      configuration,
-      inputsUsed,
-      validationErrors,
-      questions,
-      calculations: null
-    };
-  }
-
-  return {
-    valid: true,
-    configuration,
-    inputsUsed,
-    validationErrors: {},
-    questions,
-    calculations: calculateNumericResults(configuration)
-  };
-}

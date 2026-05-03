@@ -13,6 +13,9 @@ import {
   readJsonRequest
 } from "./_edgeUtils.js";
 
+const EMBEDDED_HASH_RE = /[a-f0-9]{64}/;
+const HASH_64_RE = /^[a-f0-9]{64}$/;
+
 const REQUEST_TIMEOUT_MS = 120000;
 const REPORT_RATE_LIMIT_MAX_REQUESTS = 20;
 const REPORT_RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -25,7 +28,7 @@ function normalizeExpectedHash(rawValue) {
     .trim()
     .toLowerCase();
 
-  const embeddedHash = normalized.match(/[a-f0-9]{64}/);
+  const embeddedHash = normalized.match(EMBEDDED_HASH_RE);
   return embeddedHash ? embeddedHash[0] : normalized;
 }
 
@@ -40,7 +43,7 @@ function validateAiAccess(body, env) {
     .trim()
     .toLowerCase();
 
-  if (!/^[a-f0-9]{64}$/.test(providedHash)) {
+  if (!HASH_64_RE.test(providedHash)) {
     return "Manglar tilgangskode.";
   }
 

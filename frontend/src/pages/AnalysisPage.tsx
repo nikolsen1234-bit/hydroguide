@@ -38,6 +38,14 @@ const blockerLinkClass =
 
 const workspaceMetaDetailClassName = `${workspaceMetaClassName} normal-case tracking-normal text-slate-950`;
 
+const ROBUST_PREFIX_RE = /^Robust\s+/i;
+const ROBUST_VARIANT_RE = / med robust utforming/i;
+const ROBUST_RELEASE_RE = /robust slipp-løysing/i;
+const ROBUST_REGULATION_RE = /robust reguleringskum/i;
+const WHITESPACE_RE = /\s+/g;
+const MAIN_SOLUTION_PARTS_RE = /^(.*?)(?: med (.*?))?(?: \((.*)\))?$/;
+const QUESTION_KEY_RE = /^q\d+/i;
+
 async function getAiExportHash(promptText: string) {
   const storedHash = window.sessionStorage.getItem(STORAGE_KEYS.AI_EXPORT_HASH);
   if (storedHash) {
@@ -85,13 +93,13 @@ function InfoRow({
 function splitMainSolution(solution: string) {
   const normalized = solution
     .trim()
-    .replace(/^Robust\s+/i, "")
-    .replace(/^Robust\s+/i, "")
-    .replace(/ med robust utforming/i, " med vern mot is/drivgods")
-    .replace(/robust slipp-løysing/i, "passiv slipp-løysing")
-    .replace(/robust reguleringskum/i, "reguleringskum")
-    .replace(/\s+/g, " ");
-  const match = normalized.match(/^(.*?)(?: med (.*?))?(?: \((.*)\))?$/);
+    .replace(ROBUST_PREFIX_RE, "")
+    .replace(ROBUST_PREFIX_RE, "")
+    .replace(ROBUST_VARIANT_RE, " med vern mot is/drivgods")
+    .replace(ROBUST_RELEASE_RE, "passiv slipp-løysing")
+    .replace(ROBUST_REGULATION_RE, "reguleringskum")
+    .replace(WHITESPACE_RE, " ");
+  const match = normalized.match(MAIN_SOLUTION_PARTS_RE);
 
   if (!match) {
     return { title: normalized, detail: "", profile: "" };
@@ -368,7 +376,7 @@ export default function AnalysisPage() {
         key === "systemParameters.4gCoverage" ||
         key === "systemParameters.nbIotCoverage" ||
         key === "systemParameters.lineOfSightUnder15km" ||
-        /^q\d+/i.test(key)),
+        QUESTION_KEY_RE.test(key)),
     [usesFoundationQuestions]
   );
   const foundationErrors = useMemo(

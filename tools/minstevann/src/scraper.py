@@ -1,25 +1,28 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from html import unescape
-from urllib.error import URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
 from src.models import (
     UA,
     CACHE_DIR,
-    KONSESJON_URL,
     NVE_BASE,
     NVE_ARCGIS_QUERY,
     WORKSPACE_ROOT,
 )
 
+logger = logging.getLogger(__name__)
+
 # ---------- HTTP helpers ----------
 
 
 def http_get(url: str, as_bytes: bool = False) -> bytes | str:
+    if urlparse(url).scheme not in ("http", "https"):
+        raise ValueError(f"Refusing non-http(s) URL: {url}")
     req = Request(url, headers={"User-Agent": UA})
     with urlopen(req, timeout=60) as r:
         data = r.read()
@@ -44,7 +47,8 @@ def load_case_id_lookup() -> dict[int, list[int]]:
     for path in sorted(WORKSPACE_ROOT.glob("*_saker.json")):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
+        except Exception as exc:
+            logger.debug("Skipping unreadable saker file %s: %s", path, exc)
             continue
         if not isinstance(payload, dict):
             continue
@@ -239,7 +243,7 @@ def fetch_plants_from_nve_ids(nve_ids: list[int]) -> dict[int, dict]:
             "resultRecordCount": "500",
         }
         url = NVE_ARCGIS_QUERY + "?" + urlencode(params)
-        with urlopen(Request(url, headers={"User-Agent": UA}), timeout=60) as r:
+        with urlopen(Request(url, headers={"User-Agent": UA}), timeout=60) as r:  # nosec B310
             data = json.loads(r.read().decode("utf-8", errors="replace"))
         return data.get("features", []) or []
 
@@ -288,7 +292,7 @@ def fetch_all_plants() -> list[dict]:
             "orderByFields": "vannkraftverkNr ASC",
         }
         url = NVE_ARCGIS_QUERY + "?" + urlencode(params)
-        with urlopen(Request(url, headers={"User-Agent": UA}), timeout=60) as response:
+        with urlopen(Request(url, headers={"User-Agent": UA}), timeout=60) as response:  # nosec B310
             data = json.loads(response.read().decode("utf-8", errors="replace"))
 
         features = data.get("features", []) or []

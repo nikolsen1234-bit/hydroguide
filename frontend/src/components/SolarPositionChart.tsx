@@ -205,6 +205,7 @@ export function SolarPositionChart({ profile, latDeg, lonDeg, tiltDeg, azimuthDe
       {/* Incidence chart */}
       <div className="mb-4">
         <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="w-full" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+          <title>Solposisjon gjennom dagen</title>
           <rect x={PL} y={PT} width={CW} height={CH} fill="#f8fafc" rx={2} />
 
           {/* Y grid */}

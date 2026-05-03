@@ -5,6 +5,7 @@ export default function HydroGuideLogo() {
       data-name="Layer 1"
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 2180.53 577.8"
+      aria-hidden="true"
     >
       <g>
         <polygon points="595.54 196.98 486.13 196.98 486.13 105.66 458.85 105.66 458.85 313.22 486.13 313.22 486.13 220.7 595.54 220.7 595.54 313.22 623.12 313.22 623.12 105.66 595.54 105.66 595.54 196.98" />

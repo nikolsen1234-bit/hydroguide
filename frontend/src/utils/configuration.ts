@@ -85,7 +85,7 @@ export function nowIso(): string {
 }
 
 export function makeId(prefix = "cfg"): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${crypto.randomUUID()}`;
 }
 
 function normalizeNumber(value: unknown): EditableNumber {

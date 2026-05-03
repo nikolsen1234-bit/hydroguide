@@ -123,6 +123,11 @@ const dynamicTranslations: Record<string, string> = {
     "Regulation must be traceable and safely managed with frequent changes"
 };
 
+const CONTROL_METHOD_RE = /^Kontrollmålemetode er vald etter prioritert regelrekkje: (.+)$/;
+const FLOW_CLASSIFICATION_RE = /^Minstevassføring er klassifisert som (\S+) med (\S+) variasjon$/;
+const VOLUME_TIME_RE = /^Volum\/tid-måling i behaldar er ikkje vurdert som eigna når vassføringa overstig (.+) l\/s$/;
+const CLARIFY_BASIS_RE = /^Avklar prosjekteringsgrunnlaget for (.+)$/;
+
 export function translateDynamic(value: string, language: Language): string {
   if (language === "nn") {
     return value;
@@ -132,24 +137,24 @@ export function translateDynamic(value: string, language: Language): string {
     return dynamicTranslations[value];
   }
 
-  const flowMatch = value.match(/^Minstevassføring er klassifisert som (\S+) med (\S+) variasjon$/);
+  const flowMatch = value.match(FLOW_CLASSIFICATION_RE);
   if (flowMatch) {
     const flowBand = dynamicTranslations[flowMatch[1]] ?? flowMatch[1];
     const variation = dynamicTranslations[flowMatch[2]] ?? flowMatch[2];
     return `Minimum water flow is classified as ${flowBand} with ${variation} variation`;
   }
 
-  const volumeMatch = value.match(/^Volum\/tid-måling i behaldar er ikkje vurdert som eigna når vassføringa overstig (.+) l\/s$/);
+  const volumeMatch = value.match(VOLUME_TIME_RE);
   if (volumeMatch) {
     return `Volume/time measurement in container is not considered suitable when the water flow exceeds ${volumeMatch[1]} L/s`;
   }
 
-  const controlMatch = value.match(/^Kontrollmålemetode er vald etter prioritert regelrekkje: (.+)$/);
+  const controlMatch = value.match(CONTROL_METHOD_RE);
   if (controlMatch) {
     return `Control measurement method selected according to prioritized rule sequence: ${(dynamicTranslations[controlMatch[1]] ?? controlMatch[1]).toLowerCase()}`;
   }
 
-  const clarifyMatch = value.match(/^Avklar prosjekteringsgrunnlaget for (.+)$/);
+  const clarifyMatch = value.match(CLARIFY_BASIS_RE);
   return clarifyMatch
     ? `Clarify the engineering basis for ${(dynamicTranslations[clarifyMatch[1]] ?? clarifyMatch[1]).toLowerCase()}`
     : value;

@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -310,10 +311,14 @@ def _start_hybrid_server() -> subprocess.Popen | None:
     from urllib.parse import urlparse
     parsed = urlparse(DEFAULT_HYBRID_URL)
     port = str(parsed.port or 5002)
+    hybrid_exe = shutil.which("opendataloader-pdf-hybrid")
+    if hybrid_exe is None:
+        print("  [hybrid] opendataloader-pdf-hybrid not found on PATH, skipping hybrid phase.", flush=True)
+        return None
     try:
         proc = subprocess.Popen(
             [
-                "opendataloader-pdf-hybrid",
+                hybrid_exe,
                 "--port", port,
                 "--force-ocr",
                 "--ocr-lang", "no,en",
@@ -328,6 +333,8 @@ def _start_hybrid_server() -> subprocess.Popen | None:
     import urllib.request
     import urllib.error
     health_url = DEFAULT_HYBRID_URL.rstrip("/") + "/health"
+    if urlparse(health_url).scheme not in ("http", "https"):
+        raise ValueError(f"Refusing non-http(s) URL: {health_url}")
     for _ in range(30):
         time.sleep(2)
         try:

@@ -23,6 +23,11 @@ import {
   readApiJsonBody
 } from "../../api/_apiUtils.js";
 
+const KEY_HASH_RE = /^[a-f0-9]{64}$/;
+const BASE64_PLUS_RE = /\+/g;
+const BASE64_SLASH_RE = /\//g;
+const BASE64_PADDING_RE = /=+$/;
+
 // Per-key rotate rate limit. Keyed on the OLD keyHash being retired, so an
 // attacker with a stolen Bearer token cannot mint fresh hashes to escape the
 // cap by rotating in a chain — each chained rotation still consumes from the
@@ -55,12 +60,12 @@ async function requireAdmin(request, env) {
 function generateRawKey() {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
-  return `hg_live_${btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
+  return `hg_live_${btoa(String.fromCharCode(...bytes)).replace(BASE64_PLUS_RE, "-").replace(BASE64_SLASH_RE, "_").replace(BASE64_PADDING_RE, "")}`;
 }
 
 function requireKeyHash(body) {
   const h = typeof body?.key_hash === "string" ? body.key_hash.trim() : "";
-  if (!h || !/^[a-f0-9]{64}$/.test(h)) return null;
+  if (!h || !KEY_HASH_RE.test(h)) return null;
   return h;
 }
 

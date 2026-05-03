@@ -1,14 +1,15 @@
 # Minstevassføring-Pipeline
 
-Batch-pipeline som les NVE-konsesjonsdokument og hentar ut minstevassføringskrav automatisk.
+Pipeline som les NVE-konsesjonsdokument og hentar ut minstevassføringskrav automatisk.
 
 ## Bruk
 
 ```bash
-python run.py plant 1696       # éin stasjon
-python run.py batch --n 500    # 500 stasjonar
-python run.py batch --resume   # fortset der køyringa stoppa
-python run.py export           # skriv til backend/data/minimumflow.json
+python run.py plant 1696             # køyr og lagrar éin NVEID
+python run.py plant 1696 --force     # køyr på nytt og overskriv
+python run.py batch --n 500          # køyr 500 NVEID-ar
+python run.py batch --n 500 --force  # tillat overskriving av eksisterande treff
+python run.py preparse               # valfri førehandstolking av cache-PDF-ar
 ```
 
 ## Krav
@@ -38,17 +39,17 @@ ollama serve
 
 ## Korleis Pipelinen Fungerer
 
-Pipelinen køyrer i bolkar:
+Pipelinen er NVEID-først:
 
-1. Lastar ned konsesjonssaker og PDF-vedlegg frå NVE.
-2. Preparser PDF-ar med OpenDataLoader `convert()` i JSON-format.
-3. Filtrerer digitale PDF-ar med relevante nøkkelord før LLM-kall.
-4. Køyrer hybrid OCR på skanna PDF-ar.
+1. Tek imot HydroGuide `nveID`.
+2. Slår opp stasjonsmetadata frå NVE og brukar `kdbNr` berre der NVE-oppslaget krev det.
+3. Lastar ned konsesjonssaker og PDF-vedlegg frå NVE.
+4. Hentar brukbar tekst frå preparse-cache, direkte PDF-ekstraksjon eller hybrid OCR.
 5. Sender relevante utdrag til Ollama.
-6. Strukturerer funn til NVEID-format.
-7. Skriv resultat fortløpande til lokale `run_*.json`-filer.
+6. Strukturerer funn til offentleg NVEID-format.
+7. Skriv ferdig stasjon direkte til `backend/data/minimumflow.json`.
 
-Eksporten skriv den aktive lokale databasen til `backend/data/minimumflow.json`. Cloudflare brukar deretter R2-objektet `api/minimumflow.json` i bucket `hydroguide-minimum-flow`.
+`minimumflow.json` er sluttresultatet og resume-grunnlaget. Eksisterande NVEID-ar blir hoppa over som standard, og `--force` køyrer dei på nytt. Cloudflare brukar deretter R2-objektet `api/minimumflow.json` i bucket `hydroguide-minimum-flow`.
 
 ## Filer
 
@@ -62,6 +63,7 @@ src/
   snippet.py            Relevansfiltrering og nøkkelordvindauge
   llm.py                Ollama-integrasjon og prompt
   assembly.py           Samlar claims til NVEID-format
+  minimumflow_db.py     Formaterer og skriv offentleg minimumflow.json
   report.py             Formaterer resultat
 tests.py                Einingstestar
 .data/                  Lokale cacher, gitignored

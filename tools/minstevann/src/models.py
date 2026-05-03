@@ -9,8 +9,7 @@ HERE = Path(__file__).parent.parent  # tools/minstevann/
 _DATA_DIR = HERE / ".data"
 CACHE_DIR = _DATA_DIR / "http"
 LLM_CACHE_DIR = _DATA_DIR / "llm"
-RESULTS_DIR = _DATA_DIR / "results"
-for _d in (CACHE_DIR, LLM_CACHE_DIR, RESULTS_DIR):
+for _d in (CACHE_DIR, LLM_CACHE_DIR):
     _d.mkdir(parents=True, exist_ok=True)
 
 MINIMUM_FLOW_DB_PATH = HERE.parent.parent / "backend" / "data" / "minimumflow.json"
@@ -33,9 +32,9 @@ CHUNK_THRESHOLD = 8000
 
 
 @dataclass
-class KraftverkResult:
+class NveidResult:
     nveId: int
-    kdbNr: int
+    source_kdb_nr: int
     navn: str
     konsesjon_url: str
     case_id: int | None = None

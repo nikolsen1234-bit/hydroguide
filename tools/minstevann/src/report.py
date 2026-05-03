@@ -35,7 +35,7 @@ def format_report(results: list) -> str:
     lines.append("")
 
     funnet_count = sum(1 for r in results if r.llm_result and r.llm_result.get("funnet"))
-    lines.append(f"Totalt: {len(results)} kraftverk")
+    lines.append(f"Totalt: {len(results)} NVEID")
     lines.append(f"Funnet: {funnet_count}")
     lines.append(f"Ikke funnet / feil: {len(results) - funnet_count}")
     lines.append("")

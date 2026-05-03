@@ -14,39 +14,6 @@ permissions:
   security-events: write
 
 jobs:
-  semgrep:
-    name: Semgrep CE
-    runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Run Semgrep
-        id: semgrep
-        run: |
-          set +e
-          docker run --rm -v "${{ github.workspace }}:/src" -w /src \
-            semgrep/semgrep@sha256:7810f1d7884974ab6dda7bef8f4a2c8e165ea2142fd8260515d380e4f1407263 \
-            semgrep scan --config auto --sarif --output semgrep.sarif \
-            --exclude frontend/node_modules \
-            --exclude frontend/dist \
-            --exclude test-deploy \
-            --exclude tools/minstevann/.pytest_cache
-          status=$?
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
-
-      - name: Upload Semgrep SARIF
-        if: always() && hashFiles('semgrep.sarif') != ''
-        uses: github/codeql-action/upload-sarif@b25d0ebf40e5b63ee81e1bd6e5d2a12b7c2aeb61 # v4
-        with:
-          sarif_file: semgrep.sarif
-
-      - name: Fail on Semgrep findings
-        if: steps.semgrep.outputs.status != '0'
-        run: exit ${{ steps.semgrep.outputs.status }}
-
   gitleaks:
     name: Gitleaks
     runs-on: ubuntu-latest

@@ -46,7 +46,7 @@ WAF avviser `/api/keys*`. Admin for API-nøklar ligg på `/admin/keys`.
 | `hydroguide-ai` | `backend/cloudflare/ai.wrangler.jsonc` | `backend/workers/ai/index.ts` | `AI`, `REPORT_RULES`, `AI_REFERENCE_BUCKET`, `REPORT_WORKER_TOKEN`, AI Gateway/Search secrets |
 | `hydroguide-admin` | `backend/cloudflare/admin.wrangler.jsonc` | `backend/workers/admin/index.js` | `API_KEYS`, `ADMIN_TOKEN`, `API_KEY_HASH_SECRET` |
 
-Alle Workers har `workers_dev: false`. Det hindrar ein ekstra `*.workers.dev`-inngang som kan gå utanom sone-reglar på `hydroguide.no`.
+Alle Workers har `workers_dev: false`. Det hindrar ein ekstra `*.workers.dev`-inngang som kan gå utanom sone-reglar på `hydroguide.no`. Alle har òg `observability.enabled: true` med full sampling, slik at runtime-loggar kan lesast i Cloudflare-dashbordet.
 
 ## Lagring
 
@@ -97,7 +97,20 @@ node backend/scripts/check-worker-hygiene.mjs --staged
 
 Sjekken køyrer offentleg config-validering, deploy-config-validering når private verdiar finst lokalt, stoppar `*.generated.wrangler.jsonc` og private Cloudflare deploy-filer frå vanleg commit, og blokkerer staged Worker-endringar dersom branch er bak upstream. CI køyrer same sjekk med `--all --ci`.
 
+## Deploy-Flyt
+
 Cloudflare Workers Builds er Git-kopla deploy for Workers. GitHub Actions deployar ikkje Workers og skal ikkje ha `CLOUDFLARE_API_TOKEN`.
+
+```text
+utviklar       GitHub                 Cloudflare Workers Builds         prod
+   |             |                              |                          |
+   | git push -> |                              |                          |
+   |             | webhook --> Workers Builds   |                          |
+   |             |                              | npm ci                   |
+   |             |                              | build deploy-config      |
+   |             |                              | wrangler deploy   ---->  |
+   |             |                              | (per Worker)             |
+```
 
 Kvar Worker er kopla til GitHub-repoet `nikolsen1234-bit/hydroguide` i Cloudflare:
 
@@ -122,6 +135,31 @@ Deploy-rekkefølgja er:
 2. `hydroguide-api`
 3. `hydroguide-report`
 4. `hydroguide-admin`
+
+`hydroguide-ai` blir deploya først fordi `hydroguide-report` har ein service binding til han. Bindinga peikar på namnet `hydroguide-ai`, så Worker-en må eksistere før report-deployen kan lykkast første gong.
+
+## Rollback
+
+Cloudflare Workers Builds held tilgjengeleg fleire versjonar av kvar Worker. Rollback skjer på Cloudflare-dashbordet under "Deployments" for den aktuelle Workeren — vel ein annan deploy og aktiver han. Same rollback kan òg gjerast lokalt med:
+
+```bash
+cd frontend
+npx wrangler rollback --name hydroguide-api
+```
+
+For ein dårleg konfig-endring som ikkje er deploya enda: rev commit på `main`, push på nytt, så bygger Workers Builds ein ny deploy med den førre konfigen.
+
+## Observability
+
+| Kjelde | Bruk |
+|--------|------|
+| Cloudflare Dashboard → Workers → `<worker>` → Logs | Live-loggar med `head_sampling_rate: 1` |
+| `npx wrangler tail --name <worker>` | Live-loggstream lokalt |
+| Cloudflare Dashboard → Workers Builds | Bygg- og deploy-historikk per Worker |
+| Cloudflare Dashboard → Analytics → Security | WAF-treff, rate limit-treff, blokkerte requests |
+| Cloudflare Dashboard → AI → AI Gateway | Cache-treff, kostnad og latens for rapport-AI |
+
+Alle fire Workers har `observability.enabled: true`. Det betyr at alle requests blir logga med headerar, status og runtime-feil utan ekstra kode i kvar Worker.
 
 ## Sikkerheitsreglar
 
@@ -148,3 +186,11 @@ Aktive Cloudflare-reglar:
 - Cloudflare secrets er primær kjelde for drift. Lokal `.secrets` er backup med same verdiar.
 - Den aktive Cloudflare ops-tokenen har HydroGuide-relevante rettar for Workers, routes, KV, R2, Secrets Store, zone settings, WAF, transform rules, cache rules, DNS og SSL.
 - Tokenar som blir limte inn i chat eller brukt utanfor normal drift blir roterte etter bruk.
+
+## Sjå Òg
+
+- Sikkerhetsmodell og trusselbilete: [sikkerheit.md](sikkerheit.md)
+- Arkitektur og dataflyt: [arkitektur.md](arkitektur.md)
+- Lokal utvikling og bygg: [utvikling.md](utvikling.md)
+- Backend-kode og endepunkt: [backend-dokumentasjon.md](backend-dokumentasjon.md)
+- Rapport-AI: [ai-rapport.md](ai-rapport.md)

@@ -1,134 +1,79 @@
-# Backend-dokumentasjon
+# Backend-Dokumentasjon
 
-Oppdatert: 2026-04-29
-
----
+Oppdatert: 2026-05-02
 
 ## Mappestruktur
 
-```
+```text
 backend/
-├── api/                      API-handlers
-│   ├── calculations.js       Energiberegning (Bearer-auth, rate-limited)
-│   ├── nveid.js              Minstevannføring per NVEID (R2-backed)
-│   ├── docs.js               OpenAPI-spec og Swagger UI
-│   ├── health.js             Helsesjekk
-│   ├── pvgis-tmy.js          Proxy til EU PVGIS
-│   ├── place-suggestions.js  Proxy til Geonorge
-│   ├── terrain-profile.js    Proxy til Kartverket
-│   ├── polish-report.js      KI-rapport-proxy til AI Worker
-│   ├── keys/index.js         API-nøkkeladministrasjon
-│   ├── _apiUtils.js          Delt auth og response-logikk
-│   ├── _constants.js         Konfigurasjonskonstanter
-│   └── _edgeUtils.js         KV/cache-utilities
-├── api-worker/               Selvstendig Worker for /api/*
-│   ├── index.js              Router
-│   └── wrangler.jsonc        Route patterns og bindings
-├── services/
-│   ├── ai/                   AI Worker — se ai-dokumentasjon.md
-│   └── calculations/
-│       └── _calculationCore.js
-├── config/                   Wrangler-konfig for AI Worker
-├── data/
-│   ├── minimumflow.json      Generert av minstevannføring-pipeline
-│   └── cloudflare-kv/        KV seed-data
-├── scripts/                  Vedlikeholdsskript
-└── _middleware.js             CSP, CORS, feilhåndtering
+  api/                        Delte endpoint-handlarar
+    calculations.js           Bereknings-API
+    nveid.js                  NVEID og minstevassforing
+    docs.js                   OpenAPI og Swagger UI
+    health.js                 Helsesjekk
+    pvgis-tmy.js              PVGIS-proxy
+    place-suggestions.js      Stadssok for frontend
+    terrain-profile.js        Terrengprofil for frontend
+    report.js                 Handler brukt av /api/report
+  admin/keys/index.js         Handler brukt av /admin/keys
+  workers/
+    api/index.js              Public API Worker
+    report/index.js           Report Worker
+    ai/index.ts               Internal AI Worker entrypoint
+    admin/index.js            Admin Worker
+  cloudflare/                 Wrangler-config for kvar Worker
+  services/ai/                Rapport-AI
+  services/calculations/      Delt berekningskjerne
+  data/                       Lokale datafiler
+  scripts/                    Cloudflare, R2 og KV-vedlikehald
 ```
 
----
+## Endpoint-Grupper
 
-## Beregningskjerne (_calculationCore.js)
+| Gruppe | Ruter | Merknad |
+|--------|-------|---------|
+| Offentleg API | `/api/health`, `/api/docs`, `/api/calculations`, `/api/nveid`, `/api/pvgis-tmy` | Dokumentert i `/api/docs?ui` |
+| Frontend-hjelparar | `/api/place-suggestions`, `/api/terrain-profile`, `/api/report` | Kallast av nettsida, men er ikkje hovud-API |
+| Admin | `/admin/keys` | Eiga Worker-rute med `ADMIN_TOKEN` |
+| Intern | `hydroguide-report` -> `hydroguide-ai` | Service binding, ikkje offentleg URL |
 
-Delt beregningslogikk brukt av både `POST /api/calculations` og frontend:
+## Berekningskjerne
 
-- Normaliserer og validerer input (typekonvertering, grensekontroll)
-- Beregner utstyrsbudsjett, batterikapasitet, månedlig energibalanse
-- Beregner årstotaler: kWh sol, kWh last, underskudd, drivstoff, CO₂
-- TCO-sammenligning mellom backup-kilder over evalueringshorisont
-- Ren funksjon — ingen sideeffekter, ingen nettverkskall
+`backend/services/calculations/_calculationCore.js` er rein logikk brukt av både `POST /api/calculations` og frontend. Han validerer input, reknar ut utstyrsbudsjett, batterikapasitet, energibalanse, reservekraft og kostnad over levetid.
 
----
+## Minstevassforing
 
-## API-endepunkter
+`backend/api/nveid.js` les `api/minimumflow.json` frå R2-bindinga `MINIMUM_FLOW_BUCKET`. Lokal kopi ligg i `backend/data/minimumflow.json`.
 
-### Beregning (`calculations.js`)
+NVEID-regel:
 
-- `POST /api/calculations` — tar inn PlantConfiguration JSON, returnerer komplett beregningsresultat
-- Bearer-token auth via `API_KEYS` KV
-- Rate-limited per API-nøkkel
-- `GET` returnerer endepunkt-dokumentasjon
+- `/api/nveid` viser meny.
+- `/api/nveid/{nveID}` viser meny for ein stasjon.
+- `/api/nveid/{nveID}/minimum-flow` viser minstevassforing.
+- `/api/nveid/{nveID}/concession` viser konsesjonslenke.
 
-### Minstevannføring (`nveid.js`)
+Rotene skal ikkje dumpe heile `minimumflow.json`.
 
-- `GET /api/nveid` — oversikt over tilgjengelige endepunkter
-- `GET /api/nveid/{nveID}` — meny for én stasjon
-- `GET /api/nveid/{nveID}/minimum-flow` — minstevannføring-data
-- `GET /api/nveid/{nveID}/concession` — NVE konsesjonslenke
-- Leser `minimumflow.json` fra R2 (`hydroguide-api-data`)
-- Caching: 1t for funnet data, 5min for ikke-funnet
+## API-Noklar
 
-### Proxyer
+`backend/admin/keys/index.js` er kopla til `hydroguide-admin` på `/admin/keys`. Han brukar:
 
-Disse endepunktene proxyer forespørsler til tredjepart — frontenden kaller vår backend istedenfor å snakke direkte med tjenestene (CORS, rate-limiting, feilhåndtering):
+- `API_KEYS` KV
+- `ADMIN_TOKEN`
+- `API_KEY_HASH_SECRET`
 
-| Endepunkt | Tredjepart | Data |
-|-----------|------------|------|
-| `/api/pvgis-tmy` | EU JRC PVGIS | TMY soldata for koordinater |
-| `/api/place-suggestions` | Geonorge | Stedsnavn-autocomplete |
-| `/api/terrain-profile` | Kartverket | Terrengprofil fra 1m DTM |
-| `/api/polish-report` | AI Worker (intern) | KI-generert rapporttekst |
+Vanlege kundekall til `/api/calculations` brukar `Authorization: Bearer <api_key>`.
 
-### Swagger (`docs.js`)
+## Vedlikehaldsskript
 
-`GET /api/docs` serverer OpenAPI 3.0-spec med schemas for alle request/response-typer. `GET /api/docs?ui` rendrer Swagger UI med inline-script (egen CSP med nonce).
+| Skript | Bruk |
+|--------|-----|
+| `build-cloudflare-worker-config.mjs` | Bygger/checkar generert Cloudflare config |
+| `build-ai-search-corpus.mjs` | Bygger chunks frå NVE-referansar |
+| `upload-corpus-to-r2.ps1` | Lastar referansar og embeddings til `hydroguide-ai-reference` |
+| `seed-kv.ps1` | Seedar `REPORT_RULES` |
+| `fix-r2-metadata.mjs` | Reparerer R2 metadata |
 
----
+## Cloudflare
 
-## Data
-
-### minimumflow.json
-
-Generert av minstevannføring-pipelinen. ~1500 vannkraftverk med minstevannføringskrav per NVEID. Se [AI-dokumentasjon](ai-dokumentasjon.md) for hvordan dataen produseres.
-
-Filen lastes opp til R2 og serveres derfra. Lokal kopi i `backend/data/` brukes under utvikling.
-
-### KV seed-data
-
-`cloudflare-kv/kv-seed.json` — initiell data for KV-namespaces. Brukes av `seed-kv.ps1` ved oppsett.
-
----
-
-## Vedlikeholdsskript
-
-| Skript | Hva det gjør |
-|--------|-------------|
-| `build-ai-search-corpus.mjs` | Parser NVE-veiledere til chunks med metadata og topic-tags |
-| `upload-corpus-to-r2.ps1` | Laster opp chunks til R2 med embeddings |
-| `seed-kv.ps1` | Skriver bucketert evidens til PROMPT_KV |
-| `fix-r2-metadata.mjs` | Reparerer content-type og custom metadata i R2 |
-
-Kjøres manuelt ved korpus-oppdateringer eller oppsett av ny Cloudflare-konto.
-
----
-
-## PDF-generatorer
-
-To lokale Python-skript som lager PDF-rapporter:
-
-| Skript | Output |
-|--------|--------|
-| `tools/horizon_pdf.py` | Horisontprofil med 360° panorama, solbaner (sommer/vinter/jevndøgn), terrengsilhuett fra Kartverket |
-| `tools/solar_position_pdf.py` | Solposisjon gjennom dagen: altitude, azimut, innfallsvinkel med terrengskygge |
-
-Begge bruker NOAA-algoritmer og Kartverket DTM for terreng. ReportLab for PDF-output. Kjøres lokalt, ikke del av deploy.
-
----
-
-## Middleware (_middleware.js)
-
-Kjører på alle Pages-ruter:
-
-- CSP per rute-type (SPA, Swagger, standalone-kart)
-- Feilhåndtering med generiske meldinger
-- CORS-headers for API-ruter
+Sjå [Cloudflare-dokumentasjon](cloudflare-dokumentasjon.md) for Worker-namn, bindings, storage og deploy.

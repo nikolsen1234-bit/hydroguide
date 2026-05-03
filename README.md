@@ -1,59 +1,57 @@
 # HydroGuide
 
-Verktøy og tjenester for NVE-konsesjonsdata, minstevannføring og energiberegning.
+Verktoy og tenester for NVE-konsesjonsdata, minstevassforing og energiberekning.
 
 ## Struktur
 
-```
-frontend/                     React/Vite-app (energikonfigurasjon)
+```text
+frontend/                     React/Vite-app
 backend/
-  api/                        API-endepunkter (/api/*)
-  api-worker/                 Worker for hydroguide.no
-  services/ai/                Cloudflare AI Worker (RAG mot NVE-korpus)
-  services/calculations/      Delt beregningskjerne
-  data/minimumflow.json       Minstevannføring per NVEID
-  config/                     Wrangler-config
-  scripts/                    Vedlikeholdsskript for korpus, R2 og KV
+  api/                        Delte API-handlarar
+  workers/                    Worker entrypoints for API, report, AI og admin
+  cloudflare/                 Wrangler-config for kvar Cloudflare Worker
+  services/ai/                Intern rapport-AI
+  services/calculations/      Delt berekningskjerne
+  data/minimumflow.json       Minstevassforing per NVEID
+  config/                     Generert/offentleg Cloudflare-metadata
+  scripts/                    Vedlikehald for R2, KV og deploy-config
 tools/
-  minstevann/                 Minstevannføring-ekstraksjon (NVE → PDF → LLM → NVEID)
+  minstevann/                 NVE-dokument -> minstevassforing -> NVEID
   horizon_pdf.py              Horisontprofil PDF-generator
   solar_position_pdf.py       Solposisjon PDF-generator
 docs/                         Dokumentasjon
-.ai/                          Agent-dokumentasjon og worklog
+.ai/                          Agent-dokumentasjon og lokal worklog
 ```
 
-## Kom i gang
+## Kom I Gang
 
 ```bash
 cd frontend
-npm install         # installerer dependencies og setter opp git hooks
-npm run dev         # Vite dev server på http://localhost:5173
-npm run build:test  # bygger deploy-pakke til test-deploy/
+npm install
+npm run dev
+npm run build:test
 ```
 
-## Minstevannføring-pipeline
-
-Batch-pipeline som leser NVE-konsesjonsdokumenter og henter ut minstevannføringskrav automatisk:
+## Minstevassforing
 
 ```bash
-python tools/minstevann/run.py plant 1696       # én stasjon
-python tools/minstevann/run.py batch --n 500    # 500 stasjoner
-python tools/minstevann/run.py batch --resume   # fortsett der den stoppet
-python tools/minstevann/run.py export           # skriv til minimumflow.json
+python tools/minstevann/run.py plant 1696
+python tools/minstevann/run.py batch --n 500
+python tools/minstevann/run.py batch --resume
+python tools/minstevann/run.py export
 ```
 
-Se [KI-dokumentasjon](docs/ki-dokumentasjon.md) for detaljer om pipeline-arkitektur og modeller.
+Sjå [AI-dokumentasjon](docs/ai-dokumentasjon.md) for pipeline, OCR og KI-flyt.
 
 ## Dokumentasjon
 
-- [Arkitektur](docs/arkitektur.md) — oversikt over hele systemet
-- [Frontend](docs/frontend.md) — React-app, sider, komponenter, build
-- [Cloudflare](docs/cloudflare-dokumentasjon.md) — workers, bindings, storage, deploy, sikkerhet
-- [AI](docs/ai-dokumentasjon.md) — rapportgenerering, minstevannføring-pipeline, OCR
-- [Backend](docs/backend-dokumentasjon.md) — API-logikk, beregningskjerne, data, skript
+- [Arkitektur](docs/arkitektur.md)
+- [Frontend](docs/frontend.md)
+- [Cloudflare](docs/cloudflare-dokumentasjon.md)
+- [AI](docs/ai-dokumentasjon.md)
+- [Backend](docs/backend-dokumentasjon.md)
 
-## Dependencies
+## Krav
 
-- Node 20+, npm
-
-For minstevannføring-pipeline og andre lokale verktøy, se [tools/minstevann/README.md](tools/minstevann/README.md).
+- Node 20+
+- npm

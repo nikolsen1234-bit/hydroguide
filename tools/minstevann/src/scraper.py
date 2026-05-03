@@ -243,7 +243,9 @@ def fetch_plants_from_nve_ids(nve_ids: list[int]) -> dict[int, dict]:
             "resultRecordCount": "500",
         }
         url = NVE_ARCGIS_QUERY + "?" + urlencode(params)
-        with urlopen(Request(url, headers={"User-Agent": UA}), timeout=60) as r:  # nosec B310
+        if urlparse(url).scheme not in ("http", "https"):
+            raise ValueError(f"Refusing non-http(s) URL: {url}")
+        with urlopen(Request(url, headers={"User-Agent": UA}), timeout=60) as r:
             data = json.loads(r.read().decode("utf-8", errors="replace"))
         return data.get("features", []) or []
 
@@ -292,7 +294,9 @@ def fetch_all_plants() -> list[dict]:
             "orderByFields": "vannkraftverkNr ASC",
         }
         url = NVE_ARCGIS_QUERY + "?" + urlencode(params)
-        with urlopen(Request(url, headers={"User-Agent": UA}), timeout=60) as response:  # nosec B310
+        if urlparse(url).scheme not in ("http", "https"):
+            raise ValueError(f"Refusing non-http(s) URL: {url}")
+        with urlopen(Request(url, headers={"User-Agent": UA}), timeout=60) as response:
             data = json.loads(response.read().decode("utf-8", errors="replace"))
 
         features = data.get("features", []) or []

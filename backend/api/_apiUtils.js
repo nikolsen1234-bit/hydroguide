@@ -12,7 +12,7 @@
 // Constants
 // ---------------------------------------------------------------------------
 
-const HEX_STRING_RE = /^[a-f0-9]+$/i;
+const HEX_STRING_RE = /^[a-f0-9]{1,256}$/i;
 
 /** @type {Map<string, number[]>} */
 const rateLimitBuckets = new Map();

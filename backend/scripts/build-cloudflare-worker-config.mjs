@@ -5,11 +5,22 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..", "..");
 
-const REDACT_ID_RE = /^id$/i;
-const REDACT_STORE_ID_RE = /^store_id$/i;
-const REDACT_ACCOUNT_ID_RE = /^[a-z0-9_]{0,64}account_id$/i;
-const REDACT_NAMESPACE_ID_RE = /^[a-z0-9_]{0,64}namespace_id$/i;
-const REDACT_SECRET_KEY_RE = /^[a-z0-9_]{0,64}(?:token|secret|password|hash)[a-z0-9_]{0,64}$/i;
+const REDACT_EXACT_KEYS = new Set(["id", "store_id"]);
+const REDACT_ENDS_WITH = ["account_id", "namespace_id"];
+const REDACT_CONTAINS = ["token", "secret", "password", "hash"];
+
+function isRedactedKey(key) {
+  if (typeof key !== "string") return false;
+  const lower = key.toLowerCase();
+  if (REDACT_EXACT_KEYS.has(lower)) return true;
+  for (const suffix of REDACT_ENDS_WITH) {
+    if (lower.endsWith(suffix)) return true;
+  }
+  for (const needle of REDACT_CONTAINS) {
+    if (lower.includes(needle)) return true;
+  }
+  return false;
+}
 
 const privateConfigPath = resolve(rootDir, "backend/config/cloudflare.private.json");
 const publicConfigPath = resolve(rootDir, "backend/config/cloudflare.public.json");
@@ -253,13 +264,7 @@ function redactValue(key, value) {
     return value;
   }
 
-  if (
-    REDACT_ID_RE.test(key) ||
-    REDACT_STORE_ID_RE.test(key) ||
-    REDACT_ACCOUNT_ID_RE.test(key) ||
-    REDACT_NAMESPACE_ID_RE.test(key) ||
-    REDACT_SECRET_KEY_RE.test(key)
-  ) {
+  if (isRedactedKey(key)) {
     return "OMIT";
   }
 

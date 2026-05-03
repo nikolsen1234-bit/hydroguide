@@ -22,16 +22,20 @@ backend/api-worker/wrangler.generated.jsonc
 backend/config/wrangler.generated.jsonc
 backend/cloudflare/*.generated.wrangler.jsonc
 
-# AI agent state — almost everything in .ai/ is local-only.
-# Use the "ignore contents, whitelist what we keep" pattern so that the
-# placeholder worklog (.ai/agent-worklog.md) can still be tracked for the
-# pre-commit hook. The real worklog lives in .ai/agent-worklog.local.md and
-# is gitignored via *.local.
+# AI agent per-machine state — everything in .ai/ is local-only.
+# Shared agent files live in private/ (git-crypt encrypted).
+# Per-machine state stays here: real worklog (agent-worklog.local.md),
+# activity ledger (.agent-sync/), per-machine settings.
 .ai/*
 .ai/.*
-!.ai/agent-worklog.md
-!.ai/understand-systemkart.md
 .codex/
+
+# Agent tooling installed by npx skills add and similar — not part of the
+# public repo. Each contributor installs locally if they use these tools.
+.agents/
+.claude/
+.continue/
+skills-lock.json
 .understand-anything/*
 !.understand-anything/.understandignore
 /AGENTS.md

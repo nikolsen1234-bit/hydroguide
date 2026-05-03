@@ -1,3 +1,6 @@
 # Encrypt secrets file with git-crypt
 .secrets filter=git-crypt diff=git-crypt
 backend/config/cloudflare.private.json filter=git-crypt diff=git-crypt
+# Private internal collaboration folder. All contents encrypted in remote;
+# plaintext locally for anyone with the git-crypt key.
+private/** filter=git-crypt diff=git-crypt

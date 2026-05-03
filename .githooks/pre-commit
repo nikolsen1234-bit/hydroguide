@@ -1,29 +1,52 @@
 #!/bin/sh
 # Pre-commit hook for HydroGuide.
 #
-# Runs local agent-tracking + secret checks IF the agent toolkit (.ai/scripts/)
-# is present. The .ai/ folder is intentionally local-only (gitignored), so
-# contributors who clone fresh will not have these scripts and the hook will
-# silently skip; that is the intended behaviour. The maintainer's machine
-# keeps .ai/ around and runs the full check.
+# Two tiers of checks:
+#
+# 1) TRACKED (in backend/scripts/) — every clone has these. They MUST pass.
+#    If node is missing, the commit is blocked: install Node 22 LTS.
+#
+# 2) PRIVATE (in private/scripts/) — git-crypt encrypted; only present after
+#    `git-crypt unlock`. Runs if available; missing scripts skip silently.
+#    Tier 1 + CI on PR catch what Tier 2 would catch for fresh clones.
+
+set -e
 
 if ! command -v node >/dev/null 2>&1; then
-  # Node missing: skip silently, do not block the commit.
-  exit 0
+  echo "pre-commit blocked: 'node' is not on PATH."
+  echo "  Install Node.js 22 LTS to enable the required checks."
+  exit 1
 fi
 
-if [ -f .ai/scripts/check-secrets.mjs ]; then
-  node .ai/scripts/check-secrets.mjs --staged || exit 1
-fi
+# --- Tier 1: tracked checks (must pass) ---
 
-if [ -f .ai/scripts/check-doc-style.mjs ]; then
-  node .ai/scripts/check-doc-style.mjs --staged || exit 1
-fi
+run_tracked () {
+  script="$1"
+  shift
+  if [ ! -f "$script" ]; then
+    echo "pre-commit blocked: required check missing: $script"
+    echo "  This script is tracked in the repo. If you do not have it, your clone is corrupt."
+    echo "  Run: git checkout -- $script"
+    exit 1
+  fi
+  node "$script" "$@" || exit 1
+}
 
-if [ -f .ai/scripts/check-agent-tracking.mjs ]; then
-  node .ai/scripts/check-agent-tracking.mjs --staged || exit 1
-fi
+run_tracked backend/scripts/check-no-console.mjs --staged
+run_tracked backend/scripts/check-hardcoded-ids.mjs --staged
+run_tracked backend/scripts/check-postmessage.mjs --staged
+run_tracked backend/scripts/check-worker-hygiene.mjs --staged
 
-if [ -f backend/scripts/check-worker-hygiene.mjs ]; then
-  node backend/scripts/check-worker-hygiene.mjs --staged || exit 1
-fi
+# --- Tier 2: private checks (skip if missing) ---
+
+run_private () {
+  script="$1"
+  shift
+  if [ -f "$script" ]; then
+    node "$script" "$@" || exit 1
+  fi
+}
+
+run_private private/scripts/check-secrets.mjs --staged
+run_private private/scripts/check-doc-style.mjs --staged
+run_private private/scripts/check-tracking.mjs --staged

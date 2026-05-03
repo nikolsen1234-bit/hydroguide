@@ -1,0 +1,46 @@
+#!/bin/sh
+# Pre-push hook for HydroGuide.
+#
+# Blocks force-push to main / master. Force-push to feature branches is
+# allowed (sometimes necessary for rebase). Force-push to a protected branch
+# can permanently destroy collaborator work and is almost always a mistake.
+#
+# Bypass with: git push --no-verify (only when you really know what you do).
+
+remote="$1"
+url="$2"
+
+# Detect force flags by inspecting parent process command line.
+# Robust across Windows/Linux: read GIT_PUSH_OPTION and check arguments.
+force=0
+case " $* " in
+  *" --force "*) force=1 ;;
+  *" -f "*)      force=1 ;;
+esac
+
+# Read pushed refs from stdin (git's standard pre-push input).
+# Format: <local_ref> <local_sha> <remote_ref> <remote_sha>
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master)
+      # Detect implicit force: remote_sha is non-zero AND local does not
+      # contain remote_sha (i.e. non-fast-forward push).
+      if [ "$remote_sha" != "0000000000000000000000000000000000000000" ] && [ -n "$remote_sha" ]; then
+        if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+          echo "pre-push blocked: non-fast-forward push to $remote_ref"
+          echo "  This would rewrite history on a protected branch and destroy collaborator commits."
+          echo "  Resolve via merge or rebase + open PR. Bypass only with --no-verify if you are certain."
+          exit 1
+        fi
+      fi
+      if [ "$force" = "1" ]; then
+        echo "pre-push blocked: --force / -f targets $remote_ref"
+        echo "  Force-push to a protected branch is destructive."
+        echo "  Use a feature branch and a pull request instead."
+        exit 1
+      fi
+      ;;
+  esac
+done
+
+exit 0

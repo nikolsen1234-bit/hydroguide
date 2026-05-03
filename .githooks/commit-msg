@@ -1,0 +1,23 @@
+#!/bin/sh
+# Commit-message hook for HydroGuide.
+# Validates that commit messages have minimum substance.
+# See backend/scripts/check-commit-msg.mjs for the rules.
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "commit-msg blocked: 'node' is not on PATH."
+  echo "  Install Node.js 22 LTS to enable commit message validation."
+  exit 1
+fi
+
+if [ ! -f backend/scripts/check-commit-msg.mjs ]; then
+  echo "commit-msg blocked: required check missing: backend/scripts/check-commit-msg.mjs"
+  echo "  This script is tracked in the repo. Run: git checkout -- backend/scripts/check-commit-msg.mjs"
+  exit 1
+fi
+
+node backend/scripts/check-commit-msg.mjs "$1" || exit 1
+
+# Private check (skips silently when private/ is locked or absent).
+if [ -f private/scripts/check-signature.mjs ]; then
+  node private/scripts/check-signature.mjs "$1" || exit 1
+fi

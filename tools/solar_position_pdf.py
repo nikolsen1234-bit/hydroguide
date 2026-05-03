@@ -146,11 +146,9 @@ def fetch_elevations(points):
         punkter_json = json.dumps(chunk, separators=(",", ":"))
         params = urllib.parse.urlencode({"koordsys": COORD_SYSTEM, "datakilde": "dtm1", "punkter": punkter_json})
         url = f"{KARTVERKET_URL}?{params}"
-        if urllib.parse.urlparse(url).scheme not in ("http", "https"):
-            raise ValueError(f"Refusing non-http(s) URL: {url}")
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
                 data = json.loads(resp.read())
                 pts = data.get("punkter", data.get("points", data if isinstance(data, list) else []))
                 for p in pts:

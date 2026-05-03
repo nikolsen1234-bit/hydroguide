@@ -1,0 +1,46 @@
+# Keep Understand Anything focused on source architecture.
+# Runtime maps must not include local caches, generated deploy configs, secrets,
+# generated graphs, or agent state.
+
+.ai/
+.codex/
+.githooks/
+.understand-anything/
+docs/superpowers/
+
+node_modules/
+dist/
+build/
+coverage/
+test-deploy/
+frontend/src/generated/
+
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+.secrets
+*.local
+*.token
+.hydroguide-admin-token
+
+.wrangler/
+.mf/
+backend/api-worker/wrangler.generated.jsonc
+backend/config/wrangler.generated.jsonc
+backend/cloudflare/*.generated.wrangler.jsonc
+backend/config/cloudflare.private.json
+
+tools/minstevann/.data/
+tools/minstevann/results/
+tools/minstevann/out/
+tools/minstevann/**/__pycache__/
+tools/minstevann/**/*.pyc
+
+*.pdf
+*.elements.json
+*.log
+*.nc
+*.cast
+.pytest_cache/
+.npm/

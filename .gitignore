@@ -30,8 +30,10 @@ backend/cloudflare/*.generated.wrangler.jsonc
 .ai/*
 .ai/.*
 !.ai/agent-worklog.md
+!.ai/understand-systemkart.md
 .codex/
-.understand-anything/
+.understand-anything/*
+!.understand-anything/.understandignore
 /AGENTS.md
 /CLAUDE.md
 /CODEX.md

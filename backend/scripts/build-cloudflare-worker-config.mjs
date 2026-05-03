@@ -153,7 +153,18 @@ function readPrivateValues() {
     return {};
   }
 
-  const parsed = JSON.parse(readFileSync(privateConfigPath, "utf8"));
+  const text = readFileSync(privateConfigPath, "utf8");
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    if (text.includes("GITCRYPT")) {
+      return {};
+    }
+
+    throw error;
+  }
+
   return parsed.cloudflare && typeof parsed.cloudflare === "object" ? parsed.cloudflare : {};
 }
 
@@ -411,8 +422,10 @@ function main() {
     return;
   }
 
-  const privateValues = readPrivateValues();
-  const values = resolveValues(privateValues);
+  const needsDeployValues =
+    args.has("--deploy-preflight") || args.has("--check-deploy-config") || args.has("--write-deploy-config");
+  const privateValues = needsDeployValues ? readPrivateValues() : {};
+  const values = needsDeployValues ? resolveValues(privateValues) : {};
 
   if (args.has("--deploy-preflight")) {
     assertDeployEnv(values);

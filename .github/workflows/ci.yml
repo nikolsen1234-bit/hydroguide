@@ -49,5 +49,8 @@ jobs:
         with:
           node-version: 22
 
+      - name: Check Worker config hygiene
+        run: node backend/scripts/check-worker-hygiene.mjs --all --ci
+
       - name: Run backend tests
         run: node backend/api/_apiUtils.test.mjs

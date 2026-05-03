@@ -60,7 +60,7 @@ Alle Workers har `workers_dev: false`. Det hindrar ein ekstra `*.workers.dev`-in
 
 ## Hemmelege Verdiar
 
-Desse ligg som Cloudflare secrets, Cloudflare Secrets Store eller GitHub Actions secrets:
+Desse ligg som Cloudflare secrets, Cloudflare Secrets Store eller Cloudflare Workers Builds secrets:
 
 - `API_KEY_HASH_SECRET`
 - `REPORT_ACCESS_CODE_HASH`
@@ -97,7 +97,26 @@ node backend/scripts/check-worker-hygiene.mjs --staged
 
 Sjekken køyrer offentleg config-validering, deploy-config-validering når private verdiar finst lokalt, stoppar `*.generated.wrangler.jsonc` og private Cloudflare deploy-filer frå vanleg commit, og blokkerer staged Worker-endringar dersom branch er bak upstream. CI køyrer same sjekk med `--all --ci`.
 
-GitHub Actions deployar i denne rekkefølgja:
+Cloudflare Workers Builds er Git-kopla deploy for Workers. GitHub Actions deployar ikkje Workers og skal ikkje ha `CLOUDFLARE_API_TOKEN`.
+
+Kvar Worker er kopla til GitHub-repoet `nikolsen1234-bit/hydroguide` i Cloudflare:
+
+| Worker | Root directory | Build command | Deploy command |
+|--------|----------------|---------------|----------------|
+| `hydroguide-ai` | `frontend` | `npm ci && node ../backend/scripts/build-cloudflare-worker-config.mjs --check-public --write-deploy-config` | `npx wrangler deploy --config ../backend/cloudflare/ai.generated.wrangler.jsonc` |
+| `hydroguide-api` | `frontend` | `npm ci && node ../backend/scripts/build-cloudflare-worker-config.mjs --check-public --write-deploy-config` | `npx wrangler deploy --config ../backend/cloudflare/api.generated.wrangler.jsonc` |
+| `hydroguide-report` | `frontend` | `npm ci && node ../backend/scripts/build-cloudflare-worker-config.mjs --check-public --write-deploy-config` | `npx wrangler deploy --config ../backend/cloudflare/report.generated.wrangler.jsonc` |
+| `hydroguide-admin` | `frontend` | `npm ci && node ../backend/scripts/build-cloudflare-worker-config.mjs --check-public --write-deploy-config` | `npx wrangler deploy --config ../backend/cloudflare/admin.generated.wrangler.jsonc` |
+
+Cloudflare Workers Builds har desse build-verdiane på Cloudflare-sida:
+
+- `CLOUDFLARE_ACCOUNT_ID`
+- `KV_API_KEYS_NAMESPACE_ID`
+- `KV_REPORT_RULES_NAMESPACE_ID`
+
+Cloudflare sin Workers Builds API token handterer deploy-kallet. Lokal `.secrets` er backup for manuell drift og lokal verifisering.
+
+Deploy-rekkefølgja er:
 
 1. `hydroguide-ai`
 2. `hydroguide-api`

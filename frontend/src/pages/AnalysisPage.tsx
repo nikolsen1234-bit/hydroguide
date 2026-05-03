@@ -94,7 +94,6 @@ function splitMainSolution(solution: string) {
   const normalized = solution
     .trim()
     .replace(ROBUST_PREFIX_RE, "")
-    .replace(ROBUST_PREFIX_RE, "")
     .replace(ROBUST_VARIANT_RE, " med vern mot is/drivgods")
     .replace(ROBUST_RELEASE_RE, "passiv slipp-løysing")
     .replace(ROBUST_REGULATION_RE, "reguleringskum")

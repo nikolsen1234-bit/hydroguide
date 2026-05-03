@@ -1,281 +1,123 @@
-# HydroGuide Cloudflare-dokumentasjon
+# HydroGuide Cloudflare-Dokumentasjon
 
-Oppdatert: 2026-04-29
+Oppdatert: 2026-05-03
 
-## Arkitektur
+## Kort Forklart
 
-HydroGuide kjører på tre Cloudflare-overflater:
+Cloudflare-løysinga er delt i statisk frontend, fire Workers, to KV namespaces og tre R2 buckets. Nettsida kallar berre rutene ho treng, medan rapport-AI, API-nøklar og admin-logikk ligg bak eigne grenser.
 
-```
-hydroguide.no
-│
-├── Cloudflare Pages              statisk frontend (React/Vite SPA)
-│   └── Pages Functions           fallback for ruter Worker-en ikke fanger
-│       └── /api/polish-report    KI-rapportgenerering (eneste rute her)
-│
-├── Worker: hydroguide-api        fanger /api/* via route patterns
-│   └── /api/{health,calculations,nveid,docs,keys,
-│            place-suggestions,pvgis-tmy,terrain-profile}
-│
-└── Worker: hydroguide-w-r2       AI Worker (RAG mot NVE-korpus)
-    └── intern service-binding fra polish-report
+```text
+Nettlesar
+  -> statisk frontend                 React/Vite-app
+  -> hydroguide-api                   offentleg API + enkle frontend-hjelparar
+  -> hydroguide-report                rapportinngang for nettsida
+       -> REPORT_AI_WORKER            intern service binding
+            -> hydroguide-ai          AI, retrieval og rapporttekst
+
+Admin
+  -> hydroguide-admin                 /admin/*, aldri blanda med /api/*
 ```
 
-**Hvorfor delt opp i flere lag:**
+Cloudflare WAF avviser API-prefix utanfor kontrakten, kjeldeprobar og sensitive filstiar som `/rest/*`, `/api/v1/*`, `/api/keys*`, `.env`, `.secrets`, `/.git*`, `/.ai*`, `/backend*` og `/node_modules*`.
 
-- **Worker-en** kjører globalt på Cloudflare-edge, har lavere kald-start enn
-  Pages Functions, og holder svaret på offentlige ruter (NVEID, beregninger,
-  helsesjekk) raskt og forutsigbart.
-- **Pages Functions** har tilgang til Pages-spesifikke bindinger
-  (CSP-middleware, static-asset-fallback) og fanger opp ruter som Worker-en ikke
-  har route pattern for. KI-rapporten ligger her fordi den trenger middleware-CSP
-  og service-binding mot AI-worker.
-- **AI Worker** er separat fordi RAG-pipelinen har tunge AI-kall (embeddings,
-  generation), egne hemmeligheter, og et annet livssyklusbehov enn det vanlige
-  API-et.
+## Kva Nettsida Kallar Direkte
 
-## Systemoversikt
+| Rute | Worker | Bruk |
+|------|--------|------|
+| `/api/health` | `hydroguide-api` | Enkel helsesjekk |
+| `/api/docs` | `hydroguide-api` | OpenAPI og Swagger UI |
+| `/api/calculations` | `hydroguide-api` | Offentleg bereknings-API |
+| `/api/nveid` | `hydroguide-api` | NVEID-meny og minstevassføring |
+| `/api/pvgis-tmy` | `hydroguide-api` | PVGIS TMY-proxy |
+| `/api/place-suggestions` | `hydroguide-api` | Stadsøk for appen |
+| `/api/terrain-profile` | `hydroguide-api` | Terrengprofil for appen |
+| `/api/report` | `hydroguide-report` | AI-tekst til rapporten |
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Brukerens nettleser                                                │
-│  hydroguide.no (React SPA)                                          │
-└────────────────┬────────────────────────────────────────────────────┘
-                 │
-       ┌─────────▼─────────────────────────────────────────────┐
-       │  Cloudflare Edge                                      │
-       │                                                       │
-       │  ┌────────────────────┐  ┌─────────────────────────┐  │
-       │  │ hydroguide-api     │  │ Pages Functions         │  │
-       │  │ (Worker)           │  │                         │  │
-       │  │                    │  │ /api/polish-report ─────┼──┐
-       │  │ /api/nveid         │  │                         │  │
-       │  │ /api/calculations  │  └─────────────────────────┘  │
-       │  │ /api/pvgis-tmy     │                               │
-       │  │ /api/docs          │  ┌─────────────────────────┐  │
-       │  │ /api/health        │  │ hydroguide-w-r2         │◄─┘
-       │  │ ...                │  │ (AI Worker)             │  │
-       │  └────────┬───────────┘  │ • RAG mot NVE-korpus    │  │
-       │           │              │ • OpenAI / Workers AI   │  │
-       │           │              └───────────┬─────────────┘  │
-       │           │                          │                │
-       │           ▼                          ▼                │
-       │  ┌──────────────────────────────────────────────────┐ │
-       │  │ Lagring                                          │ │
-       │  │ KV (API_KEYS, PROMPT_KV)                         │ │
-       │  │ R2 (api-data, korpus, assets)                    │ │
-       │  │ AI Gateway (caching/retry mot OpenAI)            │ │
-       │  └──────────────────────────────────────────────────┘ │
-       └───────────────────────────────────────────────────────┘
+WAF avviser `/api/keys*`. Admin for API-nøklar ligg på `/admin/keys`.
 
-       ┌───────────────────────────────────────────────────────┐
-       │  Lokalt (utviklermaskin)                              │
-       │                                                       │
-       │  Minstevannføring-pipeline                            │
-       │  NVE → PDF → OpenDataLoader → Ollama → JSON           │
-       │                                                       │
-       │  Output: backend/data/minimumflow.json                │
-       │  Lastes opp til R2 → serveres via /api/nveid          │
-       └───────────────────────────────────────────────────────┘
-```
-
-## Endepunkter
-
-### Offentlig API
-
-Dokumentert i Swagger UI på `/api/docs?ui`. Dette er ruter som er ment å bli
-brukt eksternt (av andre verktøy, ikke bare HydroGuide-frontenden).
-
-| Metode | Rute | Beskrivelse |
-|--------|------|-------------|
-| GET | `/api/docs` | OpenAPI-spec (JSON) |
-| GET | `/api/docs?ui` | Swagger UI |
-| GET | `/api/health` | Helsesjekk for uptime-monitorering |
-| GET, POST | `/api/calculations` | Energiberegning (krever Bearer-token) |
-| GET | `/api/nveid` | Oversikt over tilgjengelige NVEID-endepunkter |
-| GET | `/api/nveid/{nveID}` | Meny for én stasjon |
-| GET | `/api/nveid/{nveID}/minimum-flow` | Minstevannføring-data |
-| GET | `/api/nveid/{nveID}/concession` | NVE-konsesjonslenke |
-| GET | `/api/pvgis-tmy` | TMY soldata for koordinater |
-
-### Frontend-hjelpere
-
-Kallable fra appen, ikke listet i Swagger fordi de er proxy-er for tredjepart
-(Geonorge, Kartverket, AI-worker) som ikke gir mening uten HydroGuide-konteksten:
-
-| Metode | Rute | Beskrivelse |
-|--------|------|-------------|
-| POST | `/api/place-suggestions` | Stedsnavn-oppslag (Geonorge) |
-| POST | `/api/terrain-profile` | Terrengprofil (Kartverket) |
-| POST | `/api/polish-report` | KI-rapportgenerering (Pages Functions) |
-
-### Admin
-
-Auth-gated, ikke lenket fra UI. Bruker eget admin-token, ikke vanlig API-nøkkel.
-
-| Metode | Rute | Beskrivelse |
-|--------|------|-------------|
-| GET, POST | `/api/keys` | API-nøkkeladministrasjon (rotering, oppretting) |
+`/api/place-suggestions`, `/api/terrain-profile` og `/api/report` er frontend-hjelparar. Dei er kallbare frå nettsida og ligg utanfor hovud-API for eksterne brukarar.
 
 ## Workers
 
-### hydroguide-api
+| Worker | Config | Source | Bindingar |
+|--------|--------|--------|-----------|
+| `hydroguide-api` | `backend/cloudflare/api.wrangler.jsonc` | `backend/workers/api/index.js` | `MINIMUM_FLOW_BUCKET`, `API_KEYS`, `API_KEY_HASH_SECRET` |
+| `hydroguide-report` | `backend/cloudflare/report.wrangler.jsonc` | `backend/workers/report/index.js` | `REPORT_AI_WORKER`, `REPORT_ACCESS_CODE_HASH`, `REPORT_WORKER_TOKEN` |
+| `hydroguide-ai` | `backend/cloudflare/ai.wrangler.jsonc` | `backend/workers/ai/index.ts` | `AI`, `REPORT_RULES`, `AI_REFERENCE_BUCKET`, `REPORT_WORKER_TOKEN`, AI Gateway/Search secrets |
+| `hydroguide-admin` | `backend/cloudflare/admin.wrangler.jsonc` | `backend/workers/admin/index.js` | `API_KEYS`, `ADMIN_TOKEN`, `API_KEY_HASH_SECRET` |
 
-Hovedinngangen for `/api/*`-trafikk.
+Alle Workers har `workers_dev: false`. Det hindrar ein ekstra `*.workers.dev`-inngang som kan gå utanom sone-reglar på `hydroguide.no`.
 
-**Source:** `backend/api-worker/index.js`
-**Config:** `backend/api-worker/wrangler.jsonc`
+## Lagring
 
-Route patterns (i wrangler.jsonc) — Worker-en starter kun for URL-er som matcher
-disse, alt annet faller tilbake til Pages:
-- `hydroguide.no/api/health*`
-- `hydroguide.no/api/nveid*`
-- `hydroguide.no/api/place-suggestions*`
-- `hydroguide.no/api/terrain-profile*`
-- `hydroguide.no/api/pvgis-tmy*`
-- `hydroguide.no/api/calculations*`
-- `hydroguide.no/api/docs*`
-- `hydroguide.no/api/keys*`
+| Type | Namn | Bruk |
+|------|------|------|
+| R2 | `hydroguide-minimum-flow` | `api/minimumflow.json` for `/api/nveid` |
+| R2 | `hydroguide-ai-reference` | NVE-referansar og embeddings for rapport-AI |
+| R2 | `hydroguide-assets` | Offentlege filer under `files.hydroguide.no` |
+| KV | `API_KEYS` | API-nøklar, status og rate limit |
+| KV | `REPORT_RULES` | Rapportreglar, faste utdrag og retrieval-støtte |
 
-Bindinger (det Worker-en faktisk har tilgang til ved kjøretid):
+## Hemmelege Verdiar
 
-| Binding | Type | Resource | Hva den brukes til |
-|---------|------|----------|--------------------|
-| `API_KEYS` | KV | KV-namespace `API_KEYS` | slå opp kunde-API-nøkler for `/api/calculations` og admin |
-| `API_KEY_HASH_SECRET` | Secret | — | HMAC-verifisering av nye API-nøkkel-records |
-| `MINIMUMFLOW_R2` | R2 | bucket `hydroguide-api-data` | les `minimumflow.json` for `/api/nveid` |
-| `MINIMUMFLOW_OBJECT_KEY` | env | `api/minimumflow.json` | filsti-konfig (gjør det enkelt å bytte uten kode-endring) |
+Desse ligg som Cloudflare secrets, Cloudflare Secrets Store eller GitHub Actions secrets:
 
-### hydroguide-w-r2 (AI Worker)
+- `API_KEY_HASH_SECRET`
+- `REPORT_ACCESS_CODE_HASH`
+- `REPORT_WORKER_TOKEN`
+- `AI_GATEWAY_AUTH_TOKEN`
+- `AI_SEARCH_API_TOKEN`
+- `ADMIN_TOKEN`
 
-RAG-pipeline (Retrieval-Augmented Generation) for KI-rapportgenerering. Henter
-relevant evidens fra NVE-korpus og lar OpenAI/Workers AI skrive rapporten.
+`CLOUDFLARE_API_TOKEN` og `CLOUDFLARE_API_TOKEN_ID` ligg i Cloudflare Secrets Store og i lokal `.secrets` som backup. Aktiv driftstoken er ein smal HydroGuide Cloudflare ops-token.
 
-**Source:** `backend/services/ai/index.ts`
-**Config:** `backend/config/wrangler.jsonc`
+## Deploy-Konfig
 
-Bindinger:
+Kjeldekonfig ligg i `backend/cloudflare/*.wrangler.jsonc`. Desse filene har bevisst placeholder-ID-ar.
 
-| Binding | Type | Resource | Hva den brukes til |
-|---------|------|----------|--------------------|
-| `AI` | Workers AI | (managed) | embeddings + fallback-modell |
-| `R2_BUCKET` | R2 | bucket `hydroguide-r2` | NVE-korpus med pre-genererte embeddings |
-| `PROMPT_KV` | KV | KV-namespace `PROMPT_KV` | bucket-inndelt evidens for raskt oppslag |
-| `WORKER_API_KEY` | Secret | — | Bearer-auth som beskytter worker-en fra alt unntatt polish-report |
-| `AI_GATEWAY_AUTH_TOKEN` | Secret | — | auth mot Cloudflare AI Gateway |
-| `AI_SEARCH_API_TOKEN` | Secret | — | auth mot AutoRAG/AI Search |
-| `AI_EXPORT_PASSWORD_HASH` | Secret | — | sammenligningshash for eksportkoden brukeren skriver inn |
-
-Env-variabler styrer modellvalg (`OPENAI_MODEL_PRIMARY`, `WORKERS_AI_FALLBACK_MODEL`),
-gateway-konfig (`AI_GATEWAY_*`) og retrieval-strategi (`RETRIEVAL_BACKEND`,
-`AI_SEARCH_*`). Full liste i `backend/config/.dev.vars.example`.
-
-## Storage
-
-### KV-namespaces
-
-KV (Key-Value) er Cloudflares globale, eventuelt-konsistente nøkkel-verdi-lager.
-Lavt latency for lesing, perfekt for små data som ofte trengs.
-
-| Namespace | Bruk |
-|-----------|------|
-| `API_KEYS` | API-nøkler for `/api/calculations` og `/api/keys` |
-| `PROMPT_KV` | Bucketed NVE-evidens for RAG-retrieval |
-
-### R2-buckets
-
-R2 er Cloudflares S3-kompatible objektlager. Brukes for større filer eller
-data som ikke trengs hver request.
-
-| Bucket | Bruk |
-|--------|------|
-| `hydroguide-api-data` | `minimumflow.json` (én fil med all minstevannføring per NVEID) |
-| `hydroguide-r2` | NVE-korpus oppdelt i chunks med embeddings |
-| `hydroguide-assets` | Statiske assets (logoer, bilder, fonter) |
-
-### AI Search / AutoRAG
-
-`hydroguide-w-r2` bruker `env.AI.autorag(env.AI_SEARCH_INSTANCE)` for semantisk
-søk mot NVE-korpus. Det betyr: brukeren spør "hva er kravene til
-fiskepassasje?", AutoRAG finner de mest relevante delene av korpuset basert på
-embeddings, og generation-modellen får dem som kontekst når den skriver
-rapporten. Fallback til legacy KV-buckets om AI Search er deaktivert.
-
-### AI Gateway
-
-Alle worker AI-kall går gjennom Cloudflare AI Gateway. Fordelene:
-
-- **Caching**: like prompt → samme svar uten å betale OpenAI-kostnad to ganger
-- **Retry**: automatisk retry ved transient feil
-- **Logging**: vi ser hver kall, latency og kostnad i Cloudflare-dashbordet
-
-Aktivert via `AI_GATEWAY_ENABLED=true` med tilhørende `AI_GATEWAY_*`-konfig.
-
-## Deploy
-
-### Pages (frontend + Pages Functions)
-
-Bygges med `npm run build:test`:
-
-1. `tsc -b && vite build` produserer `frontend/dist/`
-2. `update-build-info.mjs` skriver `dist/build-info.json` (commit-hash + tid)
-3. `copy-build-to-test.mjs` kopierer `dist/` + kuraterte `functions/` til `test-deploy/`
-
-`test-deploy/` deployes manuelt (eller via CI) til Pages-prosjektet. Inneholder
-kun det som faktisk trengs i runtime — ingen dokumentasjon eller dev-skript.
-
-### Workers
-
-Bruk wrangler:
+Genererte deploy-konfigar ligg som `backend/cloudflare/*.generated.wrangler.jsonc` og er gitignored. Scriptet lagar dei:
 
 ```bash
-cd backend/api-worker
-wrangler deploy
-
-cd backend/services/ai
-wrangler deploy --config ../../config/wrangler.jsonc
+node backend/scripts/build-cloudflare-worker-config.mjs --write-public
+node backend/scripts/build-cloudflare-worker-config.mjs --write-deploy-config
 ```
 
-`wrangler deploy --dry-run` validerer config + bindinger uten å publisere.
-Bruk dette først hver gang for å fange feilstavet binding-navn eller manglende
-hemmeligheter.
-
-## Konfigurasjon
-
-Wrangler-filer i repo bruker `REPLACE_WITH_*`-plassholdere — det betyr at filen
-kan committes til en offentlig repo uten at faktiske Cloudflare-IDer lekker:
-
-- `backend/api-worker/wrangler.jsonc`
-- `backend/config/wrangler.jsonc`
-
-Faktiske ID-er og hemmeligheter ligger i `.secrets` (kryptert med git-crypt) og
-`.dev.vars` (gitignored). Mal i `backend/config/.dev.vars.example`.
-
-For lokal utvikling:
+Sjekk at offentleg metadata og deploy-konfig er konsistente:
 
 ```bash
-cp backend/config/.dev.vars.example backend/config/.dev.vars
-# fyll inn faktiske verdier (ikke commit!)
-wrangler dev
+node backend/scripts/build-cloudflare-worker-config.mjs --check-public
+node backend/scripts/build-cloudflare-worker-config.mjs --check-deploy-config
 ```
 
-## Sikkerhet
+GitHub Actions deployar i denne rekkefølgja:
 
-- **CSP** (Content Security Policy): `backend/_middleware.js` setter global CSP
-  for SPA-ruter. `/api/docs` har egen CSP fordi Swagger UI trenger inline-script
-  med nonce. Standalone-kart (`nve-kart-standalone`, `solar-location-map`) har
-  også egne CSP-er fordi de bruker Leaflet og NVE-tile-servere som ikke matcher
-  hovedreglene.
-- **CORS**: `/api/calculations` og offentlige NVEID-ruter har wildcard CORS
-  (Bearer-token-modell — som GitHub eller OpenAI). `/api/keys` bruker en
-  restricted origin allowlist. `/api/polish-report` bruker `CORS_OPTIONS_HEADERS`
-  med eksport-kode-validering før KI-kallet kjøres.
-- **Rate limit**: KV-backed for offentlig API (per-key, kvote settes i
-  KV-record), Cache API + in-memory for proxy-ruter (per-IP, hindrer at én bruker
-  lager DoS).
-- **Hemmeligheter**: validert via `constantTimeEquals` ved sammenligning. Det
-  hindrer at en angriper kan måle responstid for å gjette tegn-for-tegn.
-  Hash-then-XOR brukes for admin-token (skjuler i tillegg input-lengde).
-- **Body size**: alle POST-ruter har eksplisitte byte-caps (1 KB–512 KB
-  avhengig av rute). Forhindrer at noen kan sende en multi-megabyte payload som
-  spiser worker-CPU.
+1. `hydroguide-ai`
+2. `hydroguide-api`
+3. `hydroguide-report`
+4. `hydroguide-admin`
+
+## Sikkerheitsreglar
+
+- Admin-ruter ligg under `/admin/*`.
+- WAF avviser `/api/keys*`. Adminoperasjonar går gjennom `/admin/keys`.
+- Rapport-AI har ingen offentleg route. `hydroguide-report` kallar han med `REPORT_AI_WORKER`.
+- Rapportkall brukar `REPORT_ACCESS_CODE_HASH` frå nettsida og `REPORT_WORKER_TOKEN` internt.
+- API-nøklar ligg i KV som hash/HMAC.
+- R2-bucket for minstevassføring er skild frå R2-bucket for AI-referansar.
+- Tracked config brukar placeholders for account IDs, namespace IDs og tokens.
+
+Aktive Cloudflare-reglar:
+
+- SSL/TLS: `strict`, Always Use HTTPS på, Automatic HTTPS Rewrites på, TLS 1.3 på, minimum TLS 1.2.
+- DNSSEC: aktiv.
+- WAF custom rules: avviser API-prefix utanfor kontrakten, kjelde-/secret-probes, `TRACE`/`TRACK`, og feil metodar mot admin.
+- Managed WAF: Cloudflare Managed Free Ruleset er aktiv.
+- Rate limit: `/api/*` og `/admin/*` er avgrensa til plan-tillaten regel, 40 requests per 10 sekund per IP/datacenter med 10 sekund blokk.
+- Response headers: Cloudflare set `Content-Security-Policy`, `X-Frame-Options`, `Referrer-Policy` og `Permissions-Policy`.
+- Cache rules: Cloudflare bypassar cache for `/api/*` og `/admin/*`; statisk frontend og R2-assets er utanfor denne API/admin-bypassregelen.
+
+## Tokenhygiene
+
+- Cloudflare secrets er primær kjelde for drift. Lokal `.secrets` er backup med same verdiar.
+- Den aktive Cloudflare ops-tokenen har HydroGuide-relevante rettar for Workers, routes, KV, R2, Secrets Store, zone settings, WAF, transform rules, cache rules, DNS og SSL.
+- Tokenar som blir limte inn i chat eller brukt utanfor normal drift blir roterte etter bruk.

@@ -1,0 +1,23 @@
+{
+  "$schema": "../../frontend/node_modules/wrangler/config-schema.json",
+  "name": "hydroguide-report",
+  "main": "../workers/report/index.js",
+  "compatibility_date": "2026-05-02",
+  "workers_dev": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "services": [
+    {
+      "binding": "REPORT_AI_WORKER",
+      "service": "hydroguide-ai"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "hydroguide.no/api/report*",
+      "zone_name": "hydroguide.no"
+    }
+  ]
+}

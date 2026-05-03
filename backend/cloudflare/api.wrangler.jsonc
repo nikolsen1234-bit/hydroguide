@@ -1,13 +1,17 @@
 {
   "$schema": "../../frontend/node_modules/wrangler/config-schema.json",
   "name": "hydroguide-api",
-  "main": "./index.js",
-  "compatibility_date": "2026-04-29",
-  "workers_dev": true,
+  "main": "../workers/api/index.js",
+  "compatibility_date": "2026-05-02",
+  "workers_dev": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
   "r2_buckets": [
     {
-      "binding": "MINIMUMFLOW_R2",
-      "bucket_name": "hydroguide-api-data"
+      "binding": "MINIMUM_FLOW_BUCKET",
+      "bucket_name": "hydroguide-minimum-flow"
     }
   ],
   "kv_namespaces": [
@@ -17,7 +21,7 @@
     }
   ],
   "vars": {
-    "MINIMUMFLOW_OBJECT_KEY": "api/minimumflow.json"
+    "MINIMUM_FLOW_OBJECT_KEY": "api/minimumflow.json"
   },
   "routes": [
     {
@@ -25,7 +29,19 @@
       "zone_name": "hydroguide.no"
     },
     {
+      "pattern": "hydroguide.no/api/docs*",
+      "zone_name": "hydroguide.no"
+    },
+    {
+      "pattern": "hydroguide.no/api/calculations*",
+      "zone_name": "hydroguide.no"
+    },
+    {
       "pattern": "hydroguide.no/api/nveid*",
+      "zone_name": "hydroguide.no"
+    },
+    {
+      "pattern": "hydroguide.no/api/pvgis-tmy*",
       "zone_name": "hydroguide.no"
     },
     {
@@ -34,22 +50,6 @@
     },
     {
       "pattern": "hydroguide.no/api/terrain-profile*",
-      "zone_name": "hydroguide.no"
-    },
-    {
-      "pattern": "hydroguide.no/api/pvgis-tmy*",
-      "zone_name": "hydroguide.no"
-    },
-    {
-      "pattern": "hydroguide.no/api/calculations*",
-      "zone_name": "hydroguide.no"
-    },
-    {
-      "pattern": "hydroguide.no/api/docs*",
-      "zone_name": "hydroguide.no"
-    },
-    {
-      "pattern": "hydroguide.no/api/keys*",
       "zone_name": "hydroguide.no"
     }
   ]

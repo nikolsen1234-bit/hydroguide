@@ -1,5 +1,5 @@
 /**
- * POST /api/keys - unified key management endpoint.
+ * POST /admin/keys - unified key management endpoint.
  *
  * Actions:
  *   "rotate"  - self-service: caller sends Bearer token, gets new key back, old revoked
@@ -8,7 +8,7 @@
  *   "revoke"  - admin: requires x-admin-token + key_hash
  *   "delete"  - admin: requires x-admin-token + key_hash
  *
- * GET /api/keys - admin: list all keys (requires x-admin-token)
+ * GET /admin/keys - admin: list all keys (requires x-admin-token)
  */
 
 import {
@@ -18,9 +18,17 @@ import {
   createApiKeyRecord,
   sha256Hex,
   checkAdminRateLimit,
+  checkApiRateLimit,
   handleRestrictedCorsOptions,
   readApiJsonBody
-} from "../_apiUtils.js";
+} from "../../api/_apiUtils.js";
+
+// Per-key rotate rate limit. Keyed on the OLD keyHash being retired, so an
+// attacker with a stolen Bearer token cannot mint fresh hashes to escape the
+// cap by rotating in a chain — each chained rotation still consumes from the
+// originally-stolen key's bucket through carry-over (see ROTATE_RATE_LIMIT_KEY
+// derivation in handleRotate).
+const ROTATE_RATE_LIMIT = { max: 5, windowMs: 60 * 60 * 1000 };
 
 // Hash-then-XOR variant: hashes both inputs to fixed-length 32-byte digests
 // before constant-time compare. Hides input length from timing analysis on
@@ -37,7 +45,7 @@ async function constantTimeEquals(a, b) {
 }
 
 async function requireAdmin(request, env) {
-  const expected = String(env?.INTERNAL_SERVICE_TOKEN ?? "").trim();
+  const expected = String(env?.ADMIN_TOKEN ?? "").trim();
   if (!expected) return "Admin endpoint not configured.";
   const provided = (request.headers.get("x-admin-token") ?? "").trim();
   if (!provided || !(await constantTimeEquals(provided, expected))) return "Unauthorized.";
@@ -51,7 +59,7 @@ function generateRawKey() {
 }
 
 function requireKeyHash(body) {
-  const h = body?.key_hash?.trim();
+  const h = typeof body?.key_hash === "string" ? body.key_hash.trim() : "";
   if (!h || !/^[a-f0-9]{64}$/.test(h)) return null;
   return h;
 }
@@ -69,6 +77,19 @@ async function handleRotate(request, env) {
   if (!oldRaw) return createErrorResponse("Key not found.", 404);
 
   const oldRecord = JSON.parse(oldRaw);
+
+  // Per-key rotate rate limit. Use the lineage root (the first hash in the
+  // chain) so chained rotations cannot bypass the cap by minting fresh hashes.
+  // The first key in a chain has no rotateLineage yet — fall back to its own hash.
+  const lineageRoot = oldRecord.rotateLineage ?? oldHash;
+  const rotateLimit = await checkApiRateLimit(`rotate:${lineageRoot}`, ROTATE_RATE_LIMIT, kv);
+  if (!rotateLimit.allowed) {
+    return createErrorResponse(
+      `Too many rotations for this key. Retry after ${rotateLimit.retryAfterSeconds}s.`,
+      429
+    );
+  }
+
   const newKey = generateRawKey();
   let newHash;
   let newRecord;
@@ -85,6 +106,7 @@ async function handleRotate(request, env) {
   }
 
   newRecord.rotatedFrom = oldHash.slice(0, 12);
+  newRecord.rotateLineage = lineageRoot;
   await kv.put(`key:${newHash}`, JSON.stringify(newRecord));
 
   oldRecord.active = false;
@@ -100,24 +122,80 @@ async function handleRotate(request, env) {
   });
 }
 
+const ALLOWED_TIERS = ["free", "pro", "enterprise"];
+const NAME_MAX_LENGTH = 200;
+const RATE_LIMIT_MIN = 1;
+const RATE_LIMIT_MAX = 100_000;
+const RATE_WINDOW_MIN_MS = 1_000;
+const RATE_WINDOW_MAX_MS = 24 * 60 * 60 * 1000;
+
+function readOptionalString(value, fieldName) {
+  if (value === undefined || value === null) return { value: "" };
+  if (typeof value !== "string") return { error: `${fieldName} must be a string.` };
+  return { value: value.trim() };
+}
+
+function readAction(body) {
+  return typeof body?.action === "string" ? body.action.trim().toLowerCase() : "";
+}
+
+function validateCreateInput(body) {
+  const nameResult = readOptionalString(body?.name, "name");
+  if (nameResult.error) return { error: nameResult.error };
+  const name = nameResult.value;
+  if (!name) return { error: "name is required." };
+  if (name.length > NAME_MAX_LENGTH) {
+    return { error: `name must be ${NAME_MAX_LENGTH} characters or fewer.` };
+  }
+
+  const tierResult = readOptionalString(body?.tier, "tier");
+  if (tierResult.error) return { error: tierResult.error };
+  const tierRaw = tierResult.value;
+  const tier = tierRaw || "free";
+  if (!ALLOWED_TIERS.includes(tier)) {
+    return { error: `tier must be one of: ${ALLOWED_TIERS.join(", ")}.` };
+  }
+
+  let max = 100;
+  if (body?.rate_limit !== undefined) {
+    const n = Number(body.rate_limit);
+    if (!Number.isFinite(n) || n < RATE_LIMIT_MIN || n > RATE_LIMIT_MAX || !Number.isInteger(n)) {
+      return { error: `rate_limit must be an integer between ${RATE_LIMIT_MIN} and ${RATE_LIMIT_MAX}.` };
+    }
+    max = n;
+  }
+
+  let windowMs = 60_000;
+  if (body?.rate_window_ms !== undefined) {
+    const n = Number(body.rate_window_ms);
+    if (!Number.isFinite(n) || n < RATE_WINDOW_MIN_MS || n > RATE_WINDOW_MAX_MS) {
+      return { error: `rate_window_ms must be between ${RATE_WINDOW_MIN_MS} and ${RATE_WINDOW_MAX_MS}.` };
+    }
+    windowMs = n;
+  }
+
+  return { name, tier, rateLimit: { max, windowMs } };
+}
+
 async function handleCreate(request, env, body) {
   const err = await requireAdmin(request, env);
   if (err) return createErrorResponse(err, 401);
 
-  const name = body?.name?.trim();
-  if (!name) return createErrorResponse("name is required.", 400);
+  const validated = validateCreateInput(body);
+  if (validated.error) return createErrorResponse(validated.error, 400);
 
   const kv = env?.API_KEYS;
   if (!kv) return createErrorResponse("KV unavailable.", 503);
 
+  const { name, tier, rateLimit } = validated;
   const rawKey = generateRawKey();
   let keyHash;
   let record;
   try {
     ({ keyHash, record } = await createApiKeyRecord(rawKey, {
       name,
-      tier: body?.tier?.trim() || "free",
-      rateLimit: { max: Number(body?.rate_limit) || 100, windowMs: Number(body?.rate_window_ms) || 60000 },
+      tier,
+      rateLimit,
       createdAt: new Date().toISOString(),
       env
     }));
@@ -211,7 +289,7 @@ export async function onRequestPost(context) {
   } catch (error) {
     return createErrorResponse(error instanceof Error ? error.message : "Invalid request body.", 400);
   }
-  const action = (body?.action ?? "").trim().toLowerCase();
+  const action = readAction(body);
 
   if (action === "rotate") return handleRotate(request, env);
   if (action === "create") return handleCreate(request, env, body);

@@ -1,32 +1,27 @@
-import { createApiResponse, handleCorsOptions } from "../api/_apiUtils.js";
-import { onRequestGet as getHealth } from "../api/health.js";
-import { onRequestGet as getNveid } from "../api/nveid.js";
+import { createApiResponse, handleCorsOptions } from "../../api/_apiUtils.js";
+import { onRequestGet as getHealth } from "../../api/health.js";
+import { onRequestGet as getNveid } from "../../api/nveid.js";
 import {
   onRequestOptions as optionsPlaceSuggestions,
   onRequestPost as postPlaceSuggestions
-} from "../api/place-suggestions.js";
+} from "../../api/place-suggestions.js";
 import {
   onRequestOptions as optionsTerrainProfile,
   onRequestPost as postTerrainProfile
-} from "../api/terrain-profile.js";
+} from "../../api/terrain-profile.js";
 import {
   onRequestGet as getPvgisTmy,
   onRequestOptions as optionsPvgisTmy
-} from "../api/pvgis-tmy.js";
+} from "../../api/pvgis-tmy.js";
 import {
   onRequestGet as getCalculations,
   onRequestOptions as optionsCalculations,
   onRequestPost as postCalculations
-} from "../api/calculations.js";
+} from "../../api/calculations.js";
 import {
   onRequestGet as getDocs,
   onRequestOptions as optionsDocs
-} from "../api/docs.js";
-import {
-  onRequestGet as getKeys,
-  onRequestOptions as optionsKeys,
-  onRequestPost as postKeys
-} from "../api/keys/index.js";
+} from "../../api/docs.js";
 
 const ROUTES = [
   {
@@ -38,11 +33,36 @@ const ROUTES = [
     }
   },
   {
+    name: "docs",
+    pattern: /^\/api\/docs(?:\/.*)?$/,
+    handlers: {
+      GET: getDocs,
+      OPTIONS: optionsDocs
+    }
+  },
+  {
+    name: "calculations",
+    pattern: /^\/api\/calculations(?:\/.*)?$/,
+    handlers: {
+      GET: getCalculations,
+      POST: postCalculations,
+      OPTIONS: optionsCalculations
+    }
+  },
+  {
     name: "nveid",
     pattern: /^\/api\/nveid(?:\/.*)?$/,
     handlers: {
       GET: getNveid,
       OPTIONS: () => handleCorsOptions()
+    }
+  },
+  {
+    name: "pvgis-tmy",
+    pattern: /^\/api\/pvgis-tmy(?:\/.*)?$/,
+    handlers: {
+      GET: getPvgisTmy,
+      OPTIONS: optionsPvgisTmy
     }
   },
   {
@@ -59,40 +79,6 @@ const ROUTES = [
     handlers: {
       POST: postTerrainProfile,
       OPTIONS: optionsTerrainProfile
-    }
-  },
-  {
-    name: "pvgis-tmy",
-    pattern: /^\/api\/pvgis-tmy(?:\/.*)?$/,
-    handlers: {
-      GET: getPvgisTmy,
-      OPTIONS: optionsPvgisTmy
-    }
-  },
-  {
-    name: "calculations",
-    pattern: /^\/api\/calculations(?:\/.*)?$/,
-    handlers: {
-      GET: getCalculations,
-      POST: postCalculations,
-      OPTIONS: optionsCalculations
-    }
-  },
-  {
-    name: "docs",
-    pattern: /^\/api\/docs(?:\/.*)?$/,
-    handlers: {
-      GET: getDocs,
-      OPTIONS: optionsDocs
-    }
-  },
-  {
-    name: "keys",
-    pattern: /^\/api\/keys(?:\/.*)?$/,
-    handlers: {
-      GET: getKeys,
-      POST: postKeys,
-      OPTIONS: optionsKeys
     }
   }
 ];

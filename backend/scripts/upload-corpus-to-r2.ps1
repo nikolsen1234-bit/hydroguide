@@ -1,5 +1,5 @@
 param(
-  [string]$BucketName = "hydroguide",
+  [string]$BucketName = "hydroguide-ai-reference",
   [string]$Prefix = "ai-search/nve-search",
   [Parameter(Mandatory=$true)]
   [string]$CorpusPath

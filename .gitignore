@@ -18,6 +18,9 @@ test-deploy/
 # Cloudflare
 .wrangler/
 .mf/
+backend/api-worker/wrangler.generated.jsonc
+backend/config/wrangler.generated.jsonc
+backend/cloudflare/*.generated.wrangler.jsonc
 
 # AI agent state — almost everything in .ai/ is local-only.
 # Use the "ignore contents, whitelist what we keep" pattern so that the
@@ -28,6 +31,7 @@ test-deploy/
 .ai/.*
 !.ai/agent-worklog.md
 .codex/
+.understand-anything/
 /AGENTS.md
 /CLAUDE.md
 /CODEX.md
@@ -60,6 +64,9 @@ test_*.py
 tools/minstevann/tests.py
 .ai/scripts/agent-track.test.mjs
 !backend/api/_apiUtils.test.mjs
+!backend/api/keys/index.test.mjs
+!backend/api-worker/wrangler-routes.test.mjs
+!backend/cloudflare/wrangler-routes.test.mjs
 !frontend/scripts/manage-api-keys.test.mjs
 
 # Python virtual environments
@@ -73,3 +80,6 @@ venv/
 
 # PDFs (large binary files — keep in separate storage)
 *.pdf
+
+# Local drafts
+utkast.md

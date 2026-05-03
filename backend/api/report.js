@@ -1,7 +1,7 @@
 /**
- * POST /api/polish-report
+ * POST /api/report
  *
- * AI report polishing proxy. Validates export password hash and forwards to AI worker.
+ * Report Worker proxy. Validates report access hash and forwards to the internal AI Worker.
  */
 
 import { CORS_OPTIONS_HEADERS } from "./_constants.js";
@@ -14,11 +14,11 @@ import {
 } from "./_edgeUtils.js";
 
 const REQUEST_TIMEOUT_MS = 120000;
-const POLISH_RATE_LIMIT_MAX_REQUESTS = 20;
-const POLISH_RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const POLISH_AUTH_FAILURE_LIMIT_MAX_ATTEMPTS = 10;
-const POLISH_AUTH_FAILURE_LIMIT_WINDOW_MS = 3 * 60 * 1000;
-const POLISH_REQUEST_BODY_MAX_BYTES = 32768;
+const REPORT_RATE_LIMIT_MAX_REQUESTS = 20;
+const REPORT_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const REPORT_AUTH_FAILURE_LIMIT_MAX_ATTEMPTS = 10;
+const REPORT_AUTH_FAILURE_LIMIT_WINDOW_MS = 3 * 60 * 1000;
+const REPORT_REQUEST_BODY_MAX_BYTES = 32768;
 
 function normalizeExpectedHash(rawValue) {
   const normalized = String(rawValue ?? "")
@@ -30,7 +30,7 @@ function normalizeExpectedHash(rawValue) {
 }
 
 function validateAiAccess(body, env) {
-  const expectedHash = normalizeExpectedHash(env?.AI_EXPORT_PASSWORD_HASH);
+  const expectedHash = normalizeExpectedHash(env?.REPORT_ACCESS_CODE_HASH);
 
   if (!expectedHash) {
     return "__CONFIG_MISSING__";
@@ -54,9 +54,9 @@ function validateAiAccess(body, env) {
 export async function onRequestPost(context) {
   const rateLimit = await checkRateLimit({
     request: context.request,
-    keyPrefix: "polish",
-    limit: POLISH_RATE_LIMIT_MAX_REQUESTS,
-    windowMs: POLISH_RATE_LIMIT_WINDOW_MS
+    keyPrefix: "report",
+    limit: REPORT_RATE_LIMIT_MAX_REQUESTS,
+    windowMs: REPORT_RATE_LIMIT_WINDOW_MS
   });
 
   if (!rateLimit.allowed) {
@@ -74,7 +74,7 @@ export async function onRequestPost(context) {
   let rawBody;
   try {
     rawBody = await readJsonRequest(context.request, {
-      maxBytes: POLISH_REQUEST_BODY_MAX_BYTES
+      maxBytes: REPORT_REQUEST_BODY_MAX_BYTES
     });
   } catch (error) {
     return createJsonResponse(
@@ -86,7 +86,7 @@ export async function onRequestPost(context) {
   const accessError = validateAiAccess(rawBody, context.env);
   if (accessError === "__CONFIG_MISSING__") {
     return createJsonResponse(
-      { error: "AI-tenesta er ikkje konfigurert for offentleg publisering: manglar AI_EXPORT_PASSWORD_HASH." },
+      { error: "AI-tenesta er ikkje konfigurert for offentleg publisering: manglar REPORT_ACCESS_CODE_HASH." },
       { status: 503 }
     );
   }
@@ -94,14 +94,14 @@ export async function onRequestPost(context) {
   if (accessError) {
     const authFailureLimit = await checkRateLimit({
       request: context.request,
-      keyPrefix: "polish-auth-fail",
-      limit: POLISH_AUTH_FAILURE_LIMIT_MAX_ATTEMPTS,
-      windowMs: POLISH_AUTH_FAILURE_LIMIT_WINDOW_MS
+      keyPrefix: "report-auth-fail",
+      limit: REPORT_AUTH_FAILURE_LIMIT_MAX_ATTEMPTS,
+      windowMs: REPORT_AUTH_FAILURE_LIMIT_WINDOW_MS
     });
 
     if (!authFailureLimit.allowed) {
       return createJsonResponse(
-        { error: "For mange mislykka forsok. AI-eksport er mellombels sperra for denne klienten." },
+        { error: "For mange mislykka forsok. Rapport-AI er mellombels sperra for denne klienten." },
         {
           status: 429,
           headers: {
@@ -114,7 +114,7 @@ export async function onRequestPost(context) {
     return createJsonResponse({ error: accessError }, { status: 403 });
   }
 
-  const workerApiKey = String(context.env?.WORKER_API_KEY ?? "").trim();
+  const workerApiKey = String(context.env?.REPORT_WORKER_TOKEN ?? "").trim();
   if (!workerApiKey) {
     return createJsonResponse(
       { error: "AI-tenesta er ikkje konfigurert." },
@@ -154,7 +154,7 @@ export async function onRequestPost(context) {
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
     });
 
-    const response = await context.env.AI_WORKER.fetch(workerRequest);
+    const response = await context.env.REPORT_AI_WORKER.fetch(workerRequest);
 
     const responseBody = await response.json().catch(() => null);
 

@@ -1,7 +1,9 @@
-# Legacy NVEID Data
+# NVEID Data
 
-The active generated minimum-flow database is now:
+API-et brukar denne genererte minstevassføring-databasen:
 
-`backend/data/minimumflow.json`
+```text
+backend/data/minimumflow.json
+```
 
-This folder is not the active API data source.
+Denne mappa inneheld berre dokumentasjon for NVEID-dataområdet.

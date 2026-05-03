@@ -1,86 +1,92 @@
-# Frontend-dokumentasjon
+# Frontend-Dokumentasjon
 
-Oppdatert: 2026-04-29
+Oppdatert: 2026-05-03
 
-React/Vite SPA på Cloudflare Pages. TypeScript, Tailwind CSS, Leaflet for kart.
-
----
+Frontend er React/Vite-appen for `hydroguide.no`. Appen brukar TypeScript, Tailwind og Leaflet.
 
 ## Sider
 
 | Side | Rute | Beskrivelse |
 |------|------|-------------|
-| `WelcomePage` | `/` | Landingsside |
-| `MainPage` | `/system` | Spørsmålsbasert wizard (Q1–Q9) for klassifisering av inntak |
-| `SystemPage` | `/system/results` | Systemkonfigurasjon: sol, batteri, backup, utstyrslast |
-| `AnalysisPage` | `/analysis` | Detaljert energianalyse med timesoppløsning og pålitelighet |
-| `BudgetPage` | `/budget` | Utstyrsbudsjett — effekt og energiforbruk per enhet |
-| `OverviewPage` | `/overview` | Sammendrag av konfigurasjon |
-| `SiktlinjeRadioPage` | `/siktlinje` | Radiolink-beregning med Fresnel-sone og terrengprofil |
-| `ApiPage` | `/api` | Swagger UI iframe (`/api/docs?ui`) |
+| `WelcomePage` | `/` | Landingsside og modusveljar |
+| `OverviewPage` | `/oversikt` | Samandrag av konfigurasjon |
+| `MainPage` | `/parametere` | Spørsmål Q1-Q9 om inntaket |
+| `SystemPage` | `/system` | Sol, batteri, reservekraft og utstyrslast |
+| `BudgetPage` | `/effektbudsjett` | Utstyrsbudsjett, effekt og forbruk per eining |
+| `AnalysisPage` | `/analyse` | Energianalyse time for time, med pålitelegheit og tilråding |
+| `SiktlinjeRadioPage` | `/siktlinje-radio` | Siktlinje og Fresnel-sone for radiolink |
+| `DocumentationPage` | `/dokumentasjon` | Teknisk bakgrunn med formlar |
+| `ContactPage` | `/kontakt` | Prosjektgruppe og kontaktinformasjon |
+| `ApiPage` | `/api` | Innebygd visning av det offentlege API-et |
 
----
+## Spørsmål Og Anbefaling
 
-## Spørsmål og anbefaling (Q1–Q9)
+Brukaren svarar på ni spørsmål om inntaket. Ut frå svara foreslår appen ei hovudløysing for slepp og måling, med kort grunngjeving og eventuelle tilleggskrav. Logikken ligg i `recommendation.ts`.
 
-Brukeren svarer på 9 spørsmål om inntaket (anleggstype, vannføring, slippmetode, sediment/is, fiskepassasje, bypass, måleprofil, kontroll). Basert på svarene klassifiserer `recommendation.ts` anlegget og anbefaler hovedløsning, kontrollmetode og konfidensgrad.
+Vassføringsgrenser:
 
-Vannføringsgrenser: liten ≤30 l/s, middels ≤120 l/s, stor >120 l/s.
+- liten: opp til 30 l/s
+- middels: opp til 120 l/s
+- stor: over 120 l/s
 
----
+## Beregningar
 
-## Beregninger
-
-### Moduser
+### Modusar
 
 | Modus | Beskrivelse |
 |-------|-------------|
-| Standard | Månedlig modell, ingen eksterne kall |
-| Detaljert | Timesberegning med PVGIS-data, batterisimulering, pålitelighetsanalyse |
+| Rask | Forenkla månadsmodell med lokale standardverdiar |
+| Detaljert | Timesvis simulering med soldata, batteri og pålitelegheitsanalyse |
+| Kombinert | Forenkla oversikt + detaljert pålitelegheitsanalyse |
 
-### Solstråling (solarEngine.ts)
+### Solstråling
 
-TypeScript-port av PVGIS 6.0 (EUPL-1.2). Kjører i nettleseren. Beregner timesvis GTI (Global Tilted Irradiance) for hele året med solposisjon, horisontskygge, AOI-tap, modultemperatur og PV-effektivitet.
+Reknar ut kor mykje sol som treffer panelet kvar time gjennom året. Modellen tek omsyn til solposisjon, horisontskugge, panelvinkel, modultemperatur og verkningsgrad. Klimadata kjem frå EU sitt PVGIS-arkiv via proxyen `/api/pvgis-tmy`.
 
-Henter klimadata (GHI, DHI, temperatur, vind) fra EU JRC PVGIS 5.3 via `metClient.ts`.
+Implementert i `solarEngine.ts` med data frå `metClient.ts`.
 
-### Horisontprofil (horizonProfile.ts)
+### Horisontprofil
 
-Henter terrengdata fra Kartverkets 1m DTM direkte fra nettleseren. 360 retninger × 40 avstander. Brukes av solmotoren for å beregne skyggetap gjennom dagen.
+Hentar høgdedata for terrenget rundt staden frå Kartverket og brukar dei til å rekne ut når sola står bak ein åskam.
 
-### Batterisimulering (batterySimulator.ts)
+Implementert i `horizonProfile.ts`. Han samplar 360 retningar og 40 avstandar frå Kartverkets terrengmodell.
 
-Simulerer 8760 timer SOC (state of charge) for off-grid sol+batteri. Tracker underskudd, overskudd, backup-bruk (brenselcelle/diesel) og drivstofforbruk.
+### Batterisimulering
 
-### Energibalanse (systemResults.ts)
+Simulerer batteriet time for time gjennom eit heilt år. Resultatet viser lagra energi, brukt energi, tomt batteri, behov for reservekraft og drivstoffkostnad.
 
-Summerer utstyrsbudsjett (Wh/dag), beregner batterikapasitet, månedlig sol vs. last, årstotaler (kWh, drivstoff, CO₂) og TCO-sammenligning mellom backup-kilder.
+Implementert i `batterySimulator.ts`.
 
-### Radiolink (radioLink.ts)
+### Energibalanse
 
-Siktlinje- og Fresnel-sone-beregning mellom to punkter for trådløs telemetri. Henter terrengprofil fra Kartverket.
+Summerer utstyrsbudsjettet, dimensjonerer batteriet, samanliknar sol mot last månad for månad, og reknar ut årstotalar for energi, drivstoff og CO2. Han samanliknar òg totalkostnaden over levetida mellom reservekjeldene.
 
----
+Implementert i `systemResults.ts`.
 
-## Standalone-kart
+### Radiolink
 
-**nve-kart-standalone.html** — vannkraftverk med minstevannføring-data, Wikipedia-bilder, konsesjonslenker (Leaflet + NVE ArcGIS)
+Reknar ut om to punkt har fri sikt for trådlaust samband, og om Fresnel-sona er klar. Terrengprofilen mellom punkta blir henta frå Kartverket.
 
-**solar-location-map.html** — lokasjonspicker, kommuniserer med React via `postMessage`
+Implementert i `radioLink.ts`.
 
----
+## Standalone-Kart
+
+Det finst to statiske kart:
+
+- `frontend/public/nve-kart-standalone.html`: NVE-kart over vasskraftverk med minstevassføring, bilete frå Wikipedia og lenker til konsesjonsdokument.
+- `frontend/public/solar-location-map.html`: Lokasjonskart for solanalyse. Kartet sender koordinatar tilbake til React-appen med `postMessage`.
 
 ## Rapport
 
-`report.ts` genererer HTML-rapport med søylediagram, kostnadssammenligninger, anbefalinger og KI-polert tekst fra `/api/polish-report`.
+Frontend genererer ein HTML-rapport med diagram, kostnadssamanlikning, tilrådingar og AI-tekst som forklarar valet i klart språk.
 
----
+Implementert i `report.ts`. AI-teksten kjem frå `/api/report`.
 
 ## Build
 
 ```bash
 cd frontend
-npm install          # dependencies + git hooks
-npm run dev          # Vite dev server (localhost:5173)
-npm run build:test   # build + kopier til test-deploy/
+npm ci              # installer nøyaktige låste pakkar
+npm run dev         # Vite-utviklingstenar på localhost:5173
+npm run build:test  # bygg og kopier til test-deploy/
 ```

@@ -14,15 +14,13 @@ const FUNCTION_ALLOWLIST = [
   "api/_apiUtils.js",
   "api/calculations.js",
   "api/docs.js",
-  "api/keys/index.js",
   "api/_constants.js",
   "api/_edgeUtils.js",
   "api/health.js",
   "api/nveid.js",
   "api/place-suggestions.js",
   "api/terrain-profile.js",
-  "api/pvgis-tmy.js",
-  "api/polish-report.js"
+  "api/pvgis-tmy.js"
 ];
 
 await rm(TEST_ROOT, { recursive: true, force: true });

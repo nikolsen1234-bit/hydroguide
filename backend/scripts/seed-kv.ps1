@@ -1,7 +1,7 @@
 param(
   [switch]$Remote,
   [string]$NamespaceId = "",
-  [string]$ConfigPath = (Join-Path $PSScriptRoot "..\\config\\wrangler.jsonc")
+  [string]$ConfigPath = (Join-Path $PSScriptRoot "..\\cloudflare\\ai.wrangler.jsonc")
 )
 
 Set-StrictMode -Version Latest
@@ -49,7 +49,7 @@ try {
       $args += @("--namespace-id", $NamespaceId)
     } else {
       $resolvedConfig = (Resolve-Path $ConfigPath).Path
-      $args += @("--config", $resolvedConfig, "--binding", "PROMPT_KV")
+      $args += @("--config", $resolvedConfig, "--binding", "REPORT_RULES")
     }
 
     if ($Remote) {

@@ -25,10 +25,19 @@ const CORS_HEADERS = {
 
 const ALLOWED_ORIGINS = new Set(["https://hydroguide.no", "https://www.hydroguide.no"]);
 
+// API responses are JSON only — they should never load scripts, frames, or
+// other resources. The default-src 'none' base denies everything and we add
+// back only what JSON error pages legitimately need (none, in practice).
+// frame-ancestors 'none' prevents the API responses from being embedded in any
+// frame, which doubles up with x-frame-options for older browsers.
+const API_CSP =
+  "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+
 const SECURITY_HEADERS = {
   "referrer-policy": "same-origin",
   "x-content-type-options": "nosniff",
-  "x-frame-options": "DENY"
+  "x-frame-options": "DENY",
+  "content-security-policy": API_CSP
 };
 
 // ---------------------------------------------------------------------------
@@ -274,6 +283,12 @@ function checkMemoryRateLimit(key, limit, windowMs, now) {
 
   bucket.push(now);
   rateLimitBuckets.set(key, bucket);
+
+  // Prevent unbounded growth under active attack (Memory Leak DoS protection)
+  if (rateLimitBuckets.size > 10000) {
+    rateLimitBuckets.clear();
+  }
+
   return {
     allowed: true,
     remaining: limit - bucket.length,
@@ -407,15 +422,45 @@ export async function readApiJsonBody(request) {
     throw new Error(`Request body exceeds ${Math.floor(API_REQUEST_MAX_BYTES / 1024)} KB limit.`);
   }
 
-  const text = await request.text();
-  const byteLength = new TextEncoder().encode(text).length;
-
-  if (!text.trim()) {
+  if (!request.body) {
     throw new Error("Request body is empty.");
   }
 
-  if (byteLength > API_REQUEST_MAX_BYTES) {
-    throw new Error(`Request body exceeds ${Math.floor(API_REQUEST_MAX_BYTES / 1024)} KB limit.`);
+  const reader = request.body.getReader();
+  let receivedLength = 0;
+  const chunks = [];
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        receivedLength += value.byteLength;
+        if (receivedLength > API_REQUEST_MAX_BYTES) {
+          throw new Error(`Request body exceeds ${Math.floor(API_REQUEST_MAX_BYTES / 1024)} KB limit.`);
+        }
+        chunks.push(value);
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (receivedLength === 0) {
+    throw new Error("Request body is empty.");
+  }
+
+  const allBytes = new Uint8Array(receivedLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    allBytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  const text = new TextDecoder().decode(allBytes);
+
+  if (!text.trim()) {
+    throw new Error("Request body is empty.");
   }
 
   try {

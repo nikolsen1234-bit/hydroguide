@@ -28,7 +28,7 @@ Realistiske trusler vi har designet mot:
 - TLS 1.3 er på, minimum TLS 1.2.
 - DNSSEC er aktiv på `hydroguide.no`.
 
-Motvirker: T3 (passive nedstigningsangrep og protokoll-nedgradering).
+Motvirker: T3 (avlytting og protokoll-nedgradering).
 
 ### Lag 2 — Cloudflare WAF
 
@@ -65,20 +65,20 @@ Motvirker: T1, T4, T5, T7 (delvis — se Lag 4).
 - R2-isolasjon: `hydroguide-minimum-flow` (offentlig lesbar via API) er skilt fra `hydroguide-ai-reference` (intern retrieval). Kompromittering av én bucket gir ikke tilgang til den andre.
 - `REPORT_RULES` KV inneholder faste regler og utdrag som rapport-AI alltid skal støtte seg på. Dette reduserer rom for at modellen skal "finne på" regler.
 - Tracked Wrangler-config har placeholders, ikke ekte IDer eller namespace-IDer.
-- Sensitive lokale filer (`.secrets`, `backend/config/cloudflare.private.json`) er git-crypt-encrypted.
+- Sensitive lokale filer (`.secrets`, `backend/config/cloudflare.private.json`) er kryptert med git-crypt.
 
 Motvirker: T1 (lekkasje gir ikke brukbare nøkler), T2 (placeholders i stedet for token), T7 (faste regler vs. modell-fantasi), T8.
 
 ### Lag 5 — drift
 
-- Cloudflare Secrets Store er primærkilde for tokens. Lokal `.secrets` er backup, git-crypt-encrypted.
+- Cloudflare Secrets Store er primærkilde for tokens. Lokal `.secrets` er backup, kryptert med git-crypt.
 - `check-worker-hygiene.mjs` kjører i pre-commit og CI. Den:
   - validerer offentlig config,
   - blokkerer commit av `*.generated.wrangler.jsonc`,
   - blokkerer commit av private deploy-filer,
   - krever oppdatert branch mot upstream før Worker-endring.
 - `check-secrets.mjs` kjører i pre-commit og blokkerer kjente secret-mønstre.
-- Token-rotasjon ved tvil: limt-i-chat-tokens, brukt-utenfor-vanlig-drift-tokens.
+- Token-rotasjon ved tvil: tokener som er limt inn i chat eller brukt utenfor vanlig drift.
 - Cloudflare Workers Builds-token er smal: bare Workers + relaterte ressurser, ikke full account-tilgang.
 
 Motvirker: T2, T8.

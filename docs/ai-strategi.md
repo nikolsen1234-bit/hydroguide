@@ -9,7 +9,7 @@ Dette dokumentet svarer på "hvorfor bruker HydroGuide AI i det hele tatt, og hv
 LLM blir brukt to steder:
 
 1. **Rapport-AI (runtime).** Genererer den lesbare delen av rapporten — forklarer valg og anbefalinger i klart språk.
-2. **Pipeline (offline).** Strukturerer NVE-konsesjonsdokument til JSON med minstevassføringskrav.
+2. **Pipeline (offline).** Strukturerer NVE-konsesjonsdokument til JSON med minstevannføringskrav.
 
 For begge gjelder: regelmotorene (recommendation, calculation core, NVE-vilkår) er deterministiske. AI er supplement — den skriver klartekst og hjelper å hente struktur ut av PDF — den tar ikke avgjørelser.
 
@@ -19,7 +19,7 @@ For å være tydelige:
 
 - LLM **anbefaler ikke** hvilken slipp-løsning brukeren skal velge. Det gjør `recommendation.ts`.
 - LLM **anbefaler ikke** energibalanse eller batterikapasitet. Det gjør `systemResults.ts` og `batterySimulator.ts`.
-- LLM **anbefaler ikke** hvilken minstevassføring et kraftverk har. Det er fakta fra NVE-PDF, lagret deterministisk i `minimumflow.json`.
+- LLM **anbefaler ikke** hvilken minstevannføring et kraftverk har. Det er fakta fra NVE-PDF, lagret deterministisk i `minimumflow.json`.
 
 LLM lager tekst rundt resultater; LLM produserer ikke resultater.
 
@@ -68,13 +68,24 @@ Vi måler i Cloudflare AI Gateway-dashbordet:
 
 ## Hvorfor AI Search og ikke Vectorize
 
-Vi har `VECTORIZE_ENABLED: false`. Grunn:
+Begge er Cloudflare-tjenester for vektor-søk over dokumenter, men de jobber på ulikt nivå.
 
-- AI Search (AutoRAG-stil) er ferdig oppsatt: gir oss embedding, lagring, søk og reranking i én tjeneste.
-- Vectorize krever at vi bygger embeddings selv, vedlikeholder dem, og håndterer relevans-scoring.
-- For ~600 NVEID-er og statisk korpus er AI Search billigere i tid og penger.
+**AI Search** er en høynivå "AutoRAG"-tjeneste. Vi peker den på en R2-bucket med dokumenter, og den tar seg av resten automatisk: lager embeddings, lagrer dem, gir oss et søke-API som returnerer mest relevante chunkene. Vi sender en spørring, vi får tilbake tekst-utdrag.
 
-Hadde korpuset vokst til mange tusen dynamiske dokumenter med ofte oppdaterte embeddings, ville Vectorize blitt aktuelt.
+**Vectorize** er en lavnivå vector-database. Vi må selv lage embeddings (kall en embedding-modell), laste dem opp, definere indeks-strukturen, og kalle similarity-search-API-et. Mer fleksibelt, men mye mer arbeid.
+
+For HydroGuide har vi:
+- `hydroguide-ai-reference` (R2-bucket): NVE-konsesjonsdokument og referanse-tekster
+- `REPORT_RULES` (KV): faste regler og korte utdrag
+
+Vi vektoriserer faktisk disse — men gjennom AI Search, som gjør jobben automatisk for oss. `VECTORIZE_ENABLED: false` betyr "vi bruker ikke det manuelle Vectorize-API-et", ikke "vi gjør ikke vector-søk".
+
+Grunner til valget:
+- AI Search er ferdig oppsatt — embedding, lagring, søk og reranking i én tjeneste.
+- Vectorize ville krevd at vi bygger embedding-pipeline selv, holder den synkronisert med R2, og vedlikeholder relevans-scoring.
+- For ~600 NVEID-er og en dokumentsamling som oppdateres sjelden, er AI Search billigere i både tid og penger.
+
+Vectorize ville blitt aktuelt hvis dokumentsamlingen vokste til mange tusen dynamiske dokumenter, eller hvis vi trengte spesialtilpasset embedding-modell eller scoring-logikk.
 
 ## Hvorfor self-feedback og user-feedback er av
 

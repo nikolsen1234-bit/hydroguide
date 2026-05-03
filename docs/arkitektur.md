@@ -54,7 +54,7 @@ HydroGuide består av en statisk frontend, fire Cloudflare Workers og fire lagri
 | `hydroguide-admin` | Håndterer API-nøkler på `/admin/*`. Skilt ut for å holde admin-overflaten unna det offentlige API-et. |
 | `API_KEYS` (KV) | Hash av API-nøkler (HMAC), aktiv-status, rate-limit-tellere. |
 | `REPORT_RULES` (KV) | Faste regler og NVE-utdrag som rapport-AI-en alltid skal støtte seg på. |
-| `hydroguide-minimum-flow` (R2) | `api/minimumflow.json` med minstevassføring per NVEID. |
+| `hydroguide-minimum-flow` (R2) | `api/minimumflow.json` med minstevannføring per NVEID. |
 | `hydroguide-ai-reference` (R2) | NVE-referanser og embeddings for AI-Search retrieval. |
 
 ## Rapport-flyten
@@ -102,7 +102,7 @@ For trusselbilde og auth-design: [sikkerheit.md](sikkerheit.md).
 |------|-----------|---------|
 | Flere Workers vs én monolitt | Fire Workers (api, report, ai, admin) | Skilte trust-grenser. Admin-kompromittering når ikke rapport-AI. AI-Worker har ingen offentlig URL. |
 | AI-tilgang fra nettside | Service binding `REPORT_AI_WORKER`, ikke direkte HTTP | AI-Worker trenger aldri offentlig route. Færre angrepsflater. |
-| Lagring av minstevassføring | R2-objekt med statisk JSON | ~600 NVEID-er, oppdateres sjelden, oppslag på primærnøkkel — D1 er overkill. |
+| Lagring av minstevannføring | R2-objekt med statisk JSON | ~600 NVEID-er, oppdateres sjelden, oppslag på primærnøkkel — D1 er overkill. |
 | Verifisering av API-nøkler | HMAC-hash i KV | Lekket KV-dump gir ikke brukbare nøkler. |
 | AI-pipeline for NVE-PDF | Lokalt, ikke Worker | OCR + LLM-batch tar minutter — Workers har 30s CPU-grense. |
 | Frontend-routing | Statisk SPA med React Router | Statisk frontend-hosting, ingen SSR-behov. |

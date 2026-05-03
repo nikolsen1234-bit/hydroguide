@@ -129,7 +129,7 @@ Implementert i `radioLink.ts`.
 
 Det finnes to statiske HTML-kart utenfor React-treet:
 
-- `frontend/public/nve-kart-standalone.html` — NVE-kart over vannkraftverk med minstevassføring, Wikipedia-bilder og lenker til konsesjonsdokument.
+- `frontend/public/nve-kart-standalone.html` — NVE-kart over vannkraftverk med minstevannføring, Wikipedia-bilder og lenker til konsesjonsdokument.
 - `frontend/public/solar-location-map.html` — Lokasjonskart for solanalyse. Sender koordinater tilbake til React med `postMessage`.
 
 **Hvorfor standalone i stedet for React-komponent:** kartene bruker Leaflet med tunge plugins som er enklere å laste isolert uten å påvirke bundle-størrelse på resten av appen. `postMessage` gir rent api mellom iframe og React uten å dele tilstand.

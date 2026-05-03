@@ -51,7 +51,7 @@ API-et har tre kategorier endepunkter. Sensor og eksterne brukere skal forholde 
 | `GET /api/calculations` | Returnerer input-skjema. |
 | `GET /api/nveid` | Liste over tilgjengelige stasjoner (meny, ikke hele datasettet). |
 | `GET /api/nveid/{id}` | Meny for én stasjon. |
-| `GET /api/nveid/{id}/minimum-flow` | Minstevassføring for stasjonen. |
+| `GET /api/nveid/{id}/minimum-flow` | Minstevannføring for stasjonen. |
 | `GET /api/nveid/{id}/concession` | Konsesjonslenke for stasjonen. |
 | `GET /api/pvgis-tmy` | Proxy for PVGIS soldata. |
 
@@ -84,7 +84,7 @@ Beregningskjernen i `backend/services/calculations/_calculationCore.js` er ren J
 1. `POST /api/calculations` (Worker-handler i `backend/api/calculations.js`).
 2. Frontend, via Vite-bridge i utvikling og direkte import i bygd kode.
 
-Det betyr at beregninger som "kor mye sol treffer panelet i juni" gir samme svar i UI-en og over API-et. Hvis vi rører kjernen, oppdateres begge automatisk.
+Det betyr at beregninger som "hvor mye sol treffer panelet i juni" gir samme svar i UI-en og over API-et. Hvis vi rører kjernen, oppdateres begge automatisk.
 
 ## Hvordan rapport-flyten fungerer
 
@@ -123,7 +123,7 @@ Felles auth-logikk ligger i `backend/api/_apiUtils.js` og brukes av både `hydro
 |------|-------------|
 | `/api/nveid` | "Bruk `/api/nveid/{id}` for å se en stasjon." |
 | `/api/nveid/{id}` | "For denne stasjonen: `minimum-flow` eller `concession`." |
-| `/api/nveid/{id}/minimum-flow` | Selve minstevassføring-tallene. |
+| `/api/nveid/{id}/minimum-flow` | Selve minstevannføring-tallene. |
 | `/api/nveid/{id}/concession` | Konsesjonslenke. |
 
 Det betyr at vi aldri dumper hele `minimumflow.json`-filen fra rot-rutene. En tredjepart må vite hvilken stasjon de vil ha og hvilken seksjon — ikke "gi meg alt".
@@ -138,7 +138,7 @@ Skript som kjøres av maintainer ved behov, ikke automatisk i CI:
 | `check-worker-hygiene.mjs` | Pre-commit/CI-sjekk: konfig-konsistens og branch-status. |
 | `build-ai-search-corpus.mjs` | Bygger AI-Search-chunks fra NVE-referanser. |
 | `upload-corpus-to-r2.ps1` | Laster opp referanser/embeddings til `AI_REFERENCE_BUCKET`. |
-| `seed-kv.ps1` | Seedar `REPORT_RULES` KV. |
+| `seed-kv.ps1` | Seeder `REPORT_RULES` KV. |
 | `fix-r2-metadata.mjs` | Reparerer R2-metadata ved behov. |
 
 ## Testing

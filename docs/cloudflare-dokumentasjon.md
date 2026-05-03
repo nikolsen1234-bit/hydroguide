@@ -1,4 +1,4 @@
-# HydroGuide cloudflare-dokumentasjon
+# Cloudflare-dokumentasjon
 
 Oppdatert: 2026-05-03
 
@@ -39,7 +39,7 @@ Cloudflare WAF avviser API-prefikser utenfor kontrakten, kildeprober og sensitiv
 | `/api/health` | `hydroguide-api` | Enkel helsesjekk |
 | `/api/docs` | `hydroguide-api` | OpenAPI og Swagger UI |
 | `/api/calculations` | `hydroguide-api` | Offentlig beregnings-API |
-| `/api/nveid` | `hydroguide-api` | NVEID-meny og minstevassføring |
+| `/api/nveid` | `hydroguide-api` | NVEID-meny og minstevannføring |
 | `/api/pvgis-tmy` | `hydroguide-api` | PVGIS TMY-proxy |
 | `/api/place-suggestions` | `hydroguide-api` | Stedssøk for appen |
 | `/api/terrain-profile` | `hydroguide-api` | Terrengprofil for appen |
@@ -180,7 +180,7 @@ Alle fire Workers har `observability.enabled: true`. Det betyr at alle requests 
 - Rapport-AI har ingen offentlig route. `hydroguide-report` kaller den med `REPORT_AI_WORKER`.
 - Rapportkall bruker `REPORT_ACCESS_CODE_HASH` fra nettsiden og `REPORT_WORKER_TOKEN` internt.
 - API-nøkler ligger i KV som hash/HMAC.
-- R2-bucket for minstevassføring er skilt fra R2-bucket for AI-referanser.
+- R2-bucket for minstevannføring er skilt fra R2-bucket for AI-referanser.
 - Tracked config bruker placeholders for account-IDer, namespace-IDer og tokens.
 
 Aktive Cloudflare-regler:
@@ -197,7 +197,7 @@ Aktive Cloudflare-regler:
 
 - Cloudflare secrets er primær kilde for drift. Lokal `.secrets` er backup med samme verdier.
 - Den aktive Cloudflare ops-tokenen har HydroGuide-relevante rettigheter for Workers, routes, KV, R2, Secrets Store, zone settings, WAF, transform rules, cache rules, DNS og SSL.
-- Tokens som blir limt inn i chat eller brukt utenfor normal drift blir rotert etter bruk.
+- Tokener som blir limt inn i chat eller brukt utenfor normal drift blir rotert etter bruk.
 
 ## Se også
 

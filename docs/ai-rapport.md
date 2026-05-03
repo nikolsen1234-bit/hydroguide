@@ -94,7 +94,7 @@ Rapport-AI godtar kall bare fra:
 
 Dette er ekstra bekreftelse på toppen av service binding (som hindrer offentlige HTTP-kall helt).
 
-## Hva ikke er på
+## Hva som ikke er aktivert
 
 | Funksjon | Status |
 |----------|--------|

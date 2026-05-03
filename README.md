@@ -1,6 +1,6 @@
 # HydroGuide
 
-HydroGuide hjelper eiere av små vannkraftverk med å oppfylle NVE-kravene til minstevassføring og måling — typisk på avsidesliggende lokasjoner uten strømnett eller fast samband. Appen henter krav per kraftverk fra NVE-konsesjonsdokument, foreslår teknisk løsning for slipp og måling ut fra inntaksforhold, og dimensjonerer en autonom måleinstallasjon: sol, batteri, reservekraft og radiolink for dataoverføring.
+HydroGuide hjelper eiere av små vannkraftverk med å oppfylle NVE-kravene til minstevannføring og måling — typisk på avsidesliggende lokasjoner uten strømnett eller fast samband. Appen henter krav per kraftverk fra NVE-konsesjonsdokument, foreslår teknisk løsning for slipp og måling ut fra inntaksforhold, og dimensjonerer en autonom måleinstallasjon: sol, batteri, reservekraft og radiolink for dataoverføring.
 
 Live: [hydroguide.no](https://hydroguide.no) — API-dokumentasjon: [hydroguide.no/api/docs?ui](https://hydroguide.no/api/docs?ui)
 
@@ -48,11 +48,11 @@ backend/
   cloudflare/                 Wrangler-konfig per Worker
   services/ai/                Intern rapport-AI
   services/calculations/      Delt beregningskjerne (frontend + backend)
-  data/minimumflow.json       Lokal kopi av minstevassføring per NVEID
+  data/minimumflow.json       Lokal kopi av minstevannføring per NVEID
   config/                     Generert/offentlig Cloudflare-metadata
   scripts/                    Vedlikehold for Cloudflare, R2 og KV
 tools/
-  minstevann/                 NVE-dokument -> minstevassføring -> NVEID
+  minstevann/                 NVE-dokument -> minstevannføring -> NVEID
   horizon_pdf.py              Horisontprofil PDF-generator
   solar_position_pdf.py       Solposisjon PDF-generator
 docs/                         Dokumentasjon
@@ -70,7 +70,7 @@ npm run build:test   # bygg og kopier til test-deploy/
 
 Komplett oppsett, lokal API-bridge, pipeline, vanlige feil: [docs/utvikling.md](docs/utvikling.md).
 
-## Minstevassføring (pipeline)
+## Minstevannføring (pipeline)
 
 ```bash
 python tools/minstevann/run.py plant 1696
@@ -109,7 +109,7 @@ Detaljer (Ollama, OCR-oppsett, validering): [tools/minstevann/README.md](tools/m
 | NVE | Norges vassdrags- og energidirektorat — gir konsesjon for vannkraftverk |
 | NVEID | NVE sin unike ID for et kraftverk (eks. 1696) |
 | Konsesjon | Tillatelse fra NVE til å drive vannkraftverk, med vilkår |
-| Minstevassføring | Minste vannmengde som alltid må slippes forbi inntaket |
-| Slipp | Måten minstevassføringa blir sluppet forbi inntaket på |
-| Måleinstallasjon | Utstyr i felt som måler at minstevassføringa holder seg over kravet |
+| Minstevannføring | Minste vannmengde som alltid må slippes forbi inntaket |
+| Slipp | Måten minstevannføringen blir sluppet forbi inntaket på |
+| Måleinstallasjon | Utstyr i felt som måler at minstevannføringen holder seg over kravet |
 | Avsidesliggende lokasjon | Inntak uten strømnett eller fast samband — typisk fjellet |

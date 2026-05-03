@@ -144,9 +144,9 @@ node --test backend/api/pvgis-tmy.test.mjs
 node --test backend/cloudflare/wrangler-routes.test.mjs
 ```
 
-## Pipeline (minstevassføring)
+## Pipeline (minstevannføring)
 
-Pipeline-en henter minstevassføringskrav fra NVE-konsesjons-PDF og produserer `backend/data/minimumflow.json`.
+Pipeline-en henter minstevannføringskrav fra NVE-konsesjons-PDF og produserer `backend/data/minimumflow.json`.
 
 ```bash
 python -m pip install -e ./tools/minstevann

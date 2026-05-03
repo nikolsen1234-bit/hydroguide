@@ -15,13 +15,37 @@ For begge gjelder: regelmotorene (recommendation, calculation core, NVE-vilkår)
 
 ## Hva vi ikke bruker LLM til
 
-For å være tydelige:
+```mermaid
+flowchart LR
+    input[Bruker-input<br/>+ NVEID]
 
-- LLM **anbefaler ikke** hvilken slipp-løsning brukeren skal velge. Det gjør `recommendation.ts`.
-- LLM **anbefaler ikke** energibalanse eller batterikapasitet. Det gjør `systemResults.ts` og `batterySimulator.ts`.
-- LLM **anbefaler ikke** hvilken minstevannføring et kraftverk har. Det er fakta fra NVE-PDF, lagret deterministisk i `minimumflow.json`.
+    subgraph det[Deterministisk — IKKE LLM]
+        rec[recommendation.ts<br/>velger slipp-løsning]
+        calc[systemResults.ts<br/>energibalanse, batteri]
+        flow[minimumflow.json<br/>NVE-fakta per kraftverk]
+    end
 
-LLM lager tekst rundt resultater; LLM produserer ikke resultater.
+    results[Resultater:<br/>løsning + tall + krav]
+
+    subgraph llm[LLM — kun tekst-laget]
+        prompt[Bygg prompt med<br/>resultater + regler]
+        model[Modell forklarer i klartekst]
+    end
+
+    output[Lesbar rapport]
+
+    input --> rec
+    input --> calc
+    input --> flow
+    rec --> results
+    calc --> results
+    flow --> results
+    results --> prompt
+    prompt --> model
+    model --> output
+```
+
+LLM lager tekst rundt resultater; LLM produserer ikke resultater. Avgjørelser om slipp, energibalanse og NVE-krav er deterministiske — de samme inputene gir alltid samme output. LLM oversetter resultatene til lesbar prosa, ingenting mer.
 
 ## Hvordan vi hindrer hallusinering
 

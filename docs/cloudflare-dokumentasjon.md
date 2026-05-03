@@ -60,6 +60,31 @@ WAF avviser `/api/keys*`. Admin for API-nøkler ligger på `/admin/keys`.
 
 Alle Workers har `workers_dev: false`. Det hindrer en ekstra `*.workers.dev`-inngang som kan gå utenom sone-regler på `hydroguide.no`. Alle har også `observability.enabled: true` med full sampling, slik at runtime-logger kan leses i Cloudflare-dashbordet.
 
+### Bindinger per Worker
+
+```mermaid
+flowchart LR
+    api[hydroguide-api] --> kv1[(KV API_KEYS)]
+    api --> r2a[(R2 minimum-flow)]
+    api --> sec1>API_KEY_HASH_SECRET]
+
+    report[hydroguide-report] -.service binding.-> ai[hydroguide-ai]
+    report --> sec2>REPORT_ACCESS_CODE_HASH]
+    report --> sec3>REPORT_WORKER_TOKEN]
+
+    ai --> kv2[(KV REPORT_RULES)]
+    ai --> r2b[(R2 ai-reference)]
+    ai --> sec4>AI_GATEWAY_AUTH_TOKEN]
+    ai --> sec5>AI_SEARCH_API_TOKEN]
+    ai --> aibind{{Workers AI binding}}
+
+    admin[hydroguide-admin] --> kv1
+    admin --> sec6>ADMIN_TOKEN]
+    admin --> sec1
+```
+
+`>...]` er secrets, `[(...)]` er KV/R2-lagring, `{{...}}` er native Cloudflare-binding. Pilen `-.service binding.->` er intern Worker-til-Worker uten offentlig URL.
+
 ## Lagring
 
 | Type | Navn | Bruk |
@@ -113,15 +138,19 @@ Sjekken kjører offentlig config-validering, deploy-config-validering når priva
 
 Cloudflare Workers Builds er Git-koblet deploy for Workers. GitHub Actions deployer ikke Workers og skal ikke ha `CLOUDFLARE_API_TOKEN`.
 
-```text
-utvikler       GitHub                 Cloudflare Workers Builds         prod
-   |             |                              |                          |
-   | git push -> |                              |                          |
-   |             | webhook --> Workers Builds   |                          |
-   |             |                              | npm ci                   |
-   |             |                              | build deploy-config      |
-   |             |                              | wrangler deploy   ---->  |
-   |             |                              | (per Worker)             |
+```mermaid
+sequenceDiagram
+    participant dev as Utvikler
+    participant gh as GitHub
+    participant cb as Cloudflare Workers Builds
+    participant prod as Cloudflare prod
+
+    dev->>gh: git push main
+    gh->>cb: webhook
+    cb->>cb: npm ci
+    cb->>cb: build deploy-config
+    cb->>prod: wrangler deploy (per Worker)
+    prod-->>dev: deployet på hydroguide.no
 ```
 
 Hver Worker er koblet til GitHub-repoet `nikolsen1234-bit/hydroguide` i Cloudflare:

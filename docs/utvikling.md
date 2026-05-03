@@ -71,6 +71,31 @@ Uten unlock: filene er base64-krypterte og ubrukelige, men resten av repoet fung
 
 ## Commit-prosedyre
 
+```mermaid
+flowchart TB
+    edit[git add ...]
+    msg[git commit -m '...']
+    push[git push]
+
+    subgraph local[Lokalt på din maskin]
+        pre[pre-commit hook<br/>no-console, no-IDs,<br/>no-postmessage-wildcard,<br/>worker-hygiene]
+        cmsg[commit-msg hook<br/>melding gt 10 tegn,<br/>signatur agent: ...]
+        prepush[pre-push hook<br/>no force-push main]
+    end
+
+    subgraph ci[CI på pull request]
+        prchk[pr-checks.yml<br/>samme sjekker som lokalt]
+    end
+
+    edit --> pre
+    pre --> msg
+    msg --> cmsg
+    cmsg --> push
+    push --> prepush
+    prepush --> ci
+    ci --> merged[Klar til merge]
+```
+
 Repoet håndhever samme prosedyre for alle bidragsytere. Sjekkene kjører både lokalt (pre-commit, commit-msg) og sentralt (CI på pull request — merge er blokkert ved feil).
 
 | Sjekk | Hvor blokkerer |
@@ -100,6 +125,25 @@ CI kjører automatisk på PR-en. Hvis rødt kryss: les loggen, fiks, push på ny
 ```bash
 cd frontend
 npm run dev
+```
+
+```mermaid
+flowchart LR
+    nettleser[Nettleser<br/>localhost:5173]
+    vite[Vite dev-server]
+
+    subgraph bridge[functionsDevBridge-plugin]
+        map[Mapper /api/* til lokal fil]
+    end
+
+    handler[backend/api/*.js<br/>samme handler som Worker bruker]
+
+    nettleser --> vite
+    vite --> map
+    map --> handler
+    handler --> map
+    map --> vite
+    vite --> nettleser
 ```
 
 Vite starter utviklingstjener på `http://localhost:5173`. En bridge-plugin i `vite.config.ts` mapper `/api/*`-kall til handlere i `backend/api/*.js`. Det betyr at du kan teste mot ekte handler-kode uten å deploye Workers.

@@ -50,12 +50,29 @@ Hovedflyten er "5-trinns konfigurasjon": Velkomst → Oversikt → Parameter →
 
 ## Tilstand
 
-Brukervalgene lever i én React Context-modul:
+```mermaid
+flowchart LR
+    pages[Sider og komponenter]
 
-- `frontend/src/context/ConfigurationContext.tsx` — multi-config tilstandsmaskin. Tar vare på flere parallelle konfigurasjoner slik at brukeren kan sammenligne scenarier.
-- `frontend/src/i18n/LanguageContext.tsx` — språkvalg (nynorsk eller engelsk).
+    subgraph context[React Context]
+        cfg[ConfigurationContext<br/>multi-config tilstandsmaskin]
+        lang[LanguageContext<br/>nn / en]
+    end
 
-Konfigurasjonene blir persistert til `localStorage`, slik at refresh midt i en analyse ikke mister data. Når en ny konfigurasjon blir opprettet, får den egen ID, og rute-state holder styr på hvilken konfig som er aktiv.
+    subgraph persist[Persistens]
+        ls[(localStorage)]
+        url[Rute-state<br/>?config=ID]
+    end
+
+    pages <--> cfg
+    pages <--> lang
+    cfg <--> ls
+    cfg <--> url
+```
+
+`ConfigurationContext` holder flere parallelle konfigurasjoner i minnet samtidig — brukeren kan sammenligne scenarier uten å miste det forrige. Hver konfig får egen ID, lagres i `localStorage` og refereres fra URL-en som `?config=<id>`. Det betyr at refresh midt i en analyse ikke mister data, og en delt URL åpner riktig konfig.
+
+`LanguageContext` styrer UI-språket separat fra konfigurasjonen.
 
 ## Komponentlag
 

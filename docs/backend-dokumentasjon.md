@@ -17,29 +17,64 @@ Tre ressurser deles mellom dem: en KV-namespace for nøkler og rate-limiting (`A
 
 ```text
 backend/
-  workers/                Worker-entrypoints (én fil per Worker)
-    api/index.js
-    report/index.js
-    ai/index.ts
-    admin/index.js
-  api/                    Endpoint-handlere som Workers kaller
-    calculations.js, nveid.js, docs.js, health.js,
-    pvgis-tmy.js, place-suggestions.js, terrain-profile.js, report.js
-    _apiUtils.js          Felles: auth, rate limit, CORS
-  admin/keys/index.js     Handler for /admin/keys
-  services/
-    calculations/         Beregningskjernen (delt mellom frontend og backend)
-    ai/                   Rapport-AI (prompt-bygging, retrieval, modell-kall)
-  cloudflare/             Wrangler-konfig, én per Worker
-  data/
-    minimumflow.json      Lokal kopi av NVEID-data
-    cloudflare-kv/        KV seed-filer
-  scripts/                Vedlikeholds-CLI for Cloudflare, R2, KV
+├── workers/                    Worker-entrypoints (én fil per Worker)
+│   ├── api/index.js
+│   ├── report/index.js
+│   ├── ai/index.ts
+│   └── admin/index.js
+├── api/                        Endpoint-handlere som Workers kaller
+│   ├── _apiUtils.js            Felles: auth, rate limit, CORS
+│   ├── calculations.js
+│   ├── nveid.js
+│   ├── docs.js
+│   ├── health.js
+│   ├── pvgis-tmy.js
+│   ├── place-suggestions.js
+│   ├── terrain-profile.js
+│   └── report.js
+├── admin/
+│   └── keys/index.js           Handler for /admin/keys
+├── services/
+│   ├── calculations/           Beregningskjernen (delt mellom frontend og backend)
+│   └── ai/                     Rapport-AI (prompt-bygging, retrieval, modell-kall)
+├── cloudflare/                 Wrangler-konfig, én per Worker
+├── data/
+│   ├── minimumflow.json        Lokal kopi av NVEID-data
+│   └── cloudflare-kv/          KV seed-filer
+└── scripts/                    Vedlikeholds-CLI for Cloudflare, R2, KV
 ```
 
 ## API-en delt opp etter formål
 
 API-et har tre kategorier endepunkter. Sensor og eksterne brukere skal forholde seg til de **offentlige**. **Frontend-hjelperne** finnes for nettsiden og er ikke ment som offentlig API. **Admin** er fysisk skilt fra det offentlige API-et.
+
+```mermaid
+flowchart TB
+    subgraph public[Offentlig API — dokumentert i /api/docs?ui]
+        p1[GET /api/health]
+        p2[GET /api/docs]
+        p3[POST /api/calculations]
+        p4[GET /api/nveid/*]
+        p5[GET /api/pvgis-tmy]
+    end
+
+    subgraph helpers[Frontend-hjelpere — ikke offentlig API]
+        h1[POST /api/place-suggestions]
+        h2[POST /api/terrain-profile]
+        h3[POST /api/report]
+    end
+
+    subgraph admin[Admin — egen Worker, /admin/*]
+        a1[GET /admin/keys]
+        a2[POST /admin/keys]
+    end
+
+    subgraph blocked[Blokkert av WAF]
+        b1[/api/keys*]
+        b2[/rest/*, /api/v1/*]
+        b3[secret/source-prober]
+    end
+```
 
 ### Offentlig API (dokumentert i `/api/docs?ui`)
 

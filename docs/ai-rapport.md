@@ -34,6 +34,37 @@ flowchart LR
 | `AI_GATEWAY_AUTH_TOKEN` | Secret | Tilgang til AI Gateway |
 | `AI_SEARCH_API_TOKEN` | Secret | Tilgang til AI Search |
 
+## Innsiden av hydroguide-ai
+
+```mermaid
+flowchart TB
+    inn[Inngang<br/>service binding fra report]
+
+    subgraph build[Bygg prompt]
+        rules[Hent faste regler<br/>fra REPORT_RULES KV]
+        search[Hent relevante chunks<br/>via AI Search<br/>over R2 ai-reference]
+        merge[Slå sammen prompt-blokker<br/>regler + retrieval + bruker-input]
+    end
+
+    subgraph call[Kall modell]
+        gateway[Send via AI Gateway<br/>cache-treff først]
+        model[Modell: gpt-5.1<br/>fallback gpt-5.4-mini]
+    end
+
+    out[Returner text]
+
+    inn --> rules
+    inn --> search
+    rules --> merge
+    search --> merge
+    merge --> gateway
+    gateway -.cache miss.-> model
+    gateway -.cache hit.-> out
+    model --> out
+```
+
+`hydroguide-ai` har tre faser per request: bygg prompt fra retrieval-kildene, kall modellen via AI Gateway (cache-treff returnerer umiddelbart), returner ferdig tekst. Cache TTL er 1 time, så like rapporter koster ingenting etter første kall.
+
 ## Retrieval
 
 Rapport-AI henter grunnlag fra tre kilder, i stigende rekkefølge av "fasthet":

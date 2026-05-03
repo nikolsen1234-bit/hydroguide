@@ -41,22 +41,25 @@ For sensor og lesere som vil se "hvor jobben ligger":
 ## Struktur
 
 ```text
-frontend/                     React/Vite-app
-backend/
-  api/                        Delte API-handlere
-  workers/                    Cloudflare Worker entrypoints (api, report, ai, admin)
-  cloudflare/                 Wrangler-konfig per Worker
-  services/ai/                Intern rapport-AI
-  services/calculations/      Delt beregningskjerne (frontend + backend)
-  data/minimumflow.json       Lokal kopi av minstevannføring per NVEID
-  config/                     Generert/offentlig Cloudflare-metadata
-  scripts/                    Vedlikehold for Cloudflare, R2 og KV
-tools/
-  minstevann/                 NVE-dokument -> minstevannføring -> NVEID
-  horizon_pdf.py              Horisontprofil PDF-generator
-  solar_position_pdf.py       Solposisjon PDF-generator
-docs/                         Dokumentasjon
-.ai/                          Lokal agent-dokumentasjon og worklog
+.
+├── frontend/                   React/Vite-app
+├── backend/
+│   ├── api/                    Delte API-handlere
+│   ├── workers/                Cloudflare Worker-entrypoints (api, report, ai, admin)
+│   ├── cloudflare/             Wrangler-konfig per Worker
+│   ├── services/
+│   │   ├── ai/                 Intern rapport-AI
+│   │   └── calculations/       Delt beregningskjerne (frontend + backend)
+│   ├── data/
+│   │   └── minimumflow.json    Lokal kopi av minstevannføring per NVEID
+│   ├── config/                 Generert/offentlig Cloudflare-metadata
+│   └── scripts/                Vedlikehold for Cloudflare, R2 og KV
+├── tools/
+│   ├── minstevann/             NVE-dokument -> minstevannføring -> NVEID
+│   ├── horizon_pdf.py          Horisontprofil PDF-generator
+│   └── solar_position_pdf.py   Solposisjon PDF-generator
+├── docs/                       Dokumentasjon
+└── .ai/                        Lokal agent-dokumentasjon og worklog
 ```
 
 ## Kom i gang

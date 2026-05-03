@@ -21,6 +21,39 @@ Realistiske trusler vi har designet mot:
 
 ## Forsvar i lag
 
+```mermaid
+flowchart TB
+    angriper[Angriper / Bruker]
+
+    subgraph lag1[Lag 1 — nettverk]
+        tls[TLS strict + DNSSEC]
+    end
+
+    subgraph lag2[Lag 2 — Cloudflare WAF]
+        waf[Custom rules<br/>Managed ruleset<br/>Rate limit]
+    end
+
+    subgraph lag3[Lag 3 — applikasjon]
+        auth[HMAC API-keys<br/>ADMIN_TOKEN<br/>service binding]
+    end
+
+    subgraph lag4[Lag 4 — data]
+        data[KV hash<br/>R2-isolasjon<br/>git-crypt]
+    end
+
+    subgraph lag5[Lag 5 — drift]
+        ops[Cloudflare Secrets Store<br/>pre-commit-sjekker<br/>token-rotasjon]
+    end
+
+    angriper --> tls
+    tls --> waf
+    waf --> auth
+    auth --> data
+    auth --> ops
+```
+
+Hvert lag fanger en annen klasse trusler. En angriper må komme gjennom alle relevante lag for å nå sensitive data — ingen enkelt-svikt gir full kompromittering.
+
 ### Lag 1 — nettverk og transport
 
 - TLS-modus `strict` mot origin (Cloudflare→Workers).

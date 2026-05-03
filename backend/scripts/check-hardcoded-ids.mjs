@@ -75,6 +75,21 @@ function isSkippable(path) {
   return SKIP_PATHS.some((re) => re.test(path));
 }
 
+function isGitCryptEncrypted(path) {
+  // Files with the git-crypt filter are stored encrypted in the repo. Even
+  // if locally readable as plaintext (after unlock), they cannot leak IDs to
+  // the public remote. Skip them to avoid false positives on collaborator
+  // machines.
+  try {
+    const out = execFileSync("git", ["check-attr", "filter", "--", path], {
+      encoding: "utf8",
+    }).trim();
+    return out.endsWith(": filter: git-crypt");
+  } catch {
+    return false;
+  }
+}
+
 function isReadable(path) {
   try {
     const s = statSync(path);
@@ -121,7 +136,9 @@ function main() {
   }
   const pattern = buildPattern(allIds);
 
-  const files = listFiles(mode).filter((p) => !isSkippable(p));
+  const files = listFiles(mode)
+    .filter((p) => !isSkippable(p))
+    .filter((p) => !isGitCryptEncrypted(p));
   const offenders = [];
   for (const path of files) {
     const hits = checkFile(path, pattern);

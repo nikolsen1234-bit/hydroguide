@@ -21,6 +21,7 @@ const EXEMPT_PATHS = [
   /(^|[\\/])backend[\\/]scripts[\\/]/i,
   /(^|[\\/])frontend[\\/]scripts[\\/]/i,
   /(^|[\\/])\.ai[\\/]scripts[\\/]/i,
+  /(^|[\\/])private[\\/]scripts[\\/]/i,
   /(^|[\\/])tools[\\/]/i,
 ];
 

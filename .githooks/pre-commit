@@ -23,3 +23,7 @@ fi
 if [ -f .ai/scripts/check-agent-tracking.mjs ]; then
   node .ai/scripts/check-agent-tracking.mjs --staged || exit 1
 fi
+
+if [ -f backend/scripts/check-worker-hygiene.mjs ]; then
+  node backend/scripts/check-worker-hygiene.mjs --staged || exit 1
+fi

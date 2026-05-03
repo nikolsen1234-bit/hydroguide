@@ -89,6 +89,14 @@ node backend/scripts/build-cloudflare-worker-config.mjs --check-public
 node backend/scripts/build-cloudflare-worker-config.mjs --check-deploy-config
 ```
 
+Worker-endringar skal starte frå oppdatert `main`, på eigen branch. For commit eller PR skal denne sjekken passere:
+
+```bash
+node backend/scripts/check-worker-hygiene.mjs --staged
+```
+
+Sjekken køyrer offentleg config-validering, deploy-config-validering når private verdiar finst lokalt, stoppar `*.generated.wrangler.jsonc` og private Cloudflare deploy-filer frå vanleg commit, og blokkerer staged Worker-endringar dersom branch er bak upstream. CI køyrer same sjekk med `--all --ci`.
+
 GitHub Actions deployar i denne rekkefølgja:
 
 1. `hydroguide-ai`

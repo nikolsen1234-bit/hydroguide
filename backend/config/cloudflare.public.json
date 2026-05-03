@@ -2,11 +2,21 @@
   "note": "Public, redacted Cloudflare Worker configuration for HydroGuide. Real account IDs, namespace IDs, API tokens and secret values are omitted.",
   "generated_by": "backend/scripts/build-cloudflare-worker-config.mjs",
   "private_config": "backend/config/cloudflare.private.json (git-crypt)",
-  "github_secrets": [
+  "cloudflare_build_values": [
+    "CLOUDFLARE_ACCOUNT_ID",
+    "KV_API_KEYS_NAMESPACE_ID",
+    "KV_REPORT_RULES_NAMESPACE_ID"
+  ],
+  "local_deploy_values": [
     "CLOUDFLARE_ACCOUNT_ID",
     "CLOUDFLARE_API_TOKEN",
     "KV_API_KEYS_NAMESPACE_ID",
     "KV_REPORT_RULES_NAMESPACE_ID"
+  ],
+  "deploy_secret_sources": [
+    "Cloudflare Workers Builds",
+    "Cloudflare Secrets Store",
+    "local .secrets"
   ],
   "workers": [
     {

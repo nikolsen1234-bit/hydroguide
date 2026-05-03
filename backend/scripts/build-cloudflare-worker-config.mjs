@@ -342,7 +342,9 @@ function buildPublicConfig() {
     note: "Public, redacted Cloudflare Worker configuration for HydroGuide. Real account IDs, namespace IDs, API tokens and secret values are omitted.",
     generated_by: "backend/scripts/build-cloudflare-worker-config.mjs",
     private_config: "backend/config/cloudflare.private.json (git-crypt)",
-    github_secrets: deployRequiredNames,
+    cloudflare_build_values: deployConfigRequiredNames,
+    local_deploy_values: deployRequiredNames,
+    deploy_secret_sources: ["Cloudflare Workers Builds", "Cloudflare Secrets Store", "local .secrets"],
     workers: workers.map(summarizeWorker),
   };
 }

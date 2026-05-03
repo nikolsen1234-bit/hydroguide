@@ -38,9 +38,6 @@ backend/cloudflare/*.generated.wrangler.jsonc
 skills-lock.json
 .understand-anything/*
 !.understand-anything/.understandignore
-/AGENTS.md
-/CLAUDE.md
-/CODEX.md
 docs/superpowers/
 
 # Editor & OS

@@ -80,3 +80,6 @@ venv/
 
 # PDFs (large binary files — keep in separate storage)
 *.pdf
+
+# Local drafts
+utkast.md

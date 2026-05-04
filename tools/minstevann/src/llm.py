@@ -106,11 +106,8 @@ def llm_cache_path(nve_id: int, model: str, snippet: str) -> Path:
 
 
 def call_ollama(prompt: str, model: str, host: str, timeout: int = DEFAULT_OLLAMA_TIMEOUT) -> dict:
-    prompt_tokens_est = len(prompt) // 3
-    needed_ctx = prompt_tokens_est + 2000
-    num_ctx = max(2048, ((needed_ctx + 511) // 512) * 512)
-    num_ctx = min(num_ctx, 8192)
-    print(f"    [ollama] prompt~={prompt_tokens_est}tok  num_ctx={num_ctx}", flush=True)
+    num_ctx = 8192
+    print(f"    [ollama] prompt~={len(prompt)//3}tok  num_ctx={num_ctx}", flush=True)
 
     payload = {
         "model": model,

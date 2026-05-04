@@ -146,10 +146,19 @@ def _ocr_scanned_pdfs(scanned_paths: list[Path], hybrid_url: str = "http://127.0
     return results
 
 
-def preparse_pdfs(pdf_paths: list[Path], hybrid_url: str = "http://127.0.0.1:5002") -> dict:
+def preparse_pdfs(
+    pdf_paths: list[Path],
+    hybrid_url: str = "http://127.0.0.1:5002",
+    *,
+    convert_kwargs: dict | None = None,
+    needs_hybrid_value: bool | None = None,
+) -> dict:
     """Parse a list of PDFs in a single convert() call.
     Scanned PDFs get OCR via OpenDataLoader hybrid mode='full'.
     Returns {pdf_path_str: {"classification": ..., "filtered_text": ..., "needs_hybrid": bool}}.
+
+    convert_kwargs: extra args passed to opendataloader_pdf.convert() (e.g. hybrid).
+    needs_hybrid_value: override needs_hybrid flag in cache (e.g. False after hybrid pass).
     """
     _configure_java()
     import opendataloader_pdf
@@ -159,6 +168,7 @@ def preparse_pdfs(pdf_paths: list[Path], hybrid_url: str = "http://127.0.0.1:500
 
     results = {}
     scanned_paths = []
+    extra = convert_kwargs or {}
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_in = Path(tmp) / "input"
@@ -179,6 +189,7 @@ def preparse_pdfs(pdf_paths: list[Path], hybrid_url: str = "http://127.0.0.1:500
             quiet=True,
             reading_order="xycut",
             use_struct_tree=True,
+            **extra,
         )
 
         json_files = {jf.stem: jf for jf in tmp_out.rglob("*.json")}
@@ -202,7 +213,7 @@ def preparse_pdfs(pdf_paths: list[Path], hybrid_url: str = "http://127.0.0.1:500
             if classification == "scanned":
                 scanned_paths.append(orig_path)
 
-            needs_hybrid = classification == "bad"
+            needs_hybrid = (classification == "bad") if needs_hybrid_value is None else needs_hybrid_value
             result = {
                 "classification": classification,
                 "is_digital": classification != "scanned",

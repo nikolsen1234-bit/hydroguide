@@ -102,9 +102,9 @@ Komplett oppsett, lokal API-bridge, pipeline, vanlige feil: [docs/utvikling.md](
 ```bash
 python tools/minstevann/run.py plant 1696
 python tools/minstevann/run.py batch --n 500
-python tools/minstevann/run.py batch --resume
-python tools/minstevann/run.py export
 ```
+
+Resultatet skrives til `backend/data/minimumflow.json`. Køyr `python tools/minstevann/run.py <kommando> --help` for alle flagg.
 
 Detaljer (Ollama, OCR-oppsett, validering): [tools/minstevann/README.md](tools/minstevann/README.md).
 

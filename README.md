@@ -1,6 +1,13 @@
 # HydroGuide
 
-HydroGuide hjelper eiere av små vannkraftverk med å oppfylle NVE-kravene til minstevannføring og måling — typisk på avsidesliggende lokasjoner uten strømnett eller fast samband. Appen henter krav per kraftverk fra NVE-konsesjonsdokument, foreslår teknisk løsning for slipp og måling ut fra inntaksforhold, og dimensjonerer en autonom måleinstallasjon: sol, batteri, reservekraft og radiolink for dataoverføring.
+HydroGuide er laga for ingeniørar og konsulentar som jobbar med minstevassføring, målestasjonar og straumløysingar på stader utan vanleg nettilgang. Målet er å samle mykje av det praktiske på ein stad, slik at det blir lettare å jobbe systematisk og kome raskare fram til ei god fagleg vurdering.
+Krav til dokumentasjon og instrumentering for minstevassføring er detaljerte, og det er lett å oversjå noko viktig.
+Dimensjonering av energi til fjernstasjonar er ei vanleg feilkjelde, særleg dersom sol, batteri eller reserve blir for svakt dimensjonert.
+HydroGuide er laga for å kutte ned på repetitivt arbeid og gi eit ryddigare utgangspunkt for vidare vurdering.
+HydroGuide brukar API-ar frå NVE Atlas og Kartverket, saman med lokale PVGIS 6.0-data, for å hente inn grunnlag til analyse av vasskraftanlegg, planlegging av kommunikasjon og dimensjonering av off-grid energisystem.
+Når du vel eit kraftverk, hentar HydroGuide inn anleggs- og konsesjonsdata frå NVE Atlas, mellom anna installert effekt, brutto fallhøgd, inntakskoordinatar, damplassering og krav til minstevassføring. Kartverket sine opne API-ar blir brukte til stadnamn, høgdedata, horisontprofil, siktlinje for radio og vurdering av terreng og tilkomst.
+Til energidimensjonering brukar HydroGuide eit lokalt PVGIS 6.0 TMY-grunnlag med 8 760 timeverdiar for innstråling, temperatur og vind. Solproduksjonen blir rekna med PVGIS 6.0, der det også blir teke omsyn til horisont, innfallsvinkel og temperatur i solcellene. Til saman gir dette ei meir realistisk vurdering av korleis sol og batteri vil oppføre seg gjennom året.
+HydroGuide har også ein enklare intern modell for situasjonar der du berre vil gjere ei rask vurdering eller teste ulike scenario. Han passar godt tidleg i arbeidet eller som eit første overslag. I mange tilfelle er det naturleg å starte der, og heller gå vidare til full simulering når du treng meir detaljar.
 
 Live: [hydroguide.no](https://hydroguide.no) — API-dokumentasjon: [hydroguide.no/api/docs?ui](https://hydroguide.no/api/docs?ui)
 

@@ -35,6 +35,8 @@ import { formatLocationLabel } from "./format";
 import { calculateConfigurationOutputs, calculateEquipmentBudgetRows } from "./systemResults";
 import { validateConfiguration } from "./validation";
 
+const PVGIS_DETAILED_MODE_ENABLED = false;
+
 /**
  * Migrates V1 expanded answer keys (q1-q19) to V2 compact answer keys (q1-q9).
  * If the input already has V2 keys (no q7FrostfrittUttakEtterVaregrind), returns as-is.
@@ -353,7 +355,12 @@ export function normalizeConfiguration(
 ): PlantConfiguration {
   const normalizedBase: PlantConfiguration = {
     id: typeof value.id === "string" && value.id.trim() ? value.id : makeId(),
-    engineMode: value.engineMode === "detailed" || value.engineMode === "combined" ? value.engineMode : "standard",
+    engineMode:
+      value.engineMode === "combined"
+        ? "combined"
+        : PVGIS_DETAILED_MODE_ENABLED && value.engineMode === "detailed"
+          ? "detailed"
+          : "standard",
     name: typeof value.name === "string" ? value.name : "",
     location: typeof value.location === "string" ? formatLocationLabel(value.location) : "",
     locationPlaceId: typeof value.locationPlaceId === "string" ? value.locationPlaceId : null,

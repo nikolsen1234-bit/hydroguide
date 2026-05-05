@@ -17,10 +17,10 @@ export type BackupSourceName = "Brenselcelle" | "Dieselaggregat";
 export type SolarRadiationMode = "manual" | "auto";
 
 /**
- * "standard"  — HydroGuide sin eigen forenkla månadsmodell (rask, ingen ekstern datahenting).
- * "detailed"  — PVGIS 6.0-basert timeleg simulering med batteri-SOC, pålitelegheitsanalyse,
- *               horisontprofil og klimadata frå PVGIS 5.3 TMY (EU JRC).
- * "combined"  — Begge: forenkla oversikt + detaljert pålitelegheitsanalyse.
+ * "standard"  - Calculator mode.
+ * "combined"  - HydroGuide mode.
+ * "detailed"  - Dormant PVGIS mode. Keep the type member so stored configs and
+ *               commented PVGIS code remain easy to reactivate later.
  */
 export type EngineMode = "standard" | "detailed" | "combined";
 

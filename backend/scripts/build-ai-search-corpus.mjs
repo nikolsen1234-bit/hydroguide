@@ -12,7 +12,7 @@ if (!sourceDir || !outputDir) {
   process.exit(1);
 }
 
-const NBSP_RE = / /g;
+const NBSP_RE = /\u00a0/g;
 const CR_RE = /\r/g;
 const TRAILING_SPACES_BEFORE_NL_RE = /[ \t]+\n/g;
 const MULTI_BLANK_LINES_RE = /\n{3,}/g;

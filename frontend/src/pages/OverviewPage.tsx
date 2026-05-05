@@ -126,6 +126,7 @@ function EditableProjectName({
           strokeWidth="1.8"
           strokeLinecap="round"
           strokeLinejoin="round"
+          aria-hidden="true"
         >
           <path d="M12 20h9" />
           <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
@@ -166,7 +167,7 @@ export default function OverviewPage() {
       number: outputs ? formatNumber(outputs.derivedResults.totalWhPerDay) : null,
       unit: t("overview.whPerDayUnit"),
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 shrink-0 stroke-slate-400" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 shrink-0 stroke-slate-400" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
         </svg>
       )
@@ -186,7 +187,7 @@ export default function OverviewPage() {
       number: outputs ? formatNumber(outputs.derivedResults.systemRecommendation.batteryCapacityAh) : null,
       unit: "Ah",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 shrink-0 stroke-slate-400" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 shrink-0 stroke-slate-400" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <rect x="3" y="7" width="16" height="10" rx="2" /><path d="M19 10h2v4h-2" /><path d="M7 10.5v3" /><path d="M10 10.5v3" /><path d="M13 10.5v3" />
         </svg>
       )

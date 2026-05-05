@@ -1,19 +1,27 @@
 """
-Minstevann extraction pipeline - single entry point.
+Minstevann extraction pipeline.
 
-Usage:
+Quick start:
     python tools/minstevann/run.py plant 1696
-    python tools/minstevann/run.py plant 1696,2034 2450
-    python tools/minstevann/run.py batch --n 10
+    python tools/minstevann/run.py batch --n 50
+    python tools/minstevann/run.py preparse
+
+Run any command with --help for full options:
+    python tools/minstevann/run.py --help
+    python tools/minstevann/run.py plant --help
+    python tools/minstevann/run.py batch --help
+    python tools/minstevann/run.py preparse --help
 """
 from __future__ import annotations
 
 import argparse
 import json
 import random
+import shutil
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
 import time
 from pathlib import Path
 from textwrap import dedent
@@ -47,12 +55,9 @@ def choose_batch(plants: list[dict], used_nve_ids: set[int], n: int, seed: int) 
     return candidates[:n]
 
 
-def _download_station_pdfs(nve_id: int, resolved_kdb_nr: int, navn: str) -> dict:
-    """Download NVE konsesjonssak HTML + PDF attachments for one station.
-
-    Returns {"res": NveidResult, "pdf_files": [cache_name_strings],
-             "ranked_atts": [attachment_dicts]}.
-    """
+def _download_station_pdfs(
+    nve_id: int, resolved_kdb_nr: int, navn: str,
+) -> tuple[NveidResult, list[str], list[dict]]:
     res = NveidResult(
         nveId=nve_id,
         source_kdb_nr=resolved_kdb_nr,
@@ -106,13 +111,7 @@ def _download_station_pdfs(nve_id: int, resolved_kdb_nr: int, navn: str) -> dict
         for att in ranked[:4]:
             fn = f"pdf_{resolved_kdb_nr}_{att['url'].rsplit('/', 1)[-1]}.pdf"
             try:
-                pdf_bytes = cached_get(att["url"], fn, as_bytes=True)
-                if isinstance(pdf_bytes, str):
-                    pdf_bytes = pdf_bytes.encode("utf-8")
-                # Write to cache so preparse can find the file
-                cache_path = CACHE_DIR / fn
-                if not cache_path.exists():
-                    cache_path.write_bytes(pdf_bytes)
+                cached_get(att["url"], fn, as_bytes=True)
                 pdf_files.append(fn)
                 ranked_atts.append(att)
             except Exception as e:
@@ -127,173 +126,135 @@ def _download_station_pdfs(nve_id: int, resolved_kdb_nr: int, navn: str) -> dict
     except Exception as e:
         res.error = f"{type(e).__name__}: {e}"
 
-    return {"res": res, "pdf_files": pdf_files, "ranked_atts": ranked_atts}
+    return res, pdf_files, ranked_atts
 
 
-def _run_ollama_on_station(
-    download_info: dict,
-    model: str,
-    host: str,
-    use_cache: bool,
-) -> tuple[NveidResult, dict | None]:
-    """Run Ollama extraction on a downloaded station.
+def _load_attachment_text(fn: str, preparse: dict | None) -> tuple[str, bool]:
+    """Returns (text, pre_filtered). Reads preparse cache or falls back to live pdf_to_text."""
+    if preparse and preparse.get("classification") != "scanned":
+        return preparse.get("filtered_text", "") or "", True
+    pdf_bytes = (CACHE_DIR / fn).read_bytes()
+    return pdf_to_text(pdf_bytes, cache_name=fn)
 
-    Reads preparse cache for each PDF, picks the best attachment,
-    runs snippet windowing if not pre_filtered, calls Ollama.
-    Skips PDFs marked needs_hybrid.
-    Returns (NveidResult, assembled_dict_or_None).
+
+def _record_attachment(res: NveidResult, att: dict, text: str, title_score: int) -> int:
+    """Append scoring info to res.attachments_tried and return total_score."""
+    content_score = score_attachment_text(text) if text else 0
+    total_score = title_score + content_score
+    res.attachments_tried.append({
+        "title": att["title"],
+        "url": att["url"],
+        "text_chars": len(text),
+        "has_minstevann": "minstevannf" in text.lower() if text else False,
+        "title_score": title_score,
+        "content_score": content_score,
+        "total_score": total_score,
+    })
+    return total_score
+
+
+def _pick_best_pdf(
+    res: NveidResult, pdf_files: list[str], ranked_atts: list[dict],
+) -> tuple[str, bool, bool]:
+    """Iterate attachments, pick best by combined title+content score.
+
+    Mutates res.attachments_tried, chosen_pdf_url, chosen_pdf_title.
+    Returns (combined_text, pre_filtered, any_needs_hybrid).
     """
-    from src.pdf import normalize_ocr_artefacts
-
-    res: NveidResult = download_info["res"]
-    pdf_files: list[str] = download_info["pdf_files"]
-    ranked_atts: list[dict] = download_info["ranked_atts"]
-    navn = res.navn
-
-    if res.llm_result is not None:
-        # Already has a result (e.g. "ingen digitaliserte vedlegg")
-        return res, None
-    if res.error:
-        return res, None
-
-    best_attachment_score = -10_000
+    best_score = -10_000
     combined_text = ""
     pre_filtered = False
     any_needs_hybrid = False
 
     for fn, att in zip(pdf_files, ranked_atts):
-        preparse_data = load_preparse(fn)
-
-        if preparse_data and preparse_data.get("needs_hybrid"):
+        preparse = load_preparse(fn)
+        if preparse and preparse.get("needs_hybrid"):
             any_needs_hybrid = True
-            continue  # Skip hybrid-needed PDFs in this phase
+            continue
 
-        title_score = rank_attachment(att["title"], plant_name=navn)
+        title_score = rank_attachment(att["title"], plant_name=res.navn)
+        try:
+            text, pf = _load_attachment_text(fn, preparse)
+        except Exception as e:
+            res.attachments_tried.append({"title": att["title"], "url": att["url"], "error": str(e)})
+            continue
 
-        if preparse_data and preparse_data.get("classification") == "good" and preparse_data.get("filtered_text"):
-            text = preparse_data["filtered_text"]
-            content_score = score_attachment_text(text)
-            total_score = title_score + content_score
-            res.attachments_tried.append({
-                "title": att["title"],
-                "url": att["url"],
-                "text_chars": len(text),
-                "has_minstevann": "minstevannf" in text.lower(),
-                "title_score": title_score,
-                "content_score": content_score,
-                "total_score": total_score,
-            })
-            if text.strip() and total_score > best_attachment_score:
-                best_attachment_score = total_score
-                combined_text = text
-                pre_filtered = True
-                res.chosen_pdf_url = att["url"]
-                res.chosen_pdf_title = att["title"]
-        elif preparse_data and preparse_data.get("classification") != "scanned":
-            # Digital PDF but not classified 'good' â€” use filtered_text if available
-            text = preparse_data.get("filtered_text", "")
-            content_score = score_attachment_text(text) if text else 0
-            total_score = title_score + content_score
-            res.attachments_tried.append({
-                "title": att["title"],
-                "url": att["url"],
-                "text_chars": len(text),
-                "has_minstevann": "minstevannf" in text.lower() if text else False,
-                "title_score": title_score,
-                "content_score": content_score,
-                "total_score": total_score,
-            })
-            if text.strip() and total_score > best_attachment_score:
-                best_attachment_score = total_score
-                combined_text = text
-                pre_filtered = True
-                res.chosen_pdf_url = att["url"]
-                res.chosen_pdf_title = att["title"]
-        else:
-            # No preparse data at all â€” try live pdf_to_text
-            try:
-                cache_path = CACHE_DIR / fn
-                pdf_bytes = cache_path.read_bytes()
-                text, pf = pdf_to_text(pdf_bytes, cache_name=fn)
-                content_score = score_attachment_text(text)
-                total_score = title_score + content_score
-                res.attachments_tried.append({
-                    "title": att["title"],
-                    "url": att["url"],
-                    "text_chars": len(text),
-                    "has_minstevann": "minstevannf" in text.lower(),
-                    "title_score": title_score,
-                    "content_score": content_score,
-                    "total_score": total_score,
-                })
-                if text.strip() and total_score > best_attachment_score:
-                    best_attachment_score = total_score
-                    combined_text = text
-                    pre_filtered = pf
-                    res.chosen_pdf_url = att["url"]
-                    res.chosen_pdf_title = att["title"]
-            except Exception as e:
-                res.attachments_tried.append({
-                    "title": att["title"],
-                    "url": att["url"],
-                    "error": str(e),
-                })
+        total_score = _record_attachment(res, att, text, title_score)
+        if text.strip() and total_score > best_score:
+            best_score = total_score
+            combined_text = text
+            pre_filtered = pf
+            res.chosen_pdf_url = att["url"]
+            res.chosen_pdf_title = att["title"]
 
     if res.chosen_pdf_url is None and res.attachments_tried:
         first = res.attachments_tried[0]
         res.chosen_pdf_url = first.get("url")
         res.chosen_pdf_title = first.get("title")
 
-    # If all PDFs need hybrid and we have nothing to work with
+    return combined_text, pre_filtered, any_needs_hybrid
+
+
+def _make_snippet(combined_text: str, navn: str, pre_filtered: bool) -> tuple[str, str, list]:
+    """Returns (snippet, kind, inventory_candidates)."""
+    from src.pdf import normalize_ocr_artefacts
+    if pre_filtered:
+        snippet, kind = combined_text, "json_filtered"
+    else:
+        snippet, kind = find_relevant_window(combined_text, plant_name=navn)
+    snippet = normalize_ocr_artefacts(snippet)
+    inventory = extract_inntak_inventory(combined_text, plant_name=navn)
+    return snippet, kind, inventory
+
+
+def _call_llm(
+    res: NveidResult, snippet: str, *, model: str, host: str, use_cache: bool,
+) -> dict:
+    """Call extract_with_llm with one retry on OllamaError. Sets res.error on retry."""
+    try:
+        return extract_with_llm(res.nveId, res.navn, snippet, model=model, host=host, use_cache=use_cache)
+    except OllamaError as e:
+        print(f"    [retry] LLM error, retrying: {e}", flush=True)
+        time.sleep(2)
+        res.error = f"OllamaError: {e}"
+        try:
+            return extract_with_llm(res.nveId, res.navn, snippet, model=model, host=host, use_cache=False)
+        except OllamaError as e2:
+            return {"funnet": False, "grunn": "llm error", "_error": str(e2)}
+
+
+def _run_ollama_on_station(
+    res: NveidResult, pdf_files: list[str], ranked_atts: list[dict],
+    *, model: str, host: str, use_cache: bool,
+) -> tuple[NveidResult, dict | None]:
+    """Pick best PDF, build snippet, call Ollama. Skips PDFs marked needs_hybrid."""
+    if res.llm_result is not None or res.error:
+        return res, None
+
+    combined_text, pre_filtered, any_needs_hybrid = _pick_best_pdf(res, pdf_files, ranked_atts)
+
     if not combined_text.strip() or len(combined_text) < 200:
         if any_needs_hybrid:
-            # Don't set llm_result â€” let hybrid phase handle it
             return res, None
         if not pdf_files:
-            if res.llm_result is None:
-                res.llm_result = {"funnet": False, "grunn": "ingen digitaliserte vedlegg"}
+            res.llm_result = {"funnet": False, "grunn": "ingen digitaliserte vedlegg"}
             return res, None
         res.llm_result = {"funnet": False, "grunn": "pdf ga ingen brukbar tekst ved parsing"}
         return res, None
 
-    if pre_filtered:
-        snippet = combined_text
-        kind = "json_filtered"
-    else:
-        snippet, kind = find_relevant_window(combined_text, plant_name=navn)
-    snippet = normalize_ocr_artefacts(snippet)
+    snippet, kind, inventory = _make_snippet(combined_text, res.navn, pre_filtered)
     res.snippet_chars = len(snippet)
     res.snippet_kind = kind
     res.snippet_text = snippet
-    res.inventory_candidates = extract_inntak_inventory(
-        combined_text,
-        plant_name=navn,
-    )
+    res.inventory_candidates = inventory
 
-    try:
-        res.llm_result = extract_with_llm(
-            res.nveId, navn, snippet,
-            model=model, host=host, use_cache=use_cache,
-        )
-    except OllamaError as e:
-        print(f"    [retry] LLM error, retrying: {e}", flush=True)
-        time.sleep(2)
-        try:
-            res.llm_result = extract_with_llm(
-                res.nveId, navn, snippet,
-                model=model, host=host, use_cache=False,
-            )
-        except OllamaError as e2:
-            res.llm_result = {"funnet": False, "grunn": "llm error", "_error": str(e2)}
-        res.error = f"OllamaError: {e}"
+    res.llm_result = _call_llm(res, snippet, model=model, host=host, use_cache=use_cache)
 
     assembled = None
     if res.llm_result and "claims" in res.llm_result:
         assembled = assemble_inntak_from_claims(
-            res.llm_result,
-            snippet=res.snippet_text,
-            inventory=res.inventory_candidates,
-            plant_name=navn,
+            res.llm_result, snippet=res.snippet_text,
+            inventory=res.inventory_candidates, plant_name=res.navn,
         )
         res.llm_result = assembled
     elif res.llm_result:
@@ -310,10 +271,14 @@ def _start_hybrid_server() -> subprocess.Popen | None:
     from urllib.parse import urlparse
     parsed = urlparse(DEFAULT_HYBRID_URL)
     port = str(parsed.port or 5002)
+    hybrid_exe = shutil.which("opendataloader-pdf-hybrid")
+    if hybrid_exe is None:
+        print("  [hybrid] opendataloader-pdf-hybrid not found on PATH, skipping hybrid phase.", flush=True)
+        return None
     try:
         proc = subprocess.Popen(
             [
-                "opendataloader-pdf-hybrid",
+                hybrid_exe,
                 "--port", port,
                 "--force-ocr",
                 "--ocr-lang", "no,en",
@@ -328,6 +293,8 @@ def _start_hybrid_server() -> subprocess.Popen | None:
     import urllib.request
     import urllib.error
     health_url = DEFAULT_HYBRID_URL.rstrip("/") + "/health"
+    if urlparse(health_url).scheme not in ("http", "https"):
+        raise ValueError(f"Refusing non-http(s) URL: {health_url}")
     for _ in range(30):
         time.sleep(2)
         try:
@@ -353,82 +320,16 @@ def _stop_hybrid_server(proc: subprocess.Popen) -> None:
         proc.wait(timeout=5)
 
 
-def _hybrid_reparse_pdfs(pdf_paths: list[Path]) -> dict:
-    """Re-parse PDFs using hybrid mode via the running hybrid server.
-
-    Mirrors preparse_pdfs() but passes hybrid kwargs to convert().
-    Writes updated .elements.json cache files.
-    """
-    from src.pdf_preparse import _json_cache_path, _configure_java, classify_elements
-    import shutil
-
-    _configure_java()
-    import opendataloader_pdf
-
-    if not pdf_paths:
-        return {}
-
-    results = {}
-
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_in = Path(tmp) / "input"
-        tmp_out = Path(tmp) / "output"
-        tmp_in.mkdir()
-        tmp_out.mkdir()
-
-        name_map = {}
-        for pdf in pdf_paths:
-            safe = pdf.name.replace(" ", "_")
-            shutil.copy2(pdf, tmp_in / safe)
-            name_map[safe] = pdf
-
-        opendataloader_pdf.convert(
-            input_path=[str(tmp_in)],
-            output_dir=str(tmp_out),
-            format="json",
-            quiet=True,
-            reading_order="xycut",
-            use_struct_tree=True,
-            hybrid="docling-fast",
-            hybrid_mode="auto",
-            hybrid_url=DEFAULT_HYBRID_URL,
-        )
-
-        json_files = {jf.stem: jf for jf in tmp_out.rglob("*.json")}
-
-        for safe_name, orig_path in name_map.items():
-            pdf_stem = Path(safe_name).stem
-            jf = json_files.get(pdf_stem)
-            if not jf:
-                for k, v in json_files.items():
-                    if k.startswith(pdf_stem):
-                        jf = v
-                        break
-
-            if not jf:
-                classification, filtered = "scanned", ""
-            else:
-                data = json.loads(jf.read_text(encoding="utf-8"))
-                elements = data.get("kids", [])
-                classification, filtered = classify_elements(elements)
-
-            result = {
-                "classification": classification,
-                "is_digital": classification != "scanned",
-                "filtered_text": filtered,
-                "needs_hybrid": False,  # Already hybrid-processed
-            }
-            cache_path = _json_cache_path(orig_path)
-            cache_path.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
-            results[str(orig_path)] = result
-
-    return results
+_HYBRID_CONVERT_KWARGS = {
+    "hybrid": "docling-fast",
+    "hybrid_mode": "auto",
+    "hybrid_url": DEFAULT_HYBRID_URL,
+}
 
 
-def _preparse_station_pdfs(download_info: dict) -> None:
+def _preparse_station_pdfs(pdf_files: list[str]) -> None:
     new_pdfs = [
-        CACHE_DIR / fn
-        for fn in download_info["pdf_files"]
+        CACHE_DIR / fn for fn in pdf_files
         if (CACHE_DIR / fn).exists() and not load_preparse(fn)
     ]
     if not new_pdfs:
@@ -449,53 +350,67 @@ def _preparse_station_pdfs(download_info: dict) -> None:
     print(f"{dt:.1f}s ({good} good, {bad} bad, {scanned} scanned)", flush=True)
 
 
-def _hybrid_retry(download_info: dict, model: str, host: str, use_cache: bool) -> tuple[NveidResult, dict | None]:
-    pdf_paths = []
-    for fn in download_info["pdf_files"]:
-        parsed = load_preparse(fn)
-        if parsed and parsed.get("needs_hybrid"):
-            pdf_path = CACHE_DIR / fn
-            if pdf_path.exists():
-                pdf_paths.append(pdf_path)
+def _reset_for_retry(res: NveidResult) -> None:
+    res.attachments_tried = []
+    res.chosen_pdf_url = None
+    res.chosen_pdf_title = None
+    res.snippet_chars = 0
+    res.snippet_kind = ""
+    res.snippet_text = ""
+    res.inventory_candidates = []
+    res.llm_result = None
+    res.error = None
 
-    res: NveidResult = download_info["res"]
+
+def _hybrid_retry(
+    res: NveidResult, pdf_files: list[str], ranked_atts: list[dict],
+    *, model: str, host: str, use_cache: bool, server=None,
+) -> tuple[NveidResult, dict | None]:
+    """server: optional _LazyHybridServer to reuse across stations."""
+    pdf_paths = [
+        CACHE_DIR / fn for fn in pdf_files
+        if (p := load_preparse(fn)) and p.get("needs_hybrid") and (CACHE_DIR / fn).exists()
+    ]
     if not pdf_paths:
         return res, res.llm_result
 
     print(f"hybrid {len(pdf_paths)} PDF ... ", end="", flush=True)
-    proc = _start_hybrid_server()
+    if server is not None:
+        proc = server.get()
+        own_server = False
+    else:
+        proc = _start_hybrid_server()
+        own_server = True
+
     if proc is None:
         res.llm_result = {"funnet": False, "grunn": "hybrid server utilgjengelig"}
         return res, res.llm_result
 
     try:
-        _hybrid_reparse_pdfs(pdf_paths)
-        res.attachments_tried = []
-        res.chosen_pdf_url = None
-        res.chosen_pdf_title = None
-        res.snippet_chars = 0
-        res.snippet_kind = ""
-        res.snippet_text = ""
-        res.inventory_candidates = []
-        res.llm_result = None
-        res.error = None
-        return _run_ollama_on_station(download_info, model=model, host=host, use_cache=use_cache)
+        preparse_pdfs(pdf_paths, convert_kwargs=_HYBRID_CONVERT_KWARGS, needs_hybrid_value=False)
+        _reset_for_retry(res)
+        return _run_ollama_on_station(res, pdf_files, ranked_atts, model=model, host=host, use_cache=use_cache)
     finally:
-        _stop_hybrid_server(proc)
+        if own_server:
+            _stop_hybrid_server(proc)
 
 
-def run_station(nve_id: int, resolved_kdb_nr: int, navn: str, model: str, host: str, use_cache: bool) -> NveidResult:
-    download_info = _download_station_pdfs(nve_id, resolved_kdb_nr, navn)
-    _preparse_station_pdfs(download_info)
+def run_station(
+    nve_id: int, resolved_kdb_nr: int, navn: str,
+    *, model: str, host: str, use_cache: bool, server=None,
+) -> NveidResult:
+    res, pdf_files, ranked_atts = _download_station_pdfs(nve_id, resolved_kdb_nr, navn)
+    _preparse_station_pdfs(pdf_files)
 
     result, assembled = _run_ollama_on_station(
-        download_info,
-        model=model,
-        host=host,
-        use_cache=use_cache,
+        res, pdf_files, ranked_atts,
+        model=model, host=host, use_cache=use_cache,
     )
     if result.llm_result is None and assembled is None and not result.error:
-        result, assembled = _hybrid_retry(download_info, model=model, host=host, use_cache=use_cache)
+        result, assembled = _hybrid_retry(
+            result, pdf_files, ranked_atts,
+            model=model, host=host, use_cache=use_cache, server=server,
+        )
 
     if result.llm_result is None:
         result.llm_result = {
@@ -510,18 +425,104 @@ def _status(result: NveidResult) -> str:
     return "funnet" if llm.get("funnet") else f"ikke funnet ({llm.get('grunn', '?')})"
 
 
-def _run_station_safely(nve_id: int, kdb_nr: int, navn: str, model: str, host: str, use_cache: bool) -> NveidResult:
+DB_FLUSH_INTERVAL = 25
+
+
+def _run_station_safely(
+    nve_id: int, kdb_nr: int, navn: str,
+    *, model: str, host: str, use_cache: bool, server=None,
+) -> NveidResult:
     try:
-        return run_station(nve_id, kdb_nr, navn, model=model, host=host, use_cache=use_cache)
+        return run_station(
+            nve_id, kdb_nr, navn,
+            model=model, host=host, use_cache=use_cache, server=server,
+        )
     except Exception as e:
         return NveidResult(
-            nveId=nve_id,
-            source_kdb_nr=kdb_nr,
-            navn=navn,
-            konsesjon_url="",
+            nveId=nve_id, source_kdb_nr=kdb_nr, navn=navn, konsesjon_url="",
             llm_result={"funnet": False, "grunn": "pipeline error", "_error": str(e)},
             error=f"{type(e).__name__}: {e}",
         )
+
+
+class _LazyHybridServer:
+    """Spawn hybrid JVM server on first .get() call, kill on close()."""
+    def __init__(self) -> None:
+        self.proc: subprocess.Popen | None = None
+        self._tried = False
+
+    def get(self) -> subprocess.Popen | None:
+        if not self._tried:
+            self._tried = True
+            self.proc = _start_hybrid_server()
+        return self.proc
+
+    def close(self) -> None:
+        if self.proc is not None:
+            _stop_hybrid_server(self.proc)
+            self.proc = None
+
+
+@contextmanager
+def _hybrid_server_session():
+    """Yields a lazy hybrid-server handle. JVM spawned only when .get() is called."""
+    server = _LazyHybridServer()
+    try:
+        yield server
+    finally:
+        server.close()
+
+
+def _process_one(
+    nve_id: int, kdb_nr: int, navn: str,
+    *, db: dict, args, prefix: str, force_write: bool, use_cache: bool, server,
+) -> tuple[NveidResult | None, dict]:
+    """Run one station, write to db, print status. Returns (result_or_None_if_skipped, db)."""
+    if str(nve_id) in db and not force_write:
+        print(f"{prefix} {navn} ... hoppet over (finnes allerede, bruk --force)")
+        return None, db
+
+    print(f"{prefix} {navn} ... ", end="", flush=True)
+    t0 = time.time()
+    r = _run_station_safely(
+        nve_id, kdb_nr, navn,
+        model=args.model, host=args.host, use_cache=use_cache, server=server,
+    )
+    dt = time.time() - t0
+
+    db, _ = write_station_result(r, db=db, force=force_write)
+    print(f"{dt:.1f}s  {_status(r)}", flush=True)
+    if r.error:
+        print(f"  FEIL: {r.error}")
+    return r, db
+
+
+def _run_batch(
+    plants_iter, args, *, total: int, use_cache: bool, force_write: bool,
+    prefix_fn, db: dict,
+) -> list[NveidResult]:
+    """Loop over plants, batch JVM lifecycle, throttle DB writes, crash-safe."""
+    all_results: list[NveidResult] = []
+    dirty = False
+    with _hybrid_server_session() as server:
+        try:
+            for idx, (nve_id, kdb_nr, navn) in enumerate(plants_iter, 1):
+                r, db = _process_one(
+                    nve_id, kdb_nr, navn,
+                    db=db, args=args, prefix=prefix_fn(idx, total, nve_id),
+                    force_write=force_write, use_cache=use_cache,
+                    server=server,
+                )
+                if r is not None:
+                    all_results.append(r)
+                    dirty = True
+                if dirty and idx % DB_FLUSH_INTERVAL == 0:
+                    save_minimumflow_db(db)
+                    dirty = False
+        finally:
+            if dirty:
+                save_minimumflow_db(db)
+    return all_results
 
 
 def _resolve_plants(nve_ids: list[int]) -> list[tuple[int, int, str]]:
@@ -569,27 +570,14 @@ def cmd_plant(args) -> None:
     print()
 
     db = load_minimumflow_db()
-    all_results = []
-    for nve_id, kdb_nr, navn in plants:
-        if str(nve_id) in db and not args.force:
-            print(f"[NVE {nve_id}] {navn} ... hoppet over (finnes allerede, bruk --force)")
-            continue
-
-        print(f"[NVE {nve_id}] {navn} ... ", end="", flush=True)
-        t0 = time.time()
-        r = _run_station_safely(nve_id, kdb_nr, navn, model=args.model, host=args.host, use_cache=not args.no_cache)
-        dt = time.time() - t0
-
-        db, _ = write_station_result(r, db=db, force=args.force)
-        save_minimumflow_db(db)
-        print(f"{dt:.1f}s  {_status(r)}")
-        if r.error:
-            print(f"  FEIL: {r.error}")
-        all_results.append(r)
-
-    report = format_report(all_results)
+    all_results = _run_batch(
+        iter(plants), args, total=len(plants),
+        use_cache=not args.no_cache, force_write=args.force,
+        prefix_fn=lambda idx, total, nve_id: f"[NVE {nve_id}]",
+        db=db,
+    )
     print()
-    print(report)
+    print(format_report(all_results))
 
 
 # ---------- Subcommand: batch ----------
@@ -609,23 +597,15 @@ def cmd_batch(args) -> None:
     print(f"Batch  |  NVEID={total}  |  seed={seed}  |  cache={'ON' if args.use_cache else 'OFF'}")
     print()
 
-    all_results = []
-    for idx, plant in enumerate(selected, 1):
-        nve_id = int(plant["nveId"])
-        kdb_nr = int(plant["kdbNr"])
-        navn = str(plant["navn"])
-        print(f"[{idx}/{total}] [NVE {nve_id}] {navn} ... ", end="", flush=True)
-        t0 = time.time()
-        result = _run_station_safely(nve_id, kdb_nr, navn, model=args.model, host=args.host, use_cache=args.use_cache)
-        dt = time.time() - t0
-
-        db, _ = write_station_result(result, db=db, force=True)
-        save_minimumflow_db(db)
-        print(f"{dt:.1f}s  {_status(result)}", flush=True)
-        if result.error:
-            print(f"  FEIL: {result.error}")
-        all_results.append(result)
-
+    plants_iter = (
+        (int(p["nveId"]), int(p["kdbNr"]), str(p["navn"])) for p in selected
+    )
+    all_results = _run_batch(
+        plants_iter, args, total=total,
+        use_cache=args.use_cache, force_write=True,
+        prefix_fn=lambda idx, total, nve_id: f"[{idx}/{total}] [NVE {nve_id}]",
+        db=db,
+    )
     print()
     print(format_report(all_results))
 
@@ -642,15 +622,10 @@ def build_parser() -> argparse.ArgumentParser:
         description="Minstevann extraction pipeline",
         formatter_class=HelpFormatter,
         epilog=dedent("""\
-        Examples:
-          python tools/minstevann/run.py plant 1696
-          python tools/minstevann/run.py plant 1696,2034 2450
-          python tools/minstevann/run.py batch --n 10
-          python tools/minstevann/run.py batch --n 25 --seed 42
-
-        Tip:
-          Put --help after a command for details, for example:
+        Run a command with --help for examples and options:
+          python tools/minstevann/run.py plant --help
           python tools/minstevann/run.py batch --help
+          python tools/minstevann/run.py preparse --help
         """),
     )
     sub = parser.add_subparsers(dest="command")
@@ -664,6 +639,8 @@ def build_parser() -> argparse.ArgumentParser:
         Examples:
           python tools/minstevann/run.py plant 1696
           python tools/minstevann/run.py plant 1696,2034 2450
+          python tools/minstevann/run.py plant 1696 --no-cache
+          python tools/minstevann/run.py plant 1696 --force
         """),
     )
     plant_p.add_argument("nve_id", nargs="+", metavar="NVE_ID", help="NVE ID value(s), comma or space separated")
@@ -681,6 +658,8 @@ def build_parser() -> argparse.ArgumentParser:
         Examples:
           python tools/minstevann/run.py batch --n 10
           python tools/minstevann/run.py batch --n 25 --seed 42
+          python tools/minstevann/run.py batch --n 50 --force
+          python tools/minstevann/run.py batch --n 50 --use-cache
         """),
     )
     batch_p.add_argument("--n", type=int, default=10, help="Number of random NVEID values to process")
@@ -696,8 +675,12 @@ def build_parser() -> argparse.ArgumentParser:
         description="Run OpenDataLoader JSON extraction on all cached PDFs in parallel. "
                     "Results are cached alongside the PDFs. The main pipeline then skips JVM calls.",
         formatter_class=HelpFormatter,
+        epilog=dedent("""\
+        Examples:
+          python tools/minstevann/run.py preparse
+          python tools/minstevann/run.py preparse --limit 100
+        """),
     )
-    preparse_p.add_argument("--workers", type=int, default=2, help="Parallel JVM threads")
     preparse_p.add_argument("--limit", type=int, default=None, help="Max PDFs to parse (for testing)")
 
     return parser

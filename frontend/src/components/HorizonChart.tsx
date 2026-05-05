@@ -179,6 +179,7 @@ export function HorizonChart({ profile, latDeg }: HorizonChartProps) {
   return (
     <>
       <svg ref={svgRef} viewBox={`0 0 ${size} ${size}`} className="mx-auto block w-full max-w-[640px]" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+        <title>Horisontkart med solbane</title>
         {/* Background */}
         <circle cx={cx} cy={cy} r={chartR} fill="#f8fafc" stroke="#e2e8f0" strokeWidth={0.5} />
 

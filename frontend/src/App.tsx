@@ -23,7 +23,7 @@ const SystemPage = lazy(() => import("./pages/SystemPage"));
 
 function SidebarIcon({ path }: { path: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-current" strokeWidth="1.8">
+    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-current" strokeWidth="1.8" aria-hidden="true">
       <path d={path} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -272,7 +272,7 @@ export default function App() {
         aria-controls="mobile-navigation-drawer"
         aria-haspopup="dialog"
       >
-        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-slate-950" strokeWidth="2">
+        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-slate-950" strokeWidth="2" aria-hidden="true">
           <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
@@ -305,7 +305,7 @@ export default function App() {
           className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-slate-950 hover:bg-slate-100"
           aria-label={t("app.closeMenu")}
         >
-          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-current" strokeWidth="2">
+          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-current" strokeWidth="2" aria-hidden="true">
             <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>

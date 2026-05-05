@@ -5,6 +5,23 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..", "..");
 
+const REDACT_EXACT_KEYS = new Set(["id", "store_id"]);
+const REDACT_ENDS_WITH = ["account_id", "namespace_id"];
+const REDACT_CONTAINS = ["token", "secret", "password", "hash"];
+
+function isRedactedKey(key) {
+  if (typeof key !== "string") return false;
+  const lower = key.toLowerCase();
+  if (REDACT_EXACT_KEYS.has(lower)) return true;
+  for (const suffix of REDACT_ENDS_WITH) {
+    if (lower.endsWith(suffix)) return true;
+  }
+  for (const needle of REDACT_CONTAINS) {
+    if (lower.includes(needle)) return true;
+  }
+  return false;
+}
+
 const privateConfigPath = resolve(rootDir, "backend/config/cloudflare.private.json");
 const publicConfigPath = resolve(rootDir, "backend/config/cloudflare.public.json");
 
@@ -247,13 +264,7 @@ function redactValue(key, value) {
     return value;
   }
 
-  if (
-    /^id$/i.test(key) ||
-    /^store_id$/i.test(key) ||
-    /account_id$/i.test(key) ||
-    /namespace_id$/i.test(key) ||
-    /(token|secret|password|hash)/i.test(key)
-  ) {
+  if (isRedactedKey(key)) {
     return "OMIT";
   }
 

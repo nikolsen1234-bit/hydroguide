@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, "..", "..");
 const sourceDir = process.argv[2] ? path.resolve(process.argv[2]) : null;
 const outputDir = process.argv[3] ? path.resolve(process.argv[3]) : null;
 
@@ -12,6 +11,21 @@ if (!sourceDir || !outputDir) {
   console.error("Usage: node build-ai-search-corpus.mjs <source-dir> <output-dir>");
   process.exit(1);
 }
+
+const NBSP_RE = / /g;
+const CR_RE = /\r/g;
+const TRAILING_SPACES_BEFORE_NL_RE = /[ \t]+\n/g;
+const MULTI_BLANK_LINES_RE = /\n{3,}/g;
+const ONLY_DIGITS_RE = /^\d+$/;
+const SIDE_NUMBER_RE = /^side \d+$/i;
+const URL_PREFIX_RE = /^https?:\/\//i;
+const FOOTER_PREFIX_RE = /^(nve|telefon|e-post|postboks|midi)[\s:]/i;
+const DOT_LEADER_RE = /\.{5,}/;
+const SECTION_NUMBER_PREFIX_RE = /^[0-9]{1,4}(?:\.[0-9]{1,4}){0,8}\s+\S/;
+const TERMINAL_PUNCT_RE = /[.!?]$/;
+const PARAGRAPH_SPLIT_RE = /\n\s*\n/;
+const NEWLINES_RE = /\n+/g;
+const WHITESPACE_RE = /\s+/g;
 
 const sourceSpecs = [
   {
@@ -59,10 +73,10 @@ const topicMatchers = [
 
 function normalizeText(text) {
   return text
-    .replace(/\u00a0/g, " ")
-    .replace(/\r/g, "")
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
+    .replace(NBSP_RE, " ")
+    .replace(CR_RE, "")
+    .replace(TRAILING_SPACES_BEFORE_NL_RE, "\n")
+    .replace(MULTI_BLANK_LINES_RE, "\n\n")
     .trim();
 }
 
@@ -72,23 +86,23 @@ function isNoiseParagraph(paragraph) {
     return true;
   }
 
-  if (/^\d+$/.test(text)) {
+  if (ONLY_DIGITS_RE.test(text)) {
     return true;
   }
 
-  if (/^side \d+$/i.test(text)) {
+  if (SIDE_NUMBER_RE.test(text)) {
     return true;
   }
 
-  if (/^https?:\/\//i.test(text)) {
+  if (URL_PREFIX_RE.test(text)) {
     return true;
   }
 
-  if (/^(nve|telefon|e-post|postboks|midi)[\s:]/i.test(text)) {
+  if (FOOTER_PREFIX_RE.test(text)) {
     return true;
   }
 
-  if (/\.{5,}/.test(text)) {
+  if (DOT_LEADER_RE.test(text)) {
     return true;
   }
 
@@ -101,11 +115,11 @@ function isHeading(paragraph) {
     return false;
   }
 
-  if (/^[0-9]+(\.[0-9]+)*\s+\S+/.test(text)) {
+  if (SECTION_NUMBER_PREFIX_RE.test(text)) {
     return true;
   }
 
-  if (!/[.!?]$/.test(text) && text.split(/\s+/).length <= 14) {
+  if (!TERMINAL_PUNCT_RE.test(text) && text.split(WHITESPACE_RE).length <= 14) {
     return true;
   }
 
@@ -114,8 +128,8 @@ function isHeading(paragraph) {
 
 function toParagraphs(rawText) {
   return normalizeText(rawText)
-    .split(/\n\s*\n/)
-    .map((paragraph) => paragraph.replace(/\n+/g, " ").replace(/\s+/g, " ").trim())
+    .split(PARAGRAPH_SPLIT_RE)
+    .map((paragraph) => paragraph.replace(NEWLINES_RE, " ").replace(WHITESPACE_RE, " ").trim())
     .filter((paragraph) => paragraph && !isNoiseParagraph(paragraph));
 }
 

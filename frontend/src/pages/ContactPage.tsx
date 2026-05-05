@@ -33,7 +33,7 @@ function TeamMemberCard({
         {imageSrc ? (
           <img src={imageSrc} alt={name} className="h-full w-full object-cover" />
         ) : (
-          <svg viewBox="0 0 24 24" fill="none" className="h-14 w-14 stroke-current" strokeWidth="1.8">
+          <svg viewBox="0 0 24 24" fill="none" className="h-14 w-14 stroke-current" strokeWidth="1.8" aria-hidden="true">
             <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M5 20a7 7 0 0 1 14 0" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -52,7 +52,7 @@ function TeamMemberCard({
 
 function DownloadIcon({ className = "h-5 w-5" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} stroke="currentColor" strokeWidth="1.8">
+    <svg viewBox="0 0 24 24" fill="none" className={className} stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
       <path
         d="M12 4.75v9.5m0 0 4-4m-4 4-4-4M5 16.75v1.5A1.75 1.75 0 0 0 6.75 20h10.5A1.75 1.75 0 0 0 19 18.25v-1.5"
         strokeLinecap="round"

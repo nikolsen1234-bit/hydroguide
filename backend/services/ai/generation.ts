@@ -33,6 +33,11 @@ import {
 } from "./utils.js";
 import { resolveSecret, jsonResponse } from "./auth.js";
 
+const WHITESPACE_RE = /\s+/g;
+const CR_RE = /\r/g;
+const AI_PREFIX_RE = /^\s*(ki-vurdering|ai-begrunnelse|ai-underbygging)\s*:\s*/i;
+const SENTENCE_SPLIT_RE = /(?<=[.!?])\s+/;
+
 // ─── Gateway helpers ───
 
 function isGatewayEnabled(env: Env): boolean {
@@ -307,7 +312,7 @@ export function extractOpenAiText(payload: OpenAIResponsePayload): string {
     payload?.output,
   ])
     .join(" ")
-    .replace(/\s+/g, " ")
+    .replace(WHITESPACE_RE, " ")
     .trim();
 }
 
@@ -320,9 +325,9 @@ export function finalizeAiText(text: string, rules: Rules): string {
   const maxSentences = rules.max_sentences ?? DEFAULT_MAX_SENTENCES;
 
   const normalized = String(text ?? "")
-    .replace(/\r/g, "")
-    .replace(/^\s*(ki-vurdering|ai-begrunnelse|ai-underbygging)\s*:\s*/i, "")
-    .replace(/\s+/g, " ")
+    .replace(CR_RE, "")
+    .replace(AI_PREFIX_RE, "")
+    .replace(WHITESPACE_RE, " ")
     .trim();
 
   if (!normalized) {
@@ -330,7 +335,7 @@ export function finalizeAiText(text: string, rules: Rules): string {
   }
 
   const sentences = normalized
-    .split(/(?<=[.!?])\s+/)
+    .split(SENTENCE_SPLIT_RE)
     .map((sentence) => sentence.trim())
     .filter(Boolean);
 

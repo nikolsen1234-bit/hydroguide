@@ -19,7 +19,6 @@ Usage:
 import argparse
 import json
 import math
-import sys
 import urllib.parse
 import urllib.request
 from datetime import date, timedelta
@@ -149,7 +148,7 @@ def fetch_elevations(points):
         url = f"{KARTVERKET_URL}?{params}"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
                 data = json.loads(resp.read())
                 pts = data.get("punkter", data.get("points", data if isinstance(data, list) else []))
                 for p in pts:
@@ -446,7 +445,7 @@ def main():
     tilt_rad = args.tilt * DEG2RAD
     orient_rad = args.azimuth * DEG2RAD
 
-    print(f"\nSolar Position PDF")
+    print("\nSolar Position PDF")
     print(f"  Location: {args.lat:.5f}°N, {args.lon:.5f}°E")
     print(f"  Date: day {doy} ({doy_to_date_str(doy)})")
     print(f"  Panel: tilt {args.tilt}°, azimut {args.azimuth}°")
@@ -456,7 +455,7 @@ def main():
     horizon = generate_horizon_profile(args.lat, args.lon, args.height_offset)
 
     # Compute day data
-    print(f"  Computing solar positions...")
+    print("  Computing solar positions...")
     day_data = compute_day_data(doy, args.lat, args.lon, tilt_rad, orient_rad, horizon)
     print(f"  {len(day_data)} data points (sun above horizon)")
 

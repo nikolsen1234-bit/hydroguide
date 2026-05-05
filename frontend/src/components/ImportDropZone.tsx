@@ -131,7 +131,7 @@ export default function ImportDropZone() {
           }}
         >
           <div className="pointer-events-none rounded-3xl border-2 border-dashed border-brand-400 bg-white/90 px-10 py-8 text-center shadow-2xl">
-            <svg viewBox="0 0 24 24" fill="none" className="mx-auto h-8 w-8 stroke-brand-500" strokeWidth="1.5">
+            <svg viewBox="0 0 24 24" fill="none" className="mx-auto h-8 w-8 stroke-brand-500" strokeWidth="1.5" aria-hidden="true">
               <path d="M12 16V4m0 0-4 4m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <p className="mt-2 text-base font-bold text-brand-700">{t("shared.dropToImport")}</p>

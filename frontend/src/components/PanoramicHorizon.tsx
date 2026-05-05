@@ -281,6 +281,7 @@ export function PanoramicHorizon({ profile, latDeg, lonDeg, locationName }: Pano
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
+        <title>Panoramisk horisont med solbane</title>
         {/* Sky gradient — light */}
         <defs>
           <linearGradient id={skyId} x1="0" y1="0" x2="0" y2="1">

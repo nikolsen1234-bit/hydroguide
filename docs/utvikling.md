@@ -196,10 +196,13 @@ Pipeline-en henter minstevannføringskrav fra NVE-konsesjons-PDF og produserer `
 python -m pip install -e ./tools/minstevann
 
 python tools/minstevann/run.py plant 1696        # én stasjon
-python tools/minstevann/run.py batch --n 500     # 500 stasjoner
-python tools/minstevann/run.py batch --resume    # fortsett etter stopp
-python tools/minstevann/run.py export            # skriv til backend/data/minimumflow.json
+python tools/minstevann/run.py batch --n 500     # 500 nye stasjoner (skipper allereie behandla)
+python tools/minstevann/run.py batch --n 500 --force   # kjør på nytt sjølv om treff finst
 ```
+
+Resultatet skrives direkte til `backend/data/minimumflow.json` undervegs.
+
+Køyr `python tools/minstevann/run.py <kommando> --help` for fullstendig oversikt over flagg.
 
 Detaljer (Ollama-modell, OCR-oppsett, validering): [tools/minstevann/README.md](../tools/minstevann/README.md).
 

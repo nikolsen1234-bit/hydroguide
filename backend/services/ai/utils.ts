@@ -4,6 +4,13 @@ import {
   METADATA_TEXT_MAX_LENGTH,
 } from "./types.js";
 
+const WHITESPACE_RE = /\s+/g;
+const NON_WHITESPACE_RE = /\S+/g;
+const SPLIT_WHITESPACE_RE = /\s+/;
+const TRAILING_PUNCT_RE = /[,:;/-]+$/g;
+const TERMINAL_PUNCT_RE = /[.!?]$/;
+const TEMPLATE_TOKEN_RE = /\{\{(\w+)\}\}/g;
+
 export function clampMaxSnippets(value: number | undefined): number {
   return Math.max(1, Math.min(8, value ?? DEFAULT_MAX_NVE_SNIPPETS));
 }
@@ -47,7 +54,7 @@ export function toCleanText(value: unknown, maxLength = 4000): string {
     return "";
   }
 
-  return value.replace(/\s+/g, " ").trim().slice(0, maxLength);
+  return value.replace(WHITESPACE_RE, " ").trim().slice(0, maxLength);
 }
 
 export function toFiniteNumber(value: unknown): number | null {
@@ -111,20 +118,20 @@ export function formatNumber(value: number | null, suffix: string): string {
 }
 
 export function countWords(text: string): number {
-  const words = text.trim().match(/\S+/g);
+  const words = text.trim().match(NON_WHITESPACE_RE);
   return words ? words.length : 0;
 }
 
 export function truncateToWordLimit(text: string, maxWords: number): string {
-  const words = text.trim().split(/\s+/).slice(0, maxWords);
+  const words = text.trim().split(SPLIT_WHITESPACE_RE).slice(0, maxWords);
   if (words.length === 0) {
     return "";
   }
 
-  const joined = words.join(" ").replace(/[,:;/-]+$/g, "").trim();
-  return /[.!?]$/.test(joined) ? joined : `${joined}.`;
+  const joined = words.join(" ").replace(TRAILING_PUNCT_RE, "").trim();
+  return TERMINAL_PUNCT_RE.test(joined) ? joined : `${joined}.`;
 }
 
 export function fillTemplate(template: string, values: Record<string, string>): string {
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => values[key] ?? "");
+  return template.replace(TEMPLATE_TOKEN_RE, (_, key: string) => values[key] ?? "");
 }

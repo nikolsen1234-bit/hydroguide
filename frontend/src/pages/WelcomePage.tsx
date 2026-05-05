@@ -29,7 +29,7 @@ const sunGlowStyle: CSSProperties = {
 
 function ModeIcon({ d, className }: { d: string; className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={`h-5 w-5 shrink-0 stroke-current ${className ?? ""}`} strokeWidth="1.6">
+    <svg viewBox="0 0 24 24" fill="none" className={`h-5 w-5 shrink-0 stroke-current ${className ?? ""}`} strokeWidth="1.6" aria-hidden="true">
       <path d={d} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );

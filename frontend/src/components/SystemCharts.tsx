@@ -34,7 +34,7 @@ function EmptyChart({ text }: { text: string }) {
   const bars: [number, number][] = [[18, 48], [42, 30], [22, 44], [38, 36], [46, 26], [28, 40], [16, 50]];
   return (
     <div className="flex h-64 flex-col items-center justify-center gap-4 border-y border-dashed border-slate-200">
-      <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 stroke-slate-300" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 stroke-slate-300" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M9 18h6" />
         <path d="M10 22h4" />
         <path d="M12 2a7 7 0 0 0-5 11.9V18h10v-4.1A7 7 0 0 0 12 2z" />
@@ -484,6 +484,7 @@ export function BalanceBarChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
 
       <div className="hidden md:block">
         <svg viewBox={`0 0 ${width} 260`} className="block h-auto w-full overflow-visible">
+          <title>Energibalanse per månad</title>
           <text
             x={6}
             y={(26 + 218) / 2}

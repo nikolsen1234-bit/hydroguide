@@ -29,6 +29,18 @@ npm ci
 
 `npm ci` kjører `prepare`-scriptet som setter `core.hooksPath` til `.githooks`. Det aktiverer pre-commit-, commit-msg- og pre-push-hookene automatisk.
 
+Verifiser fra repo-roten:
+
+```bash
+git config --get core.hooksPath
+```
+
+Forventet svar:
+
+```text
+.githooks
+```
+
 ### Verifiser at hookene fungerer
 
 ```bash
@@ -56,11 +68,10 @@ Hvis hooken IKKE blokkerte: se "Feilsøk" lenger ned.
 
 ### (Valgfritt) git-crypt for sensitive filer
 
-Bare relevant hvis du skal jobbe mot ekte Cloudflare-tjenester eller deploye lokalt. Vanlig utvikling trenger det ikke.
+Vanlig frontend-, backend- og dokumentasjonsarbeid trenger ikke git-crypt. Trusted operator-arbeid som bruker `.secrets`, `backend/config/cloudflare.private.json` eller `private/**` krever git-crypt og nøkkel fra maintainer via privat kanal.
 
 ```bash
-# Få git-crypt-key fra maintainer (privat kanal)
-git-crypt unlock <path-til-git-crypt-key>
+git-crypt unlock <path-til-nokkel>
 ```
 
 Etter unlock:
@@ -111,14 +122,16 @@ Unntak for `console.log`: legg til `// allow-console` på samme linje hvis logge
 
 ## Første ekte commit
 
-1. Lag en branch: `git checkout -b din-branch-navn`
-2. Gjør en liten endring (eks. fiks en typo i en doc-fil).
-3. Stage: `git add <fil>`
-4. Commit med en skikkelig melding: `git commit -m "Fix typo in <fil>"`
-5. Push: `git push -u origin din-branch-navn`
-6. Lag PR mot `main` på GitHub.
+1. Oppdater `main`: `git pull --rebase origin main`
+2. Lag en branch: `git checkout -b <kort-beskrivende-navn>`
+3. Gjør en liten endring.
+4. Stage: `git add <fil>`
+5. Commit med en skikkelig melding: `git commit -m "Fix typo in docs"`
+6. Push: `git push -u origin <kort-beskrivende-navn>`
+7. Lag PR mot `main` på GitHub.
+8. Merge først når CI er grønn og eventuelle review-krav er oppfylt.
 
-CI kjører automatisk på PR-en. Hvis rødt kryss: les loggen, fiks, push på nytt.
+Collaborators jobber gjennom branches og PR-er. Repository-administrasjon, tilgangsstyring og repo-innstillinger ligger hos owner. CI kjører automatisk på PR-en. Hvis rødt kryss: les loggen, fiks, push på nytt.
 
 ## Kjøre frontend lokalt
 

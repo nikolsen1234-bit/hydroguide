@@ -46,6 +46,9 @@ const WHITESPACE_RE = /\s+/g;
 const MAIN_SOLUTION_PARTS_RE = /^(.*?)(?: med (.*?))?(?: \((.*)\))?$/;
 const QUESTION_KEY_RE = /^q\d+/i;
 
+// Detailed/PVGIS mode is temporarily dormant, but kept easy to reactivate.
+const PVGIS_DETAILED_MODE_ENABLED = false;
+
 async function getAiExportHash(promptText: string) {
   const storedHash = window.sessionStorage.getItem(STORAGE_KEYS.AI_EXPORT_HASH);
   if (storedHash) {
@@ -361,7 +364,7 @@ export default function AnalysisPage() {
   const engineMode = activeDraft.engineMode ?? "standard";
   const isCalculatorMode = engineMode === "standard";
   const isGuidedMode = !isCalculatorMode;
-  const showAdvancedSimulation = engineMode === "detailed" || engineMode === "combined";
+  const showAdvancedSimulation = (PVGIS_DETAILED_MODE_ENABLED && engineMode === "detailed") || engineMode === "combined";
   const showReliabilitySimulation = showAdvancedSimulation;
   const showHorizonProfile = showAdvancedSimulation;
   const usesFoundationQuestions = isGuidedMode;

@@ -194,32 +194,11 @@ function normalizePublicIntakes(inntak) {
 }
 
 function normalizePublicPeriods(item) {
-  if (Array.isArray(item?.perioder) && item.perioder.length > 0) {
-    return item.perioder.map(normalizePublicPeriod);
-  }
-
-  const periods = [
-    ...readPublicPeriodArray(item?.sommer_delperioder),
-    ...readPublicPeriodArray(item?.vinter_delperioder)
-  ];
-
-  if (item?.sommer_ls != null || item?.sommer_periode != null) {
-    periods.push({ ls: item.sommer_ls ?? null, periode: item.sommer_periode ?? null, note: null });
-  }
-
-  if (item?.vinter_ls != null || item?.vinter_periode != null) {
-    periods.push({ ls: item.vinter_ls ?? null, periode: item.vinter_periode ?? null, note: null });
-  }
-
-  if (periods.length === 0) {
-    periods.push({ ls: null, periode: null, note: null });
-  }
+  const periods = Array.isArray(item?.perioder) && item.perioder.length > 0
+    ? item.perioder
+    : [{ ls: null, periode: null, note: null }];
 
   return periods.map(normalizePublicPeriod);
-}
-
-function readPublicPeriodArray(value) {
-  return Array.isArray(value) ? value : [];
 }
 
 function normalizePublicPeriod(period) {

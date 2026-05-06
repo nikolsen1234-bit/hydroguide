@@ -151,18 +151,15 @@ const nveidResponseSchema = {
 };
 
 const nveidResponseExample = {
-  "2026": {
-    navn: "Bergselvi",
+  "1696": {
+    url: "https://www.nve.no/kdb/sc1696.pdf",
+    navn: "Hynna",
     funnet: true,
-    url: "https://www.nve.no/kdb/sc2026.pdf",
     inntak: [
       {
         inntakFunksjon: "Hovedinntak",
         perioder: [
-          { ls: 200, periode: "01.05 - 31.05", note: null },
-          { ls: 300, periode: "01.06 - 31.08", note: null },
-          { ls: 200, periode: "01.09 - 30.09", note: null },
-          { ls: 40, periode: "30.09 - 01.05", note: null }
+          { ls: 150, periode: "01.05 - 30.09", note: null }
         ]
       }
     ]

@@ -427,6 +427,36 @@ def _append_unique_period(periods: list[dict], ls: float | None, periode: str | 
         periods.append(period)
 
 
+DATE_RANGE_RE = re.compile(
+    r"\d{1,2}\.?\s*(?:\d{1,2}|[A-Za-zAÝA,A]+)\.?\s*-\s*"
+    r"\d{1,2}\.?\s*(?:\d{1,2}|[A-Za-zAÝA,A]+)\.?",
+    re.I,
+)
+
+
+def _period_texts_for_claim(claim: dict) -> list[str | None]:
+    period_text = (claim.get("periode_sitat") or "").strip() or None
+    full_sitat = (claim.get("full_sitat") or "").strip()
+    tall = claim.get("tall")
+    if not full_sitat or tall is None:
+        return [period_text]
+
+    tall_text = str(tall).replace(".", r"[,.]")
+    value_re = re.compile(
+        rf"(?<!\d){tall_text}(?:[,.]0+)?\s*(?:l\s*/\s*s|1\s*/\s*s|m3\s*/?\s*s|mA3\s*/?\s*s|m3\s*/?\s*sek)",
+        re.I,
+    )
+
+    for match in value_re.finditer(full_sitat):
+        segment_start = max(full_sitat.rfind(",", 0, match.start()), full_sitat.rfind(";", 0, match.start()))
+        segment = full_sitat[segment_start + 1:match.end()]
+        ranges = [m.group(0).strip() for m in DATE_RANGE_RE.finditer(segment)]
+        if len(ranges) > 1 and "periodene" in segment.lower():
+            return list(dict.fromkeys(ranges))
+
+    return [period_text]
+
+
 # ---------- Main assembly ----------
 
 
@@ -654,13 +684,13 @@ def assemble_inntak_from_claims(
             val_ls = claim_to_ls(c.get("tall"), c.get("enhet"), c.get("full_sitat"))
             if val_ls is None:
                 continue
-            period_text = (c.get("periode_sitat") or "").strip()
             full_sitat = (c.get("full_sitat") or "").strip()
-            kind = _classify_period(period_text, fallback_text=full_sitat)
-            if kind == "helar":
-                _append_unique_period(periods, val_ls, "hele året")
-            elif kind in {"sommer", "vinter", "ukjent"}:
-                _append_unique_period(periods, val_ls, period_text or None)
+            for period_text in _period_texts_for_claim(c):
+                kind = _classify_period(period_text, fallback_text=full_sitat)
+                if kind == "helar":
+                    _append_unique_period(periods, val_ls, "hele året")
+                elif kind in {"sommer", "vinter", "ukjent"}:
+                    _append_unique_period(periods, val_ls, period_text or None)
 
         inntak_out.append({
             "navn": None if navn == "hovedinntak" else navn,

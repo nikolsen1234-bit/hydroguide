@@ -548,6 +548,45 @@ class ExtractBackendRegressions(unittest.TestCase):
         self.assertIn((500.0, "01.05 - 30.09"), periods_for(names["Krossdalselvi"]))
         self.assertIn((100.0, "resten av året"), periods_for(names["Krossdalselvi"]))
 
+    def test_same_value_period_group_expands_from_full_sitat(self):
+        llm = {
+            "funnet": True,
+            "claims": [
+                {
+                    "inntak_navn": "Bergselvi",
+                    "tall": 200,
+                    "enhet": "l/s",
+                    "periode_sitat": "1.5-31.5.",
+                    "full_sitat": (
+                        "I periodene 1.5-31.5. og 1.9-30.9. skal det slippes "
+                        "200 l/s, og 1.6-31.8 skal det slippes 300 l/s."
+                    ),
+                },
+                {
+                    "inntak_navn": "Bergselvi",
+                    "tall": 300,
+                    "enhet": "l/s",
+                    "periode_sitat": "1.6-31.8",
+                    "full_sitat": (
+                        "I periodene 1.5-31.5. og 1.9-30.9. skal det slippes "
+                        "200 l/s, og 1.6-31.8 skal det slippes 300 l/s."
+                    ),
+                },
+            ],
+        }
+
+        assembled = assemble_inntak_from_claims(
+            llm,
+            snippet=llm["claims"][0]["full_sitat"],
+            inventory=[],
+            plant_name="Bergselvi",
+        )
+
+        names = by_name(assembled["inntak"])
+        self.assertIn((200.0, "01.05 - 31.05"), periods_for(names["Bergselvi"]))
+        self.assertIn((200.0, "01.09 - 30.09"), periods_for(names["Bergselvi"]))
+        self.assertIn((300.0, "01.06 - 31.08"), periods_for(names["Bergselvi"]))
+
     def test_generic_kraftverket_claim_becomes_null_name(self):
         assembled = assemble_inntak_from_claims(
             {

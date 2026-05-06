@@ -24,6 +24,7 @@ NVE_ARCGIS_QUERY = (
 WORKSPACE_ROOT = HERE.parent.parent
 
 DEFAULT_MODEL = "gemma4:e4b-it-q4_K_M"
+DEFAULT_LLM_PROVIDER = os.environ.get("HG_LLM_PROVIDER", "ollama").strip().lower()
 DEFAULT_OLLAMA_HOST = os.environ.get("HG_OLLAMA_HOST", "http://localhost:11434")
 DEFAULT_OLLAMA_TIMEOUT = int(os.environ.get("HG_OLLAMA_TIMEOUT", "90"))
 

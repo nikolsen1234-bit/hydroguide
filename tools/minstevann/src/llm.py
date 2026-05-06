@@ -10,7 +10,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from src.models import DEFAULT_OLLAMA_TIMEOUT, LLM_CACHE_DIR, CHUNK_THRESHOLD
+from src.models import DEFAULT_LLM_PROVIDER, DEFAULT_OLLAMA_TIMEOUT, LLM_CACHE_DIR, CHUNK_THRESHOLD
 from src.snippet import _normalize_inntak_navn
 
 logger = logging.getLogger(__name__)
@@ -107,8 +107,12 @@ def llm_cache_path(nve_id: int, model: str, snippet: str) -> Path:
 
 def call_ollama(prompt: str, model: str, host: str, timeout: int = DEFAULT_OLLAMA_TIMEOUT) -> dict:
     num_ctx = 8192
-    print(f"    [ollama] prompt~={len(prompt)//3}tok  num_ctx={num_ctx}", flush=True)
+    provider = DEFAULT_LLM_PROVIDER
+    host_path = urlparse(host).path.rstrip("/")
+    if provider in {"lmstudio", "lm-studio", "openai"} or host_path.endswith("/v1"):
+        return call_openai_compatible(prompt, model=model, host=host, timeout=timeout, provider="lmstudio")
 
+    print(f"    [ollama] prompt~={len(prompt)//3}tok  num_ctx={num_ctx}", flush=True)
     payload = {
         "model": model,
         "prompt": prompt,
@@ -144,6 +148,61 @@ def call_ollama(prompt: str, model: str, host: str, timeout: int = DEFAULT_OLLAM
         raise OllamaError(f"Ollama timeout after {timeout}s") from e
     except json.JSONDecodeError as e:
         raise OllamaError(f"Ollama returned non-JSON envelope: {e}") from e
+
+
+def call_openai_compatible(
+    prompt: str,
+    *,
+    model: str,
+    host: str,
+    timeout: int = DEFAULT_OLLAMA_TIMEOUT,
+    provider: str = "openai-compatible",
+) -> dict:
+    print(f"    [{provider}] prompt~={len(prompt)//3}tok", flush=True)
+    payload = {
+        "model": model,
+        "messages": [
+            {
+                "role": "system",
+                "content": "Du returnerer kun gyldig JSON. Ingen markdown, ingen forklaring.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        "stream": False,
+        "temperature": 0.1,
+        "top_p": 0.95,
+        "max_tokens": 2000,
+        "response_format": {"type": "json_object"},
+    }
+    base = host.rstrip("/")
+    url = f"{base}/chat/completions" if base.endswith("/v1") else f"{base}/v1/chat/completions"
+    if urlparse(url).scheme not in ("http", "https"):
+        raise ValueError(f"Refusing non-http(s) URL: {url}")
+    data = json.dumps(payload).encode("utf-8")
+    req = Request(url, data=data, headers={"Content-Type": "application/json"})
+    try:
+        with urlopen(req, timeout=timeout) as r:
+            body = r.read().decode("utf-8", errors="replace")
+        raw = json.loads(body)
+    except HTTPError as e:
+        detail = ""
+        try:
+            detail = e.read().decode("utf-8", errors="replace")[:300]
+        except Exception as read_exc:
+            logger.debug("Could not read HTTPError body: %s", read_exc)
+        raise OllamaError(f"HTTP {e.code} from {provider}: {detail or e.reason}") from e
+    except URLError as e:
+        raise OllamaError(f"Cannot reach {provider} at {host}: {e.reason}") from e
+    except socket.timeout as e:
+        raise OllamaError(f"{provider} timeout after {timeout}s") from e
+    except json.JSONDecodeError as e:
+        raise OllamaError(f"{provider} returned non-JSON envelope: {e}") from e
+
+    try:
+        content = raw["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as e:
+        raise OllamaError(f"{provider} returned unexpected response shape") from e
+    return {"response": content}
 
 
 def _parse_llm_response(raw: dict) -> dict | None:

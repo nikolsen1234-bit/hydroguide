@@ -27,7 +27,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from src.models import (
-    NveidResult, DEFAULT_MODEL, DEFAULT_OLLAMA_HOST,
+    NveidResult, DEFAULT_LLM_PROVIDER, DEFAULT_MODEL, DEFAULT_OLLAMA_HOST,
     CACHE_DIR, KONSESJON_URL,
 )
 from src.scraper import (
@@ -564,7 +564,7 @@ def cmd_plant(args) -> None:
         sys.exit(1)
 
     print(f"Modell:      {args.model}")
-    print(f"Ollama:      {args.host}")
+    print(f"LLM:         {DEFAULT_LLM_PROVIDER} @ {args.host}")
     print(f"LLM-cache:   {'BYPASS' if args.no_cache else 'ON'}")
     print(f"NVEID:       {len(plants)}")
     print()
@@ -644,8 +644,8 @@ def build_parser() -> argparse.ArgumentParser:
         """),
     )
     plant_p.add_argument("nve_id", nargs="+", metavar="NVE_ID", help="NVE ID value(s), comma or space separated")
-    plant_p.add_argument("--model", default=DEFAULT_MODEL, help="Ollama model to use")
-    plant_p.add_argument("--host", default=DEFAULT_OLLAMA_HOST, help="Ollama host URL")
+    plant_p.add_argument("--model", default=DEFAULT_MODEL, help="LLM model to use")
+    plant_p.add_argument("--host", default=DEFAULT_OLLAMA_HOST, help="LLM host URL")
     plant_p.add_argument("--no-cache", action="store_true", help="Bypass the LLM cache for this run")
     plant_p.add_argument("--force", action="store_true", help="Rerun and overwrite existing minimumflow entry")
 
@@ -664,8 +664,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     batch_p.add_argument("--n", type=int, default=10, help="Number of random NVEID values to process")
     batch_p.add_argument("--seed", type=int, default=None, help="Random seed")
-    batch_p.add_argument("--model", default=DEFAULT_MODEL, help="Ollama model to use")
-    batch_p.add_argument("--host", default=DEFAULT_OLLAMA_HOST, help="Ollama host URL")
+    batch_p.add_argument("--model", default=DEFAULT_MODEL, help="LLM model to use")
+    batch_p.add_argument("--host", default=DEFAULT_OLLAMA_HOST, help="LLM host URL")
     batch_p.add_argument("--use-cache", action="store_true", help="Use cached LLM responses if available")
     batch_p.add_argument("--force", action="store_true", help="Allow rerun and overwrite existing minimumflow entries")
 

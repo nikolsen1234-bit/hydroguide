@@ -98,6 +98,16 @@ export default function ContactPage() {
               <DownloadIcon className="h-4 w-4" />
               HydroGuide
             </a>
+            {/*
+            <a
+              href="/PVGIS_6.0_HydroGuide_Beta.txt"
+              download="PVGIS_6.0_HydroGuide_Beta.txt"
+              className={`inline-flex ${workspacePrimaryButtonClassName} gap-2`}
+            >
+              <DownloadIcon className="h-4 w-4" />
+              PVGIS 6.0 + HydroGuide (Beta)
+            </a>
+            */}
           </div>
         </div>
       </WorkspaceSection>

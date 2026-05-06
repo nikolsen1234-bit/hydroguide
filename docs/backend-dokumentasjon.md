@@ -52,7 +52,7 @@ API-et har tre kategorier endepunkter: offentlige endepunkter, frontend-hjelpere
 flowchart TB
     subgraph public[Offentlig API — dokumentert i /api]
         p1[GET /api/health]
-        p2[GET /api]
+        p2[GET /api/openapi]
         p3[POST /api/calculations]
         p4[GET /api/NVEID/{id}]
         p5[GET /api/pvgis-tmy]
@@ -81,13 +81,14 @@ flowchart TB
 | Endepunkt | Hva det gjør |
 |-----------|--------------|
 | `GET /api/health` | Helsesjekk. Svarer `{status, timestamp}`. |
-| `GET /api` | OpenAPI og Swagger UI. `?openapi` gir OpenAPI-spek. |
+| `GET /api` | Nettsidens API-side inne i HydroGuide. |
+| `GET /api/openapi` | OpenAPI-spek brukt av API-siden. |
 | `POST /api/calculations` | Hovedberegning: gitt inntak + utstyr, returnerer energibudsjett, batteristørrelse, kostnad over levetid. |
 | `GET /api/calculations` | Returnerer input-skjema. |
 | `GET /api/NVEID/{id}` | Offentlig minstevannføring for én stasjon. |
 | `GET /api/pvgis-tmy` | Proxy for PVGIS soldata. |
 
-Krever `Authorization: Bearer <api-key>` på alle unntatt `/api/health` og `/api`.
+Krever `Authorization: Bearer <api-key>` på alle unntatt `/api/health`, `/api` og `/api/openapi`.
 
 ### Frontend-hjelpere
 

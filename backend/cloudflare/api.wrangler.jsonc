@@ -33,11 +33,11 @@
       "zone_name": "hydroguide.no"
     },
     {
-      "pattern": "hydroguide.no/api*",
+      "pattern": "hydroguide.no/api/openapi*",
       "zone_name": "hydroguide.no"
     },
     {
-      "pattern": "www.hydroguide.no/api*",
+      "pattern": "www.hydroguide.no/api/openapi*",
       "zone_name": "hydroguide.no"
     },
     {

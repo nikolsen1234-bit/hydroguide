@@ -1,20 +1,80 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const API_DOCS_URL = "/api";
-const RELOAD_GUARD_KEY = "hydroguide:api-docs-reload";
+const API_SPEC_URL = "/api/openapi";
+const SWAGGER_CSS_URL = "https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui.css";
+const SWAGGER_JS_URL = "https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui-bundle.js";
+
+declare global {
+  interface Window {
+    SwaggerUIBundle?: (options: Record<string, unknown>) => unknown;
+  }
+}
+
+function loadSwaggerAssets() {
+  if (!document.querySelector(`link[href="${SWAGGER_CSS_URL}"]`)) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = SWAGGER_CSS_URL;
+    document.head.appendChild(link);
+  }
+
+  if (window.SwaggerUIBundle) return Promise.resolve();
+
+  return new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${SWAGGER_JS_URL}"]`);
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(), { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Swagger UI kunne ikkje lastast.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = SWAGGER_JS_URL;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Swagger UI kunne ikkje lastast."));
+    document.body.appendChild(script);
+  });
+}
 
 export default function ApiPage() {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (sessionStorage.getItem(RELOAD_GUARD_KEY) === "1") return;
-    sessionStorage.setItem(RELOAD_GUARD_KEY, "1");
-    window.location.replace(API_DOCS_URL);
+    let cancelled = false;
+
+    loadSwaggerAssets()
+      .then(() => {
+        if (cancelled || !containerRef.current || !window.SwaggerUIBundle) return;
+        containerRef.current.innerHTML = "";
+        window.SwaggerUIBundle({
+          url: API_SPEC_URL,
+          domNode: containerRef.current,
+          deepLinking: true,
+          docExpansion: "list",
+          defaultModelRendering: "model",
+          defaultModelExpandDepth: 3,
+          defaultModelsExpandDepth: 2
+        });
+      })
+      .catch((loadError: Error) => {
+        if (!cancelled) setError(loadError.message);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
-    <main className="flex min-h-[24rem] items-center justify-center bg-white px-6 text-slate-900">
-      <a className="text-sm font-medium text-sky-700 underline" href={API_DOCS_URL}>
-        Opnar API-dokumentasjon
-      </a>
+    <main className="min-h-full bg-white text-slate-900">
+      {error ? (
+        <div className="flex min-h-[24rem] items-center justify-center px-6 text-sm font-medium text-red-700">
+          {error}
+        </div>
+      ) : null}
+      <div ref={containerRef} className="api-docs min-h-full px-3 py-2 md:px-6 md:py-4" />
     </main>
   );
 }

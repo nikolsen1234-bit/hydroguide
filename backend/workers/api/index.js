@@ -34,7 +34,7 @@ const ROUTES = [
   },
   {
     name: "docs",
-    pattern: /^\/api$/,
+    pattern: /^\/api\/openapi$/,
     handlers: {
       GET: getDocs,
       OPTIONS: optionsDocs

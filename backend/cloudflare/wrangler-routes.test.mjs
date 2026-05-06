@@ -20,12 +20,16 @@ test("nveid Worker route catches both /api/nveid and nested nveid paths", async 
   assert.equal(nveidRoute?.pattern, "hydroguide.no/api/nveid*");
 });
 
-test("API documentation Worker route is mounted on /api only", async () => {
+test("OpenAPI JSON Worker route is mounted below the /api page", async () => {
   const config = await readConfig("./api.wrangler.jsonc");
   const patterns = new Set(config.routes.map((route) => route.pattern));
 
-  assert.equal(patterns.has("hydroguide.no/api*"), true);
-  assert.equal(patterns.has("www.hydroguide.no/api*"), true);
+  assert.equal(patterns.has("hydroguide.no/api"), false);
+  assert.equal(patterns.has("www.hydroguide.no/api"), false);
+  assert.equal(patterns.has("hydroguide.no/api*"), false);
+  assert.equal(patterns.has("www.hydroguide.no/api*"), false);
+  assert.equal(patterns.has("hydroguide.no/api/openapi*"), true);
+  assert.equal(patterns.has("www.hydroguide.no/api/openapi*"), true);
   assert.equal(patterns.has("hydroguide.no/api/docs*"), false);
   assert.equal(patterns.has("www.hydroguide.no/api/docs*"), false);
 });

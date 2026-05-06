@@ -1,3 +1,4 @@
+import json
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -6,6 +7,7 @@ from src.assembly import assemble_inntak_from_claims
 from src.models import NveidResult
 from src.snippet import extract_inntak_inventory, _sanitize_inventory_name
 from src.minimumflow_db import format_minimumflow_entry, normalize_period
+from src.llm import call_lm_studio
 from src.report import format_report
 import run as pipeline
 
@@ -86,6 +88,58 @@ def by_name(items: list[dict]) -> dict[str, dict]:
 
 def periods_for(item: dict) -> list[tuple[float | None, str | None]]:
     return [(period.get("ls"), period.get("periode")) for period in item.get("perioder", [])]
+
+
+class FakeHttpResponse:
+    def __init__(self, payload: dict):
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self):
+        return json.dumps(self.payload).encode("utf-8")
+
+
+class LMStudioClientTests(unittest.TestCase):
+    def test_call_lm_studio_uses_chat_completions_json_schema(self):
+        captured = {}
+
+        def fake_urlopen(req, timeout):
+            captured["url"] = req.full_url
+            captured["timeout"] = timeout
+            captured["payload"] = json.loads(req.data.decode("utf-8"))
+            return FakeHttpResponse({
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps({
+                                "funnet": False,
+                                "claims": [],
+                                "tilleggs_krav": None,
+                            })
+                        }
+                    }
+                ]
+            })
+
+        with patch("src.llm.urlopen", fake_urlopen):
+            raw = call_lm_studio(
+                "prompt",
+                model="gemma-4-e4b-it",
+                host="http://127.0.0.1:1234",
+                timeout=7,
+            )
+
+        self.assertEqual(captured["url"], "http://127.0.0.1:1234/v1/chat/completions")
+        self.assertEqual(captured["timeout"], 7)
+        self.assertEqual(captured["payload"]["model"], "gemma-4-e4b-it")
+        self.assertIn("messages", captured["payload"])
+        self.assertEqual(captured["payload"]["response_format"]["type"], "json_schema")
+        self.assertEqual(raw["response"], '{"funnet": false, "claims": [], "tilleggs_krav": null}')
 
 
 class ExtractBackendRegressions(unittest.TestCase):
@@ -867,7 +921,7 @@ class TestResultFirstPipeline(unittest.TestCase):
             n=1,
             seed=7,
             model="test-model",
-            host="http://ollama.test",
+            host="http://lmstudio.test",
             use_cache=True,
             force=False,
         )
@@ -912,7 +966,7 @@ class TestResultFirstPipeline(unittest.TestCase):
         args = SimpleNamespace(
             nve_id=["1696"],
             model="test-model",
-            host="http://ollama.test",
+            host="http://lmstudio.test",
             no_cache=False,
             force=False,
         )
@@ -941,7 +995,7 @@ class TestResultFirstPipeline(unittest.TestCase):
         args = SimpleNamespace(
             nve_id=["1696"],
             model="test-model",
-            host="http://ollama.test",
+            host="http://lmstudio.test",
             no_cache=False,
             force=False,
         )
@@ -973,7 +1027,7 @@ class TestResultFirstPipeline(unittest.TestCase):
         args = SimpleNamespace(
             nve_id=["1696"],
             model="test-model",
-            host="http://ollama.test",
+            host="http://lmstudio.test",
             no_cache=False,
             force=True,
         )

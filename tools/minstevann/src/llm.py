@@ -10,13 +10,13 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from src.models import DEFAULT_LLM_PROVIDER, DEFAULT_OLLAMA_TIMEOUT, LLM_CACHE_DIR, CHUNK_THRESHOLD
+from src.models import DEFAULT_LM_STUDIO_TIMEOUT, LLM_CACHE_DIR, CHUNK_THRESHOLD
 from src.snippet import _normalize_inntak_navn
 
 logger = logging.getLogger(__name__)
 
 
-class OllamaError(Exception):
+class LLMError(Exception):
     pass
 
 
@@ -105,60 +105,14 @@ def llm_cache_path(nve_id: int, model: str, snippet: str) -> Path:
     return LLM_CACHE_DIR / f"nve_{nve_id}_{model_safe}_{key}.json"
 
 
-def call_ollama(prompt: str, model: str, host: str, timeout: int = DEFAULT_OLLAMA_TIMEOUT) -> dict:
-    num_ctx = 8192
-    provider = DEFAULT_LLM_PROVIDER
-    host_path = urlparse(host).path.rstrip("/")
-    if provider in {"lmstudio", "lm-studio", "openai"} or host_path.endswith("/v1"):
-        return call_openai_compatible(prompt, model=model, host=host, timeout=timeout, provider="lmstudio")
-
-    print(f"    [ollama] prompt~={len(prompt)//3}tok  num_ctx={num_ctx}", flush=True)
-    payload = {
-        "model": model,
-        "prompt": prompt,
-        "stream": False,
-        "format": "json",
-        "options": {
-            "temperature": 0.1,
-            "top_p": 0.95,
-            "top_k": 64,
-            "num_ctx": num_ctx,
-            "num_predict": 2000,
-        },
-    }
-    url = f"{host.rstrip('/')}/api/generate"
-    if urlparse(url).scheme not in ("http", "https"):
-        raise ValueError(f"Refusing non-http(s) URL: {url}")
-    data = json.dumps(payload).encode("utf-8")
-    req = Request(url, data=data, headers={"Content-Type": "application/json"})
-    try:
-        with urlopen(req, timeout=timeout) as r:
-            body = r.read().decode("utf-8", errors="replace")
-        return json.loads(body)
-    except HTTPError as e:
-        detail = ""
-        try:
-            detail = e.read().decode("utf-8", errors="replace")[:300]
-        except Exception as read_exc:
-            logger.debug("Could not read HTTPError body: %s", read_exc)
-        raise OllamaError(f"HTTP {e.code} from Ollama: {detail or e.reason}") from e
-    except URLError as e:
-        raise OllamaError(f"Cannot reach Ollama at {host}: {e.reason}") from e
-    except socket.timeout as e:
-        raise OllamaError(f"Ollama timeout after {timeout}s") from e
-    except json.JSONDecodeError as e:
-        raise OllamaError(f"Ollama returned non-JSON envelope: {e}") from e
-
-
-def call_openai_compatible(
+def call_lm_studio(
     prompt: str,
     *,
     model: str,
     host: str,
-    timeout: int = DEFAULT_OLLAMA_TIMEOUT,
-    provider: str = "openai-compatible",
+    timeout: int = DEFAULT_LM_STUDIO_TIMEOUT,
 ) -> dict:
-    print(f"    [{provider}] prompt~={len(prompt)//3}tok", flush=True)
+    print(f"    [lmstudio] prompt~={len(prompt)//3}tok", flush=True)
     payload = {
         "model": model,
         "messages": [
@@ -172,7 +126,34 @@ def call_openai_compatible(
         "temperature": 0.1,
         "top_p": 0.95,
         "max_tokens": 2000,
-        "response_format": {"type": "json_object"},
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "minstevann_response",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "funnet": {"type": "boolean"},
+                        "claims": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "inntak_navn": {"type": ["string", "null"]},
+                                    "tall": {"type": ["number", "null"]},
+                                    "enhet": {"type": ["string", "null"]},
+                                    "periode_sitat": {"type": ["string", "null"]},
+                                    "full_sitat": {"type": ["string", "null"]},
+                                },
+                                "required": ["inntak_navn", "tall", "enhet", "periode_sitat", "full_sitat"],
+                            },
+                        },
+                        "tilleggs_krav": {"type": ["string", "null"]},
+                    },
+                    "required": ["funnet", "claims", "tilleggs_krav"],
+                },
+            },
+        },
     }
     base = host.rstrip("/")
     url = f"{base}/chat/completions" if base.endswith("/v1") else f"{base}/v1/chat/completions"
@@ -190,18 +171,18 @@ def call_openai_compatible(
             detail = e.read().decode("utf-8", errors="replace")[:300]
         except Exception as read_exc:
             logger.debug("Could not read HTTPError body: %s", read_exc)
-        raise OllamaError(f"HTTP {e.code} from {provider}: {detail or e.reason}") from e
+        raise LLMError(f"HTTP {e.code} from LM Studio: {detail or e.reason}") from e
     except URLError as e:
-        raise OllamaError(f"Cannot reach {provider} at {host}: {e.reason}") from e
+        raise LLMError(f"Cannot reach LM Studio at {host}: {e.reason}") from e
     except socket.timeout as e:
-        raise OllamaError(f"{provider} timeout after {timeout}s") from e
+        raise LLMError(f"LM Studio timeout after {timeout}s") from e
     except json.JSONDecodeError as e:
-        raise OllamaError(f"{provider} returned non-JSON envelope: {e}") from e
+        raise LLMError(f"LM Studio returned non-JSON envelope: {e}") from e
 
     try:
         content = raw["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as e:
-        raise OllamaError(f"{provider} returned unexpected response shape") from e
+        raise LLMError("LM Studio returned unexpected response shape") from e
     return {"response": content}
 
 
@@ -227,7 +208,7 @@ def _call_and_cache(nve_id: int, navn: str, snippet: str, model: str,
         raw = json.loads(cache_path.read_text(encoding="utf-8"))
     else:
         prompt = MINSTEVANN_PROMPT.replace("__NAVN__", navn).replace("__SNIPPET__", snippet)
-        raw = call_ollama(prompt, model=model, host=host)
+        raw = call_lm_studio(prompt, model=model, host=host)
         cache_path.write_text(
             json.dumps(raw, ensure_ascii=False, indent=2),
             encoding="utf-8",

@@ -27,7 +27,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from src.models import (
-    NveidResult, DEFAULT_LLM_PROVIDER, DEFAULT_MODEL, DEFAULT_OLLAMA_HOST,
+    NveidResult, DEFAULT_MODEL, DEFAULT_LM_STUDIO_HOST,
     CACHE_DIR, KONSESJON_URL,
 )
 from src.scraper import (
@@ -38,7 +38,7 @@ from src.scraper import (
 )
 from src.pdf import pdf_to_text, DEFAULT_HYBRID_URL
 from src.snippet import find_relevant_window, extract_inntak_inventory
-from src.llm import extract_with_llm, OllamaError
+from src.llm import extract_with_llm, LLMError
 from src.assembly import assemble_inntak_from_claims
 from src.report import format_report
 from src.pdf_preparse import preparse_pdfs, load_preparse
@@ -210,24 +210,24 @@ def _make_snippet(combined_text: str, navn: str, pre_filtered: bool) -> tuple[st
 def _call_llm(
     res: NveidResult, snippet: str, *, model: str, host: str, use_cache: bool,
 ) -> dict:
-    """Call extract_with_llm with one retry on OllamaError. Sets res.error on retry."""
+    """Call extract_with_llm with one retry on LLMError. Sets res.error on retry."""
     try:
         return extract_with_llm(res.nveId, res.navn, snippet, model=model, host=host, use_cache=use_cache)
-    except OllamaError as e:
+    except LLMError as e:
         print(f"    [retry] LLM error, retrying: {e}", flush=True)
         time.sleep(2)
-        res.error = f"OllamaError: {e}"
+        res.error = f"LLMError: {e}"
         try:
             return extract_with_llm(res.nveId, res.navn, snippet, model=model, host=host, use_cache=False)
-        except OllamaError as e2:
+        except LLMError as e2:
             return {"funnet": False, "grunn": "llm error", "_error": str(e2)}
 
 
-def _run_ollama_on_station(
+def _run_llm_on_station(
     res: NveidResult, pdf_files: list[str], ranked_atts: list[dict],
     *, model: str, host: str, use_cache: bool,
 ) -> tuple[NveidResult, dict | None]:
-    """Pick best PDF, build snippet, call Ollama. Skips PDFs marked needs_hybrid."""
+    """Pick best PDF, build snippet, call LM Studio. Skips PDFs marked needs_hybrid."""
     if res.llm_result is not None or res.error:
         return res, None
 
@@ -389,7 +389,7 @@ def _hybrid_retry(
     try:
         preparse_pdfs(pdf_paths, convert_kwargs=_HYBRID_CONVERT_KWARGS, needs_hybrid_value=False)
         _reset_for_retry(res)
-        return _run_ollama_on_station(res, pdf_files, ranked_atts, model=model, host=host, use_cache=use_cache)
+        return _run_llm_on_station(res, pdf_files, ranked_atts, model=model, host=host, use_cache=use_cache)
     finally:
         if own_server:
             _stop_hybrid_server(proc)
@@ -402,7 +402,7 @@ def run_station(
     res, pdf_files, ranked_atts = _download_station_pdfs(nve_id, resolved_kdb_nr, navn)
     _preparse_station_pdfs(pdf_files)
 
-    result, assembled = _run_ollama_on_station(
+    result, assembled = _run_llm_on_station(
         res, pdf_files, ranked_atts,
         model=model, host=host, use_cache=use_cache,
     )
@@ -564,7 +564,7 @@ def cmd_plant(args) -> None:
         sys.exit(1)
 
     print(f"Modell:      {args.model}")
-    print(f"LLM:         {DEFAULT_LLM_PROVIDER} @ {args.host}")
+    print(f"LM Studio:   {args.host}")
     print(f"LLM-cache:   {'BYPASS' if args.no_cache else 'ON'}")
     print(f"NVEID:       {len(plants)}")
     print()
@@ -644,8 +644,8 @@ def build_parser() -> argparse.ArgumentParser:
         """),
     )
     plant_p.add_argument("nve_id", nargs="+", metavar="NVE_ID", help="NVE ID value(s), comma or space separated")
-    plant_p.add_argument("--model", default=DEFAULT_MODEL, help="LLM model to use")
-    plant_p.add_argument("--host", default=DEFAULT_OLLAMA_HOST, help="LLM host URL")
+    plant_p.add_argument("--model", default=DEFAULT_MODEL, help="LM Studio model id")
+    plant_p.add_argument("--host", default=DEFAULT_LM_STUDIO_HOST, help="LM Studio host URL")
     plant_p.add_argument("--no-cache", action="store_true", help="Bypass the LLM cache for this run")
     plant_p.add_argument("--force", action="store_true", help="Rerun and overwrite existing minimumflow entry")
 
@@ -664,8 +664,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     batch_p.add_argument("--n", type=int, default=10, help="Number of random NVEID values to process")
     batch_p.add_argument("--seed", type=int, default=None, help="Random seed")
-    batch_p.add_argument("--model", default=DEFAULT_MODEL, help="LLM model to use")
-    batch_p.add_argument("--host", default=DEFAULT_OLLAMA_HOST, help="LLM host URL")
+    batch_p.add_argument("--model", default=DEFAULT_MODEL, help="LM Studio model id")
+    batch_p.add_argument("--host", default=DEFAULT_LM_STUDIO_HOST, help="LM Studio host URL")
     batch_p.add_argument("--use-cache", action="store_true", help="Use cached LLM responses if available")
     batch_p.add_argument("--force", action="store_true", help="Allow rerun and overwrite existing minimumflow entries")
 

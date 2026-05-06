@@ -50,7 +50,7 @@ API-et har tre kategorier endepunkter: offentlige endepunkter, frontend-hjelpere
 
 ```mermaid
 flowchart TB
-    subgraph public[Offentlig API — dokumentert i /api]
+    subgraph public[Offentlig API — dokumentert i /api/docs]
         p1[GET /api/health]
         p2[GET /api/docs]
         p3[POST /api/calculations]
@@ -76,13 +76,13 @@ flowchart TB
     end
 ```
 
-### Offentlig API (dokumentert i `/api`)
+### Offentlig API (dokumentert i `/api/docs`)
 
 | Endepunkt | Hva det gjør |
 |-----------|--------------|
 | `GET /api/health` | Helsesjekk. Svarer `{status, timestamp}`. |
-| `GET /api` | Nettsidens API-side. Viser Swagger UI inne i HydroGuide. |
-| `GET /api/docs` | OpenAPI-spek. `?ui` gir den rene Swagger UI-en som bygges inn i `/api`. |
+| `GET /api` | Nettsidens API-side. Sender nettleseren vidare til `/api/docs?ui`. |
+| `GET /api/docs` | OpenAPI-spek. `?ui` gir Swagger UI som toppnivåside. |
 | `POST /api/calculations` | Hovedberegning: gitt inntak + utstyr, returnerer energibudsjett, batteristørrelse, kostnad over levetid. |
 | `GET /api/calculations` | Returnerer input-skjema. |
 | `GET /api/NVEID/{id}` | Offentlig minstevannføring for én stasjon. |

@@ -106,7 +106,7 @@ For trusselbilde og auth-design: [sikkerheit.md](sikkerheit.md).
 | Verifisering av API-nøkler | HMAC-hash i KV | Lekket KV-dump gir ikke brukbare nøkler. |
 | AI-pipeline for NVE-PDF | Lokalt, ikke Worker | OCR + LLM-batch tar minutter — Workers har 30s CPU-grense. |
 | Frontend-routing | Statisk SPA med React Router | Statisk frontend-hosting, ingen SSR-behov. |
-| Public API-format | REST + OpenAPI vist på `/api`, spek på `/api/docs` | Standard API-format med nettleserbasert dokumentasjon. |
+| Public API-format | REST + OpenAPI på `/api/docs`, med `/api` som nettsiderute vidare dit | Standard API-format med nettleserbasert dokumentasjon. |
 | Cache-policy | Bypass for `/api/*` og `/admin/*` | Auth-state og rate-limit må være ferskt. Statisk frontend caches normalt. |
 
 ## Eksterne avhengigheter

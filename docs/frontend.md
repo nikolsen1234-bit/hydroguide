@@ -46,7 +46,7 @@ Hovedflyten er "5-trinns konfigurasjon": Velkomst → Oversikt → Prosjektgrunn
 | `RadioLinkPage` | `/radiolinje`, `/radiolink` | `RadioLinkPage.tsx` | Siktlinje og Fresnel-sone for radiolink |
 | `DocumentationPage` | `/dokumentasjon` | `DocumentationPage.tsx` | Teknisk bakgrunn med formler |
 | `ContactPage` | `/kontakt` | `ContactPage.tsx` | Prosjektgruppe og kontakt |
-| `ApiPage` | `/api` | `ApiPage.tsx` | Innebygd visning av offentlig API |
+| `ApiPage` | `/api` | `ApiPage.tsx` | Vidareføring til offentlig API-dokumentasjon |
 
 ## Tilstand
 

@@ -261,7 +261,7 @@ export function SolarPositionChart({ profile, latDeg, lonDeg, tiltDeg, azimuthDe
                 <text x={bx + bw - 10} y={by + 36} fontSize={workspaceChartTooltipTextFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a" textAnchor="end">{tooltip.incidence}°</text>
                 <circle cx={bx + 14} cy={by + 52} r={4} fill="#94a3b8" />
                 <text x={bx + 24} y={by + 56} fontSize={workspaceChartTooltipTextFontSize} fontWeight="var(--hg-type-weight-semibold)" fill="#475569">Horisont</text>
-                <text x={bx + bw - 10} y={by + 56} fontSize={workspaceChartTooltipTextFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a" textAnchor="end">{tooltip.horizonH}°{tooltip.inShade ? " (skugge)" : ""}</text>
+                <text x={bx + bw - 10} y={by + 56} fontSize={workspaceChartTooltipTextFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a" textAnchor="end">{tooltip.horizonH}°{tooltip.inShade ? " (skygge)" : ""}</text>
               </g>
             );
           })()}
@@ -276,7 +276,7 @@ export function SolarPositionChart({ profile, latDeg, lonDeg, tiltDeg, azimuthDe
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-4 rounded-sm bg-slate-100 ring-1 ring-slate-300/60" />
-          I skugge
+          I skygge
         </span>
       </div>
     </div>

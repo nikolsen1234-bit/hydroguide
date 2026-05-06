@@ -132,7 +132,7 @@ export function BatteryFrequencyChart({ metrics }: { metrics: ReliabilityMetrics
       <p className={`mb-1 ${workspaceContentCategoryClassName} text-slate-700`}>{t("reliability.monthlyFrequency")}</p>
       <p className={`mb-3 ${workspaceContentValueClassName} text-slate-500`}>{t("reliability.monthlyFrequencyDesc")}</p>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="w-full" onMouseMove={handleMouseMove} onMouseLeave={clearTooltip}>
-        <title>MÃ¥nadleg fordeling av driftsbrot</title>
+        <title>Månedlig fordeling av driftsbrudd</title>
         {[0, 25, 50, 75, 100].filter((value) => value <= yMax).map((value) => {
           const y = padT + chartH - (value / yMax) * chartH;
           return (

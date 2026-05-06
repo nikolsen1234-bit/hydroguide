@@ -183,33 +183,27 @@ def _expand_and_map_claims(
 # ---------- Entry builders ----------
 
 
-def _blank_inntak_entry(name: str | None, inntak_funksjon: str | None, tilleggs: str | None = None) -> dict:
-    return {
-        "navn": None if name == "hovedinntak" else name,
-        "inntakFunksjon": inntak_funksjon,
-        "sommer_ls": None,
-        "sommer_periode": None,
-        "sommer_delperioder": [],
-        "vinter_ls": None,
-        "vinter_periode": None,
-        "vinter_delperioder": [],
-        "andre_krav": tilleggs or None,
-    }
-
-
-def _ensure_minimum_inntak(entries: list[dict] | None, tilleggs: str | None = None) -> list[dict]:
-    normalized = list(entries or [])
-    if normalized:
-        return normalized
-    return [_blank_inntak_entry(None, None, tilleggs)]
-
-
-def _delperiode_entry(ls: float | None = None, periode: str | None = None, tekst: str | None = None) -> dict:
+def _period_entry(ls: float | None = None, periode: str | None = None, note: str | None = None) -> dict:
     return {
         "ls": ls,
         "periode": periode,
-        "tekst": tekst,
+        "note": note,
     }
+
+
+def _blank_inntak_entry(name: str | None, inntak_funksjon: str | None) -> dict:
+    return {
+        "navn": None if name == "hovedinntak" else name,
+        "inntakFunksjon": inntak_funksjon,
+        "perioder": [_period_entry()],
+    }
+
+
+def _ensure_minimum_inntak(entries: list[dict] | None) -> list[dict]:
+    normalized = list(entries or [])
+    if normalized:
+        return normalized
+    return [_blank_inntak_entry(None, None)]
 
 
 # ---------- Unit conversion ----------
@@ -454,6 +448,14 @@ def _normalize_periode_str(p: str) -> str | None:
     return p
 
 
+def _append_unique_period(periods: list[dict], ls: float | None, periode: str | None, note: str | None = None) -> None:
+    period = _period_entry(ls=ls, periode=_normalize_periode_str(periode) if periode else None, note=note)
+    key = (period["ls"], period["periode"], period["note"])
+    existing = {(p.get("ls"), p.get("periode"), p.get("note")) for p in periods}
+    if key not in existing:
+        periods.append(period)
+
+
 # ---------- Main assembly ----------
 
 
@@ -478,16 +480,14 @@ def assemble_inntak_from_claims(
     if not inventory:
         inventory = extract_inntak_inventory(snippet, plant_name=plant_name, claims=claims)
 
-    tilleggs = llm.get("tilleggs_krav") or ""
-
     if not llm.get("funnet"):
         return {
             "funnet": False,
             "grunn": llm.get("grunn", "ingen krav nevnt i dokumentet"),
             "inntak": _ensure_minimum_inntak([
-                _blank_inntak_entry(item.get("navn"), item.get("inntakFunksjon"), tilleggs)
+                _blank_inntak_entry(item.get("navn"), item.get("inntakFunksjon"))
                 for item in inventory
-            ], tilleggs),
+            ]),
         }
 
     INVALID_UNITS = re.compile(
@@ -565,9 +565,9 @@ def assemble_inntak_from_claims(
             "funnet": False,
             "grunn": "ingen gyldige slipp-krav i dokumentet",
             "inntak": _ensure_minimum_inntak([
-                _blank_inntak_entry(item.get("navn"), item.get("inntakFunksjon"), tilleggs)
+                _blank_inntak_entry(item.get("navn"), item.get("inntakFunksjon"))
                 for item in inventory
-            ], tilleggs),
+            ]),
         }
 
     claims = _expand_and_map_claims(
@@ -674,118 +674,30 @@ def assemble_inntak_from_claims(
         inventory_item = inventory_lookup.get(navn) or {}
         inntak_funksjon = inventory_item.get("inntakFunksjon") or _guess_inntak_funksjon(navn)
         if not group:
-            inntak_out.append(_blank_inntak_entry(navn, inntak_funksjon, tilleggs))
+            inntak_out.append(_blank_inntak_entry(navn, inntak_funksjon))
             continue
 
         claim_found = True
-        sommer_items: list[str] = []
-        vinter_items: list[str] = []
-        sommer_period = None
-
-        classified = []
+        periods: list[dict] = []
         for c in group:
             val_ls = claim_to_ls(c.get("tall"), c.get("enhet"), c.get("full_sitat"))
+            if val_ls is None:
+                continue
             period_text = (c.get("periode_sitat") or "").strip()
             full_sitat = (c.get("full_sitat") or "").strip()
             kind = _classify_period(period_text, fallback_text=full_sitat)
-            classified.append((kind, val_ls, period_text))
-
-        ukjent_queue: list[tuple[float, str]] = []
-        for kind, val_ls, period_text in classified:
-            if val_ls is None:
-                continue
             if kind == "helar":
-                s = f"{format_ls(val_ls)} (hele året)"
-                sommer_items = [s]
-            elif kind == "sommer":
-                sommer_items.append(f"{format_ls(val_ls)} ({period_text})")
-                sommer_period = period_text
-            elif kind == "vinter":
-                if period_text.lower().startswith("resten") and sommer_period:
-                    comp = _complement_period(sommer_period)
-                    vinter_items.append(
-                        f"{format_ls(val_ls)} ({comp})" if comp else f"{format_ls(val_ls)} (resten av året)"
-                    )
-                else:
-                    vinter_items.append(f"{format_ls(val_ls)} ({period_text})")
-            else:
-                ukjent_queue.append((val_ls, period_text))
-
-        for val_ls, period_text in ukjent_queue:
-            target = f"{format_ls(val_ls)} ({period_text})" if period_text else format_ls(val_ls)
-            if not sommer_items and not vinter_items:
-                s = f"{format_ls(val_ls)} (hele året, antatt)"
-                sommer_items = [s]
-            elif not sommer_items:
-                sommer_items.append(target)
-            elif not vinter_items:
-                vinter_items.append(target)
-
-        if vinter_items:
-            if sommer_period:
-                comp = _complement_period(sommer_period)
-                if comp:
-                    vinter_items = [item.replace("resten av året", comp) for item in vinter_items]
-
-        def _parse_bucket_items(items: list[str], season: str) -> list[dict]:
-            parsed: list[dict] = []
-            for item in list(dict.fromkeys(items)):
-                ls_match = re.match(r'([\d.,]+)\s*(?:l/s)?', item)
-                ls_val = float(ls_match.group(1).replace(',', '.')) if ls_match else None
-                period_match = re.search(r'\(([^)]+)\)', item)
-                period = period_match.group(1) if period_match else None
-                period = period.strip() if period else period
-                if period and "resten av" in period.lower() and sommer_period:
-                    comp = _complement_period(sommer_period)
-                    if comp and season == "vinter":
-                        period = comp
-                if period:
-                    period = _normalize_periode_str(period)
-                parsed.append(_delperiode_entry(ls=ls_val, periode=period, tekst=item))
-            return parsed
-
-        def _summarize_bucket(details: list[dict]) -> tuple[float | None, str | None]:
-            if not details:
-                return None, None
-            if len(details) == 1:
-                return details[0]["ls"], details[0]["periode"]
-            unique_vals = {d["ls"] for d in details if d.get("ls") is not None}
-            unique_periods = [d.get("periode") for d in details if d.get("periode")]
-            if len(unique_vals) == 1:
-                return next(iter(unique_vals)), "; ".join(dict.fromkeys(unique_periods))
-            return None, None
-
-        sommer_details = _parse_bucket_items(sommer_items, "sommer")
-        vinter_details = _parse_bucket_items(vinter_items, "vinter")
-        sommer_ls, sommer_periode = _summarize_bucket(sommer_details)
-        vinter_ls, vinter_periode = _summarize_bucket(vinter_details)
-        if sommer_periode:
-            sommer_periode = _normalize_periode_str(sommer_periode)
-        if vinter_periode == "resten av året" and sommer_periode:
-            vinter_periode = _complement_period(sommer_periode) or vinter_periode
-            if vinter_details:
-                for detail in vinter_details:
-                    if detail.get("periode") == "resten av året":
-                        detail["periode"] = vinter_periode
-        if vinter_periode:
-            vinter_periode = _normalize_periode_str(vinter_periode)
-            for detail in vinter_details:
-                if detail.get("periode"):
-                    detail["periode"] = _normalize_periode_str(detail["periode"])
+                _append_unique_period(periods, val_ls, "hele året")
+            elif kind in {"sommer", "vinter", "ukjent"}:
+                _append_unique_period(periods, val_ls, period_text or None)
 
         inntak_out.append({
             "navn": None if navn == "hovedinntak" else navn,
             "inntakFunksjon": inntak_funksjon,
-            "sommer_ls": sommer_ls,
-            "sommer_periode": sommer_periode,
-            "sommer_delperioder": sommer_details,
-            "vinter_ls": vinter_ls,
-            "vinter_periode": vinter_periode,
-            "vinter_delperioder": vinter_details,
-            "andre_krav": tilleggs or None,
+            "perioder": periods or [_period_entry()],
         })
 
     return {
         "funnet": claim_found,
-        "inntak": _ensure_minimum_inntak(inntak_out, tilleggs),
+        "inntak": _ensure_minimum_inntak(inntak_out),
     }

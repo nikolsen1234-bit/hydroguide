@@ -83,6 +83,10 @@ def by_name(items: list[dict]) -> dict[str, dict]:
     return {item["navn"]: item for item in items if item.get("navn")}
 
 
+def periods_for(item: dict) -> list[tuple[float | None, str | None]]:
+    return [(period.get("ls"), period.get("periode")) for period in item.get("perioder", [])]
+
+
 class ExtractBackendRegressions(unittest.TestCase):
     maxDiff = None
 
@@ -124,12 +128,10 @@ class ExtractBackendRegressions(unittest.TestCase):
 
         names = by_name(assembled["inntak"])
         self.assertEqual(set(names), {"overføring A", "overføring B", "hovedinntaket"})
-        self.assertEqual(names["overføring A"]["sommer_ls"], 5.0)
-        self.assertIsNone(names["overføring A"]["vinter_ls"])
-        self.assertEqual(names["overføring B"]["sommer_ls"], 5.0)
-        self.assertIsNone(names["overføring B"]["vinter_ls"])
-        self.assertEqual(names["hovedinntaket"]["sommer_ls"], 30.0)
-        self.assertEqual(names["hovedinntaket"]["vinter_ls"], 10.0)
+        self.assertEqual(periods_for(names["overføring A"]), [(5.0, "hele året")])
+        self.assertEqual(periods_for(names["overføring B"]), [(5.0, "hele året")])
+        self.assertIn((30.0, "01.05 - 30.09"), periods_for(names["hovedinntaket"]))
+        self.assertIn((10.0, "resten av året"), periods_for(names["hovedinntaket"]))
 
     def test_shared_bekk_claim_is_split(self):
         llm = {
@@ -159,8 +161,8 @@ class ExtractBackendRegressions(unittest.TestCase):
 
         names = by_name(assembled["inntak"])
         self.assertEqual(set(names), {"Nystøylbekken", "Fjellstøylbekken"})
-        self.assertEqual(names["Nystøylbekken"]["sommer_ls"], 5.0)
-        self.assertEqual(names["Fjellstøylbekken"]["sommer_ls"], 5.0)
+        self.assertEqual(periods_for(names["Nystøylbekken"]), [(5.0, "hele året")])
+        self.assertEqual(periods_for(names["Fjellstøylbekken"]), [(5.0, "hele året")])
 
     def test_voldsetelva_distributed_claims_stay_separate(self):
         llm = {
@@ -196,8 +198,8 @@ class ExtractBackendRegressions(unittest.TestCase):
         )
 
         names = by_name(assembled["inntak"])
-        self.assertEqual(names["Rørtjønnelva"]["sommer_ls"], 45.0)
-        self.assertEqual(names["Nesvasselva"]["sommer_ls"], 125.0)
+        self.assertEqual(periods_for(names["Rørtjønnelva"]), [(45.0, "hele året")])
+        self.assertEqual(periods_for(names["Nesvasselva"]), [(125.0, "hele året")])
 
     def test_aurland_maps_claim_to_langedola_and_keeps_other_inventory(self):
         llm = {
@@ -224,9 +226,9 @@ class ExtractBackendRegressions(unittest.TestCase):
         names = by_name(assembled["inntak"])
         self.assertIn("Langedøla", names)
         self.assertNotIn("Aurland", names)
-        self.assertEqual(names["Langedøla"]["sommer_ls"], 300.0)
+        self.assertEqual(periods_for(names["Langedøla"]), [(300.0, "01.07 - 01.09")])
         self.assertIn("Kongshellervatn", names)
-        self.assertIsNone(names["Kongshellervatn"]["sommer_ls"])
+        self.assertEqual(periods_for(names["Kongshellervatn"]), [(None, None)])
 
     def test_facility_style_plant_name_filters_generic_prefix_but_keeps_real_single_name(self):
         self.assertIsNone(_sanitize_inventory_name("Aurland", plant_name="Aurland 2 L"))
@@ -258,7 +260,7 @@ class ExtractBackendRegressions(unittest.TestCase):
         names = by_name(assembled["inntak"])
         self.assertIn("Daleselva", names)
         self.assertNotIn("Dalekraftverk", names)
-        self.assertEqual(names["Daleselva"]["sommer_ls"], 3000.0)
+        self.assertEqual(periods_for(names["Daleselva"]), [(3000.0, "nedenfor utløpet")])
 
     def test_madland_contextual_names_beat_source_labels(self):
         llm = {
@@ -291,8 +293,8 @@ class ExtractBackendRegressions(unittest.TestCase):
 
         names = by_name(assembled["inntak"])
         self.assertEqual(set(names), {"Husåna", "Fossbekken"})
-        self.assertEqual(names["Husåna"]["sommer_ls"], 55.0)
-        self.assertEqual(names["Fossbekken"]["sommer_ls"], 35.0)
+        self.assertEqual(periods_for(names["Husåna"]), [(55.0, "01.06 - 30.09")])
+        self.assertEqual(periods_for(names["Fossbekken"]), [(35.0, "01.06 - 30.09")])
 
     def test_multi_period_claims_keep_all_subperiods(self):
         llm = {
@@ -313,14 +315,14 @@ class ExtractBackendRegressions(unittest.TestCase):
         )
 
         item = by_name(assembled["inntak"])["hovedinntaket"]
-        self.assertEqual(len(item["sommer_delperioder"]), 3)
-        self.assertEqual(len(item["vinter_delperioder"]), 1)
-        self.assertIsNone(item["sommer_ls"])
-        self.assertIsNone(item["sommer_periode"])
-        self.assertEqual(item["vinter_ls"], 5.0)
         self.assertEqual(
-            set(item["sommer_delperioder"][0].keys()),
-            {"ls", "periode", "tekst"},
+            periods_for(item),
+            [
+                (10.0, "01.05 - 31.05"),
+                (20.0, "01.06 - 31.08"),
+                (15.0, "01.09 - 30.09"),
+                (5.0, "01.10 - 30.04"),
+            ],
         )
 
     def test_leikanger_realistic_multi_intake_case(self):
@@ -380,12 +382,19 @@ class ExtractBackendRegressions(unittest.TestCase):
         )
 
         names = by_name(assembled["inntak"])
-        self.assertEqual(names["Grindselvi"]["sommer_ls"], 164.0)
-        self.assertEqual(names["Grindselvi"]["vinter_ls"], 82.0)
-        self.assertEqual(len(names["Henjaelvi"]["sommer_delperioder"]), 3)
-        self.assertIsNone(names["Henjaelvi"]["sommer_ls"])
-        self.assertIsNone(names["Henjaelvi"]["sommer_periode"])
-        self.assertEqual(names["Henjaelvi"]["vinter_ls"], 127.0)
+        self.assertEqual(
+            periods_for(names["Grindselvi"]),
+            [(164.0, "01.05 - 30.09"), (82.0, "01.10 - 30.04")],
+        )
+        self.assertEqual(
+            periods_for(names["Henjaelvi"]),
+            [
+                (254.0, "01.05 - 31.05"),
+                (754.0, "01.06 - 15.08"),
+                (254.0, "16.08 - 30.09"),
+                (127.0, "01.10 - 30.04"),
+            ],
+        )
 
     def test_laksen_old_dam_formulation(self):
         llm = {
@@ -416,10 +425,10 @@ class ExtractBackendRegressions(unittest.TestCase):
         )
 
         item = by_name(assembled["inntak"])["Laksen"]
-        self.assertEqual(item["sommer_ls"], 150.0)
-        self.assertEqual(item["vinter_ls"], 50.0)
-        self.assertEqual(item["sommer_periode"], "01.06 - 15.10")
-        self.assertEqual(item["vinter_periode"], "16.10 - 31.05")
+        self.assertEqual(
+            periods_for(item),
+            [(150.0, "01.06 - 15.10"), (50.0, "16.10 - 31.05")],
+        )
 
     def test_funnet_false_preserves_inventory_with_nulls(self):
         inventory = extract_inntak_inventory(NULL_INVENTORY_TEXT, plant_name="Nullverk")
@@ -432,8 +441,7 @@ class ExtractBackendRegressions(unittest.TestCase):
 
         names = by_name(assembled["inntak"])
         self.assertIn("Veslegrøna", names)
-        self.assertIsNone(names["Veslegrøna"]["sommer_ls"])
-        self.assertIsNone(names["Veslegrøna"]["vinter_ls"])
+        self.assertEqual(periods_for(names["Veslegrøna"]), [(None, None)])
 
     def test_funnet_false_without_inventory_still_returns_blank_shape(self):
         assembled = assemble_inntak_from_claims(
@@ -450,13 +458,9 @@ class ExtractBackendRegressions(unittest.TestCase):
                 {
                     "navn": None,
                     "inntakFunksjon": None,
-                    "sommer_ls": None,
-                    "sommer_periode": None,
-                    "sommer_delperioder": [],
-                    "vinter_ls": None,
-                    "vinter_periode": None,
-                    "vinter_delperioder": [],
-                    "andre_krav": None,
+                    "perioder": [
+                        {"ls": None, "periode": None, "note": None}
+                    ],
                 }
             ],
         )
@@ -501,8 +505,8 @@ class ExtractBackendRegressions(unittest.TestCase):
         names = by_name(assembled["inntak"])
         self.assertIn("Emdalselva", names)
         self.assertNotIn("Emdalselva på 0", names)
-        self.assertEqual(names["Emdalselva"]["sommer_ls"], 350.0)
-        self.assertEqual(names["Emdalselva"]["vinter_ls"], 50.0)
+        self.assertIn((350.0, "fra 1. mai til 30. september"), periods_for(names["Emdalselva"]))
+        self.assertIn((50.0, "resten av året"), periods_for(names["Emdalselva"]))
 
     def test_generic_inntak_claim_does_not_create_fake_inventory_names(self):
         llm = {
@@ -540,8 +544,8 @@ class ExtractBackendRegressions(unittest.TestCase):
         self.assertEqual(inventory, [{"navn": "Krossdalselvi", "inntakFunksjon": None}])
         names = by_name(assembled["inntak"])
         self.assertEqual(set(names), {"Krossdalselvi"})
-        self.assertEqual(names["Krossdalselvi"]["sommer_ls"], 500.0)
-        self.assertEqual(names["Krossdalselvi"]["vinter_ls"], 100.0)
+        self.assertIn((500.0, "01.05 - 30.09"), periods_for(names["Krossdalselvi"]))
+        self.assertIn((100.0, "resten av året"), periods_for(names["Krossdalselvi"]))
 
     def test_generic_kraftverket_claim_becomes_null_name(self):
         assembled = assemble_inntak_from_claims(
@@ -571,8 +575,10 @@ class ExtractBackendRegressions(unittest.TestCase):
         )
 
         self.assertIsNone(assembled["inntak"][0]["navn"])
-        self.assertEqual(assembled["inntak"][0]["sommer_ls"], 10000.0)
-        self.assertEqual(assembled["inntak"][0]["vinter_ls"], 500.0)
+        self.assertEqual(
+            periods_for(assembled["inntak"][0]),
+            [(10000.0, "01.06 - 31.08"), (500.0, "1. september til 31. mai")],
+        )
 
     def test_inntil_average_claim_is_rejected(self):
         assembled = assemble_inntak_from_claims(
@@ -602,13 +608,9 @@ class ExtractBackendRegressions(unittest.TestCase):
                 {
                     "navn": None,
                     "inntakFunksjon": None,
-                    "sommer_ls": None,
-                    "sommer_periode": None,
-                    "sommer_delperioder": [],
-                    "vinter_ls": None,
-                    "vinter_periode": None,
-                    "vinter_delperioder": [],
-                    "andre_krav": None,
+                    "perioder": [
+                        {"ls": None, "periode": None, "note": None}
+                    ],
                 }
             ],
         )

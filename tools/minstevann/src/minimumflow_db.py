@@ -42,18 +42,26 @@ def normalize_period(text: Any) -> str | None:
 
     value = text.strip()
     lowered = value.lower()
-    if lowered in ("hele året", "hele aret", "hele aaret"):
+    if lowered in ("hele året", "hele aret", "hele aaret") or lowered.startswith(("hele året", "hele aret", "hele aaret")):
         return "hele året"
 
-    match = re.match(r"^(\d{1,2})\.(\d{1,2})\s*-\s*(\d{1,2})\.(\d{1,2})$", value)
+    numeric_value = value.replace("/", ".")
+    match = re.search(r"(\d{1,2})\.(\d{1,2})\.?\s*(?:-|til)\s*(\d{1,2})\.(\d{1,2})\.?", numeric_value, re.I)
     if match:
         return (
             f"{int(match.group(1)):02d}.{int(match.group(2)):02d} - "
             f"{int(match.group(3)):02d}.{int(match.group(4)):02d}"
         )
 
-    match = re.match(
-        r"(?:I\s+tiden\s+)?(\d{1,2})\.?\s*([A-Za-zÆØÅæøå]+)\s*[-–—]\s*"
+    match = re.match(r"^(\d{1,2})\.(\d{1,2})\.(\d{1,2})\.(\d{1,2})\.?$", numeric_value)
+    if match:
+        return (
+            f"{int(match.group(1)):02d}.{int(match.group(2)):02d} - "
+            f"{int(match.group(3)):02d}.{int(match.group(4)):02d}"
+        )
+
+    match = re.search(
+        r"(?:fra\s+|I\s+tiden\s+)?(\d{1,2})\.?\s*([A-Za-zÆØÅæøå]+)\s*(?:[-–—]|til)\s*"
         r"(\d{1,2})\.?\s*([A-Za-zÆØÅæøå]+)",
         value,
         re.I,
@@ -68,7 +76,7 @@ def normalize_period(text: Any) -> str | None:
         if month_1 in MONTHS and month_2 in MONTHS:
             return f"{int(day_1):02d}.{MONTHS[month_1]} - {int(day_2):02d}.{MONTHS[month_2]}"
 
-    return value
+    return None
 
 
 def normalize_ls(value: Any) -> int | float | None:
@@ -98,7 +106,13 @@ def normalize_period_entry(period: Any) -> dict:
 def normalize_periods(periods: Any) -> list[dict]:
     if not isinstance(periods, list):
         return [{"ls": None, "periode": None, "note": None}]
-    normalized = [normalize_period_entry(period) for period in periods]
+    normalized = []
+    for period in periods:
+        if isinstance(period, dict) and isinstance(period.get("periode"), str) and ";" in period["periode"]:
+            for part in period["periode"].split(";"):
+                normalized.append(normalize_period_entry({**period, "periode": part}))
+        else:
+            normalized.append(normalize_period_entry(period))
     normalized = [
         period
         for period in normalized

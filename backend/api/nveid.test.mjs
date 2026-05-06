@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { onRequestGet } from "./nveid.js";
 
 const minimumFlowData = JSON.parse(readFileSync(new URL("../data/minimumflow.json", import.meta.url), "utf8"));
+const periodPattern = /^(?:\d{2}\.\d{2} - \d{2}\.\d{2}|hele året)$/;
 
 function requestFor(path) {
   return new Request(`https://hydroguide.no${path}`);
@@ -40,7 +41,15 @@ test("canonical minimumflow.json is perioder-only", () => {
       assert.equal("sommer_periode" in intake, false, `${nveID} inntak ${index} must not have sommer_periode`);
       assert.equal("vinter_ls" in intake, false, `${nveID} inntak ${index} must not have vinter_ls`);
       assert.equal("vinter_periode" in intake, false, `${nveID} inntak ${index} must not have vinter_periode`);
+      assert.deepEqual(Object.keys(intake).sort(), ["inntakFunksjon", "perioder"], `${nveID} inntak ${index} must only contain perioder shape`);
       assert.ok(Array.isArray(intake.perioder) && intake.perioder.length > 0, `${nveID} inntak ${index} must have perioder`);
+      for (const [periodIndex, period] of intake.perioder.entries()) {
+        assert.deepEqual(Object.keys(period).sort(), ["ls", "note", "periode"], `${nveID} period ${periodIndex} must only contain strict period fields`);
+        assert.ok(
+          period.periode === null || periodPattern.test(period.periode),
+          `${nveID} period ${periodIndex} has invalid periode format: ${period.periode}`
+        );
+      }
     }
   }
 });

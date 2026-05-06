@@ -392,10 +392,8 @@ def _normalize_periode_str(p: str) -> str | None:
     p = p.replace("–", "-").replace("—", "-").strip()
     low = p.lower()
     low = low.rstrip(" -–—")
-    if low in ('hele året', 'hele aret', 'hele aaret'):
+    if low in ('hele året', 'hele aret', 'hele aaret') or low.startswith(('hele året', 'hele aret', 'hele aaret')):
         return 'hele året'
-    if low in ('resten av året', 'resten av aret'):
-        return 'resten av året'
     simple_map = {
         'sommer': '01.05 - 30.09',
         'sommeren': '01.05 - 30.09', 'sommerhalvåret': '01.05 - 30.09',
@@ -406,17 +404,21 @@ def _normalize_periode_str(p: str) -> str | None:
     }
     if low in simple_map:
         return simple_map[low]
-    m = re.match(r'^(\d{1,2})\.(\d{1,2})\.?\s*-\s*(\d{1,2})\.(\d{1,2})\.?$', p)
+    numeric_text = p.replace("/", ".")
+    m = re.search(r'(\d{1,2})\.(\d{1,2})\.?\s*(?:-|til)\s*(\d{1,2})\.(\d{1,2})\.?', numeric_text, re.I)
     if m:
         return f'{int(m.group(1)):02d}.{int(m.group(2)):02d} - {int(m.group(3)):02d}.{int(m.group(4)):02d}'
-    m = re.match(r'(\d{1,2})\.?\s*([a-zæøå]+)\s*-\s*(\d{1,2})\.?\s*([a-zæøå]+)', p, re.I)
+    m = re.match(r'^(\d{1,2})\.(\d{1,2})\.(\d{1,2})\.(\d{1,2})\.?$', numeric_text)
+    if m:
+        return f'{int(m.group(1)):02d}.{int(m.group(2)):02d} - {int(m.group(3)):02d}.{int(m.group(4)):02d}'
+    m = re.search(r'(?:fra\s+|i\s+tiden\s+)?(\d{1,2})\.?\s*([a-zæøå]+)\s*(?:-|til)\s*(\d{1,2})\.?\s*([a-zæøå]+)', p, re.I)
     if m:
         d1, m1, d2, m2 = m.group(1), m.group(2).lower().rstrip('.'), m.group(3), m.group(4).lower().rstrip('.')
         if m1 in MONTHS_MAP and m2 in MONTHS_MAP:
             return f'{int(d1):02d}.{MONTHS_MAP[m1]} - {int(d2):02d}.{MONTHS_MAP[m2]}'
     if 'vårflom' in low or 'vaarflom' in low:
         return '01.05 - 30.09' if 'september' in low else '01.05 - 30.09'
-    return p
+    return None
 
 
 def _append_unique_period(periods: list[dict], ls: float | None, periode: str | None, note: str | None = None) -> None:

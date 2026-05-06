@@ -132,7 +132,7 @@ class ExtractBackendRegressions(unittest.TestCase):
         self.assertEqual(periods_for(names["overføring A"]), [(5.0, "hele året")])
         self.assertEqual(periods_for(names["overføring B"]), [(5.0, "hele året")])
         self.assertIn((30.0, "01.05 - 30.09"), periods_for(names["hovedinntaket"]))
-        self.assertIn((10.0, "resten av året"), periods_for(names["hovedinntaket"]))
+        self.assertIn((10.0, None), periods_for(names["hovedinntaket"]))
 
     def test_shared_bekk_claim_is_split(self):
         llm = {
@@ -261,7 +261,7 @@ class ExtractBackendRegressions(unittest.TestCase):
         names = by_name(assembled["inntak"])
         self.assertIn("Daleselva", names)
         self.assertNotIn("Dalekraftverk", names)
-        self.assertEqual(periods_for(names["Daleselva"]), [(3000.0, "nedenfor utløpet")])
+        self.assertEqual(periods_for(names["Daleselva"]), [(3000.0, None)])
 
     def test_madland_contextual_names_beat_source_labels(self):
         llm = {
@@ -506,8 +506,8 @@ class ExtractBackendRegressions(unittest.TestCase):
         names = by_name(assembled["inntak"])
         self.assertIn("Emdalselva", names)
         self.assertNotIn("Emdalselva på 0", names)
-        self.assertIn((350.0, "fra 1. mai til 30. september"), periods_for(names["Emdalselva"]))
-        self.assertIn((50.0, "resten av året"), periods_for(names["Emdalselva"]))
+        self.assertIn((350.0, "01.05 - 30.09"), periods_for(names["Emdalselva"]))
+        self.assertIn((50.0, None), periods_for(names["Emdalselva"]))
 
     def test_generic_inntak_claim_does_not_create_fake_inventory_names(self):
         llm = {
@@ -546,7 +546,7 @@ class ExtractBackendRegressions(unittest.TestCase):
         names = by_name(assembled["inntak"])
         self.assertEqual(set(names), {"Krossdalselvi"})
         self.assertIn((500.0, "01.05 - 30.09"), periods_for(names["Krossdalselvi"]))
-        self.assertIn((100.0, "resten av året"), periods_for(names["Krossdalselvi"]))
+        self.assertIn((100.0, None), periods_for(names["Krossdalselvi"]))
 
     def test_same_value_period_group_expands_from_full_sitat(self):
         llm = {
@@ -587,6 +587,28 @@ class ExtractBackendRegressions(unittest.TestCase):
         self.assertIn((200.0, "01.09 - 30.09"), periods_for(names["Bergselvi"]))
         self.assertIn((300.0, "01.06 - 31.08"), periods_for(names["Bergselvi"]))
 
+    def test_compact_numeric_period_without_dash_is_normalized(self):
+        assembled = assemble_inntak_from_claims(
+            {
+                "funnet": True,
+                "claims": [
+                    {
+                        "inntak_navn": "Litl-Hynna",
+                        "tall": 50,
+                        "enhet": "l/s",
+                        "periode_sitat": "01.10.30.04.",
+                        "full_sitat": "I tiden 01.10.30.04. skal det slippes 50 l/s.",
+                    }
+                ],
+            },
+            snippet="I tiden 01.10.30.04. skal det slippes 50 l/s.",
+            inventory=[],
+            plant_name="Hynna",
+        )
+
+        names = by_name(assembled["inntak"])
+        self.assertEqual(periods_for(names["Litl-Hynna"]), [(50.0, "01.10 - 30.04")])
+
     def test_generic_kraftverket_claim_becomes_null_name(self):
         assembled = assemble_inntak_from_claims(
             {
@@ -617,7 +639,7 @@ class ExtractBackendRegressions(unittest.TestCase):
         self.assertIsNone(assembled["inntak"][0]["navn"])
         self.assertEqual(
             periods_for(assembled["inntak"][0]),
-            [(10000.0, "01.06 - 31.08"), (500.0, "1. september til 31. mai")],
+            [(10000.0, "01.06 - 31.08"), (500.0, "01.09 - 31.05")],
         )
 
     def test_inntil_average_claim_is_rejected(self):
@@ -811,8 +833,14 @@ class TestResultFirstPipeline(unittest.TestCase):
 
     def test_normalize_period_accepts_numeric_and_month_names(self):
         self.assertEqual(normalize_period("01.05-30.09"), "01.05 - 30.09")
+        self.assertEqual(normalize_period("01.10.30.04."), "01.10 - 30.04")
         self.assertEqual(normalize_period("1. mai - 30. september"), "01.05 - 30.09")
+        self.assertEqual(normalize_period("1. september til 31. mai"), "01.09 - 31.05")
+        self.assertEqual(normalize_period("15.05til 15.09"), "15.05 - 15.09")
+        self.assertEqual(normalize_period("sommersesongen (1/5-30/9"), "01.05 - 30.09")
         self.assertEqual(normalize_period("hele året"), "hele året")
+        self.assertEqual(normalize_period("hele året, antatt"), "hele året")
+        self.assertIsNone(normalize_period("01.10.30.04. råtekst"))
 
     def test_batch_writes_public_minimumflow_entries_directly(self):
         result = NveidResult(

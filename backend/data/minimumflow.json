@@ -466,7 +466,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 30000.0,
+            "ls": 30000,
             "periode": "01.05 - 25.10",
             "note": null
           }
@@ -476,7 +476,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 2500.0,
+            "ls": 2500,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -700,7 +700,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 11000.0,
+            "ls": 11000,
             "periode": "hele året",
             "note": null
           }
@@ -710,7 +710,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "01.07 - 10.09",
             "note": null
           }
@@ -1333,7 +1333,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 35000.0,
+            "ls": 35000,
             "periode": "15.05 - 15.10",
             "note": null
           }
@@ -3638,7 +3638,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 1000.0,
+            "ls": 1000,
             "periode": "20.09 - 31.05",
             "note": null
           }
@@ -7265,7 +7265,7 @@
         "inntakFunksjon": "magasin",
         "perioder": [
           {
-            "ls": 115.0,
+            "ls": 115,
             "periode": "hele året",
             "note": null
           }
@@ -10800,13 +10800,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 4500.0,
-            "periode": "i middeltall pr. døgn",
+            "ls": 4500,
+            "periode": null,
             "note": null
           },
           {
-            "ls": 8000.0,
-            "periode": "1. desember til 31. mars",
+            "ls": 8000,
+            "periode": "01.12 - 31.03",
             "note": null
           }
         ]
@@ -10825,13 +10825,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 2500.0,
-            "periode": "hele året, antatt",
+            "ls": 2500,
+            "periode": "hele året",
             "note": null
           },
           {
-            "ls": 2500.0,
-            "periode": "hele året, antatt",
+            "ls": 2500,
+            "periode": "hele året",
             "note": null
           }
         ]
@@ -11048,13 +11048,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 250.0,
-            "periode": "1. mai til 31. oktober",
+            "ls": 250,
+            "periode": "01.05 - 31.10",
             "note": null
           },
           {
-            "ls": 50.0,
-            "periode": "1. november til 30. april",
+            "ls": 50,
+            "periode": "01.11 - 30.04",
             "note": null
           }
         ]
@@ -13814,8 +13814,8 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 100.0,
-            "periode": "15.05til 15.09",
+            "ls": 100,
+            "periode": "15.05 - 15.09",
             "note": null
           }
         ]
@@ -14744,13 +14744,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 400.0,
-            "periode": "fra 15. mai til 15. september",
+            "ls": 400,
+            "periode": "15.05 - 15.09",
             "note": null
           },
           {
-            "ls": 140.0,
-            "periode": "resten av året",
+            "ls": 140,
+            "periode": null,
             "note": null
           }
         ]
@@ -16224,7 +16224,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 5.0,
+            "ls": 5,
             "periode": "hele året",
             "note": null
           }
@@ -16272,13 +16272,13 @@
         "inntakFunksjon": "magasin",
         "perioder": [
           {
-            "ls": 180.0,
+            "ls": 180,
             "periode": "01.12 - 31.08",
             "note": null
           },
           {
-            "ls": 250.0,
-            "periode": "I tiden 10. april -30.",
+            "ls": 250,
+            "periode": null,
             "note": null
           }
         ]
@@ -16341,7 +16341,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 5.0,
+            "ls": 5,
             "periode": "hele året",
             "note": null
           }
@@ -16351,7 +16351,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "hele året",
             "note": null
           }
@@ -16361,7 +16361,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "hele året",
             "note": null
           }
@@ -16680,7 +16680,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 370.0,
+            "ls": 370,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -16690,7 +16690,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -16786,7 +16786,7 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "hele året",
             "note": null
           }
@@ -16834,7 +16834,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "hele året",
             "note": null
           }
@@ -16914,7 +16914,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 260.0,
+            "ls": 260,
             "periode": "hele året",
             "note": null
           }
@@ -17020,7 +17020,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 80.0,
+            "ls": 80,
             "periode": "hele året",
             "note": null
           }
@@ -17030,7 +17030,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 65.0,
+            "ls": 65,
             "periode": "hele året",
             "note": null
           }
@@ -17232,7 +17232,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 25.0,
+            "ls": 25,
             "periode": "hele året",
             "note": null
           }
@@ -17242,7 +17242,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 35.0,
+            "ls": 35,
             "periode": "hele året",
             "note": null
           }
@@ -17252,7 +17252,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -17262,7 +17262,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 10.0,
+            "ls": 10,
             "periode": "hele året",
             "note": null
           }
@@ -17390,7 +17390,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "hele året",
             "note": null
           }
@@ -17454,7 +17454,7 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 360.0,
+            "ls": 360,
             "periode": "hele året",
             "note": null
           }
@@ -17640,7 +17640,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 150.0,
+            "ls": 150,
             "periode": "hele året",
             "note": null
           }
@@ -17650,7 +17650,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "hele året",
             "note": null
           }
@@ -17666,12 +17666,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 150.0,
+            "ls": 150,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -17687,12 +17687,12 @@
         "inntakFunksjon": "magasin",
         "perioder": [
           {
-            "ls": 600.0,
+            "ls": 600,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 60.0,
+            "ls": 60,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -17708,12 +17708,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -17793,12 +17793,12 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 25.0,
+            "ls": 25,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -18203,13 +18203,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 350.0,
-            "periode": "fra 1. mai til 30. september",
+            "ls": 350,
+            "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 50.0,
-            "periode": "resten av året",
+            "ls": 50,
+            "periode": null,
             "note": null
           }
         ]
@@ -18256,12 +18256,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 220.0,
+            "ls": 220,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -18357,7 +18357,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -18405,7 +18405,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 80.0,
+            "ls": 80,
             "periode": "hele året",
             "note": null
           }
@@ -18533,7 +18533,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -18543,7 +18543,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 10.0,
+            "ls": 10,
             "periode": "hele året",
             "note": null
           }
@@ -18553,7 +18553,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 5.0,
+            "ls": 5,
             "periode": "hele året",
             "note": null
           }
@@ -18563,7 +18563,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "hele året",
             "note": null
           }
@@ -18579,7 +18579,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 25.0,
+            "ls": 25,
             "periode": "hele året",
             "note": null
           }
@@ -18589,7 +18589,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 15.0,
+            "ls": 15,
             "periode": "hele året",
             "note": null
           }
@@ -18599,7 +18599,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 5.0,
+            "ls": 5,
             "periode": "hele året",
             "note": null
           }
@@ -18615,7 +18615,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 90.0,
+            "ls": 90,
             "periode": "hele året",
             "note": null
           }
@@ -18625,7 +18625,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -18710,7 +18710,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 10.0,
+            "ls": 10,
             "periode": "hele året",
             "note": null
           }
@@ -18851,22 +18851,7 @@
     "funnet": true,
     "inntak": [
       {
-        "inntakFunksjon": "Hovedinntak",
-        "perioder": [
-          {
-            "ls": 150,
-            "periode": "01.05 - 30.09",
-            "note": null
-          },
-          {
-            "ls": 50,
-            "periode": "01.10 - 30.04",
-            "note": null
-          }
-        ]
-      },
-      {
-        "inntakFunksjon": "Andre inntak",
+        "inntakFunksjon": null,
         "perioder": [
           {
             "ls": 150,
@@ -18986,7 +18971,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -19130,7 +19115,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 25.0,
+            "ls": 25,
             "periode": "hele året",
             "note": null
           }
@@ -19252,7 +19237,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -19268,7 +19253,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "hele året",
             "note": null
           }
@@ -19316,7 +19301,7 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -19332,7 +19317,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -19342,7 +19327,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -19374,7 +19359,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 80.0,
+            "ls": 80,
             "periode": "hele året",
             "note": null
           }
@@ -19422,12 +19407,12 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 150.0,
+            "ls": 150,
             "periode": "01.06 - 30.09",
             "note": null
           },
           {
-            "ls": 40.0,
+            "ls": 40,
             "periode": "01.10 - 30.05",
             "note": null
           }
@@ -19491,7 +19476,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 180.0,
+            "ls": 180,
             "periode": "hele året",
             "note": null
           }
@@ -19523,7 +19508,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "hele året",
             "note": null
           }
@@ -19533,7 +19518,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 500.0,
+            "ls": 500,
             "periode": "hele året",
             "note": null
           }
@@ -19613,7 +19598,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -19623,7 +19608,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -19633,7 +19618,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 5.0,
+            "ls": 5,
             "periode": "hele året",
             "note": null
           }
@@ -19737,7 +19722,7 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 194.0,
+            "ls": 194,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -20008,13 +19993,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 300.0,
-            "periode": "01.05 til 30.09",
+            "ls": 300,
+            "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 130.0,
-            "periode": "resten av året",
+            "ls": 130,
+            "periode": null,
             "note": null
           }
         ]
@@ -20050,12 +20035,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 72.0,
+            "ls": 72,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 12.0,
+            "ls": 12,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -20071,7 +20056,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "hele året",
             "note": null
           }
@@ -20103,7 +20088,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 70.0,
+            "ls": 70,
             "periode": "hele året",
             "note": null
           }
@@ -20119,7 +20104,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "hele året",
             "note": null
           }
@@ -20129,7 +20114,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -20161,7 +20146,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -20240,12 +20225,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -20277,7 +20262,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 500.0,
+            "ls": 500,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -20287,7 +20272,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 70.0,
+            "ls": 70,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -20303,12 +20288,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -20393,7 +20378,7 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 40.0,
+            "ls": 40,
             "periode": "hele året",
             "note": null
           }
@@ -20627,7 +20612,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -20643,7 +20628,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 250.0,
+            "ls": 250,
             "periode": "hele året",
             "note": null
           }
@@ -20659,7 +20644,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 5.0,
+            "ls": 5,
             "periode": "hele året",
             "note": null
           }
@@ -20675,8 +20660,8 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 100.0,
-            "periode": "1.oktober til 30.april",
+            "ls": 100,
+            "periode": "01.10 - 30.04",
             "note": null
           }
         ]
@@ -20685,8 +20670,8 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 300.0,
-            "periode": "resten av året",
+            "ls": 300,
+            "periode": null,
             "note": null
           }
         ]
@@ -20695,7 +20680,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 300.0,
+            "ls": 300,
             "periode": "hele året",
             "note": null
           }
@@ -20711,7 +20696,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 400.0,
+            "ls": 400,
             "periode": "hele året",
             "note": null
           }
@@ -20796,7 +20781,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 6500.0,
+            "ls": 6500,
             "periode": "hele året",
             "note": null
           }
@@ -20806,7 +20791,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 3000.0,
+            "ls": 3000,
             "periode": "hele året",
             "note": null
           }
@@ -20880,7 +20865,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "hele året",
             "note": null
           }
@@ -20896,7 +20881,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "hele året",
             "note": null
           }
@@ -20906,7 +20891,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -20938,7 +20923,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 60.0,
+            "ls": 60,
             "periode": "hele året",
             "note": null
           }
@@ -20975,12 +20960,12 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -20996,7 +20981,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -21064,7 +21049,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 250.0,
+            "ls": 250,
             "periode": "hele året",
             "note": null
           }
@@ -21074,7 +21059,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 1000.0,
+            "ls": 1000,
             "periode": "hele året",
             "note": null
           }
@@ -21143,7 +21128,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 150.0,
+            "ls": 150,
             "periode": "hele året",
             "note": null
           }
@@ -21159,12 +21144,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 150.0,
+            "ls": 150,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -21180,7 +21165,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 240.0,
+            "ls": 240,
             "periode": "hele året",
             "note": null
           }
@@ -21196,7 +21181,7 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 40.0,
+            "ls": 40,
             "periode": "hele året",
             "note": null
           }
@@ -21212,13 +21197,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 260.0,
-            "periode": "1tiden 1.5-30.9",
+            "ls": 260,
+            "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 120.0,
-            "periode": "resten av året",
+            "ls": 120,
+            "periode": null,
             "note": null
           }
         ]
@@ -21387,7 +21372,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -21435,7 +21420,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "hele året",
             "note": null
           }
@@ -21547,7 +21532,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 125.0,
+            "ls": 125,
             "periode": "hele året",
             "note": null
           }
@@ -21557,7 +21542,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 22.0,
+            "ls": 22,
             "periode": "hele året",
             "note": null
           }
@@ -21663,7 +21648,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 850.0,
+            "ls": 850,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -21673,7 +21658,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 150.0,
+            "ls": 150,
             "periode": "hele året",
             "note": null
           }
@@ -21683,7 +21668,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 250.0,
+            "ls": 250,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -21693,7 +21678,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -21730,12 +21715,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": null,
             "note": null
           },
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": null,
             "note": null
           }
@@ -21751,12 +21736,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 60.0,
+            "ls": 60,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -21804,7 +21789,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "hele året",
             "note": null
           }
@@ -21841,7 +21826,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -21857,7 +21842,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 140.0,
+            "ls": 140,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -21867,7 +21852,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 10.0,
+            "ls": 10,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -21877,7 +21862,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 10.0,
+            "ls": 10,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -21993,7 +21978,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "hele året",
             "note": null
           }
@@ -22003,7 +21988,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -22077,7 +22062,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 86.0,
+            "ls": 86,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -22087,7 +22072,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -22154,12 +22139,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 135.0,
+            "ls": 135,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 40.0,
+            "ls": 40,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -22169,12 +22154,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 270.0,
+            "ls": 270,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 40.0,
+            "ls": 40,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -22206,7 +22191,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 40.0,
+            "ls": 40,
             "periode": "hele året",
             "note": null
           }
@@ -22259,7 +22244,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "hele året",
             "note": null
           }
@@ -22269,7 +22254,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 180.0,
+            "ls": 180,
             "periode": "hele året",
             "note": null
           }
@@ -22317,7 +22302,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 30000.0,
+            "ls": 30000,
             "periode": "hele året",
             "note": null
           }
@@ -22327,7 +22312,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 10000.0,
+            "ls": 10000,
             "periode": "hele året",
             "note": null
           }
@@ -22337,7 +22322,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 150000.0,
+            "ls": 150000,
             "periode": "hele året",
             "note": null
           }
@@ -22347,7 +22332,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 110000.0,
+            "ls": 110000,
             "periode": "hele året",
             "note": null
           }
@@ -22357,7 +22342,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 15000.0,
+            "ls": 15000,
             "periode": "hele året",
             "note": null
           }
@@ -22367,7 +22352,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 20000.0,
+            "ls": 20000,
             "periode": "hele året",
             "note": null
           }
@@ -22383,12 +22368,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 10.0,
+            "ls": 10,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -22441,7 +22426,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 250.0,
+            "ls": 250,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -22451,7 +22436,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -22514,7 +22499,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 80.0,
+            "ls": 80,
             "periode": "hele året",
             "note": null
           }
@@ -22524,7 +22509,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 250.0,
+            "ls": 250,
             "periode": "hele året",
             "note": null
           }
@@ -22625,7 +22610,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -22893,12 +22878,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 250.0,
+            "ls": 250,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -23019,12 +23004,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 290.0,
+            "ls": 290,
             "periode": "01.06 - 30.09",
             "note": null
           },
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "01.10 - 31.05",
             "note": null
           }
@@ -23040,7 +23025,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 140.0,
+            "ls": 140,
             "periode": "hele året",
             "note": null
           }
@@ -23050,7 +23035,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -23066,13 +23051,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 70.0,
-            "periode": "1/5 til 30/9",
+            "ls": 70,
+            "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 30.0,
-            "periode": "30/9 til 1/5",
+            "ls": 30,
+            "periode": "30.09 - 01.05",
             "note": null
           }
         ]
@@ -23087,7 +23072,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 164.0,
+            "ls": 164,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -23097,7 +23082,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 82.0,
+            "ls": 82,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -23107,7 +23092,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 254.0,
+            "ls": 254,
             "periode": "01.05 - 31.05",
             "note": null
           }
@@ -23117,7 +23102,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 754.0,
+            "ls": 754,
             "periode": "01.06 - 15.08",
             "note": null
           }
@@ -23127,7 +23112,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 127.0,
+            "ls": 127,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -23143,7 +23128,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 39.0,
+            "ls": 39,
             "periode": "hele året",
             "note": null
           }
@@ -23205,12 +23190,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 1700.0,
+            "ls": 1700,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 900.0,
+            "ls": 900,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -23247,13 +23232,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 300.0,
-            "periode": "15.3 til 15.10",
+            "ls": 300,
+            "periode": "15.03 - 15.10",
             "note": null
           },
           {
-            "ls": 240.0,
-            "periode": "resten av året",
+            "ls": 240,
+            "periode": null,
             "note": null
           }
         ]
@@ -23268,7 +23253,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 132.0,
+            "ls": 132,
             "periode": "hele året",
             "note": null
           }
@@ -23278,7 +23263,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 120.0,
+            "ls": 120,
             "periode": "hele året",
             "note": null
           }
@@ -23393,12 +23378,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": null,
             "note": null
           },
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": null,
             "note": null
           }
@@ -23472,7 +23457,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 130.0,
+            "ls": 130,
             "periode": "hele året",
             "note": null
           }
@@ -23482,13 +23467,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 100.0,
-            "periode": "1.5 til 30.9",
+            "ls": 100,
+            "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 50.0,
-            "periode": "resten av året",
+            "ls": 50,
+            "periode": null,
             "note": null
           }
         ]
@@ -23519,7 +23504,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 2000.0,
+            "ls": 2000,
             "periode": "hele året",
             "note": null
           }
@@ -23529,7 +23514,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 300.0,
+            "ls": 300,
             "periode": "hele året",
             "note": null
           }
@@ -23539,7 +23524,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 60.0,
+            "ls": 60,
             "periode": "hele året",
             "note": null
           }
@@ -23749,7 +23734,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 2000.0,
+            "ls": 2000,
             "periode": "hele året",
             "note": null
           }
@@ -23759,7 +23744,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 500.0,
+            "ls": 500,
             "periode": "hele året",
             "note": null
           }
@@ -23775,7 +23760,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 390.0,
+            "ls": 390,
             "periode": "hele året",
             "note": null
           }
@@ -23785,7 +23770,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 220.0,
+            "ls": 220,
             "periode": "hele året",
             "note": null
           }
@@ -23854,13 +23839,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 85.0,
-            "periode": "sommersesongen (1/5-30/9",
+            "ls": 85,
+            "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 15.0,
-            "periode": "resten av året",
+            "ls": 15,
+            "periode": null,
             "note": null
           }
         ]
@@ -23875,7 +23860,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 240.0,
+            "ls": 240,
             "periode": "hele året",
             "note": null
           }
@@ -24002,7 +23987,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -24108,12 +24093,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 600.0,
+            "ls": 600,
             "periode": null,
             "note": null
           },
           {
-            "ls": 600.0,
+            "ls": 600,
             "periode": null,
             "note": null
           }
@@ -24208,12 +24193,12 @@
         "inntakFunksjon": "magasin",
         "perioder": [
           {
-            "ls": 480.0,
+            "ls": 480,
             "periode": "15.06 - 30.09",
             "note": null
           },
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "01.10 - 14.06",
             "note": null
           }
@@ -24266,12 +24251,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 1100.0,
+            "ls": 1100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 90.0,
+            "ls": 90,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -24350,12 +24335,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 10.0,
+            "ls": 10,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -24408,7 +24393,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 150.0,
+            "ls": 150,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -24424,13 +24409,18 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 750.0,
+            "ls": 750,
             "periode": "01.06 - 30.09",
             "note": null
           },
           {
-            "ls": 300.0,
-            "periode": "01.10 - 31.10; 01.11 - 31.05",
+            "ls": 300,
+            "periode": "01.10 - 31.10",
+            "note": null
+          },
+          {
+            "ls": 300,
+            "periode": "01.11 - 31.05",
             "note": null
           }
         ]
@@ -24461,12 +24451,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": null,
             "note": null
           },
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": null,
             "note": null
           }
@@ -24503,7 +24493,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 190.0,
+            "ls": 190,
             "periode": "hele året",
             "note": null
           }
@@ -24561,12 +24551,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 1000.0,
+            "ls": 1000,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 60.0,
+            "ls": 60,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -24603,7 +24593,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -24713,12 +24703,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 70.0,
+            "ls": 70,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -24776,7 +24766,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 300.0,
+            "ls": 300,
             "periode": "hele året",
             "note": null
           }
@@ -24786,7 +24776,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 200.0,
+            "ls": 200,
             "periode": "hele året",
             "note": null
           }
@@ -24823,7 +24813,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 60.0,
+            "ls": 60,
             "periode": "hele året",
             "note": null
           }
@@ -24833,7 +24823,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -24886,7 +24876,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "hele året",
             "note": null
           }
@@ -24896,7 +24886,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 10.0,
+            "ls": 10,
             "periode": "hele året",
             "note": null
           }
@@ -24928,7 +24918,7 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "hele året",
             "note": null
           }
@@ -24944,7 +24934,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 150.0,
+            "ls": 150,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -25039,7 +25029,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 85.0,
+            "ls": 85,
             "periode": "01.05 - 30.09",
             "note": null
           }
@@ -25055,12 +25045,12 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 580.0,
+            "ls": 580,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 66.0,
+            "ls": 66,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -25201,12 +25191,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 550.0,
+            "ls": 550,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 160.0,
+            "ls": 160,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -25222,12 +25212,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 120.0,
+            "ls": 120,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 60.0,
+            "ls": 60,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -25264,7 +25254,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 1500.0,
+            "ls": 1500,
             "periode": "hele året",
             "note": null
           }
@@ -25274,7 +25264,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 350.0,
+            "ls": 350,
             "periode": "hele året",
             "note": null
           }
@@ -25447,7 +25437,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 40.0,
+            "ls": 40,
             "periode": "hele året",
             "note": null
           }
@@ -25463,12 +25453,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": null,
             "note": null
           },
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": null,
             "note": null
           }
@@ -25484,12 +25474,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 52.0,
+            "ls": 52,
             "periode": null,
             "note": null
           },
           {
-            "ls": 52.0,
+            "ls": 52,
             "periode": null,
             "note": null
           }
@@ -25625,12 +25615,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 230.0,
+            "ls": 230,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -25646,13 +25636,13 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 100.0,
-            "periode": "sommersesongen (1/5-30/9",
+            "ls": 100,
+            "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 50.0,
-            "periode": "resten av året",
+            "ls": 50,
+            "periode": null,
             "note": null
           }
         ]
@@ -25667,7 +25657,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "hele året",
             "note": null
           }
@@ -25677,7 +25667,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -25693,12 +25683,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -25787,12 +25777,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -25808,12 +25798,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 120.0,
+            "ls": 120,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -25903,12 +25893,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 350.0,
+            "ls": 350,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 150.0,
+            "ls": 150,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -25924,7 +25914,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -25940,12 +25930,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 45.0,
+            "ls": 45,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 15.0,
+            "ls": 15,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -25961,12 +25951,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 500.0,
+            "ls": 500,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -26071,12 +26061,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 135.0,
+            "ls": 135,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 25.0,
+            "ls": 25,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -26113,12 +26103,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 15.0,
+            "ls": 15,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -26134,12 +26124,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 570.0,
+            "ls": 570,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 70.0,
+            "ls": 70,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -26176,12 +26166,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 540.0,
+            "ls": 540,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 270.0,
+            "ls": 270,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -26218,12 +26208,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 150.0,
+            "ls": 150,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 10.0,
+            "ls": 10,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -26260,7 +26250,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -26270,7 +26260,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -26286,12 +26276,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 70.0,
+            "ls": 70,
             "periode": null,
             "note": null
           },
           {
-            "ls": 70.0,
+            "ls": 70,
             "periode": null,
             "note": null
           }
@@ -26307,12 +26297,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 300.0,
+            "ls": 300,
             "periode": "01.06 - 31.08",
             "note": null
           },
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "01.09 - 30.05",
             "note": null
           }
@@ -26464,7 +26454,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 130.0,
+            "ls": 130,
             "periode": "hele året",
             "note": null
           }
@@ -26474,7 +26464,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -26548,12 +26538,12 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 150.0,
+            "ls": 150,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -26590,12 +26580,12 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 40.0,
+            "ls": 40,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -26611,7 +26601,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }
@@ -26627,12 +26617,12 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 80.0,
+            "ls": 80,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -26648,7 +26638,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 400.0,
+            "ls": 400,
             "periode": "hele året",
             "note": null
           }
@@ -26706,7 +26696,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 15000.0,
+            "ls": 15000,
             "periode": "hele året",
             "note": null
           }
@@ -26722,12 +26712,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 210.0,
+            "ls": 210,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -26880,12 +26870,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -26959,7 +26949,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 70.0,
+            "ls": 70,
             "periode": "hele året",
             "note": null
           }
@@ -27012,12 +27002,12 @@
         "inntakFunksjon": "inntak",
         "perioder": [
           {
-            "ls": 275.0,
+            "ls": 275,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -27054,7 +27044,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -27064,7 +27054,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -27272,12 +27262,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 36.0,
+            "ls": 36,
             "periode": "01.05 - 30.09",
             "note": null
           },
           {
-            "ls": 18.0,
+            "ls": 18,
             "periode": "01.10 - 30.04",
             "note": null
           }
@@ -27309,12 +27299,12 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": null,
             "note": null
           },
           {
-            "ls": 20.0,
+            "ls": 20,
             "periode": null,
             "note": null
           }
@@ -27351,7 +27341,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "hele året",
             "note": null
           }
@@ -27361,7 +27351,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 60.0,
+            "ls": 60,
             "periode": "hele året",
             "note": null
           }
@@ -27451,7 +27441,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 100.0,
+            "ls": 100,
             "periode": "hele året",
             "note": null
           }
@@ -27467,7 +27457,7 @@
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 41.0,
+            "ls": 41,
             "periode": "hele året",
             "note": null
           }
@@ -27590,7 +27580,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 1000.0,
+            "ls": 1000,
             "periode": "hele året",
             "note": null
           }
@@ -27712,7 +27702,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 30.0,
+            "ls": 30,
             "periode": "hele året",
             "note": null
           }
@@ -27722,7 +27712,7 @@
         "inntakFunksjon": "Andre inntak",
         "perioder": [
           {
-            "ls": 5.0,
+            "ls": 5,
             "periode": "hele året",
             "note": null
           }
@@ -27796,7 +27786,7 @@
         "inntakFunksjon": "Hovedinntak",
         "perioder": [
           {
-            "ls": 50.0,
+            "ls": 50,
             "periode": "hele året",
             "note": null
           }

@@ -9,7 +9,8 @@ const args = new Set(process.argv.slice(2));
 const allFiles = args.has("--all");
 const ci = args.has("--ci");
 const changedMode = args.has("--changed");
-const allowPrivateConfig = args.has("--allow-private-config");
+const allowPrivateConfig =
+  args.has("--allow-private-config") || process.env.HYDROGUIDE_ALLOW_PRIVATE_CONFIG_COMMIT === "1";
 const stagedMode = args.has("--staged") || (!allFiles && !changedMode);
 
 const workerFilePatterns = [
@@ -111,6 +112,7 @@ function checkPrivateConfig(files) {
       "Private Cloudflare config is staged:",
       ...privateFiles.map((file) => `- ${file}`),
       "Keep generated/private deploy values local unless this commit explicitly rotates encrypted config.",
+      "If this is intentional, rerun the commit with HYDROGUIDE_ALLOW_PRIVATE_CONFIG_COMMIT=1.",
     ].join("\n"),
   );
 }

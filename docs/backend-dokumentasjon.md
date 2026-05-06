@@ -46,7 +46,7 @@ backend/
 
 ## API-en delt opp etter formål
 
-API-et har tre kategorier endepunkter. Sensor og eksterne brukere skal forholde seg til de **offentlige**. **Frontend-hjelperne** finnes for nettsiden og er ikke ment som offentlig API. **Admin** er fysisk skilt fra det offentlige API-et.
+API-et har tre kategorier endepunkter: offentlige endepunkter, frontend-hjelpere og admin-endepunkter.
 
 ```mermaid
 flowchart TB
@@ -54,7 +54,7 @@ flowchart TB
         p1[GET /api/health]
         p2[GET /api/docs]
         p3[POST /api/calculations]
-        p4[GET /api/nveid/*]
+        p4[GET /api/NVEID/{id}]
         p5[GET /api/pvgis-tmy]
     end
 
@@ -85,15 +85,12 @@ flowchart TB
 | `GET /api/docs` | OpenAPI-spek. `?ui` gir den rene Swagger UI-en som bygges inn i `/api`. |
 | `POST /api/calculations` | Hovedberegning: gitt inntak + utstyr, returnerer energibudsjett, batteristørrelse, kostnad over levetid. |
 | `GET /api/calculations` | Returnerer input-skjema. |
-| `GET /api/nveid` | Liste over tilgjengelige stasjoner (meny, ikke hele datasettet). |
-| `GET /api/nveid/{id}` | Meny for én stasjon. |
-| `GET /api/nveid/{id}/minimum-flow` | Minstevannføring for stasjonen. |
-| `GET /api/nveid/{id}/concession` | Konsesjonslenke for stasjonen. |
+| `GET /api/NVEID/{id}` | Offentlig minstevannføring for én stasjon. |
 | `GET /api/pvgis-tmy` | Proxy for PVGIS soldata. |
 
 Krever `Authorization: Bearer <api-key>` på alle unntatt `/api/health`, `/api` og `/api/docs`.
 
-### Frontend-hjelpere (kallbare fra nettsiden, ikke offentlig API)
+### Frontend-hjelpere
 
 | Endepunkt | Hva det gjør |
 |-----------|--------------|
@@ -101,7 +98,7 @@ Krever `Authorization: Bearer <api-key>` på alle unntatt `/api/health`, `/api` 
 | `POST /api/terrain-profile` | Terrengprofil for radiolink-beregning. |
 | `POST /api/report` | Lager AI-rapport. Krever access-code fra nettsiden. |
 
-Disse står ikke i Swagger-spekken og er ikke ment for direkte bruk av tredjepart.
+Disse står ikke i Swagger-spekken.
 
 ### Admin
 
@@ -111,7 +108,7 @@ Disse står ikke i Swagger-spekken og er ikke ment for direkte bruk av tredjepar
 | `POST /admin/keys` | Lager ny nøkkel. |
 | `DELETE /admin/keys/{id}` | Sletter nøkkel. |
 
-Krever `x-admin-token: <ADMIN_TOKEN>`. WAF blokkerer `/api/keys*` slik at admin aldri ved et uhell havner på det offentlige API-et.
+Krever `x-admin-token: <ADMIN_TOKEN>`. WAF blokkerer `/api/keys*`.
 
 ## Hvordan beregningene henger sammen
 
@@ -130,7 +127,7 @@ Nettsiden                  POST /api/report (access code)
        service binding     REPORT_AI_WORKER (intern bearer-token)
   -> hydroguide-ai         henter retrieval-grunnlag fra REPORT_RULES + AI_REFERENCE_BUCKET,
                            bygger prompt, kaller modell via AI Gateway,
-                           returnerer { text }
+                           returnerer rapporttekst med metadata
   -> Nettsiden             rendrer HTML-rapport med AI-tekst + diagrammer
 ```
 
@@ -151,18 +148,13 @@ KV inneholder kun hash-en, aldri klartekst-nøkkelen. Hvis KV lekkes, kan ingen 
 
 Felles auth-logikk ligger i `backend/api/_apiUtils.js` og brukes av både `hydroguide-api` og `hydroguide-admin`.
 
-## NVEID-mappen returnerer menyer, ikke datadumper
+## NVEID-rute
 
-`/api/nveid`-rutene følger en bevisst regel: rot- og mellomnivå-rutene returnerer info om hva som finnes, ikke selve dataene.
+`/api/NVEID/{id}` returnerer periodedata direkte for én stasjon.
 
 | Rute | Returnerer |
 |------|-------------|
-| `/api/nveid` | "Bruk `/api/nveid/{id}` for å se en stasjon." |
-| `/api/nveid/{id}` | "For denne stasjonen: `minimum-flow` eller `concession`." |
-| `/api/nveid/{id}/minimum-flow` | Selve minstevannføring-tallene. |
-| `/api/nveid/{id}/concession` | Konsesjonslenke. |
-
-Det betyr at vi aldri dumper hele `minimumflow.json`-filen fra rot-rutene. En tredjepart må vite hvilken stasjon de vil ha og hvilken seksjon — ikke "gi meg alt".
+| `/api/NVEID/{id}` | Offentlige periodedata for én stasjon. |
 
 ## Vedlikeholdsskript
 
@@ -182,7 +174,7 @@ Skript som kjøres av maintainer ved behov, ikke automatisk i CI:
 | Test | Hva den dekker |
 |------|----------------|
 | `backend/api/_apiUtils.test.mjs` | Auth + rate limit |
-| `backend/api/nveid.test.mjs` | NVEID-mappen og oppslag |
+| `backend/api/nveid.test.mjs` | NVEID-oppslag |
 | `backend/api/pvgis-tmy.test.mjs` | PVGIS proxy-feilhåndtering |
 | `backend/cloudflare/wrangler-routes.test.mjs` | Rute-mønster i Wrangler-config matcher kontrakt |
 

@@ -19,7 +19,7 @@ Kjor `python run.py <kommando> --help` for full oversikt over flagg og fleire ek
 - `opendataloader-pdf[hybrid]` (inkluderer Docling og EasyOCR)
 - `opendataloader-pdf-hybrid` pa `PATH` for hybrid OCR-server (valfritt)
 - LM Studio Local Server pa `http://127.0.0.1:1234`
-- LM Studio-modell `gemma-4-E4B-it-Q4_K_M.gguf`, eksponert som API-id `gemma-4-e4b-it`
+- LM Studio-modell `gemma-4-E2B-it-Q4_K_M.gguf`, eksponert som API-id `gemma-4-e2b-it`
 - NVIDIA GPU er valfritt, men kan gjere OCR/LLM raskare
 
 ## Installasjon
@@ -32,15 +32,15 @@ python -m pip install -e .\tools\minstevann
 
 Dette installerer `opendataloader-pdf[hybrid]`, som inkluderer Docling og EasyOCR for OCR av skanna PDF-ar. `JAVA_HOME` ma peike pa Java 21.
 
-Start LM Studio, last modellen `gemma-4-E4B-it-Q4_K_M.gguf` med context length `8192`, og start Local Server. Verifiser at serveren svarer:
+Start LM Studio Local Server. Pipelinen proever aa laste modellen med context length `32768` via LM Studio sitt native model-load API foer foerste kall. Verifiser at serveren svarer:
 
 ```bash
 GET http://127.0.0.1:1234/v1/models
 ```
 
-Default modell-id er `gemma-4-e4b-it`. Host kan overstyrast med `--host` eller `HG_LM_STUDIO_HOST`.
+Default modell-id er `gemma-4-e2b-it`. Host kan overstyrast med `--host` eller `HG_LM_STUDIO_HOST`. Dersom LM Studio sin OpenAI-modell-id er eit alias, kan native load-modell overstyrast med `HG_LM_STUDIO_LOAD_MODEL`.
 
-Inference-parametrane er `temperature=0.1`, `top_p=0.95`, `top_k=64`, `max_tokens=2000`, og `stream=false`. Context length er ein LM Studio load-parameter og skal vere `8192`.
+Inference-parametrane er `temperature=0.1`, `top_p=0.95`, `top_k=64`, `min_p=0.0`, `repeat_penalty=1.05`, `max_tokens=4096`, og `stream=false`. Dei kan overstyrast med `HG_LM_STUDIO_*`-miljoevariablar.
 
 ## Korleis Pipelinen Fungerer
 

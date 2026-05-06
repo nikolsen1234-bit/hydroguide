@@ -6,13 +6,13 @@ Steg-for-steg-guide for å sette opp og kjøre HydroGuide lokalt. For deploy til
 
 ## Krav
 
-| Verktøy | Versjon | Hvorfor |
+| Verktøy | Versjon | Bruk |
 |---------|---------|--------|
 | Node.js | 22 LTS | Frontend, Workers, scripts |
 | npm | 10+ | Pakker |
 | Python | 3.13+ | `tools/minstevann/` |
 | Java | 21 JDK | OpenDataLoader (NVE-PDF-pipeline) |
-| Ollama | nyeste | Lokal LLM for pipeline |
+| LM Studio | nyeste | Lokal LLM-server for pipeline |
 | git-crypt | nyeste | Dekryptere `.secrets` og `cloudflare.private.json` (valgfritt) |
 | Git | nyeste | Versjonskontroll |
 
@@ -118,7 +118,7 @@ Repoet håndhever samme prosedyre for alle bidragsytere. Sjekkene kjører både 
 | Commit-melding >= 10 tegn og ikke "fix"/"wip"/etc. | lokal commit-msg + CI |
 | Ingen force-push til `main` | lokal pre-push |
 
-Unntak for `console.log`: legg til `// allow-console` på samme linje hvis loggen er bevisst. Test-filer, `backend/scripts/`, `frontend/scripts/`, `private/scripts/` og `tools/` er unntatt automatisk.
+Unntak for `console.log`: legg til `// allow-console` på samme linje når loggen skal beholdes. Test-filer, `backend/scripts/`, `frontend/scripts/`, `private/scripts/` og `tools/` er unntatt automatisk.
 
 ## Første ekte commit
 
@@ -170,7 +170,7 @@ Eksempel:
 Bridge-en dekker det meste av handler-logikken, men noen ting krever ekte Cloudflare-bindinger:
 
 - Rapport-AI (`/api/report`) — krever AI Gateway, AI Search, R2-referanser.
-- NVEID-data (`/api/nveid/*`) — krever R2-bucket med `api/minimumflow.json`.
+- NVEID-data (`/api/NVEID/{id}`) — krever R2-bucket med `api/minimumflow.json`.
 
 For å teste mot de ekte tjenestene:
 
@@ -217,7 +217,7 @@ Resultatet skrives direkte til `backend/data/minimumflow.json` undervegs.
 
 Køyr `python tools/minstevann/run.py <kommando> --help` for fullstendig oversikt over flagg.
 
-Detaljer (Ollama-modell, OCR-oppsett, validering): [tools/minstevann/README.md](../tools/minstevann/README.md).
+Detaljer (LM Studio-modell, OCR-oppsett, validering): [tools/minstevann/README.md](../tools/minstevann/README.md).
 
 Etter eksport må JSON lastes opp til R2:
 
@@ -247,13 +247,14 @@ npx wrangler r2 object put hydroguide-minimum-flow/api/minimumflow.json \
 | `pre-commit blocked: 'node' is not on PATH` | Node mangler | Installer Node 22 LTS |
 | `pre-commit blocked: required check missing: backend/scripts/check-*.mjs` | Repo er korrupt | `git checkout -- backend/scripts/` |
 | `commit-msg blocked: first line is in low-effort blocklist` | Commit-melding er for slurvete | Skriv en skikkelig melding |
-| `check-no-console blocked` | `console.log` igjen i staget kode | Fjern, eller legg til `// allow-console` om bevisst |
+| `check-no-console blocked` | `console.log` igjen i staget kode | Fjern, eller legg til `// allow-console` når loggen skal beholdes |
 | `check-hardcoded-ids blocked` | Ekte Cloudflare-ID i tracked fil | Bytt til `REPLACE_WITH_*` placeholder |
 | `Bridge route not found` i Vite | `vite.config.ts` mangler mapping for en ny rute | Legg til mappingen i `functionsDevBridge`-pluginen |
 | `git-crypt: file not found` ved lesing av `.secrets` | git-crypt unlock mangler | Kjør `git-crypt unlock` med riktig key |
 | `wrangler deploy` feiler med "missing token" | `CLOUDFLARE_API_TOKEN` mangler i miljø | Last inn fra dekryptert `.secrets` eller bruk Cloudflare Workers Builds (se [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md)) |
 | `JAVA_HOME` ikke satt for OpenDataLoader | Java 21 ikke funnet | Sett `JAVA_HOME` til Java 21-installasjon |
-| `Ollama: model not found` i pipeline | Modellen er ikke pulla | `ollama pull gemma4:e4b-it-q4_K_M` |
+| `Cannot reach LM Studio` i pipeline | LM Studio Local Server kjører ikke | Start LM Studio Local Server på `http://127.0.0.1:1234` |
+| `Could not set LM Studio context_length` i pipeline | Modellen kan ikke lastes med ønsket context eller modell-aliaset må mappes | Sjekk modell-id i LM Studio eller sett `HG_LM_STUDIO_LOAD_MODEL` |
 | Pre-commit-blokk på "secrets staged" | Reell secret er staget eller falsk-positiv | Fjern secret, eller dokumenter unntak i hook-konfig |
 | Worker-hygiene blokkerer commit av Worker-endring | Branch ligger bak `origin/main` | `git pull --rebase origin main`, så commit på nytt |
 

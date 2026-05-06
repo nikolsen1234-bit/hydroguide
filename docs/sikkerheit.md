@@ -8,7 +8,7 @@ Dette dokumentet svarer på "hva er trusselbildet, og hva har vi gjort for å mo
 
 Realistiske trusler vi har designet mot:
 
-| # | Trussel | Hvorfor relevant |
+| # | Trussel | Relevans |
 |---|---------|------------------|
 | T1 | Stjålne eller lekkede API-nøkler | Offentlig `/api/calculations` bruker Bearer-nøkler |
 | T2 | Lekket Cloudflare deploy-token | Full deploy-tilgang gir full kompromittering |
@@ -96,11 +96,11 @@ Motvirker: T1, T4, T5, T7 (delvis — se Lag 4).
 
 - API-nøkler: bare hash-form i KV, aldri klartekst.
 - R2-isolasjon: `hydroguide-minimum-flow` (offentlig lesbar via API) er skilt fra `hydroguide-ai-reference` (intern retrieval). Kompromittering av én bucket gir ikke tilgang til den andre.
-- `REPORT_RULES` KV inneholder faste regler og utdrag som rapport-AI alltid skal støtte seg på. Dette reduserer rom for at modellen skal "finne på" regler.
+- `REPORT_RULES` KV inneholder faste regler og utdrag som legges inn i rapport-AI-prompten.
 - Tracked Wrangler-config har placeholders, ikke ekte IDer eller namespace-IDer.
 - Sensitive lokale filer (`.secrets`, `backend/config/cloudflare.private.json`) er kryptert med git-crypt.
 
-Motvirker: T1 (lekkasje gir ikke brukbare nøkler), T2 (placeholders i stedet for token), T7 (faste regler vs. modell-fantasi), T8.
+Motvirker: T1 (lekkasje gir ikke brukbare nøkler), T2 (placeholders i stedet for token), T7 (faste regler i prompt), T8.
 
 ### Lag 5 — drift
 
@@ -131,12 +131,12 @@ Motvirker: T2, T8.
 
 ## Kjente begrensninger
 
-Vi har valgt å være ærlige om hva som ikke er på plass:
+Kjente begrensninger:
 
 - **Ingen audit-log per request på API-nøkkel-bruk.** Cloudflare-logg gir oss tidsstempel og status, men vi har ikke strukturert per-nøkkel-statistikk i KV.
 - **Ingen automatisk secrets-rotasjon.** Token-rotasjon skjer manuelt ved mistanke.
 - **Cloudflare Free-rate-limit er per datasenter, ikke globalt.** Distribuerte angrep fra mange Cloudflare-PoP-er kan komme over grensen lokalt uten å trigge global blokk.
-- **Pipeline-LLM blir ikke validert mot skjema automatisk.** Output fra `tools/minstevann/` blir manuelt sjekket før upload til R2.
+- **Pipeline-LLM bruker JSON schema i LM Studio-kallet.** Output fra `tools/minstevann/` bør fortsatt manuelt spot-sjekkes ved upload til R2.
 - **Rapport-AI har ikke rate limit per API-nøkkel ennå.** Cloudflare Worker-rate-limit dekker per IP. Per-nøkkel rate limit står på listen.
 - **Prompt-injection-mottiltak er konservativ tekstgrense, ikke reell deteksjon.** `NARRATIVE_MAX_WORDS: 250` reduserer skade om modellen blir ledet på avveie, men oppdager det ikke.
 - **Ingen sikkerhetsbevis utover designet.** Vi har ikke kjørt formell pentest.

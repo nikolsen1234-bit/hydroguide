@@ -53,7 +53,7 @@ HydroGuide består av en statisk frontend, fire Cloudflare Workers og fire lagri
 | `hydroguide-ai` | Lager rapporttekst med en LLM. Har ingen offentlig URL — kun nåbar via service binding. |
 | `hydroguide-admin` | Håndterer API-nøkler på `/admin/*`. Skilt ut for å holde admin-overflaten unna det offentlige API-et. |
 | `API_KEYS` (KV) | Hash av API-nøkler (HMAC), aktiv-status, rate-limit-tellere. |
-| `REPORT_RULES` (KV) | Faste regler og NVE-utdrag som rapport-AI-en alltid skal støtte seg på. |
+| `REPORT_RULES` (KV) | Faste regler og NVE-utdrag for rapport-AI. |
 | `hydroguide-minimum-flow` (R2) | `api/minimumflow.json` med minstevannføring per NVEID. |
 | `hydroguide-ai-reference` (R2) | NVE-referanser og embeddings for AI-Search retrieval. |
 
@@ -67,7 +67,7 @@ flowchart LR
     ai --> r2[(AI_REFERENCE_BUCKET)]
 ```
 
-Rapport-flyten går gjennom to Workers. `hydroguide-report` validerer access code fra nettsiden og rate-limiter. Den kaller `hydroguide-ai` via en intern service binding — det betyr at AI-Workeren aldri trenger en offentlig URL. AI-Workeren henter retrieval-grunnlag fra KV (faste regler) og R2 (NVE-referanser via AI Search), bygger prompt, og kaller modell via Cloudflare AI Gateway.
+Rapport-flyten går gjennom to Workers. `hydroguide-report` validerer access code fra nettsiden og rate-limiter. `hydroguide-report` kaller `hydroguide-ai` via service binding. `hydroguide-ai` henter retrieval-grunnlag fra KV (faste regler) og R2 (NVE-referanser via AI Search), bygger prompt og kaller modell via Cloudflare AI Gateway.
 
 Detaljer om prompt, retrieval og modell: [ai-rapport.md](ai-rapport.md).
 
@@ -82,7 +82,7 @@ flowchart LR
     admin --> kv[(API_KEYS)]
 ```
 
-Admin er fysisk skilt fra det offentlige API-et — det er en separat Worker (`hydroguide-admin`) på `/admin/*`. Cloudflare WAF blokkerer `/api/keys*` med 403 på sone-nivå, slik at requesten aldri når noen Worker. Det er forsvar i lag: kompromittering av offentlig API gir ikke admin-tilgang. Eventuell feilkonfigurasjon på admin-Worker fanges av WAF og slipper ikke ut.
+Admin-Worker kjører separat på `/admin/*`. Cloudflare WAF blokkerer `/api/keys*` med 403 på sone-nivå. Offentlig API, rapport-AI og admin ligger i hver sin Worker.
 
 For trusselbilde og auth-design: [sikkerheit.md](sikkerheit.md).
 
@@ -98,15 +98,15 @@ For trusselbilde og auth-design: [sikkerheit.md](sikkerheit.md).
 
 ## Tekniske valg
 
-| Valg | Vi gjorde | Hvorfor |
+| Valg | Løsning | Begrunnelse |
 |------|-----------|---------|
 | Flere Workers vs én monolitt | Fire Workers (api, report, ai, admin) | Skilte trust-grenser. Admin-kompromittering når ikke rapport-AI. AI-Worker har ingen offentlig URL. |
-| AI-tilgang fra nettside | Service binding `REPORT_AI_WORKER`, ikke direkte HTTP | AI-Worker trenger aldri offentlig route. Færre angrepsflater. |
-| Lagring av minstevannføring | R2-objekt med statisk JSON | ~600 NVEID-er, oppdateres sjelden, oppslag på primærnøkkel — D1 er overkill. |
+| AI-tilgang fra nettside | Service binding `REPORT_AI_WORKER`, ikke direkte HTTP | AI-Worker har ingen offentlig route. |
+| Lagring av minstevannføring | R2-objekt med statisk JSON | ~600 NVEID-er, sjeldne oppdateringer og oppslag på primærnøkkel. |
 | Verifisering av API-nøkler | HMAC-hash i KV | Lekket KV-dump gir ikke brukbare nøkler. |
 | AI-pipeline for NVE-PDF | Lokalt, ikke Worker | OCR + LLM-batch tar minutter — Workers har 30s CPU-grense. |
 | Frontend-routing | Statisk SPA med React Router | Statisk frontend-hosting, ingen SSR-behov. |
-| Public API-format | REST + OpenAPI vist på `/api`, spek på `/api/docs` | Standard, lett å dokumentere, lett å teste i nettleser. |
+| Public API-format | REST + OpenAPI vist på `/api`, spek på `/api/docs` | Standard API-format med nettleserbasert dokumentasjon. |
 | Cache-policy | Bypass for `/api/*` og `/admin/*` | Auth-state og rate-limit må være ferskt. Statisk frontend caches normalt. |
 
 ## Eksterne avhengigheter
@@ -129,5 +129,5 @@ For trusselbilde og auth-design: [sikkerheit.md](sikkerheit.md).
 | Trusselbilde og forsvar i lag | [sikkerheit.md](sikkerheit.md) |
 | Frontend-struktur og brukerflyt | [frontend.md](frontend.md) |
 | Rapport-AI runtime og retrieval | [ai-rapport.md](ai-rapport.md) |
-| AI-strategi (hallusinering, kostnad, prompt) | [ai-strategi.md](ai-strategi.md) |
+| AI-strategi (modellrolle, kostnad, prompt) | [ai-strategi.md](ai-strategi.md) |
 | Lokal utvikling | [utvikling.md](utvikling.md) |

@@ -4,7 +4,7 @@ Oppdatert: 2026-05-03
 
 ## Kort forklart
 
-Cloudflare-løsningen er delt i statisk frontend, fire Workers, to KV-namespaces og tre R2-buckets. Nettsiden kaller bare rutene den trenger, mens rapport-AI, API-nøkler og admin-logikk ligger bak egne grenser.
+Cloudflare-løsningen er delt i statisk frontend, fire Workers, to KV-namespaces og tre R2-buckets.
 
 ```mermaid
 flowchart TB
@@ -40,7 +40,7 @@ Cloudflare WAF avviser API-prefikser utenfor kontrakten, kildeprober og sensitiv
 | `/api` | Statisk frontend | API-siden inne i HydroGuide |
 | `/api/docs` | `hydroguide-api` | OpenAPI og Swagger UI for innebygging |
 | `/api/calculations` | `hydroguide-api` | Offentlig beregnings-API |
-| `/api/nveid` | `hydroguide-api` | NVEID-meny og minstevannføring |
+| `/api/NVEID/{id}` | `hydroguide-api` | Offentlig minstevannføring for én stasjon |
 | `/api/pvgis-tmy` | `hydroguide-api` | PVGIS TMY-proxy |
 | `/api/place-suggestions` | `hydroguide-api` | Stedssøk for appen |
 | `/api/terrain-profile` | `hydroguide-api` | Terrengprofil for appen |
@@ -48,7 +48,7 @@ Cloudflare WAF avviser API-prefikser utenfor kontrakten, kildeprober og sensitiv
 
 WAF avviser `/api/keys*`. Admin for API-nøkler ligger på `/admin/keys`.
 
-`/api/place-suggestions`, `/api/terrain-profile` og `/api/report` er frontend-hjelpere. De er kallbare fra nettsiden og ligger utenfor hoved-API-et for eksterne brukere.
+`/api/place-suggestions`, `/api/terrain-profile` og `/api/report` er frontend-hjelpere.
 
 ## Workers
 
@@ -90,7 +90,7 @@ flowchart LR
 
 | Type | Navn | Bruk |
 |------|------|------|
-| R2 | `hydroguide-minimum-flow` | `api/minimumflow.json` for `/api/nveid` |
+| R2 | `hydroguide-minimum-flow` | `api/minimumflow.json` for `/api/NVEID/{id}` |
 | R2 | `hydroguide-ai-reference` | NVE-referanser og embeddings for rapport-AI |
 | R2 | `hydroguide-assets` | Offentlige filer under `files.hydroguide.no` |
 | KV | `API_KEYS` | API-nøkler, status og rate limit |
@@ -111,7 +111,7 @@ Disse ligger som Cloudflare secrets, Cloudflare Secrets Store eller Cloudflare W
 
 ## Deploy-konfig
 
-Kildekonfig ligger i `backend/cloudflare/*.wrangler.jsonc`. Disse filene har bevisst placeholder-IDer.
+Kildekonfig ligger i `backend/cloudflare/*.wrangler.jsonc`. Disse filene bruker placeholder-IDer.
 
 Genererte deploy-konfiger ligger som `backend/cloudflare/*.generated.wrangler.jsonc` og er gitignored. Scriptet lager dem:
 

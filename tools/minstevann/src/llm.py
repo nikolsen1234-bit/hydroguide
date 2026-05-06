@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import re
 import socket
 from pathlib import Path
@@ -10,7 +11,19 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from src.models import DEFAULT_LM_STUDIO_TIMEOUT, LLM_CACHE_DIR, CHUNK_THRESHOLD
+from src.models import (
+    DEFAULT_LM_STUDIO_CONTEXT_LENGTH,
+    DEFAULT_LM_STUDIO_LOAD_MODEL,
+    DEFAULT_LM_STUDIO_MAX_TOKENS,
+    DEFAULT_LM_STUDIO_MIN_P,
+    DEFAULT_LM_STUDIO_REPEAT_PENALTY,
+    DEFAULT_LM_STUDIO_TEMPERATURE,
+    DEFAULT_LM_STUDIO_TIMEOUT,
+    DEFAULT_LM_STUDIO_TOP_K,
+    DEFAULT_LM_STUDIO_TOP_P,
+    LLM_CACHE_DIR,
+    CHUNK_THRESHOLD,
+)
 from src.snippet import _normalize_inntak_navn
 
 logger = logging.getLogger(__name__)
@@ -20,9 +33,113 @@ class LLMError(Exception):
     pass
 
 
+_LOADED_MODELS: set[tuple[str, str, int]] = set()
+
+
+def _lm_studio_url(host: str, path: str) -> str:
+    base = host.rstrip("/")
+    if base.endswith("/v1"):
+        base = base[:-3]
+    return f"{base}{path}"
+
+
+def _lm_studio_headers() -> dict[str, str]:
+    headers = {"Content-Type": "application/json"}
+    token = os.environ.get("HG_LM_STUDIO_API_TOKEN") or os.environ.get("LM_API_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+def _resolve_lm_studio_model(model: str, host: str, timeout: int) -> str:
+    if DEFAULT_LM_STUDIO_LOAD_MODEL:
+        return DEFAULT_LM_STUDIO_LOAD_MODEL
+
+    try:
+        req = Request(_lm_studio_url(host, "/api/v1/models"), headers=_lm_studio_headers())
+        with urlopen(req, timeout=timeout) as r:
+            raw = json.loads(r.read().decode("utf-8", errors="replace"))
+    except Exception as e:
+        logger.debug("Could not inspect LM Studio native model list: %s", e)
+        return model
+
+    models = raw.get("models", []) if isinstance(raw, dict) else []
+    keys = [item.get("key") for item in models if isinstance(item, dict) and item.get("type") == "llm"]
+    if model in keys:
+        return model
+
+    lowered = model.lower()
+    candidates = []
+    if lowered.endswith("-it"):
+        candidates.append(lowered[:-3])
+    candidates.append(lowered)
+
+    for candidate in candidates:
+        for item in models:
+            if not isinstance(item, dict) or item.get("type") != "llm":
+                continue
+            key = str(item.get("key") or "")
+            display_name = str(item.get("display_name") or "")
+            selected_variant = str(item.get("selected_variant") or "")
+            haystack = [key.lower(), display_name.lower(), selected_variant.lower()]
+            if any(value.endswith(candidate) or candidate in value for value in haystack):
+                return key
+
+    return model
+
+
+def ensure_lm_studio_model_loaded(
+    *,
+    model: str,
+    host: str,
+    context_length: int = DEFAULT_LM_STUDIO_CONTEXT_LENGTH,
+    timeout: int = DEFAULT_LM_STUDIO_TIMEOUT,
+) -> str:
+    resolved_model = _resolve_lm_studio_model(model, host, timeout)
+    cache_key = (host.rstrip("/"), resolved_model, context_length)
+    if cache_key in _LOADED_MODELS:
+        return resolved_model
+
+    payload = {
+        "model": resolved_model,
+        "context_length": context_length,
+        "flash_attention": True,
+        "offload_kv_cache_to_gpu": True,
+        "echo_load_config": True,
+    }
+    data = json.dumps(payload).encode("utf-8")
+    req = Request(_lm_studio_url(host, "/api/v1/models/load"), data=data, headers=_lm_studio_headers())
+    try:
+        with urlopen(req, timeout=timeout) as r:
+            body = r.read().decode("utf-8", errors="replace")
+        raw = json.loads(body)
+    except HTTPError as e:
+        detail = ""
+        try:
+            detail = e.read().decode("utf-8", errors="replace")[:500]
+        except Exception as read_exc:
+            logger.debug("Could not read LM Studio load error body: %s", read_exc)
+        raise LLMError(f"Could not set LM Studio context_length={context_length}: HTTP {e.code} {detail or e.reason}") from e
+    except URLError as e:
+        raise LLMError(f"Cannot reach LM Studio model-load API at {host}: {e.reason}") from e
+    except socket.timeout as e:
+        raise LLMError(f"LM Studio model-load timeout after {timeout}s") from e
+    except json.JSONDecodeError as e:
+        raise LLMError(f"LM Studio model-load returned non-JSON envelope: {e}") from e
+
+    applied_context = raw.get("load_config", {}).get("context_length")
+    if applied_context is not None and int(applied_context) < context_length:
+        raise LLMError(
+            f"LM Studio loaded context_length={applied_context}, expected at least {context_length}."
+        )
+    _LOADED_MODELS.add(cache_key)
+    return resolved_model
+
+
+
 MINSTEVANN_PROMPT = """Du er en ekstraksjonsmotor for norske vannkraftkonsesjoner. Les dokumentet nedenfor og finn MINSTEVANNFØRING-kravet — altså det minimum-volumet vann konsesjonshaveren er pålagt å slippe forbi hvert inntak.
 
-Returner ETT JSON-objekt:
+Bruk denne datastrukturen:
 
 {
   "funnet": true/false,
@@ -96,7 +213,7 @@ Analyser denne teksten for kraftverket "__NAVN__":
 __SNIPPET__
 ---
 
-Returner kun JSON-objektet, ingen forklaring."""
+"""
 
 
 def llm_cache_path(nve_id: int, model: str, snippet: str) -> Path:
@@ -113,20 +230,23 @@ def call_lm_studio(
     timeout: int = DEFAULT_LM_STUDIO_TIMEOUT,
 ) -> dict:
     print(f"    [lmstudio] prompt~={len(prompt)//3}tok", flush=True)
+    model = ensure_lm_studio_model_loaded(model=model, host=host, timeout=timeout)
     payload = {
         "model": model,
         "messages": [
             {
                 "role": "system",
-                "content": "Du returnerer kun gyldig JSON. Ingen markdown, ingen forklaring.",
+                "content": "Du er en presis ekstraksjonsmotor for norske vannkraftkonsesjoner.",
             },
             {"role": "user", "content": prompt},
         ],
         "stream": False,
-        "temperature": 0.1,
-        "top_p": 0.95,
-        "top_k": 64,
-        "max_tokens": 2000,
+        "temperature": DEFAULT_LM_STUDIO_TEMPERATURE,
+        "top_p": DEFAULT_LM_STUDIO_TOP_P,
+        "top_k": DEFAULT_LM_STUDIO_TOP_K,
+        "min_p": DEFAULT_LM_STUDIO_MIN_P,
+        "repeat_penalty": DEFAULT_LM_STUDIO_REPEAT_PENALTY,
+        "max_tokens": DEFAULT_LM_STUDIO_MAX_TOKENS,
         "response_format": {
             "type": "json_schema",
             "json_schema": {
@@ -161,7 +281,7 @@ def call_lm_studio(
     if urlparse(url).scheme not in ("http", "https"):
         raise ValueError(f"Refusing non-http(s) URL: {url}")
     data = json.dumps(payload).encode("utf-8")
-    req = Request(url, data=data, headers={"Content-Type": "application/json"})
+    req = Request(url, data=data, headers=_lm_studio_headers())
     try:
         with urlopen(req, timeout=timeout) as r:
             body = r.read().decode("utf-8", errors="replace")

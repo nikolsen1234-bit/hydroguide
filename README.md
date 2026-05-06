@@ -67,8 +67,8 @@ Detaljert systemkontekst og container-diagram: [docs/arkitektur.md](docs/arkitek
 
 For sensor og lesere som vil se "hvor jobben ligger":
 
-- **Fire Workers med skilte trust-grenser.** AI-Worker har ingen offentlig URL — den blir bare kalt via service binding fra rapport-Worker. Admin er fysisk skilt fra offentlig API. Se [docs/arkitektur.md](docs/arkitektur.md) og [docs/sikkerheit.md](docs/sikkerheit.md).
-- **Lokal NVE-pipeline med OCR og LLM.** PDF-konsesjonsdokument blir strukturert til JSON med OpenDataLoader, EasyOCR og Ollama. Kjører lokalt fordi Workers har 30s CPU-grense. Se [tools/minstevann/README.md](tools/minstevann/README.md).
+- **Fire Workers med skilte trust-grenser.** AI-Worker har ingen offentlig URL og kalles via service binding fra rapport-Worker. Admin-Worker ligger på `/admin/*`, mens WAF blokkerer `/api/keys*`. Se [docs/arkitektur.md](docs/arkitektur.md) og [docs/sikkerheit.md](docs/sikkerheit.md).
+- **Lokal NVE-pipeline med OCR og LLM.** PDF-konsesjonsdokument blir strukturert til JSON med OpenDataLoader, EasyOCR og LM Studio. Kjører lokalt fordi Workers har 30s CPU-grense. Se [tools/minstevann/README.md](tools/minstevann/README.md).
 - **Faktisk timesvis solanalyse** med horisontprofil fra Kartverket (360 retninger × 40 avstander), batterisimulering time for time gjennom året, og kostnadssammenligning over levetid mellom reservekildene. Beregningskjernen er delt mellom frontend og backend så API og UI ikke kan komme ut av sync.
 - **API-nøkler er HMAC-hash-et i KV.** Lekket KV-dump gir ikke brukbare nøkler. Se [docs/sikkerheit.md](docs/sikkerheit.md).
 - **WAF, rate limit, CSP, DNSSEC, TLS-strict, cache-bypass for `/api/*`.** Lagdelt forsvar gjennom Cloudflare-sonen. Se [docs/sikkerheit.md](docs/sikkerheit.md).
@@ -118,7 +118,7 @@ python tools/minstevann/run.py batch --n 500
 
 Resultatet skrives til `backend/data/minimumflow.json`. Køyr `python tools/minstevann/run.py <kommando> --help` for alle flagg.
 
-Detaljer (Ollama, OCR-oppsett, validering): [tools/minstevann/README.md](tools/minstevann/README.md).
+Detaljer (LM Studio, OCR-oppsett, validering): [tools/minstevann/README.md](tools/minstevann/README.md).
 
 ## Dokumentasjon
 

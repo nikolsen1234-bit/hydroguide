@@ -2,9 +2,9 @@
 
 Oppdatert: 2026-05-03
 
-Dette dokumentet svarer på "hvorfor bruker HydroGuide AI i det hele tatt, og hvordan hindrer vi at det går galt". Konkret runtime-config finnes i [ai-rapport.md](ai-rapport.md).
+Dette dokumentet beskriver hvor HydroGuide bruker AI, hvilken rolle modellen har, og hvilke grenser som ligger rundt modellkallene. Konkret runtime-config finnes i [ai-rapport.md](ai-rapport.md).
 
-## Hvorfor LLM i det hele tatt
+## LLM-bruk
 
 LLM blir brukt to steder:
 
@@ -47,30 +47,30 @@ flowchart LR
 
 LLM lager tekst rundt resultater; LLM produserer ikke resultater. Avgjørelser om slipp, energibalanse og NVE-krav er deterministiske — de samme inputene gir alltid samme output. LLM oversetter resultatene til lesbar prosa, ingenting mer.
 
-## Hvordan vi hindrer hallusinering
+## Modellgrenser
 
 | Mottiltak | Hvordan |
 |-----------|---------|
-| Faste utdrag i `REPORT_RULES` | Faste, redigerte tekstbiter som modellen *skal* støtte seg på framfor å improvisere |
-| `NARRATIVE_MODE: supplement` | Eksplisitt at modellen skal supplere, ikke erstatte |
-| `NARRATIVE_MAX_WORDS: 250` | Kort tekst gir mindre rom for å vandre vekk |
+| Faste utdrag i `REPORT_RULES` | Faste, redigerte tekstbiter som legges inn i prompten |
+| `NARRATIVE_MODE: supplement` | Modellen skriver supplerende tekst rundt deterministiske resultater |
+| `NARRATIVE_MAX_WORDS: 250` | Øvre ordgrense for rapportteksten |
 | `NARRATIVE_MAX_SENTENCES: 10` | Hard struktur-grense |
 | Retrieval med threshold | `AI_SEARCH_MATCH_THRESHOLD: 0.35` — kutter svake treff |
-| `AI_SEARCH_ENABLE_QUERY_REWRITE: false` | Vi vil ikke at modellen skal omformulere brukerspørsmålet før retrieval |
+| `AI_SEARCH_ENABLE_QUERY_REWRITE: false` | Brukerspørsmålet sendes til retrieval uten query rewrite |
 | Reranking på | `AI_SEARCH_ENABLE_RERANKING: true` — best-match-treff først |
-| Modell-fallback | `gpt-5.4-mini` om primærmodell feiler — vi får alltid et svar, ikke en fantasi-tekst |
+| Modell-fallback | `gpt-5.4-mini` brukes når primærmodell feiler |
 
-## Hvordan vi hindrer prompt-injection
+## Prompt-injection
 
 NVE-tekst går inn i prompten. Bruker-input går inn i prompten. Begge er angrepsvektorer.
 
 | Mottiltak | Hvordan |
 |-----------|---------|
-| `ALLOWED_ORIGINS` på AI-Worker | Bare `hydroguide.no` og lokal dev kan i det hele tatt kalle Worker-en |
+| `ALLOWED_ORIGINS` på AI-Worker | Tillatte origins er `hydroguide.no`, `www.hydroguide.no` og lokal dev |
 | `REPORT_ACCESS_CODE_HASH` | Validerer at kallet kommer fra nettsiden, ikke direkte |
 | Service binding | AI-Worker har ingen offentlig URL — direkte kall er ikke mulig |
 | Klare seksjonsmarkører i prompten | NVE-tekst og bruker-input ligger i tydelige blokker, ikke blandet inn i instruksjonen |
-| Kort output-grense | Selv om modellen blir ledet på avveie, kan den ikke skrive 5000 ord med skadelig tekst |
+| Kort output-grense | Output er begrenset av `NARRATIVE_MAX_WORDS` og `NARRATIVE_MAX_SENTENCES` |
 
 Vi har **ikke** en automatisk prompt-injection-detektor. Det er en kjent begrensning — se [sikkerheit.md](sikkerheit.md).
 
@@ -90,45 +90,30 @@ Vi måler i Cloudflare AI Gateway-dashbordet:
 - Kostnad per dag/måned
 - Modell-fordeling (primær vs fallback)
 
-## Hvorfor AI Search og ikke Vectorize
+## Retrieval-lag
 
-Begge er Cloudflare-tjenester for vektor-søk over dokumenter, men de jobber på ulikt nivå.
+Rapport-AI bruker `REPORT_RULES` KV, `AI_REFERENCE_BUCKET` R2 og AI Search. AI Search er konfigurert med `AI_SEARCH_INSTANCE=ai-search`, `AI_SEARCH_ENABLE_RERANKING=true` og `AI_SEARCH_ENABLE_QUERY_REWRITE=false`.
 
-**AI Search** er en høynivå "AutoRAG"-tjeneste. Vi peker den på en R2-bucket med dokumenter, og den tar seg av resten automatisk: lager embeddings, lagrer dem, gir oss et søke-API som returnerer mest relevante chunkene. Vi sender en spørring, vi får tilbake tekst-utdrag.
+Vectorize-støtte finnes i `backend/services/ai/index.ts` og `backend/services/ai/retrieval.ts`. Upload- og batch-embed-rutene kan lagre embeddings i R2 og upserte til Vectorize når `VECTORIZE_ENABLED=true` og `VECTORIZE_INDEX` er bundet. Retrieval velger hybrid, Vectorize, AI Search eller KV ut fra `RETRIEVAL_STRATEGY`, `VECTORIZE_ENABLED`, `VECTORIZE_INDEX`, `AI_SEARCH_INSTANCE` og `AI`.
 
-**Vectorize** er en lavnivå vector-database. Vi må selv lage embeddings (kall en embedding-modell), laste dem opp, definere indeks-strukturen, og kalle similarity-search-API-et. Mer fleksibelt, men mye mer arbeid.
+Source-config i `backend/cloudflare/ai.wrangler.jsonc` setter `VECTORIZE_ENABLED=false`. Koden bruker AI Search når `AI_SEARCH_INSTANCE` er konfigurert og faller tilbake til KV ved manglende eller svake treff.
 
-For HydroGuide har vi:
-- `hydroguide-ai-reference` (R2-bucket): NVE-konsesjonsdokument og referanse-tekster
-- `REPORT_RULES` (KV): faste regler og korte utdrag
+## Feedback-flagg
 
-Vi vektoriserer faktisk disse — men gjennom AI Search, som gjør jobben automatisk for oss. `VECTORIZE_ENABLED: false` betyr "vi bruker ikke det manuelle Vectorize-API-et", ikke "vi gjør ikke vector-søk".
+`SELF_FEEDBACK_ENABLED` og `USER_FEEDBACK_ENABLED` er runtime-flagg i rapport-AI.
 
-Grunner til valget:
-- AI Search er ferdig oppsatt — embedding, lagring, søk og reranking i én tjeneste.
-- Vectorize ville krevd at vi bygger embedding-pipeline selv, holder den synkronisert med R2, og vedlikeholder relevans-scoring.
-- For ~600 NVEID-er og en dokumentsamling som oppdateres sjelden, er AI Search billigere i både tid og penger.
+| Flagg | Source-config | Bruk |
+|-------|---------------|------|
+| `SELF_FEEDBACK_ENABLED` | `false` | Kjører self-feedback og kan regenerere teksten når `SELF_FEEDBACK_REGENERATE=true`. |
+| `USER_FEEDBACK_ENABLED` | `false` | Lager feedback-token og åpner feedback-håndtering når flagget er `true`. |
 
-Vectorize ville blitt aktuelt hvis dokumentsamlingen vokste til mange tusen dynamiske dokumenter, eller hvis vi trengte spesialtilpasset embedding-modell eller scoring-logikk.
+## Pipeline-runtime
 
-## Hvorfor self-feedback og user-feedback er av
-
-`SELF_FEEDBACK_ENABLED: false` og `USER_FEEDBACK_ENABLED: false`. Grunn:
-
-- **Self-feedback** (modellen vurderer egen output) er svært dyrt — koster nesten dobbelt så mye per request — og gir liten verdiøkning når output allerede er <250 ord og bygget på faste regler.
-- **User-feedback** (samle "var dette nyttig?") krever en tilbakemeldingssløyfe og lagring vi ikke har designet for. Det blir aktuelt i en senere versjon.
-
-Begge er deaktivert via config-flagg, ikke via fjerning fra kode. Lett å snu på ved behov.
-
-## Hvorfor pipeline er lokal, ikke Worker
-
-Pipeline-en (`tools/minstevann/`) kjører lokalt med Java 21, Python 3.13, Ollama og OpenDataLoader.
-
-Grunn:
+Pipeline-en (`tools/minstevann/`) kjører lokalt med Java 21, Python 3.13, LM Studio og OpenDataLoader.
 
 - OCR + LLM-strukturering tar minutter per dokument. Cloudflare Workers har 30s CPU-grense per request.
-- Modellen vi bruker lokalt (`gemma4:e4b-it-q4_K_M` via Ollama) er mye billigere per kall enn Cloudflare AI Gateway, og dette er batch-kjøring der latens ikke betyr noe.
-- Output er statisk JSON som blir lastet opp én gang til R2. Ingen grunn til å re-prosessere på request-tid.
+- Lokal `gemma-4-e2b-it` via LM Studio brukes for batch-kjøring.
+- Output er statisk JSON som lastes opp til R2.
 
 Pipeline-kjøring og output-validering: [tools/minstevann/README.md](../tools/minstevann/README.md).
 
@@ -136,7 +121,7 @@ Pipeline-kjøring og output-validering: [tools/minstevann/README.md](../tools/mi
 
 Se [sikkerheit.md#kjente-begrensninger](sikkerheit.md#kjente-begrensninger) for full liste. Spesifikt for AI:
 
-- Pipeline-output blir manuelt sjekket, ikke automatisk validert mot skjema.
+- Pipeline-LLM bruker JSON schema i LM Studio-kallet. Faglig innhold spot-sjekkes ved R2-upload.
 - Vi har ingen prompt-injection-detektor, bare tekstgrense-mottiltak.
 - Per-API-nøkkel rate limit på rapport-AI er ikke på plass — bare Cloudflare per-IP rate limit.
 

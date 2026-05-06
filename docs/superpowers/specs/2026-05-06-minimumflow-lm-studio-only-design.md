@@ -11,10 +11,10 @@ After this change, one-station pipeline runs must call LM Studio through the loc
 ## Required Runtime Contract
 
 - Default host: `http://127.0.0.1:1234`
-- Default model: `gemma-4-e4b-it`
+- Default model: `gemma-4-e2b-it`
 - API endpoint: `POST /v1/chat/completions`
 - Response format: LM Studio-compatible `json_schema`
-- Expected loaded model file: `gemma-4-E4B-it-Q4_K_M.gguf`, exposed by LM Studio as model id `gemma-4-e4b-it`
+- Expected loaded model file: `gemma-4-E2B-it-Q4_K_M.gguf`, exposed by LM Studio as model id `gemma-4-e2b-it`
 
 If LM Studio is not reachable, the pipeline fails clearly for that station. It must not retry against Ollama or any other provider.
 
@@ -24,7 +24,7 @@ If LM Studio is not reachable, the pipeline fails clearly for that station. It m
 
 Replace Ollama-named defaults with LM Studio defaults:
 
-- `DEFAULT_MODEL = "gemma-4-e4b-it"`
+- `DEFAULT_MODEL = "gemma-4-e2b-it"`
 - `DEFAULT_LM_STUDIO_HOST`, read from `HG_LM_STUDIO_HOST`, defaulting to `http://127.0.0.1:1234`
 - `DEFAULT_LM_STUDIO_TIMEOUT`, read from `HG_LM_STUDIO_TIMEOUT`
 
@@ -58,9 +58,9 @@ Rename user-facing output and help text:
 Replace Ollama setup with LM Studio setup:
 
 - Start LM Studio.
-- Load `gemma-4-E4B-it-Q4_K_M.gguf`.
+- Load `gemma-4-E2B-it-Q4_K_M.gguf`.
 - Start Local Server on `http://127.0.0.1:1234`.
-- Confirm `GET http://127.0.0.1:1234/v1/models` lists `gemma-4-e4b-it`.
+- Confirm `GET http://127.0.0.1:1234/v1/models` lists `gemma-4-e2b-it`.
 
 Remove `ollama pull`, `ollama serve`, `HG_OLLAMA_HOST`, and other Ollama wording.
 

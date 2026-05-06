@@ -27,7 +27,7 @@ export default function WorkspaceSection({
             {description ? <HelpTip text={description} /> : null}
           </div>
         </div>
-        {actions ? <div className="shrink-0 self-start">{actions}</div> : null}
+        {actions ? <div className="w-full self-start sm:w-auto sm:shrink-0">{actions}</div> : null}
       </div>
       {children}
     </section>

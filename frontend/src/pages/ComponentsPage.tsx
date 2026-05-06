@@ -5,7 +5,12 @@ import WorkspaceHeader from "../components/WorkspaceHeader";
 import WorkspaceSection from "../components/WorkspaceSection";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
-import { workspaceMetaClassName, workspacePageClassName, workspaceSecondaryButtonClassName } from "../styles/workspace";
+import {
+  workspaceContentValueClassName,
+  workspaceMetaClassName,
+  workspacePageClassName,
+  workspaceSecondaryButtonClassName
+} from "../styles/workspace";
 import { formatNumber } from "../utils/format";
 import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
@@ -55,7 +60,7 @@ export default function ComponentsPage() {
                   key={option.value}
                   type="button"
                   onClick={() => updateConfigSectionField("equipmentBudgetSettings", "displayUnit", option.value)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                  className={`rounded-lg px-3 py-1.5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] transition ${
                     displayUnit === option.value ? "bg-white text-slate-950 shadow-sm" : "text-slate-950 hover:text-slate-950"
                   }`}
                 >
@@ -67,7 +72,7 @@ export default function ComponentsPage() {
         </div>
 
         <div className="hidden overflow-hidden md:block">
-          <table className="w-full table-fixed divide-y divide-slate-200 text-sm">
+          <table className="w-full table-fixed divide-y divide-slate-200">
             <thead>
               <tr className={`text-left ${workspaceMetaClassName} text-slate-950`}>
                 <th className="w-20 px-4 py-2">{t("components.active")}</th>
@@ -88,7 +93,7 @@ export default function ComponentsPage() {
                       <button
                         type="button"
                         onClick={() => updateEquipmentRow(row.id, "active", !row.active)}
-                        className={`inline-flex min-h-10 items-center justify-center rounded-full px-3 py-1 text-sm font-semibold transition ${
+                        className={`inline-flex min-h-10 items-center justify-center rounded-full px-3 py-1 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] transition ${
                           row.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-950 hover:bg-slate-300"
                         }`}
                       >
@@ -130,13 +135,13 @@ export default function ComponentsPage() {
                       />
                     </td>
                     <td className="px-4 py-3 align-middle">
-                      <p className="flex min-h-10 items-center font-medium text-slate-950">{formatConsumption(row)}</p>
+                      <p className={`flex min-h-10 items-center ${workspaceContentValueClassName}`}>{formatConsumption(row)}</p>
                     </td>
                     <td className="px-4 py-3 align-middle">
                       <button
                         type="button"
                         onClick={() => removeEquipmentRow(row.id)}
-                        className="inline-flex min-h-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                        className="inline-flex min-h-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-2 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-rose-700 transition hover:bg-rose-100"
                       >
                         {t("components.delete")}
                       </button>
@@ -158,7 +163,7 @@ export default function ComponentsPage() {
                   <button
                     type="button"
                     onClick={() => updateEquipmentRow(row.id, "active", !row.active)}
-                    className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-sm font-semibold transition ${
+                    className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] transition ${
                       row.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-950 hover:bg-slate-300"
                     }`}
                   >
@@ -167,7 +172,7 @@ export default function ComponentsPage() {
                   <button
                     type="button"
                     onClick={() => removeEquipmentRow(row.id)}
-                    className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                    className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-rose-700 transition hover:bg-rose-100"
                   >
                     {t("components.delete")}
                   </button>
@@ -198,7 +203,7 @@ export default function ComponentsPage() {
                     step={0.1}
                     onChange={(next) => updateEquipmentRow(row.id, "runtimeHoursPerDay", next)}
                   />
-                  <p className="text-sm font-medium text-slate-950">
+                  <p className={workspaceContentValueClassName}>
                     {formatConsumption(row)}
                   </p>
                 </div>
@@ -208,7 +213,7 @@ export default function ComponentsPage() {
         </div>
 
         <div className="mt-5 flex justify-start sm:justify-end">
-          <div className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-950 shadow-sm sm:w-auto sm:text-left">
+          <div className={`w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-center shadow-sm sm:w-auto sm:text-left ${workspaceContentValueClassName}`}>
             {`${t("components.dailyConsumption")} ${
               canShowDailyConsumption ? `${formatNumber(totalPerDay as number)} ${dailyUnitLabel}` : t("overview.notCalculated")
             }`}

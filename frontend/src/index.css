@@ -7,7 +7,30 @@
 :root {
   color: #020617;
   background-color: #f8fafc;
-  font-size: 14.5px;
+  font-size: var(--hg-type-root-size);
+  --hg-type-font-family: "Manrope Variable", Manrope, system-ui, sans-serif;
+  --hg-type-root-size: 14.5px;
+  --hg-type-page-title-size: 1.9rem;
+  --hg-type-page-title-leading: 1.02;
+  --hg-type-section-title-size: 1.688rem;
+  --hg-type-section-title-leading: 1.08;
+  --hg-type-category-size: 1rem;
+  --hg-type-category-leading: 1.25;
+  --hg-type-content-size: 0.935rem;
+  --hg-type-content-leading: 1.5rem;
+  --hg-type-ui-size: 0.875rem;
+  --hg-type-meta-size: 0.75rem;
+  --hg-type-chart-size: 12px;
+  --hg-type-weight-medium: 500;
+  --hg-type-weight-semibold: 600;
+  --hg-type-weight-bold: 700;
+  --hg-type-weight-extra: 800;
+  --hg-type-tight-tracking: -0.02em;
+  --hg-type-title-tracking: -0.04em;
+  --hg-type-chart-tick-tracking: 0;
+  --hg-type-label-tracking: 0.04em;
+  --hg-chart-tooltip-title-size: 12px;
+  --hg-chart-tooltip-text-size: 11px;
 }
 
 * {
@@ -18,7 +41,21 @@ body {
   margin: 0;
   min-height: 100vh;
   background: linear-gradient(160deg, #f8fafc 0%, #eef2ff 22%, #f8fafc 55%, #eef6ff 100%);
-  font-family: "Manrope Variable", Manrope, system-ui, sans-serif;
+  font-family: var(--hg-type-font-family);
+}
+
+.leaflet-container,
+.leaflet-control,
+.leaflet-control-attribution,
+.leaflet-control-layers,
+.leaflet-control-layers label,
+.leaflet-control-scale-line,
+.leaflet-popup,
+.leaflet-popup-content,
+.leaflet-tooltip {
+  font-family: var(--hg-type-font-family);
+  font-size: var(--hg-type-ui-size);
+  line-height: var(--hg-type-category-leading);
 }
 
 .hide-scrollbar {

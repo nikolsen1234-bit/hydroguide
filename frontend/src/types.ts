@@ -35,7 +35,7 @@ export interface SolarRadiationSettings {
   mapZoom: number;
 }
 
-export type ConfidenceStatus = "Anbefalt" | "Bør vurderast nærare" | "Krev avklaring";
+export type ConfidenceStatus = "Anbefalt" | "Bør vurderes nærmere" | "Krev avklaring";
 
 export interface Answers {
   q1Anleggstype: Anleggstype | "";
@@ -185,7 +185,7 @@ export interface SystemRecommendationResult {
   communication: string;
   loggerSetup: string;
   energyMonitoring: string;
-  secondarySource: BackupSourceName | "Ikkje berekna";
+  secondarySource: BackupSourceName | "Ikke beregnet";
   secondarySourcePowerW: number;
   batteryCapacityAh: number;
   batteryAutonomyDays: number;

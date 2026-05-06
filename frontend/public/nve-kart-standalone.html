@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js" integrity="sha384-twf8YFpk0FSzm0AmW2GRJjjnqIuQ2y86vZXh2roYI8O+kFbEBjSUDUT6U72w8shL" crossorigin="anonymous"></script>
@@ -15,39 +15,39 @@
   (function () {
     const I18N = {
       nn: {
-        emptyTitle: "Ingen kraftverk valt",
-        emptySub: "Opne lokasjons-seksjonen under og sok etter eit kraftverk for a sja detaljar her.",
+        emptyTitle: "Ingen kraftverk valgt",
+        emptySub: "Åpne lokasjonsseksjonen under og søk etter et kraftverk for å se detaljer her.",
         powerPlant: "kraftverk",
         concessionCase: "Konsesjonssak",
         location: "Lokasjon",
-        searchPlaceholder: "Sok adresse, stad eller kraftverk...",
-        showHideLayers: "Vis/skjul NVE-lag",
-        layers: "Lag",
+        searchPlaceholder: "Søk adresse, sted eller kraftverk...",
+        showHideLayers: "Vis/skjul kartlag fra NVE",
+        layers: "Kartlag",
         all: "Alle",
         none: "Ingen",
-        owner: "Eigar",
+        owner: "Eier",
         place: "Sted",
         maxOutput: "Maks ytelse",
-        grossHead: "Bruttofallhogde",
+        grossHead: "Bruttofallhøyde",
         production: "Produksjon",
         commissioned: "Idriftsatt",
-        minFlow: "Minstevassforing",
+        minFlow: "Minstevannføring",
         intake: "Inntak",
-        mainIntake: "Hovudinntak",
+        mainIntake: "Hovedinntak",
         sideIntake: "Sideinntak",
         intakePoint: "Inntakspunkt",
         noData: "Ingen data for",
-        noWikiImage: "Ingen Wikipedia-bilete funne",
+        noWikiImage: "Ingen Wikipedia-bilde funnet",
         powerStation: "Kraftstasjon",
-        outlet: "Utlop",
+        outlet: "Utløp",
         dam: "Dam",
         waterway: "Vannvei",
         reservoir: "Magasin",
         address: "Adresse",
-        place2: "Stad",
+        place2: "Sted",
         riverPlant: "Elvekraftverk - ingen magasin",
         prodUnit: "GWh/\u00e5r",
-        nveLayers: "NVE-lag",
+        nveLayers: "Kartlag fra NVE",
         showMap: "Vis kart",
         hideMap: "Skjul kart"
       },
@@ -102,6 +102,7 @@
   * { box-sizing: border-box; }
   html, body { height: auto; min-height: 0; margin: 0; }
   :root {
+    font-size: var(--hg-type-root-size);
     --hg-text-strong: #0f172a;
     --hg-text: #1e293b;
     --hg-text-muted: #64748b;
@@ -112,13 +113,59 @@
     --hg-brand-strong: #0c4a6e;
     --hg-brand-bg: #eff6ff;
     --hg-brand-border: #bfdbfe;
+    --hg-type-font-family: "Manrope Variable", "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --hg-type-root-size: 14.5px;
+    --hg-type-page-title-size: 1.9rem;
+    --hg-type-section-title-size: 1.688rem;
+    --hg-type-category-size: 1rem;
+    --hg-type-content-size: 0.935rem;
+    --hg-type-ui-size: 0.875rem;
+    --hg-type-meta-size: 0.75rem;
+    --hg-type-badge-size: 0.69rem;
+    --hg-type-icon-size: 1.93rem;
+    --hg-type-weight-medium: 500;
+    --hg-type-weight-semibold: 600;
+    --hg-type-weight-bold: 700;
+    --hg-type-weight-extra: 800;
+    --hg-type-content-leading: 1.5;
+    --hg-type-category-leading: 1.25;
+    --hg-type-compact-leading: 1.1;
+    --hg-type-label-tracking: 0.04em;
   }
   body {
-    font: 14px/1.45 "Manrope", "Manrope Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font: var(--hg-type-content-size)/var(--hg-type-content-leading) var(--hg-type-font-family);
     background: transparent;
     color: var(--hg-text-strong);
   }
   input, button, select, textarea { font: inherit; }
+  .leaflet-container,
+  .leaflet-control,
+  .leaflet-control-attribution,
+  .leaflet-control-layers,
+  .leaflet-control-layers label,
+  .leaflet-control-scale-line,
+  .leaflet-popup,
+  .leaflet-popup-content,
+  .leaflet-tooltip {
+    font-family: var(--hg-type-font-family);
+    font-size: var(--hg-type-ui-size);
+    line-height: var(--hg-type-category-leading);
+  }
+  .leaflet-control-zoom-in,
+  .leaflet-control-zoom-out,
+  .leaflet-touch .leaflet-control-zoom-in,
+  .leaflet-touch .leaflet-control-zoom-out,
+  .leaflet-touch .leaflet-bar a.leaflet-control-zoom-in,
+  .leaflet-touch .leaflet-bar a.leaflet-control-zoom-out,
+  .leaflet-container a.leaflet-popup-close-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--hg-type-font-family);
+    font-size: var(--hg-type-category-size);
+    font-weight: var(--hg-type-weight-bold);
+    line-height: var(--hg-type-category-leading);
+  }
   .wrap {
     max-width: none;
     margin: 0;
@@ -127,7 +174,7 @@
     flex-direction: column;
     gap: 16px;
   }
-  #coords { font-size: 12px; line-height: 1.1; font-weight: 600; color: var(--hg-text-soft); }
+  #coords { font-size: var(--hg-type-ui-size); line-height: var(--hg-type-compact-leading); font-weight: var(--hg-type-weight-semibold); color: var(--hg-text-soft); }
 
   /* Lokasjon-seksjon */
   .location-section {
@@ -158,7 +205,7 @@
     padding: 10px 36px 10px 36px;
     border: 1px solid var(--hg-border-strong);
     border-radius: 12px;
-    font-size: 14px;
+    font-size: var(--hg-type-content-size);
     outline: none;
     background: rgba(255,255,255,.95);
     backdrop-filter: blur(6px);
@@ -196,12 +243,12 @@
     display: flex; align-items: center; gap: 8px;
     padding: 9px 12px;
     background: none; border: none;
-    text-align: left; font-size: 13px; font-weight: 600; color: var(--hg-text);
+    text-align: left; font-size: var(--hg-type-ui-size); font-weight: var(--hg-type-weight-semibold); color: var(--hg-text);
     cursor: pointer;
   }
   #suggestions button:hover { background: #f8fafc; }
   .kind {
-    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    font-size: var(--hg-type-badge-size); font-weight: var(--hg-type-weight-bold); text-transform: uppercase;
     padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
   }
   .kind.kraftverk { background: #fef3c7; color: #92400e; }
@@ -241,7 +288,7 @@
     background: rgba(255,255,255,.96);
     color: var(--hg-text);
     border-radius: 999px;
-    font-size: 12px; font-weight: 700;
+    font-size: var(--hg-type-ui-size); font-weight: var(--hg-type-weight-bold);
     cursor: pointer;
   }
   .ctrl-btn:hover { background: #fff; }
@@ -250,13 +297,15 @@
     min-width: 16px; height: 16px; padding: 0 4px;
     background: #fef3c7; color: #92400e;
     border-radius: 999px;
-    font-size: 10px; font-weight: 700;
+    font-size: var(--hg-type-badge-size); font-weight: var(--hg-type-weight-bold);
   }
 
   /* Layers panel */
   .layers-panel {
     position: absolute; top: calc(100% + 8px); left: 0;
-    width: 220px;
+    width: min(260px, calc(100vw - 32px));
+    max-width: 260px;
+    z-index: 1200;
     background: #fff;
     border: 1px solid var(--hg-border);
     border-radius: 14px;
@@ -266,24 +315,27 @@
   }
   .layers-panel.open { display: block; }
   .layers-header {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
     padding: 10px 12px 8px;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 11px; font-weight: 700; line-height: 1.4;
-    text-transform: uppercase; letter-spacing: .04em; color: var(--hg-text-muted);
+    font-size: var(--hg-type-meta-size); font-weight: var(--hg-type-weight-bold); line-height: var(--hg-type-content-leading);
+    text-transform: uppercase; letter-spacing: var(--hg-type-label-tracking); color: var(--hg-text-muted);
   }
-  .layers-header .actions { display: flex; gap: 8px; text-transform: none; letter-spacing: 0; font-weight: 500; }
-  .layers-header button { background: none; border: none; color: var(--hg-text-muted); cursor: pointer; font-size: 11px; padding: 0; }
+  .layers-header > span { min-width: 0; overflow-wrap: anywhere; }
+  .layers-header .actions { display: flex; flex-shrink: 0; gap: 8px; text-transform: none; letter-spacing: 0; font-weight: var(--hg-type-weight-medium); white-space: nowrap; }
+  .layers-header button { background: none; border: none; color: var(--hg-text-muted); cursor: pointer; font-size: var(--hg-type-meta-size); padding: 0; }
   .layers-header button:hover { color: var(--hg-text-strong); }
   .layers-list { list-style: none; margin: 0; padding: 6px 0; }
   .layers-list button {
     width: 100%;
     display: flex; align-items: center; gap: 10px;
+    min-width: 0;
     padding: 6px 12px;
     background: none; border: none;
-    cursor: pointer; font-size: 13px; font-weight: 600; color: var(--hg-text); text-align: left;
+    cursor: pointer; font-size: var(--hg-type-ui-size); font-weight: var(--hg-type-weight-semibold); color: var(--hg-text); text-align: left;
   }
   .layers-list button:hover { background: #f8fafc; }
+  .layers-list .label { min-width: 0; overflow-wrap: anywhere; }
   .check {
     width: 16px; height: 16px;
     border: 1px solid #cbd5e1; border-radius: 4px;
@@ -300,12 +352,12 @@
   /* Popup */
   .popup-wrap { max-height: 220px; overflow-y: auto; min-width: 240px; max-width: 300px; }
   .map-wrap.expanded .popup-wrap { max-height: 600px; }
-  .popup-wrap .title { font-size: 13px; line-height: 1.35; font-weight: 700; color: var(--hg-brand-strong); margin-bottom: 2px; }
-  .popup-wrap .sub { font-size: 10px; font-weight: 600; color: var(--hg-text-muted); margin-bottom: 6px; }
+  .popup-wrap .title { font-size: var(--hg-type-ui-size); line-height: var(--hg-type-category-leading); font-weight: var(--hg-type-weight-bold); color: var(--hg-brand-strong); margin-bottom: 2px; }
+  .popup-wrap .sub { font-size: var(--hg-type-badge-size); font-weight: var(--hg-type-weight-semibold); color: var(--hg-text-muted); margin-bottom: 6px; }
   .popup-wrap table { border-collapse: collapse; width: 100%; }
-  .popup-wrap td { font-size: 11px; padding: 3px 10px 3px 0; vertical-align: top; }
+  .popup-wrap td { font-size: var(--hg-type-meta-size); padding: 3px 10px 3px 0; vertical-align: top; }
   .popup-wrap td.k { color: var(--hg-text-soft); white-space: nowrap; }
-  .popup-wrap td.v { color: var(--hg-text-strong); font-weight: 700; }
+  .popup-wrap td.v { color: var(--hg-text-strong); font-weight: var(--hg-type-weight-bold); }
   /* "Detached" popup (NVE-stil) \u2014 popup under objektet, utan pil */
   .nve-detached-popup .leaflet-popup-tip-container { display: none; }
   .nve-detached-popup .leaflet-popup-content-wrapper {
@@ -316,7 +368,7 @@
     display: inline-flex; align-items: center; gap: 2px;
     margin-left: 6px;
     padding: 2px 8px;
-    font-size: 10px; line-height: 1.2; font-weight: 700;
+    font-size: var(--hg-type-badge-size); line-height: var(--hg-type-category-leading); font-weight: var(--hg-type-weight-bold);
     background: #fef3c7; color: #92400e;
     border-radius: 999px;
     text-decoration: none;
@@ -338,12 +390,12 @@
   }
   #plant-card.has-plant .plant-empty { display: none; }
   .plant-empty-icon {
-    font-size: 28px;
+    font-size: var(--hg-type-icon-size);
     flex-shrink: 0;
     opacity: .5;
   }
-  .plant-empty-title { font-size: 15px; font-weight: 700; color: var(--hg-text-strong); margin-bottom: 2px; }
-  .plant-empty-sub { font-size: 13px; color: var(--hg-text-muted); }
+  .plant-empty-title { font-size: var(--hg-type-category-size); font-weight: var(--hg-type-weight-bold); color: var(--hg-text-strong); margin-bottom: 2px; }
+  .plant-empty-sub { font-size: var(--hg-type-ui-size); color: var(--hg-text-muted); }
   .map-toggle-btn {
     display: inline-flex; align-items: center; gap: 6px;
     margin-left: auto; flex-shrink: 0; align-self: flex-start;
@@ -352,7 +404,7 @@
     background: var(--hg-brand-bg);
     color: #1d4ed8;
     border-radius: 999px;
-    font-size: 13px; font-weight: 600;
+    font-size: var(--hg-type-ui-size); font-weight: var(--hg-type-weight-semibold);
     cursor: pointer;
     transition: background .15s, border-color .15s;
   }
@@ -367,7 +419,7 @@
     margin-bottom: 14px;
   }
   .plant-head h2 {
-    font-size: 18px; margin: 0; color: var(--hg-text-strong); font-weight: 800;
+    font-size: var(--hg-type-section-title-size); margin: 0; color: var(--hg-text-strong); font-weight: var(--hg-type-weight-extra);
     display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px;
   }
   .plant-id-tag {
@@ -376,7 +428,7 @@
     border-radius: 0;
     background: transparent;
     color: var(--hg-text-strong);
-    font-size: 12.6875px; line-height: 1.25; letter-spacing: -0.01em; font-weight: 600;
+    font-size: var(--hg-type-ui-size); line-height: var(--hg-type-category-leading); letter-spacing: 0; font-weight: var(--hg-type-weight-semibold);
     white-space: nowrap;
   }
   .plant-link-list {
@@ -389,7 +441,7 @@
   }
   .plant-link {
     display: inline-flex; align-items: center; gap: 4px;
-    font-size: 11px; font-weight: 600;
+    font-size: var(--hg-type-meta-size); font-weight: var(--hg-type-weight-semibold);
     color: var(--hg-brand);
     text-decoration: none;
   }
@@ -414,7 +466,7 @@
   .plant-img .empty {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;
-    color: #94a3b8; font-size: 11px; font-weight: 600; text-align: center; padding: 12px;
+    color: #94a3b8; font-size: var(--hg-type-meta-size); font-weight: var(--hg-type-weight-semibold); text-align: center; padding: 12px;
   }
   .plant-img .loading::after {
     content: ""; width: 20px; height: 20px;
@@ -437,12 +489,12 @@
     min-width: 0;
   }
   .plant-rows-col > div { display: flex; flex-direction: column; }
-  .plant-rows dt { font-size: 14.5px; line-height: 1.1; letter-spacing: -0.02em; font-weight: 700; color: var(--hg-text-strong); }
-  .plant-rows dd { margin: 0; color: var(--hg-text-strong); font-size: 12.6875px; line-height: 1.25; letter-spacing: -0.01em; font-weight: 700; }
-  .plant-rows dd .unit { color: var(--hg-text-strong); font-size: 12.6875px; line-height: 1.25; letter-spacing: -0.01em; font-weight: 600; margin-left: 3px; }
+  .plant-rows dt { font-size: var(--hg-type-category-size); line-height: var(--hg-type-compact-leading); letter-spacing: 0; font-weight: var(--hg-type-weight-bold); color: var(--hg-text-strong); }
+  .plant-rows dd { margin: 0; color: var(--hg-text-strong); font-size: var(--hg-type-ui-size); line-height: var(--hg-type-category-leading); letter-spacing: 0; font-weight: var(--hg-type-weight-bold); }
+  .plant-rows dd .unit { color: var(--hg-text-strong); font-size: var(--hg-type-ui-size); line-height: var(--hg-type-category-leading); letter-spacing: 0; font-weight: var(--hg-type-weight-semibold); margin-left: 3px; }
   .plant-rows .nve-pan {
     background: none; border: none; padding: 0;
-    font-size: 12.6875px; font-weight: 700; color: var(--hg-brand);
+    font-size: var(--hg-type-ui-size); font-weight: var(--hg-type-weight-bold); color: var(--hg-brand);
     text-align: left; cursor: pointer;
     text-decoration: none;
   }
@@ -527,7 +579,7 @@
                 <span id="nve-layers-title"></span>
                 <div class="actions">
                   <button type="button" id="layers-all"></button>
-                  <span>Â·</span>
+                  <span aria-hidden="true">&middot;</span>
                   <button type="button" id="layers-none"></button>
                 </div>
               </div>
@@ -544,8 +596,8 @@
 <script>
 /* ======================================================================
    NVE-kart \u2014 standalone. Alt i éi fil: Kartverket topo + NVE overlay +
-   søk (Geonorge adresse/stad + NVE kraftverk) + "Valt kraftverk"-kort
-   med Wikipedia-bilete. Krev internett til unpkg, Kartverket, Geonorge,
+   søk (Geonorge adresse/sted + NVE kraftverk) + "Valgt kraftverk"-kort
+   med Wikipedia-bilde. Krever internett til unpkg, Kartverket, Geonorge,
    NVE og Wikipedia. Bytt onLocationChange() nedst for integrasjon.
    ====================================================================== */
 
@@ -606,7 +658,7 @@ const PLACE_ZOOM = {
   "Fylke": 8, "Kommune": 10, "By": 12, "Tettsted": 13,
   "Bygd": 14, "Grend": 14, "Gard": 15,
   "Elv": 13, "Vann": 13, "Innsjø": 13,
-  "Fjell": 13, "Dal": 13, "Ã˜y": 13,
+  "Fjell": 13, "Dal": 13, "Øy": 13,
   "Bekk": 15, "Foss": 15,
   "Seter/støl": 15, "Seter": 15, "Støl": 15,
   "Industriområde": 14, "Bygning": 16,
@@ -632,7 +684,7 @@ async function searchPlace(q) {
   });
 
   // Viss det finst ein Kommune som startar med søket \u2014 returner berre den.
-  // "bergen" â†’ "Bergen kommune"; "stord" â†’ "Stord kommune"; "bømlo" â†’ "Bømlo kommune".
+  // "bergen" -> "Bergen kommune"; "stord" -> "Stord kommune"; "bømlo" -> "Bømlo kommune".
   // Dedupliser på kommunenavn fordi fleire oppslag ("Stord" + "Stord kommune")
   // kan begge ha navneobjekttype=Kommune og same kommunenavn.
   const kommuner = feats.filter(n =>
@@ -705,7 +757,7 @@ async function loadNvePlants() {
 // medan brukaren skriv. Score prioriterer eksakte ord-treff framfor
 // substring, så "blåfalli v" returnerer berre "Blåfalli V" (V = heilt ord)
 // og ikkje "Blåfalli Vik" eller "Blåfalli IV".
-// Ã‰i regel: søkestrengen må finnast som substring i "{namn} kraftverk {kommune}".
+// Én regel: søkestrengen må finnes som substring i "{namn} kraftverk {kommune}".
 // Rangering: tidlegare posisjon vinn, kortare namn vinn ved likt treff.
 async function searchNveHydro(q) {
   if (q.length < 2) return [];
@@ -734,7 +786,7 @@ async function searchAll(query) {
   return [...stad.slice(0, 3), ...adresse.slice(0, 3), ...nve].slice(0, 10);
 }
 
-/* ---- Wikipedia (for "valt kraftverk" bilde + link) ---- */
+/* ---- Wikipedia (for "valgt kraftverk" bilde + link) ---- */
 async function fetchWikipedia(name) {
   const terms = [`${name} kraftverk`, `${name} kraftstasjon`, name];
   for (const host of ["no.wikipedia.org", "nn.wikipedia.org", "en.wikipedia.org"]) {
@@ -762,7 +814,7 @@ async function fetchWikipedia(name) {
 /* ---- Popup-format ---- */
 function fmtKey(k) {
   return k.replace(/_/g, " ")
-    .replace(/([a-zæøå])([A-ZÃ†Ã˜Ã…])/g, "$1 $2")
+    .replace(/([a-zæøå])([A-ZÆØÅ])/g, "$1 $2")
     .replace(/\b([a-z])/g, m => m.toUpperCase());
 }
 function fmtVal(k, v) {
@@ -779,7 +831,7 @@ function buildPopupHtml(f) {
     .filter(([, v]) => v != null)
     .map(([k, v]) => `<tr><td class="k">${escapeHtml(fmtKey(k))}</td><td class="v">${escapeHtml(v)}</td></tr>`)
     .join("");
-  if (!rows) return `<div style="font-size:12px;color:#475569">${escapeHtml(T.noData || "Ingen data for")} ${escapeHtml(layerName)}</div>`;
+  if (!rows) return `<div style="font-size:var(--hg-type-ui-size);color:#475569">${escapeHtml(T.noData || "Ingen data for")} ${escapeHtml(layerName)}</div>`;
   const title = a.vannkraftStasjonNavn || a.vannkraftverkNavn || a.magasinNavn || a.damNavn || a.objektType || layerName;
   const sub = layerName !== title ? `<div class="sub">${escapeHtml(layerName)}</div>` : "";
   const extIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-left:2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
@@ -871,7 +923,7 @@ const plantIdTagEl = $("plant-id-tag");
 const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
 /* ---- i18n: populate static text from injected translations ---- */
-$("plant-empty-title").textContent = T.emptyTitle || "Ingen kraftverk valt";
+$("plant-empty-title").textContent = T.emptyTitle || "Ingen kraftverk valgt";
 $("plant-empty-sub").textContent = T.emptySub || "";
 $("map-toggle-label").textContent = T.hideMap || "Skjul kart";
 $("plant-suffix").textContent = T.powerPlant || "kraftverk";
@@ -879,8 +931,8 @@ $("konsesjon-text").textContent = T.concessionCase || "Konsesjonssak";
 $("location-label").textContent = T.location || "Lokasjon";
 input.placeholder = T.searchPlaceholder || "";
 $("layers-btn").title = T.showHideLayers || "";
-$("layers-label").textContent = T.layers || "Lag";
-$("nve-layers-title").textContent = T.nveLayers || "NVE-lag";
+$("layers-label").textContent = T.layers || "Kartlag";
+$("nve-layers-title").textContent = T.nveLayers || "Kartlag fra NVE";
 $("layers-all").textContent = T.all || "Alle";
 $("layers-none").textContent = T.none || "Ingen";
 
@@ -1069,18 +1121,18 @@ function formatLiveMinFlowResults(results) {
 }
 
 const PLANT_ROWS = [
-  { label: T.owner || "Eigar",             get: p => p.eigar ?? "\u2014" },
+  { label: T.owner || "Eier",              get: p => p.eigar ?? "\u2014" },
   { label: T.place || "Sted",              get: p => `${p.kommune ?? "\u2014"}${p.fylke ? `, ${p.fylke}` : ""}` },
   { label: T.maxOutput || "Maks ytelse",       get: p => fmtNumber(p.maksYtelseMW),        unit: "MW"     },
-  { label: T.grossHead || "Bruttofallh\u00f8gde",   get: p => fmtNumber(p.bruttoFallhoydeM, 0), unit: "m"      },
+  { label: T.grossHead || "Bruttofallhøyde",   get: p => fmtNumber(p.bruttoFallhoydeM, 0), unit: "m"      },
   { label: T.production || "Produksjon",        get: p => fmtNumber(p.produksjonGWh),       unit: T.prodUnit || "GWh/\u00e5r" },
   { label: T.commissioned || "Idriftsatt",        get: p => p.idriftsattAar ? String(p.idriftsattAar) : "\u2014" },
   { label: T.minFlow || "Minstevannf\u00f8ring",  get: _ => "\u2014" },
   // Dynamiske rader som ventar på loadPlantExtras:
   { label: p => `${T.intake || "Inntak"}${p.extras?.inntakCount != null ? ` (${p.extras.inntakCount})` : ""}`,
-    get: p => p.extras?.inntakItems ?? (p.extras ? [{ name: "\u2014" }] : [{ name: "â€¦" }]), items: true },
+    get: p => p.extras?.inntakItems ?? (p.extras ? [{ name: "\u2014" }] : [{ name: "..." }]), items: true },
   { label: p => `Magasin${p.extras?.magasinCount != null ? ` (${p.extras.magasinCount})` : ""}`,
-    get: p => p.extras?.magasinItems ?? (p.extras ? [{ name: "\u2014" }] : [{ name: "â€¦" }]), items: true },
+    get: p => p.extras?.magasinItems ?? (p.extras ? [{ name: "\u2014" }] : [{ name: "..." }]), items: true },
 ];
 
 function geometryBoundsCenter(pointsGroups) {
@@ -1156,7 +1208,7 @@ async function loadPlantExtras(verkNr) {
   const formatIntakeFunction = (raw) => {
     const value = (raw ?? "").trim().toLowerCase();
     if (!value) return "";
-    if (value === "hoved") return T.mainIntake || "Hovudinntak";
+    if (value === "hoved") return T.mainIntake || "Hovedinntak";
     if (value === "side") return T.sideIntake || "Sideinntak";
     return `${raw} ${T.intake || "Inntak"}`;
   };
@@ -1279,7 +1331,7 @@ function renderPlantRows(plant) {
       }).join("");
       html = `<div class="items-cell"><dt>${escapeHtml(label)}</dt><dd>${lines}</dd></div>`;
     } else {
-      const unit = r.unit && v !== "\u2014" && v !== "â€¦" ? `<span class="unit">${r.unit}</span>` : "";
+      const unit = r.unit && v !== "\u2014" && v !== "..." ? `<span class="unit">${r.unit}</span>` : "";
       html = `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(v)}${unit}</dd></div>`;
     }
     (index % 2 === 0 ? leftRows : rightRows).push(html);
@@ -1470,7 +1522,7 @@ function showPlant(plant) {
       wikiLinkEl.href = wiki.url && wiki.url.startsWith("https://") ? wiki.url : "#";
       wikiLinkEl.style.display = "inline-flex";
     } else {
-      plantImgEl.innerHTML = `<div class="empty">âš¡<br/>${T.noWikiImage || "Ingen Wikipedia-bilete funne"}</div>`;
+      plantImgEl.innerHTML = `<div class="empty">&#9889;<br/>${T.noWikiImage || "Ingen Wikipedia-bilde funnet"}</div>`;
     }
   });
 }
@@ -1486,7 +1538,7 @@ function renderLayersList() {
   layersListEl.innerHTML = NVE_CATEGORIES.map(c =>
     `<li><button type="button" data-key="${c.key}">
       <span class="check ${enabledCats[c.key] ? "on" : ""}"></span>
-      <span>${c.label}</span>
+      <span class="label">${escapeHtml(c.label)}</span>
     </button></li>`
   ).join("");
   layersListEl.querySelectorAll("button").forEach(btn => {

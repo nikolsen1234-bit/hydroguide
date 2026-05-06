@@ -1,6 +1,13 @@
 import { useCallback, useRef, useState } from "react";
 import type { HorizonProfile } from "../lib/solarEngine";
 import {
+  workspaceChartAxisClassName,
+  workspaceChartLabelClassName,
+  workspaceChartLegendClassName,
+  workspaceChartTooltipTextFontSize,
+  workspaceChartTooltipTitleFontSize
+} from "../styles/workspace";
+import {
   fractionalYear,
   solarDeclination,
   equationOfTime,
@@ -178,7 +185,7 @@ export function HorizonChart({ profile, latDeg }: HorizonChartProps) {
 
   return (
     <>
-      <svg ref={svgRef} viewBox={`0 0 ${size} ${size}`} className="mx-auto block w-full max-w-[640px]" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+      <svg ref={svgRef} viewBox={`0 0 ${size} ${size}`} className="mx-auto block w-full max-w-[520px] sm:max-w-[640px]" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
         <title>Horisontkart med solbane</title>
         {/* Background */}
         <circle cx={cx} cy={cy} r={chartR} fill="#f8fafc" stroke="#e2e8f0" strokeWidth={0.5} />
@@ -189,7 +196,7 @@ export function HorizonChart({ profile, latDeg }: HorizonChartProps) {
           return (
             <g key={elev}>
               <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e2e8f0" strokeWidth={0.5} />
-              <text x={cx + 5} y={cy - r + 6} className="fill-slate-400" style={{ fontSize: 13 }}>{elev}°</text>
+              <text x={cx + 5} y={cy - r + 6} className={workspaceChartAxisClassName}>{elev}°</text>
             </g>
           );
         })}
@@ -233,8 +240,7 @@ export function HorizonChart({ profile, latDeg }: HorizonChartProps) {
               y={y}
               textAnchor="middle"
               dominantBaseline="central"
-              style={{ fontSize: isBold ? 18 : 14 }}
-              className={isBold ? "fill-slate-600 font-semibold" : "fill-slate-400 font-medium"}
+              className={isBold ? workspaceChartLabelClassName : workspaceChartAxisClassName}
             >
               {label}
             </text>
@@ -251,15 +257,15 @@ export function HorizonChart({ profile, latDeg }: HorizonChartProps) {
               <circle cx={hover.svgX} cy={hover.svgY} r={5} fill={hover.color} stroke="#fff" strokeWidth={2} />
               <rect x={bx} y={by} width={bw} height={bh} rx={4} fill="white" stroke="#e2e8f0" strokeWidth={1} style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.12))" }} />
               <circle cx={bx + 10} cy={by + 16} r={4} fill={hover.color} />
-              <text x={bx + 20} y={by + 20} fontSize={12} fontWeight={600} fill={hover.color}>{hover.label}</text>
-              <text x={bx + 10} y={by + 40} fontSize={12} fontWeight={700} fill="#0f172a">{hover.elevDeg}° · azimut {hover.azDeg}°</text>
+              <text x={bx + 20} y={by + 20} fontSize={workspaceChartTooltipTextFontSize} fontWeight="var(--hg-type-weight-semibold)" fill={hover.color}>{hover.label}</text>
+              <text x={bx + 10} y={by + 40} fontSize={workspaceChartTooltipTitleFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a">{hover.elevDeg}° · azimut {hover.azDeg}°</text>
             </g>
           );
         })()}
       </svg>
 
       {/* Legend */}
-      <div className="mt-16 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-[15px] font-semibold tracking-[-0.02em] text-slate-700 sm:text-base">
+      <div className={`mt-8 flex flex-wrap items-center justify-start gap-x-5 gap-y-3 sm:mt-16 sm:justify-center ${workspaceChartLegendClassName} text-slate-700`}>
         <span className="flex items-center gap-2">
           <span className="inline-block h-0.5 w-4 shrink-0" style={{ borderTop: "3px dashed #84cc16" }} />
           Sommarsol (21. juni)

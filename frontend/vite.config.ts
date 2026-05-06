@@ -84,7 +84,7 @@ function functionsDevBridge() {
     if (!requestUrl || !modulePath) return false;
 
     const method = (req.method ?? "GET").toUpperCase();
-    const functionModule = await import(pathToFileURL(modulePath).href);
+    const functionModule = await import(`${pathToFileURL(modulePath).href}?t=${Date.now()}`);
     const handler = (method === "POST" ? functionModule.onRequestPost : functionModule.onRequestGet) ?? functionModule.onRequest;
     if (typeof handler !== "function") return false;
 

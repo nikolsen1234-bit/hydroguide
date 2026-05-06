@@ -74,7 +74,7 @@ export async function onRequestGet() {
           diesel: "Required when backupSource.hasBackupSource is true.",
           other: "Required when backupSource.hasBackupSource is true."
         },
-        docs: "/api/docs"
+        docs: "/api"
       }
     ]
   });

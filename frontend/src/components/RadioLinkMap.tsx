@@ -32,7 +32,7 @@ function createMarkerIcon(L: LeafletNamespace, label: string, tone: "warm" | "co
   return L.divIcon({
     className: "",
     html: `
-      <div style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;background:${palette.fill};border:2px solid ${palette.stroke};box-shadow:0 10px 24px rgba(15,23,42,.18);font:700 12px/1 Manrope, sans-serif;color:${palette.text};">
+      <div style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;background:${palette.fill};border:2px solid ${palette.stroke};box-shadow:0 10px 24px rgba(15,23,42,.18);font-family:var(--hg-type-font-family);font-size:var(--hg-type-chart-size);font-weight:var(--hg-type-weight-bold);line-height:var(--hg-type-category-leading);color:${palette.text};">
         ${label}
       </div>
     `,
@@ -263,22 +263,22 @@ export default function RadioLinkMap({
   }, []);
 
   return (
-    <div className="radiolink-map relative h-full min-h-[280px] overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-100">
+    <div className="radiolink-map isolate relative h-full min-h-[280px] overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-100">
       <div ref={containerRef} className="h-full w-full" />
 
-      <div className="absolute right-4 top-4 z-20 max-w-[calc(100%-5.5rem)] rounded-full border border-slate-200 bg-white/95 px-3 py-1.5 text-center text-xs font-semibold text-slate-700 shadow-sm">
+      <div className="pointer-events-none absolute right-3 top-3 z-[1000] max-w-[8.75rem] whitespace-normal rounded-md border border-slate-200 bg-white/95 px-2 py-0.5 text-center text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-slate-700 shadow-md [overflow-wrap:anywhere] sm:right-4 sm:top-4 sm:max-w-[calc(100%-5.5rem)] sm:rounded-full sm:px-3 sm:py-1.5 sm:text-[length:var(--hg-type-ui-size)]">
         {pointA && pointB
           ? t("radioMap.clickToMove").replace("{point}", nextPoint === "pointA" ? "A" : "B")
           : t("radioMap.nextClick").replace("{point}", nextPoint === "pointA" ? "A" : "B")}
       </div>
 
       {failed ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-950/45 px-6 text-center text-sm font-medium text-white">
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-950/45 px-6 text-center text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-medium)] leading-[var(--hg-type-content-leading)] text-white">
           {t("radioMap.mapFailed")}
         </div>
       ) : null}
 
-      <div className="absolute bottom-0 right-0 z-20 bg-white/90 px-1.5 py-0.5 text-[11px] leading-none text-slate-700">
+      <div className="absolute bottom-1 right-1 z-20 max-w-[calc(100%-0.75rem)] whitespace-normal rounded-sm bg-white/90 px-1.5 py-0.5 text-right text-[length:var(--hg-type-meta-size)] leading-[var(--hg-type-category-leading)] text-slate-700 [overflow-wrap:anywhere]">
         <a
           href="https://leafletjs.com"
           target="_blank"

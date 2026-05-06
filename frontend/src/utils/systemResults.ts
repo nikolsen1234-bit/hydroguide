@@ -55,9 +55,9 @@ function calculateAnnualEnergyDeficitKWh(configuration: PlantConfiguration, tota
 function selectRecommendedBackupSource(
   configuration: PlantConfiguration,
   alternatives: CostComparisonItem[]
-): BackupSourceName | "Ikkje berekna" {
+): BackupSourceName | "Ikke beregnet" {
   if (configuration.systemParameters.hasBackupSource !== true) {
-    return "Ikkje berekna";
+    return "Ikke beregnet";
   }
 
   const bestItem = alternatives.reduce<CostComparisonItem | null>((best, item) => {
@@ -77,7 +77,7 @@ function selectRecommendedBackupSource(
 
 function selectedSourceConfig(
   configuration: PlantConfiguration,
-  source: BackupSourceName | "Ikkje berekna"
+  source: BackupSourceName | "Ikke beregnet"
 ): BackupSourceConfiguration {
   if (source === "Brenselcelle") {
     return configuration.fuelCell;
@@ -179,12 +179,12 @@ function createEmptyAnnualTotals(totalWhPerDay: number, totalAhPerDay: number): 
 
 function simplifyReleaseArrangement(hovudloysing: string): string {
   const h = hovudloysing.toLowerCase();
-  if (h.includes("røyrslipp") && h.includes("aktiv reguleringsventil"))
-    return "Røyrslipp i frostfritt rom med aktiv reguleringsventil";
-  if (h.includes("røyrslipp") && h.includes("fast struping"))
-    return "Røyrslipp i frostfritt rom med fast struping";
+  if (h.includes("rørslipp") && h.includes("aktiv reguleringsventil"))
+    return "Rørslipp i frostfritt rom med aktiv reguleringsventil";
+  if (h.includes("rørslipp") && h.includes("fast struping"))
+    return "Rørslipp i frostfritt rom med fast struping";
   if (h.includes("reguleringskum"))
-    return "Reguleringskum med skjerma måleseksjon";
+    return "Reguleringskum med skjermet måleseksjon";
   if (h.includes("passiv slipp"))
     return "Passiv slippseksjon med vern mot is og drivgods";
   if (h.includes("standard slipp"))
@@ -195,36 +195,36 @@ function simplifyReleaseArrangement(hovudloysing: string): string {
 function derivePrimaryMeasurement(recommendation: Recommendation): string {
   const h = recommendation.hovudloysing.toLowerCase();
   const k = recommendation.kontrollmalemetode;
-  if (h.includes("mengdemålar")) return "Mengdemåling i røyr";
-  if (k === "Volum/tid-måling i behaldar") return "Volum/tid-måling i behaldar";
-  if (k === "Kontroll i naturleg måleprofil nedstrøms") return "Vassstand i naturleg måleprofil";
-  if (k === "Kontroll i kunstig bygd måleprofil nedstrøms") return "Vassstand i kunstig måleprofil";
+  if (h.includes("mengdemåler")) return "Mengdemåling i rør";
+  if (k === "Volum/tid-måling i beholder") return "Volum/tid-måling i beholder";
+  if (k === "Kontroll i naturlig måleprofil nedstrøms") return "Vannstand i naturlig måleprofil";
+  if (k === "Kontroll i kunstig bygget måleprofil nedstrøms") return "Vannstand i kunstig måleprofil";
   if (k === "Fortynningsmåling") return "Fortynningsmåling";
-  if (k === "Areal-hastigheitmåling") return "Areal-hastigheitmåling";
-  return "Måleprinsipp må fastleggjast";
+  if (k === "Areal-hastighetmåling") return "Areal-hastighetmåling";
+  return "Måleprinsipp må fastsettes";
 }
 
 function deriveControlMeasurement(recommendation: Recommendation): string {
-  if (recommendation.kontrollmalemetode === "Treng nærare prosjektering")
-    return "Må avklarast i detaljprosjektering";
+  if (recommendation.kontrollmalemetode === "Trenger nærmere prosjektering")
+    return "Må avklares i detaljprosjektering";
   return recommendation.kontrollmalemetode;
 }
 
 function deriveMeasurementEquipment(primaryMeasurement: string, controlMeasurement: string): string {
-  if (primaryMeasurement === "Mengdemåling i røyr")
-    return "Mengdemålar i røyr";
-  if (primaryMeasurement === "Volum/tid-måling i behaldar")
-    return "Behaldar med kjent volum og nivåregistrering";
-  if (primaryMeasurement === "Vassstand i naturleg måleprofil")
-    return "Sensor og logger mot naturleg profil";
-  if (primaryMeasurement === "Vassstand i kunstig måleprofil")
+  if (primaryMeasurement === "Mengdemåling i rør")
+    return "Mengdemåler i rør";
+  if (primaryMeasurement === "Volum/tid-måling i beholder")
+    return "Beholder med kjent volum og nivåregistrering";
+  if (primaryMeasurement === "Vannstand i naturlig måleprofil")
+    return "Sensor og logger mot naturlig profil";
+  if (primaryMeasurement === "Vannstand i kunstig måleprofil")
     return "Sensor og logger mot kunstig profil";
   if (primaryMeasurement === "Fortynningsmåling")
-    return "Fortynningsutstyr og logga prøveserie";
-  if (primaryMeasurement === "Areal-hastigheitmåling")
-    return "Sensor for nivå og hastigheit i definert måleseksjon";
-  if (controlMeasurement === "Må avklarast i detaljprosjektering")
-    return "Må veljast i detaljprosjektering";
+    return "Fortynningsutstyr og logget prøveserie";
+  if (primaryMeasurement === "Areal-hastighetmåling")
+    return "Sensor for nivå og hastighet i definert måleseksjon";
+  if (controlMeasurement === "Må avklares i detaljprosjektering")
+    return "Må velges i detaljprosjektering";
   return controlMeasurement;
 }
 
@@ -232,7 +232,7 @@ function calculateSystemRecommendation(
   configuration: PlantConfiguration,
   recommendation: Recommendation,
   totalWhPerDay: number,
-  sourceName: BackupSourceName | "Ikkje berekna"
+  sourceName: BackupSourceName | "Ikke beregnet"
 ) {
   const { answers, systemParameters } = configuration;
   const calculatorMode = (configuration.engineMode ?? "standard") === "standard";
@@ -241,7 +241,7 @@ function calculateSystemRecommendation(
 
   const has4gCoverage = systemParameters["4gCoverage"] === true;
   const communication = calculatorMode
-    ? "Ikkje berekna"
+    ? "Ikke beregnet"
     : has4gCoverage
       ? "4G-ruter"
       : systemParameters.nbIotCoverage === true
@@ -251,53 +251,53 @@ function calculateSystemRecommendation(
           : "Satellittmodem";
 
   const loggerSetup = calculatorMode
-    ? "Ikkje berekna"
+    ? "Ikke beregnet"
     : inspectionsPerYear <= 4
-      ? "2 loggarar + backup-loggar"
-      : "1 loggar";
+      ? "2 loggere + backuplogger"
+      : "1 logger";
 
-  const energyMonitoring = calculatorMode ? "Ikkje berekna" : has4gCoverage ? "Ja" : "Nei";
+  const energyMonitoring = calculatorMode ? "Ikke beregnet" : has4gCoverage ? "Ja" : "Nei";
 
-  const releaseArrangement = calculatorMode ? "Ikkje berekna" : simplifyReleaseArrangement(recommendation.hovudloysing);
-  const primaryMeasurement = calculatorMode ? "Ikkje berekna" : derivePrimaryMeasurement(recommendation);
-  const controlMeasurement = calculatorMode ? "Ikkje berekna" : deriveControlMeasurement(recommendation);
+  const releaseArrangement = calculatorMode ? "Ikke beregnet" : simplifyReleaseArrangement(recommendation.hovudloysing);
+  const primaryMeasurement = calculatorMode ? "Ikke beregnet" : derivePrimaryMeasurement(recommendation);
+  const controlMeasurement = calculatorMode ? "Ikke beregnet" : deriveControlMeasurement(recommendation);
   const measurementEquipment = calculatorMode
-    ? "Ikkje berekna"
+    ? "Ikke beregnet"
     : deriveMeasurementEquipment(primaryMeasurement, controlMeasurement);
 
   const icingAdaptation = calculatorMode
-    ? "Ikkje berekna"
+    ? "Ikke beregnet"
     :
     answers.q5IsSedimentTilstopping === "ja" && answers.q4Slippmetode === "royr_frostfritt"
-      ? "Frostsikra sensorhus / varmekabel"
+      ? "Frostsikret sensorhus / varmekabel"
       : answers.q5IsSedimentTilstopping === "ja"
         ? "Isreduksjon i måleprofil"
         : "Standard";
 
   const operationsRequirements = calculatorMode ? [] : dedupe([
-    releaseArrangement.startsWith("Røyrslipp")
-      ? "Serviceadkomst til ventil, målar og innløp i frostfritt rom"
+    releaseArrangement.startsWith("Rørslipp")
+      ? "Serviceadkomst til ventil, måler og innløp i frostfritt rom"
       : "",
-    primaryMeasurement === "Mengdemåling i røyr"
-      ? "Rettstrekk og roleg straumbilete gjennom målaren for stabil signalkvalitet"
+    primaryMeasurement === "Mengdemåling i rør"
+      ? "Rettstrekk og rolig strømbilde gjennom måleren for stabil signalkvalitet"
       : "",
-    controlMeasurement === "Kontroll i naturleg måleprofil nedstrøms"
-      ? "Naturleg kontrollprofil nedstrøms med stabil geometri og tilkomst for kontrollmåling"
+    controlMeasurement === "Kontroll i naturlig måleprofil nedstrøms"
+      ? "Naturlig kontrollprofil nedstrøms med stabil geometri og adkomst for kontrollmåling"
       : "",
-    controlMeasurement === "Kontroll i kunstig bygd måleprofil nedstrøms"
-      ? "Kunstig kontrollprofil nedstrøms med definert geometri og tilkomst for kontrollmåling"
+    controlMeasurement === "Kontroll i kunstig bygget måleprofil nedstrøms"
+      ? "Kunstig kontrollprofil nedstrøms med definert geometri og adkomst for kontrollmåling"
       : "",
     controlMeasurement === "Fortynningsmåling"
-      ? "Tilstrekkeleg turbulens og dokumentert innblanding ved kontrollmåling"
+      ? "Tilstrekkelig turbulens og dokumentert innblanding ved kontrollmåling"
       : "",
-    controlMeasurement === "Areal-hastigheitmåling"
-      ? "Jamn djupn og definert tverrsnitt for areal-hastigheitsmåling"
+    controlMeasurement === "Areal-hastighetmåling"
+      ? "Jevn dybde og definert tverrsnitt for areal-hastighetsmåling"
       : "",
-    controlMeasurement === "Volum/tid-måling i behaldar"
-      ? "Samla behaldar med kjent volum og repeterbar tømmetid"
+    controlMeasurement === "Volum/tid-måling i beholder"
+      ? "Samlet beholder med kjent volum og repeterbar tømmetid"
       : "",
     answers.q3Slippkravvariasjon === "sesongkrav" || answers.q3Slippkravvariasjon === "tilsigsstyrt"
-      ? "Regulering må kunne sporast og styrast trygt ved hyppige endringar"
+      ? "Regulering må kunne spores og styres trygt ved hyppige endringer"
       : "",
     recommendation.status === "Krev avklaring"
       ? `Avklar prosjekteringsgrunnlaget for ${recommendation.kontrollmalemetode.toLowerCase()}`
@@ -326,7 +326,7 @@ function calculateSystemRecommendation(
 function calculateMonthlyEnergyBalance(
   configuration: PlantConfiguration,
   totalWhPerDay: number,
-  sourceName: BackupSourceName | "Ikkje berekna"
+  sourceName: BackupSourceName | "Ikke beregnet"
 ): MonthlyEnergyBalanceRow[] {
   const sourceConfig = selectedSourceConfig(configuration, sourceName);
   const secondarySourcePowerKw = toNumber(sourceConfig.powerW) / 1000;
@@ -495,8 +495,8 @@ export function calculateConfigurationOutputs(
   const recommendation =
     (configuration.engineMode ?? "standard") === "standard"
       ? {
-          hovudloysing: "Ikkje berekna",
-          kontrollmalemetode: "Ikkje berekna",
+          hovudloysing: "Ikke beregnet",
+          kontrollmalemetode: "Ikke beregnet",
           grunngiving: [],
           tilleggskrav: [],
           status: "Krev avklaring" as const

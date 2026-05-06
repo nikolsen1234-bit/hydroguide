@@ -6,6 +6,7 @@ import { useLanguage } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import {
   workspaceBodyClassName,
+  workspaceContentValueBaseClassName,
   workspacePageClassName,
   workspaceSubsectionTitleClassName
 } from "../styles/workspace";
@@ -305,12 +306,12 @@ function ensureMathJaxLoaded(): Promise<void> {
 }
 
 function InlineMath({ tex }: { tex: string }) {
-  return <span className="font-semibold text-slate-950">{`\\(${tex}\\)`}</span>;
+  return <span className={`${workspaceContentValueBaseClassName} text-slate-950`}>{`\\(${tex}\\)`}</span>;
 }
 
 function FormulaBlock({ tex }: { tex: string }) {
   return (
-    <div className="my-4 overflow-hidden py-1 text-left text-base text-slate-950">
+    <div className="my-4 max-w-full overflow-x-auto overflow-y-hidden py-1 text-left text-[length:var(--hg-type-category-size)] text-slate-950">
       {`\\[${tex}\\]`}
     </div>
   );
@@ -324,7 +325,7 @@ function DefinitionList({ items, heading }: { items: FormulaItem[]; heading: str
         <tbody>
           {items.map((item) => (
             <tr key={item.symbol} className="border-t border-slate-100 first:border-t-0">
-              <td className="w-28 whitespace-nowrap py-2 pr-4 align-top text-sm font-semibold text-slate-950 sm:w-36">
+              <td className={`w-28 whitespace-nowrap py-2 pr-4 align-top sm:w-36 ${workspaceContentValueBaseClassName} text-slate-950`}>
                 <InlineMath tex={item.symbol} />
               </td>
               <td className={`py-2 align-top ${workspaceBodyClassName}`}>
@@ -371,7 +372,7 @@ export default function DocumentationPage() {
     <main className={workspacePageClassName}>
       <WorkspaceHeader title={t("docs.title")} />
 
-      <div ref={mathDocumentRef} className="space-y-12">
+      <div ref={mathDocumentRef} className="min-w-0 space-y-12">
         {sections.map((section) => (
           <WorkspaceSection key={section.title} title={section.title}>
             <div className="space-y-8">

@@ -109,35 +109,35 @@ export async function runRadioLinkAnalysis(input: RadioLinkFormState): Promise<R
   const antennaHeightB = input.pointB.antennaHeight;
 
   if (!pointA || !pointB) {
-    throw new Error("Koordinatene ma vere pa formatet X, Y.");
+    throw new Error("Koordinatene må være på formatet X, Y.");
   }
 
   if (typeof antennaHeightA !== "number" || !Number.isFinite(antennaHeightA) || antennaHeightA < 0) {
-    throw new Error("Antennehoyde for punkt A ma vere 0 eller meir.");
+    throw new Error("Antennehøyde for punkt A må være 0 eller mer.");
   }
 
   if (typeof antennaHeightB !== "number" || !Number.isFinite(antennaHeightB) || antennaHeightB < 0) {
-    throw new Error("Antennehoyde for punkt B ma vere 0 eller meir.");
+    throw new Error("Antennehøyde for punkt B må være 0 eller mer.");
   }
 
   if (!Number.isFinite(input.frequencyMHz) || input.frequencyMHz <= 0) {
-    throw new Error("Frekvens ma vere storre enn 0 MHz.");
+    throw new Error("Frekvens må være større enn 0 MHz.");
   }
 
   if (!Number.isFinite(input.rainFactor) || input.rainFactor < 0) {
-    throw new Error("Regnfaktor ma vere 0 eller meir.");
+    throw new Error("Regnfaktor må være 0 eller mer.");
   }
 
   const terrainDistance = calculateDistance(pointA.lat, pointA.lng, pointB.lat, pointB.lng);
 
   if (!Number.isFinite(terrainDistance) || terrainDistance <= 0) {
-    throw new Error("Punkta ma vere ulike for a berekne samband.");
+    throw new Error("Punktene må være ulike for å beregne forbindelse.");
   }
 
   const heights = await fetchTerrainProfile(pointA, pointB, terrainDistance);
 
   if (heights.length < 2) {
-    throw new Error("Terrengprofilen returnerte for fa punkt.");
+    throw new Error("Terrengprofilen returnerte for få punkt.");
   }
 
   const startAltitude = input.pointA.heightScale === "AGL" ? heights[0] + antennaHeightA : antennaHeightA;
@@ -213,7 +213,7 @@ async function fetchTerrainProfile(pointA: RadioLinkPoint, pointB: RadioLinkPoin
   });
 
   if (!response.ok) {
-    throw new Error("Klarte ikkje a hente terrengprofil.");
+    throw new Error("Klarte ikke å hente terrengprofil.");
   }
 
   const data = (await response.json()) as TerrainProfileResponse;
@@ -229,7 +229,7 @@ async function fetchTerrainProfile(pointA: RadioLinkPoint, pointB: RadioLinkPoin
     .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
 
   if (!heights?.length) {
-    throw new Error("Terrengprofil manglar hoydepunkt.");
+    throw new Error("Terrengprofil mangler høydepunkt.");
   }
 
   return heights;

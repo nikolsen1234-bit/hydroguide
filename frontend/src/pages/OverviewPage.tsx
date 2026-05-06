@@ -7,6 +7,7 @@ import WorkspaceSection from "../components/WorkspaceSection";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import {
+  workspaceContentValueClassName,
   workspaceInputClassName,
   workspacePageClassName,
   workspaceSubsectionTitleClassName,
@@ -29,9 +30,9 @@ function OverviewMetricColumn({
         <div key={item.label} className="flex flex-col items-center justify-center gap-1 px-4 py-4 sm:px-5">
           {item.icon}
           <p className={`${workspaceSubsectionTitleClassName} text-center`}>{item.label}</p>
-          <p className="text-sm font-semibold leading-tight tracking-[-0.01em] text-slate-950">
+          <p className={workspaceContentValueClassName}>
             {item.number ?? "—"}
-            <span className="ml-1 text-sm font-semibold leading-tight tracking-[-0.01em] text-slate-950">{item.unit}</span>
+            <span className={`ml-1 ${workspaceContentValueClassName}`}>{item.unit}</span>
           </p>
         </div>
       ))}
@@ -234,11 +235,11 @@ export default function OverviewPage() {
               <div key={item.label} className="rounded-2xl border border-slate-200 px-3 py-3 text-center">
                 <div className="flex items-center justify-center gap-1.5">
                   {item.icon}
-                  <p className="text-sm font-semibold leading-tight tracking-[-0.01em] text-slate-950">{item.label}</p>
+                  <p className={workspaceContentValueClassName}>{item.label}</p>
                 </div>
-                <p className="mt-1.5 break-words text-sm font-semibold leading-tight tracking-[-0.01em] text-slate-950">
+                <p className={`mt-1.5 break-words ${workspaceContentValueClassName}`}>
                   {item.number ?? "—"}
-                  <span className="ml-1 text-sm font-semibold leading-tight tracking-[-0.01em] text-slate-950">{item.unit}</span>
+                  <span className={`ml-1 ${workspaceContentValueClassName}`}>{item.unit}</span>
                 </p>
               </div>
             ))}

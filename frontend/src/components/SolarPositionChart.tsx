@@ -11,6 +11,14 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { HorizonProfile } from "../lib/solarEngine";
 import {
+  workspaceChartAxisClassName,
+  workspaceChartLegendClassName,
+  workspaceChartTooltipTextFontSize,
+  workspaceChartTooltipTitleFontSize,
+  workspaceFieldLabelClassName,
+  workspaceInputClassName
+} from "../styles/workspace";
+import {
   fractionalYear,
   solarDeclination,
   equationOfTime,
@@ -193,18 +201,18 @@ export function SolarPositionChart({ profile, latDeg, lonDeg, tiltDeg, azimuthDe
     <div className="mt-6">
       {/* Date picker */}
       <div className="mb-3 flex flex-wrap items-center gap-3">
-        <label className="text-sm font-medium text-slate-600">Dato:</label>
+        <label className={workspaceFieldLabelClassName}>Dato:</label>
         <input
           type="date"
           value={toDateStr(selectedDoy)}
           onChange={handleDateChange}
-          className="rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700"
+          className={`${workspaceInputClassName} max-w-44 py-1`}
         />
       </div>
 
       {/* Incidence chart */}
-      <div className="mb-4">
-        <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="w-full" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+      <div className="mb-4 overflow-x-auto pb-1">
+        <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="block min-w-[36rem] w-full" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
           <title>Solposisjon gjennom dagen</title>
           <rect x={PL} y={PT} width={CW} height={CH} fill="#f8fafc" rx={2} />
 
@@ -212,7 +220,7 @@ export function SolarPositionChart({ profile, latDeg, lonDeg, tiltDeg, azimuthDe
           {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90].map((d) => (
             <g key={d}>
               <line x1={PL} y1={toY(d)} x2={PL + CW} y2={toY(d)} stroke="#e2e8f0" strokeWidth={d === 0 ? 0.8 : 0.4} />
-              <text x={PL - 4} y={toY(d) + 3.5} textAnchor="end" fill="#94a3b8" fontSize={9}>{d}°</text>
+              <text x={PL - 4} y={toY(d) + 3.5} textAnchor="end" className={workspaceChartAxisClassName}>{d}°</text>
             </g>
           ))}
 
@@ -220,7 +228,7 @@ export function SolarPositionChart({ profile, latDeg, lonDeg, tiltDeg, azimuthDe
           {Array.from({ length: 25 }, (_, i) => i).map((h) => (
             <g key={h}>
               {h % 3 === 0 && <line x1={toX(h)} y1={PT} x2={toX(h)} y2={PT + CH} stroke="#e2e8f0" strokeWidth={0.4} />}
-              {h % 3 === 0 && <text x={toX(h)} y={PT + CH + 14} textAnchor="middle" fill="#64748b" fontSize={9}>{String(h).padStart(2, "0")}:00</text>}
+              {h % 3 === 0 && <text x={toX(h)} y={PT + CH + 14} textAnchor="middle" className={workspaceChartAxisClassName}>{String(h).padStart(2, "0")}:00</text>}
             </g>
           ))}
 
@@ -234,7 +242,7 @@ export function SolarPositionChart({ profile, latDeg, lonDeg, tiltDeg, azimuthDe
             />
           )}
 
-          <text x={PL - 4} y={PT - 10} textAnchor="end" fill="#64748b" fontSize={8}>grader</text>
+          <text x={PL - 4} y={PT - 10} textAnchor="end" className={workspaceChartAxisClassName}>grader</text>
 
           {/* Hover tooltip */}
           {tooltip && (() => {
@@ -247,13 +255,13 @@ export function SolarPositionChart({ profile, latDeg, lonDeg, tiltDeg, azimuthDe
                 <line x1={tooltip.svgX} y1={PT} x2={tooltip.svgX} y2={PT + CH} stroke="#94a3b8" strokeWidth={0.8} strokeDasharray="4 3" />
                 <circle cx={tooltip.svgX} cy={tooltip.svgY} r={5} fill={LINE_COLOR} stroke="white" strokeWidth={2} />
                 <rect x={bx} y={by} width={bw} height={bh} rx={4} fill="white" stroke="#e2e8f0" strokeWidth={1} style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.12))" }} />
-                <text x={bx + 10} y={by + 16} fontSize={12} fontWeight={700} fill="#0f172a">{hStr}</text>
+                <text x={bx + 10} y={by + 16} fontSize={workspaceChartTooltipTitleFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a">{hStr}</text>
                 <circle cx={bx + 14} cy={by + 32} r={4} fill={LINE_COLOR} />
-                <text x={bx + 24} y={by + 36} fontSize={11} fontWeight={600} fill={LINE_COLOR}>Innfallsvinkel</text>
-                <text x={bx + bw - 10} y={by + 36} fontSize={11} fontWeight={700} fill="#0f172a" textAnchor="end">{tooltip.incidence}°</text>
+                <text x={bx + 24} y={by + 36} fontSize={workspaceChartTooltipTextFontSize} fontWeight="var(--hg-type-weight-semibold)" fill={LINE_COLOR}>Innfallsvinkel</text>
+                <text x={bx + bw - 10} y={by + 36} fontSize={workspaceChartTooltipTextFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a" textAnchor="end">{tooltip.incidence}°</text>
                 <circle cx={bx + 14} cy={by + 52} r={4} fill="#94a3b8" />
-                <text x={bx + 24} y={by + 56} fontSize={11} fontWeight={600} fill="#475569">Horisont</text>
-                <text x={bx + bw - 10} y={by + 56} fontSize={11} fontWeight={700} fill="#0f172a" textAnchor="end">{tooltip.horizonH}°{tooltip.inShade ? " (skugge)" : ""}</text>
+                <text x={bx + 24} y={by + 56} fontSize={workspaceChartTooltipTextFontSize} fontWeight="var(--hg-type-weight-semibold)" fill="#475569">Horisont</text>
+                <text x={bx + bw - 10} y={by + 56} fontSize={workspaceChartTooltipTextFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a" textAnchor="end">{tooltip.horizonH}°{tooltip.inShade ? " (skugge)" : ""}</text>
               </g>
             );
           })()}
@@ -261,7 +269,7 @@ export function SolarPositionChart({ profile, latDeg, lonDeg, tiltDeg, azimuthDe
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] font-medium text-slate-600">
+      <div className={`flex flex-wrap items-center gap-x-5 gap-y-2 ${workspaceChartLegendClassName} text-slate-600`}>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-0.5 w-4" style={{ backgroundColor: LINE_COLOR, height: 2.5 }} />
           Innfallsvinkel ({formatLabel(selectedDoy)})

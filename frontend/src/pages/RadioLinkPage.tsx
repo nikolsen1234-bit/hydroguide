@@ -8,6 +8,8 @@ import { useLanguage } from "../i18n";
 import {
   workspaceBodyClassName,
   workspaceBodyStrongClassName,
+  workspaceChartTooltipTextFontSize,
+  workspaceChartTooltipTitleFontSize,
   workspaceFieldLabelClassName,
   workspaceFieldLabelRowClassName,
   workspaceFieldStackClassName,
@@ -154,7 +156,7 @@ function InlineUnitInput({
           }}
           className={`${numberFieldClassName} ${inputPaddingClassName}`}
         />
-        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-semibold text-slate-950">
+        <span className={`pointer-events-none absolute inset-y-0 right-4 flex items-center ${workspaceFieldLabelClassName}`}>
           {unit}
         </span>
       </div>
@@ -175,18 +177,18 @@ function ProfileChart({ analysis }: { analysis: RadioLinkAnalysis | null }) {
     );
   }
 
-  const width = isMobile ? 600 : 1200;
-  const height = isMobile ? 320 : 360;
+  const width = isMobile ? 430 : 1200;
+  const height = isMobile ? 300 : 360;
   const padding = isMobile
-    ? { top: 18, right: 14, bottom: 38, left: 44 }
+    ? { top: 16, right: 8, bottom: 34, left: 36 }
     : { top: 22, right: 12, bottom: 42, left: 56 };
 
-  const yAxisFontSize = isMobile ? 14 : 13;
-  const tooltipTitleFontSize = isMobile ? 15 : 14;
-  const tooltipBodyFontSize = isMobile ? 14 : 13;
-  const distanceTickFontSize = isMobile ? 14 : 13;
-  const tooltipWidth = isMobile ? 180 : 200;
-  const tooltipHeight = isMobile ? 136 : 126;
+  const yAxisFontSize = "var(--hg-type-chart-size)";
+  const tooltipTitleFontSize = workspaceChartTooltipTitleFontSize;
+  const tooltipBodyFontSize = workspaceChartTooltipTextFontSize;
+  const distanceTickFontSize = "var(--hg-type-chart-size)";
+  const tooltipWidth = isMobile ? 158 : 200;
+  const tooltipHeight = isMobile ? 116 : 126;
 
   const sampleStep = Math.max(1, Math.ceil(analysis.series.terrain.length / 260));
   const indexes = analysis.series.terrain
@@ -309,22 +311,22 @@ function ProfileChart({ analysis }: { analysis: RadioLinkAnalysis | null }) {
               stroke="#cbd5e1"
               strokeWidth="1.2"
             />
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 20} fontSize={tooltipTitleFontSize} fontWeight="700" fill="#0f172a">
+            <text x={hoverTooltipX + 12} y={hoverTooltipY + 20} fontSize={tooltipTitleFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a">
               {t("radio.distance")} {formatNumber(distancesKm[hoveredIndex], 2)} km
             </text>
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 40} fontSize={tooltipBodyFontSize} fill="#334155">
+            <text x={hoverTooltipX + 12} y={hoverTooltipY + 37} fontSize={tooltipBodyFontSize} fill="#334155">
               {t("radio.terrain")} {formatNumber(terrain[hoveredIndex], 1)} m
             </text>
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 58} fontSize={tooltipBodyFontSize} fill="#4baee8">
+            <text x={hoverTooltipX + 12} y={hoverTooltipY + 54} fontSize={tooltipBodyFontSize} fill="#4baee8">
               {t("radio.earthCurve")} {formatNumber(earthCurve[hoveredIndex], 2)} m
             </text>
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 76} fontSize={tooltipBodyFontSize} fill="#0f766e">
+            <text x={hoverTooltipX + 12} y={hoverTooltipY + 71} fontSize={tooltipBodyFontSize} fill="#0f766e">
               {t("radio.lineOfSight")} {formatNumber(lineOfSight[hoveredIndex], 1)} m
             </text>
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 94} fontSize={tooltipBodyFontSize} fill="#f59e0b">
+            <text x={hoverTooltipX + 12} y={hoverTooltipY + 88} fontSize={tooltipBodyFontSize} fill="#f59e0b">
               {t("radio.fresnelLower")} {formatNumber(fresnelLower[hoveredIndex], 1)} m
             </text>
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 112} fontSize={tooltipBodyFontSize} fill="#d97706">
+            <text x={hoverTooltipX + 12} y={hoverTooltipY + 105} fontSize={tooltipBodyFontSize} fill="#d97706">
               {t("radio.fresnelUpper")} {formatNumber(fresnelUpper[hoveredIndex], 1)} m
             </text>
           </g>
@@ -339,10 +341,10 @@ function ProfileChart({ analysis }: { analysis: RadioLinkAnalysis | null }) {
                 x={x}
                 y={height - 6}
                 fontSize={distanceTickFontSize}
-                fontWeight="600"
+                fontWeight="var(--hg-type-weight-semibold)"
                 fill="#7c8aa0"
                 textAnchor={isFirst ? "start" : isLast ? "end" : "middle"}
-                letterSpacing="0.12em"
+                letterSpacing="var(--hg-type-chart-tick-tracking)"
               >
                 {formatNumber(tick, 2)} KM
               </text>
@@ -358,7 +360,7 @@ function ProfileChart({ analysis }: { analysis: RadioLinkAnalysis | null }) {
         </svg>
       </div>
 
-      <div className={`flex flex-wrap gap-3 ${workspaceMetaClassName}`} style={{ paddingLeft: `${(padding.left / width) * 100}%` }}>
+      <div className={`flex flex-wrap gap-3 ${workspaceMetaClassName}`} style={{ paddingLeft: isMobile ? 0 : `${(padding.left / width) * 100}%` }}>
         <span className="flex items-center gap-2">
           <span className="h-3.5 w-3.5 rounded-full bg-[#2e3b29]" />
           {t("radio.terrain")}
@@ -408,7 +410,7 @@ function StationPanel({
       <div className="space-y-4">
         <label className="block">
           <span className={`${workspaceFieldLabelRowClassName} mb-2 gap-3`}>
-            <span className={`inline-flex h-8 min-w-8 items-center justify-center rounded-full px-3 text-sm font-black ${accent}`}>
+            <span className={`inline-flex h-8 min-w-8 items-center justify-center rounded-full px-3 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-extra)] ${accent}`}>
               {label}
             </span>
             <span className={workspaceFieldLabelClassName}>{t("radio.location")} {label}</span>
@@ -430,7 +432,7 @@ function StationPanel({
                   key={option.value}
                   type="button"
                   onClick={() => onScaleChange(option.value)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                  className={`rounded-lg px-3 py-1.5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] transition ${
                     endpoint.heightScale === option.value
                       ? "bg-white text-slate-950 shadow-sm"
                       : "text-slate-950 hover:text-slate-950"
@@ -617,7 +619,7 @@ export default function RadioLinkPage() {
             }
             className="radiolink-slider min-w-0 flex-1"
           />
-          <div className="inline-flex min-w-[3.75rem] justify-center rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-950 tabular-nums">
+          <div className="inline-flex min-w-[3.75rem] justify-center rounded-full border border-slate-200 bg-white px-3 py-1 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-slate-950 tabular-nums">
             {formatNumber(form.fresnelFactor, 1)}
           </div>
         </div>
@@ -707,7 +709,7 @@ export default function RadioLinkPage() {
     <button
       type="submit"
       disabled={loading}
-      className="h-12 w-full rounded-full bg-[#9bd3ff] px-5 text-sm font-black text-[#0d3348] transition hover:bg-[#b8e1ff] disabled:cursor-wait disabled:opacity-75 sm:w-auto xl:min-w-[11.5rem]"
+      className="h-12 w-full rounded-full bg-[#9bd3ff] px-5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-extra)] text-[#0d3348] disabled:cursor-wait disabled:opacity-75 sm:w-auto md:transition md:hover:bg-[#b8e1ff] xl:min-w-[11.5rem]"
     >
       {loading ? t("radio.calculating") : t("radio.calculate")}
     </button>
@@ -722,8 +724,8 @@ export default function RadioLinkPage() {
         <form onSubmit={handleSubmit}>
           <div className="space-y-5">
             {/* Compact map */}
-            <div className="-mx-4 -mt-2 mb-5">
-              <div className="h-[36vh] min-h-[220px]">
+            <div className="-mt-2 mb-5">
+              <div className="h-[42vh] min-h-[300px] max-h-[430px]">
                 <RadioLinkMap
                   pointA={showMapMarkers ? mapPointA : null}
                   pointB={showMapMarkers ? mapPointB : null}
@@ -753,9 +755,7 @@ export default function RadioLinkPage() {
                     tabIndex={0}
                     aria-pressed={isSelectedForMap}
                     aria-label={`${t("radio.location")} ${lbl}`}
-                    className={`space-y-2 rounded-2xl border p-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${
-                      isSelectedForMap ? "border-brand-300 bg-brand-50/40" : "border-slate-200"
-                    }`}
+                    className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3 focus:outline-none"
                     onClick={() => setNextMapPoint(key)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
@@ -766,22 +766,22 @@ export default function RadioLinkPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${cardAccent}`}>
+                        <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-extra)] ${cardAccent}`}>
                           {lbl}
                         </span>
                         <span className={workspaceSubsectionTitleClassName}>{t("radio.location")} {lbl}</span>
                       </div>
-                      <span className={`text-xs font-semibold ${parsed ? "text-emerald-600" : "text-slate-400"}`}>
+                      <span className={`text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] ${parsed ? "text-emerald-600" : "text-slate-400"}`}>
                         {parsed ? t("radio.set") : t("radio.notSet")}
                       </span>
                     </div>
                     <input
                       value={ep.coordinate}
                       onChange={(e) => updateRadioLinkEndpoint(key, { coordinate: e.target.value })}
-                      className={`${fieldClassName} !text-xs !h-9 !rounded-xl !px-2.5`}
+                      className={`${fieldClassName} !text-[length:var(--hg-type-meta-size)] !h-9 !rounded-xl !px-2.5`}
                       placeholder="Lat, Lng"
                     />
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-2">
                       <input
                         type="text"
                         inputMode="decimal"
@@ -792,16 +792,16 @@ export default function RadioLinkPage() {
                             updateRadioLinkEndpoint(key, { antennaHeight: raw === "" ? "" : Number(raw) });
                           }
                         }}
-                        className={`${fieldClassName} !text-xs !h-9 !rounded-xl !px-2.5 flex-1`}
+                        className={`${fieldClassName} !text-[length:var(--hg-type-meta-size)] !h-9 !rounded-xl !px-2.5 w-full`}
                         placeholder={t("radio.height")}
                       />
-                      <div className="inline-flex shrink-0 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                      <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
                         {(["AGL", "ASL"] as HeightScale[]).map((hs) => (
                           <button
                             key={hs}
                             type="button"
                             onClick={() => updateRadioLinkEndpoint(key, { heightScale: hs })}
-                            className={`rounded-md px-2 py-1 text-xs font-semibold transition ${
+                            className={`rounded-md px-2 py-1 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] ${
                               ep.heightScale === hs ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
                             }`}
                           >
@@ -878,7 +878,7 @@ export default function RadioLinkPage() {
                   }
                   className="radiolink-slider min-w-0 flex-1"
                 />
-                <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-sm font-bold text-slate-950 tabular-nums">
+                <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-bold)] text-slate-950 tabular-nums">
                   {formatNumber(form.fresnelFactor, 1)}
                 </span>
               </div>
@@ -886,7 +886,7 @@ export default function RadioLinkPage() {
             </div>
 
             {error ? (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</div>
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-rose-700">{error}</div>
             ) : null}
           </div>
         </form>
@@ -972,7 +972,7 @@ export default function RadioLinkPage() {
               </WorkspaceSection>
 
           {error ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{error}</div>
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-rose-700">{error}</div>
           ) : null}
         </form>
 

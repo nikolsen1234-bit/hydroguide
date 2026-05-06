@@ -50,7 +50,7 @@ API-et har tre kategorier endepunkter. Sensor og eksterne brukere skal forholde 
 
 ```mermaid
 flowchart TB
-    subgraph public[Offentlig API — dokumentert i /api/docs?ui]
+    subgraph public[Offentlig API — dokumentert i /api]
         p1[GET /api/health]
         p2[GET /api/docs]
         p3[POST /api/calculations]
@@ -76,12 +76,13 @@ flowchart TB
     end
 ```
 
-### Offentlig API (dokumentert i `/api/docs?ui`)
+### Offentlig API (dokumentert i `/api`)
 
 | Endepunkt | Hva det gjør |
 |-----------|--------------|
 | `GET /api/health` | Helsesjekk. Svarer `{status, timestamp}`. |
-| `GET /api/docs` | OpenAPI-spek. `?ui` gir Swagger UI. |
+| `GET /api` | Nettsidens API-side. Viser Swagger UI inne i HydroGuide. |
+| `GET /api/docs` | OpenAPI-spek. `?ui` gir den rene Swagger UI-en som bygges inn i `/api`. |
 | `POST /api/calculations` | Hovedberegning: gitt inntak + utstyr, returnerer energibudsjett, batteristørrelse, kostnad over levetid. |
 | `GET /api/calculations` | Returnerer input-skjema. |
 | `GET /api/nveid` | Liste over tilgjengelige stasjoner (meny, ikke hele datasettet). |
@@ -90,7 +91,7 @@ flowchart TB
 | `GET /api/nveid/{id}/concession` | Konsesjonslenke for stasjonen. |
 | `GET /api/pvgis-tmy` | Proxy for PVGIS soldata. |
 
-Krever `Authorization: Bearer <api-key>` på alle unntatt `/api/health` og `/api/docs`.
+Krever `Authorization: Bearer <api-key>` på alle unntatt `/api/health`, `/api` og `/api/docs`.
 
 ### Frontend-hjelpere (kallbare fra nettsiden, ikke offentlig API)
 
@@ -110,7 +111,7 @@ Disse står ikke i Swagger-spekken og er ikke ment for direkte bruk av tredjepar
 | `POST /admin/keys` | Lager ny nøkkel. |
 | `DELETE /admin/keys/{id}` | Sletter nøkkel. |
 
-Krever `Authorization: Bearer <ADMIN_TOKEN>`. WAF blokkerer `/api/keys*` slik at admin aldri ved et uhell havner på det offentlige API-et.
+Krever `x-admin-token: <ADMIN_TOKEN>`. WAF blokkerer `/api/keys*` slik at admin aldri ved et uhell havner på det offentlige API-et.
 
 ## Hvordan beregningene henger sammen
 

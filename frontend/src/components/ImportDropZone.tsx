@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FEEDBACK_TIMEOUT_MS, IMPORT_FILE_EXTENSION, IMPORT_FILE_MAX_BYTES } from "../constants";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
+import {
+  workspaceContentCategoryClassName,
+  workspaceContentValueClassName,
+  workspacePrimaryButtonClassName
+} from "../styles/workspace";
 
 function eventHasFiles(event: DragEvent | React.DragEvent) {
   const types = event.dataTransfer?.types;
@@ -134,8 +139,8 @@ export default function ImportDropZone() {
             <svg viewBox="0 0 24 24" fill="none" className="mx-auto h-8 w-8 stroke-brand-500" strokeWidth="1.5" aria-hidden="true">
               <path d="M12 16V4m0 0-4 4m4-4 4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <p className="mt-2 text-base font-bold text-brand-700">{t("shared.dropToImport")}</p>
-            <p className="mt-1 text-sm font-medium text-slate-950">
+            <p className={`mt-2 ${workspaceContentCategoryClassName} text-brand-700`}>{t("shared.dropToImport")}</p>
+            <p className={`mt-1 ${workspaceContentValueClassName}`}>
               {t("shared.onlyFiles").replace("{ext}", IMPORT_FILE_EXTENSION).replace("{size}", String(Math.floor(IMPORT_FILE_MAX_BYTES / 1024)))}
             </p>
           </div>
@@ -144,7 +149,7 @@ export default function ImportDropZone() {
 
       {feedback ? (
         <div
-          className={`fixed bottom-6 left-1/2 z-[101] -translate-x-1/2 rounded-2xl px-6 py-3 text-sm font-semibold shadow-lg ${
+          className={`fixed bottom-6 left-1/2 z-[101] -translate-x-1/2 ${workspacePrimaryButtonClassName} rounded-2xl px-6 py-3 shadow-lg ${
             feedback.type === "success" ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
           }`}
         >

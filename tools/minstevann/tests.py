@@ -224,6 +224,64 @@ class ExtractBackendRegressions(unittest.TestCase):
         self.assertEqual(periods_for(names["Nystøylbekken"]), [(5.0, "hele året")])
         self.assertEqual(periods_for(names["Fjellstøylbekken"]), [(5.0, "hele året")])
 
+    def test_never_below_claim_without_period_is_inferred_as_all_year(self):
+        llm = {
+            "funnet": True,
+            "claims": [
+                {
+                    "inntak_navn": "Stjordalselva",
+                    "tall": 9.5,
+                    "enhet": "m3/s",
+                    "periode_sitat": None,
+                    "full_sitat": "I Stjordalselva skal vannforingen aldri ga under 9,5 m3/s.",
+                }
+            ],
+            "tilleggs_krav": None,
+        }
+
+        assembled = assemble_inntak_from_claims(
+            llm,
+            snippet="I Stjordalselva skal vannforingen aldri ga under 9,5 m3/s.",
+            plant_name="Funna",
+        )
+
+        names = by_name(assembled["inntak"])
+        self.assertEqual(periods_for(names["Stjordalselva"]), [(9500.0, "hele året")])
+
+    def test_known_period_replaces_same_value_unknown_period(self):
+        llm = {
+            "funnet": True,
+            "claims": [
+                {
+                    "inntak_navn": "Stjordalselva",
+                    "tall": 9.5,
+                    "enhet": "m3/s",
+                    "periode_sitat": "hensyn til minstevannforingskravet",
+                    "full_sitat": "Nodvendig tapping av hensyn til minstevannforingskravet 9,5 m3/s i Stjordalselva.",
+                },
+                {
+                    "inntak_navn": "Stjordalselva",
+                    "tall": 9.5,
+                    "enhet": "m3/s",
+                    "periode_sitat": "umiddelbart nedenfor Funna",
+                    "full_sitat": "I Stjordalselva skal vannforingen aldri ga under 9,5 m3/s.",
+                },
+            ],
+            "tilleggs_krav": None,
+        }
+
+        assembled = assemble_inntak_from_claims(
+            llm,
+            snippet=(
+                "Nodvendig tapping av hensyn til minstevannforingskravet 9,5 m3/s i Stjordalselva. "
+                "I Stjordalselva skal vannforingen aldri ga under 9,5 m3/s."
+            ),
+            plant_name="Funna",
+        )
+
+        names = by_name(assembled["inntak"])
+        self.assertEqual(periods_for(names["Stjordalselva"]), [(9500.0, "hele året")])
+
     def test_voldsetelva_distributed_claims_stay_separate(self):
         llm = {
             "funnet": True,

@@ -342,6 +342,8 @@ def _classify_period(period_text: str | None, fallback_text: str | None = None) 
         if ("hele året" in t or "heile året" in t or "helårlig" in t or "hele aaret" in t
                 or "hver tid" in t or "enhver tid" in t or "til enhver" in t or "til en hver" in t):
             return "helar"
+        if re.search(r"\b(?:aldri|ikke)\b.{0,80}\b(?:g[åa]\s+under|under|underskride)\b", t):
+            return "helar"
         if t in {"sommer", "sommar", "sommerhalvåret", "sommerhalvaret"}:
             return "sommer"
         if t in {"vinter", "vinterhalvåret", "vinterhalvaret"}:
@@ -423,6 +425,22 @@ def _normalize_periode_str(p: str) -> str | None:
 
 def _append_unique_period(periods: list[dict], ls: float | None, periode: str | None, note: str | None = None) -> None:
     period = _period_entry(ls=ls, periode=_normalize_periode_str(periode) if periode else None, note=note)
+    if period["periode"] is not None:
+        periods[:] = [
+            existing for existing in periods
+            if not (
+                existing.get("ls") == period["ls"]
+                and existing.get("periode") is None
+                and existing.get("note") == period["note"]
+            )
+        ]
+    elif any(
+        existing.get("ls") == period["ls"]
+        and existing.get("periode") is not None
+        and existing.get("note") == period["note"]
+        for existing in periods
+    ):
+        return
     key = (period["ls"], period["periode"], period["note"])
     existing = {(p.get("ls"), p.get("periode"), p.get("note")) for p in periods}
     if key not in existing:

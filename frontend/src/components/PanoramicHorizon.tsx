@@ -10,6 +10,14 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { HorizonProfile } from "../lib/solarEngine";
 import {
+  workspaceChartAxisClassName,
+  workspaceChartLabelClassName,
+  workspaceChartLegendClassName,
+  workspaceChartTooltipTextFontSize,
+  workspaceChartTooltipTitleFontSize,
+  workspaceSecondaryButtonClassName
+} from "../styles/workspace";
+import {
   fractionalYear,
   solarDeclination,
   equationOfTime,
@@ -273,14 +281,15 @@ export function PanoramicHorizon({ profile, latDeg, lonDeg, locationName }: Pano
 
   return (
     <div>
-      <svg
-        ref={svgRef}
-        viewBox={`0 0 ${W} ${H}`}
-        className="mx-auto block w-full rounded-lg"
-        style={{ maxWidth: "100%" }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      >
+      <div className="overflow-x-auto pb-1">
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${W} ${H}`}
+          className="mx-auto block min-w-[42rem] w-full rounded-lg"
+          style={{ maxWidth: "100%" }}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
         <title>Panoramisk horisont med solbane</title>
         {/* Sky gradient — light */}
         <defs>
@@ -296,12 +305,12 @@ export function PanoramicHorizon({ profile, latDeg, lonDeg, locationName }: Pano
         {altGridLines.map((a) => (
           <g key={a}>
             <line x1={PAD_L} y1={altToY(a)} x2={PAD_L + CW} y2={altToY(a)} stroke="rgba(100,116,139,0.2)" strokeWidth={0.5} />
-            <text x={PAD_L - 5} y={altToY(a) + 3.5} textAnchor="end" fill="#94a3b8" fontSize={11}>{a}°</text>
+            <text x={PAD_L - 5} y={altToY(a) + 3.5} textAnchor="end" className={workspaceChartAxisClassName}>{a}°</text>
           </g>
         ))}
         {/* 0° line */}
         <line x1={PAD_L} y1={altToY(0)} x2={PAD_L + CW} y2={altToY(0)} stroke="rgba(100,116,139,0.35)" strokeWidth={0.8} />
-        <text x={PAD_L - 5} y={altToY(0) + 3.5} textAnchor="end" fill="#94a3b8" fontSize={11}>0°</text>
+        <text x={PAD_L - 5} y={altToY(0) + 3.5} textAnchor="end" className={workspaceChartAxisClassName}>0°</text>
 
         {/* Azimuth grid */}
         {Array.from({ length: 25 }, (_, i) => i * 15).map((az) => {
@@ -311,7 +320,7 @@ export function PanoramicHorizon({ profile, latDeg, lonDeg, locationName }: Pano
             <g key={az}>
               <line x1={x} y1={PAD_T} x2={x} y2={PAD_T + CH} stroke={isMajor ? "rgba(100,116,139,0.25)" : "rgba(100,116,139,0.1)"} strokeWidth={isMajor ? 0.8 : 0.4} />
               {isMajor ? (
-                <text x={x} y={PAD_T + CH + 16} textAnchor="middle" fill="#475569" fontSize={12} fontWeight="bold">{az}°</text>
+                <text x={x} y={PAD_T + CH + 16} textAnchor="middle" className={workspaceChartLabelClassName}>{az}°</text>
               ) : null}
             </g>
           );
@@ -332,8 +341,7 @@ export function PanoramicHorizon({ profile, latDeg, lonDeg, locationName }: Pano
                 y={altToY(m.alt) - 9}
                 textAnchor="middle"
                 fill="#0f172a"
-                fontSize={11}
-                fontWeight="bold"
+                fontSize="var(--hg-type-chart-size)" fontWeight="var(--hg-type-weight-semibold)"
               >
                 {String(m.hour).padStart(2, "0")}
               </text>
@@ -366,22 +374,23 @@ export function PanoramicHorizon({ profile, latDeg, lonDeg, locationName }: Pano
               <circle cx={tooltip.svgX} cy={tooltip.terrainDotY} r={5} fill="#16a34a" stroke="white" strokeWidth={2} />
               {tooltip.sun && <circle cx={tooltip.svgX} cy={tooltip.sun.dotY} r={5} fill={tooltip.sun.color} stroke="white" strokeWidth={2} />}
               <rect x={bx} y={by} width={bw} height={bh} rx={4} fill="white" stroke="#e2e8f0" strokeWidth={1} style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.12))" }} />
-              <text x={bx + 10} y={by + 16} fontSize={12} fontWeight={700} fill="#0f172a">Azimut {tooltip.azDeg.toFixed(1)}°</text>
+              <text x={bx + 10} y={by + 16} fontSize={workspaceChartTooltipTitleFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a">Azimut {tooltip.azDeg.toFixed(1)}°</text>
               {rows.map((r, i) => (
                 <g key={i}>
                   <circle cx={bx + 14} cy={by + 30 + i * 20} r={4} fill={r.color} />
-                  <text x={bx + 24} y={by + 34 + i * 20} fontSize={11} fontWeight={600} fill={r.color}>{r.label}</text>
-                  <text x={bx + bw - 10} y={by + 34 + i * 20} fontSize={11} fontWeight={700} fill="#0f172a" textAnchor="end">{r.value}</text>
+                  <text x={bx + 24} y={by + 34 + i * 20} fontSize={workspaceChartTooltipTextFontSize} fontWeight="var(--hg-type-weight-semibold)" fill={r.color}>{r.label}</text>
+                  <text x={bx + bw - 10} y={by + 34 + i * 20} fontSize={workspaceChartTooltipTextFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a" textAnchor="end">{r.value}</text>
                 </g>
               ))}
             </g>
           );
         })()}
-      </svg>
+        </svg>
+      </div>
 
       {/* Legend + download */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] font-medium text-slate-600">
+        <div className={`flex flex-wrap items-center gap-x-5 gap-y-2 ${workspaceChartLegendClassName} text-slate-600`}>
           {SUN_PATHS.map((sp) => (
             <span key={sp.doy} className="flex items-center gap-1.5">
               <span className="inline-block h-0.5 w-4" style={{ backgroundColor: sp.color, height: sp.lw }} />
@@ -396,7 +405,7 @@ export function PanoramicHorizon({ profile, latDeg, lonDeg, locationName }: Pano
         <button
           type="button"
           onClick={handleDownload}
-          className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-200"
+          className={workspaceSecondaryButtonClassName}
         >
           Last ned PNG
         </button>

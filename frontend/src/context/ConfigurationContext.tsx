@@ -94,11 +94,11 @@ const ConfigurationContext = createContext<ConfigurationContextValue | undefined
 function validateImportFile(file: File) {
   const fileName = file.name.trim().toLowerCase();
   if (!fileName.endsWith(IMPORT_FILE_EXTENSION)) {
-    throw new Error(`Berre ${IMPORT_FILE_EXTENSION}-filer kan importerast.`);
+    throw new Error(`Bare ${IMPORT_FILE_EXTENSION}-filer kan importeres.`);
   }
 
   if (file.size > IMPORT_FILE_MAX_BYTES) {
-    throw new Error(`Importfila er for stor. Maks storleik er ${Math.floor(IMPORT_FILE_MAX_BYTES / 1024)} KB.`);
+    throw new Error(`Importfilen er for stor. Maks størrelse er ${Math.floor(IMPORT_FILE_MAX_BYTES / 1024)} KB.`);
   }
 }
 
@@ -164,7 +164,7 @@ function createExportPayload(configuration: PlantConfiguration) {
         aktiv: row.active,
         namn: row.name,
         effektW: row.powerW,
-        timarPerDag: row.runtimeHoursPerDay
+        timerPerDag: row.runtimeHoursPerDay
       }))
   };
 }
@@ -189,13 +189,13 @@ function toImportedPartialConfiguration(raw: Record<string, unknown>): Partial<P
         aktiv?: boolean;
         namn?: string;
         effektW?: unknown;
-        timarPerDag?: unknown;
+        timerPerDag?: unknown;
       }>).map((row) => ({
         id: makeId("eq"),
         active: row.aktiv !== false,
         name: row.namn ?? "",
         powerW: row.effektW,
-        runtimeHoursPerDay: row.timarPerDag
+        runtimeHoursPerDay: row.timerPerDag
       }))
     : raw.equipmentRows as PlantConfiguration["equipmentRows"] | undefined;
 
@@ -418,14 +418,14 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
       const text = await file.text();
       const parsed = JSON.parse(text) as unknown;
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        throw new Error("Importfila maa innehalde eit gyldig konfigurasjonsobjekt.");
+        throw new Error("Importfilen må inneholde et gyldig konfigurasjonsobjekt.");
       }
 
       const raw = parsed as Record<string, unknown>;
       const importedEquipmentRows = Array.isArray(raw.utstyr) ? raw.utstyr : null;
 
       if (importedEquipmentRows && importedEquipmentRows.length > MAX_CONFIGURATION_EQUIPMENT_ROWS) {
-        throw new Error(`Importfila inneheld for mange utstyrsrader. Maks er ${MAX_CONFIGURATION_EQUIPMENT_ROWS}.`);
+        throw new Error(`Importfilen inneholder for mange utstyrsrader. Maks er ${MAX_CONFIGURATION_EQUIPMENT_ROWS}.`);
       }
 
       const imported = normalizeConfiguration(
@@ -474,7 +474,7 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
 export function useConfigurationContext(): ConfigurationContextValue {
   const ctx = useContext(ConfigurationContext);
   if (!ctx) {
-    throw new Error("useConfigurationContext maa brukast inne i ConfigurationProvider");
+    throw new Error("useConfigurationContext må brukes inne i ConfigurationProvider");
   }
 
   return ctx;

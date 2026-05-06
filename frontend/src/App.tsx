@@ -6,7 +6,7 @@ import ImportDropZone from "./components/ImportDropZone";
 import { useConfigurationContext } from "./context/ConfigurationContext";
 import { useLanguage } from "./i18n";
 import type { TranslationKey } from "./i18n";
-import { workspaceBodyClassName } from "./styles/workspace";
+import { workspaceBodyClassName, workspaceFieldLabelClassName } from "./styles/workspace";
 import type { EngineMode } from "./types";
 
 const ComponentsPage = lazy(() => import("./pages/ComponentsPage"));
@@ -92,7 +92,7 @@ function SideTab({ to, labelKey, icon, onClick }: { to: string; labelKey: Transl
       end={to === "/"}
       onClick={onClick}
       className={({ isActive }) =>
-        `flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-medium transition sm:text-[0.98rem] ${
+        `flex items-center gap-2.5 rounded-xl border px-3 py-2.5 ${workspaceBodyClassName} transition ${
           isActive
             ? "border-brand-200 bg-brand-50 text-brand-700"
             : "border-transparent text-slate-950 hover:border-slate-200 hover:bg-slate-50"
@@ -121,17 +121,17 @@ function LanguageToggle() {
       <button
         type="button"
         onClick={() => setLanguage("nn")}
-        className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+        className={`rounded-lg px-2.5 py-1 ${workspaceFieldLabelClassName} transition ${
           language === "nn" ? "bg-brand-50 text-brand-700" : "text-slate-500 hover:text-slate-950"
         }`}
       >
         NO
       </button>
-      <span className="text-xs text-slate-300">|</span>
+      <span className="text-[length:var(--hg-type-meta-size)] text-slate-300">|</span>
       <button
         type="button"
         onClick={() => setLanguage("en")}
-        className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+        className={`rounded-lg px-2.5 py-1 ${workspaceFieldLabelClassName} transition ${
           language === "en" ? "bg-brand-50 text-brand-700" : "text-slate-500 hover:text-slate-950"
         }`}
       >
@@ -270,18 +270,29 @@ export default function App() {
     <div className="min-h-screen bg-transparent">
       <ImportDropZone />
 
+      <div className="fixed inset-x-0 top-0 z-40 h-14 border-b border-slate-200/80 bg-slate-50/95 backdrop-blur md:hidden" />
+      <Link
+        to="/"
+        aria-label={t("app.goToWelcome")}
+        className={`fixed left-1/2 top-3 h-8 w-36 -translate-x-1/2 text-slate-950 md:hidden [&>svg]:h-full [&>svg]:w-full ${
+          menuOpen ? "z-30" : "z-50"
+        }`}
+      >
+        <HydroGuideLogo />
+      </Link>
+
       {/* Mobile hamburger button */}
       <button
         ref={menuButtonRef}
         type="button"
         onClick={() => setMenuOpen(true)}
-        className="fixed left-3 top-3 z-50 flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm md:hidden"
+        className="fixed left-2.5 top-1 z-50 flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm md:hidden"
         aria-label={t("app.openMenu")}
         aria-expanded={menuOpen}
         aria-controls="mobile-navigation-drawer"
         aria-haspopup="dialog"
       >
-        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-slate-950" strokeWidth="2" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 stroke-slate-950" strokeWidth="2.3" aria-hidden="true">
           <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
@@ -299,12 +310,13 @@ export default function App() {
       <aside
         ref={drawerRef}
         id="mobile-navigation-drawer"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mobile-navigation-title"
-        tabIndex={-1}
+        role={menuOpen ? "dialog" : undefined}
+        aria-modal={menuOpen ? "true" : undefined}
+        aria-labelledby={menuOpen ? "mobile-navigation-title" : undefined}
+        aria-hidden={!menuOpen}
+        tabIndex={menuOpen ? -1 : undefined}
         className={`fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-1.5rem))] flex-col rounded-r-3xl border-r border-slate-200 bg-white p-5 shadow-lg transition-transform duration-300 md:hidden ${
-          menuOpen ? "translate-x-0" : "-translate-x-full"
+          menuOpen ? "translate-x-0" : "pointer-events-none -translate-x-full"
         }`}
       >
         <button
@@ -324,7 +336,7 @@ export default function App() {
       <div
         ref={appShellRef}
         aria-hidden={menuOpen || undefined}
-        className="mx-auto flex w-full flex-col gap-4 p-3 pt-16 md:flex-row md:gap-6 md:p-6"
+        className="mx-auto flex w-full box-border flex-col gap-4 p-3 pt-16 md:flex-row md:gap-6 md:p-6"
       >
         {/* Desktop sidebar */}
         <aside className="hidden md:flex h-[calc(100vh-3rem)] w-64 shrink-0 flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">

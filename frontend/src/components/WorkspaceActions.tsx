@@ -4,6 +4,7 @@ import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import {
   workspaceDangerButtonClassName,
+  workspaceContentValueClassName,
   workspaceHelpIconClassName,
   workspaceMetaClassName,
   workspacePrimaryButtonClassName,
@@ -37,7 +38,7 @@ export function HelpTip({ text, iconClassName = workspaceHelpIconClassName }: { 
         i
       </button>
       {open ? (
-        <span className="absolute left-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-normal normal-case leading-relaxed tracking-normal text-slate-700 shadow-lg sm:left-1/2 sm:w-56 sm:-translate-x-1/2">
+        <span className={`absolute left-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white px-3 py-2.5 normal-case text-slate-700 shadow-lg sm:left-1/2 sm:w-56 sm:-translate-x-1/2 ${workspaceContentValueClassName}`}>
           {text}
         </span>
       ) : null}

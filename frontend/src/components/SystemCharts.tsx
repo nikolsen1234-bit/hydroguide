@@ -1,6 +1,15 @@
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useId, useState } from "react";
 import { useLanguage } from "../i18n";
-import { workspaceSectionTitleClassName } from "../styles/workspace";
+import {
+  workspaceChartAxisClassName,
+  workspaceChartLabelClassName,
+  workspaceChartLegendClassName,
+  workspaceChartMonthClassName,
+  workspaceChartTooltipTextFontSize,
+  workspaceChartTooltipTitleFontSize,
+  workspaceContentTitleClassName,
+  workspaceContentValueClassName
+} from "../styles/workspace";
 import { CostComparisonItem, MonthlyEnergyBalanceRow } from "../types";
 import { formatNumber } from "../utils/format";
 import { HelpTip } from "./WorkspaceActions";
@@ -17,6 +26,8 @@ const CHART_COLORS = {
   positiveBalance: "#2563eb",
   negativeBalance: "#e11d48"
 } as const;
+
+const ENERGY_TOOLTIP_DOT_RADIUS = 4;
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -39,7 +50,7 @@ function EmptyChart({ text }: { text: string }) {
         <path d="M10 22h4" />
         <path d="M12 2a7 7 0 0 0-5 11.9V18h10v-4.1A7 7 0 0 0 12 2z" />
       </svg>
-      <p className="text-sm italic text-slate-400">{text}</p>
+      <p className={`${workspaceContentValueClassName} italic text-slate-400`}>{text}</p>
       <div className="flex items-end gap-1">
         {bars.map(([a, b], i) => (
           <div key={i} className="flex items-end gap-px">
@@ -58,7 +69,7 @@ function ChartCard({ title, helper, children }: { title: string; helper?: string
       <div className="mb-5 flex flex-col gap-4 border-b border-slate-200 pb-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className={workspaceSectionTitleClassName}>{title}</h2>
+            <h2 className={workspaceContentTitleClassName}>{title}</h2>
             {helper ? <HelpTip text={helper} /> : null}
           </div>
         </div>
@@ -104,7 +115,7 @@ export function EnergyOverviewChart({
   backupSource
 }: {
   rows: MonthlyEnergyBalanceRow[];
-  backupSource?: "Brenselcelle" | "Dieselaggregat" | "Ikkje berekna";
+  backupSource?: "Brenselcelle" | "Dieselaggregat" | "Ikke beregnet";
 }) {
   const { t } = useLanguage();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -120,15 +131,15 @@ export function EnergyOverviewChart({
     );
   }
 
-  const width = isMobile ? 580 : 1040;
+  const width = isMobile ? 760 : 1040;
   const height = isMobile ? 340 : 380;
-  const left = isMobile ? 36 : 52;
-  const right = left;
+  const left = isMobile ? 44 : 52;
+  const right = isMobile ? (backupSource && backupSource !== "Ikke beregnet" ? 48 : 30) : 52;
   const top = isMobile ? 18 : 22;
-  const bottom = isMobile ? 38 : 44;
+  const bottom = isMobile ? 40 : 44;
   const innerWidth = width - left - right;
   const innerHeight = height - top - bottom;
-  const hasReserveCoverage = Boolean(backupSource && backupSource !== "Ikkje berekna");
+  const hasReserveCoverage = Boolean(backupSource && backupSource !== "Ikke beregnet");
   const maxPositiveEnergy = getNiceAxisLimit(Math.max(
     ...rows.map((row) => Math.max(row.loadDemandKWh, row.solarProductionKWh, 1))
   ));
@@ -144,7 +155,7 @@ export function EnergyOverviewChart({
   const rawMaxFuelValue = hasReserveCoverage ? Math.max(...rows.map((row) => row.fuelLiters), 0) : 0;
   const maxFuelValue = rawMaxFuelValue > 0 ? getNiceAxisLimit(rawMaxFuelValue) : 0;
   const stepX = innerWidth / rows.length;
-  const balanceBarWidth = Math.min(16, stepX * 0.34);
+  const balanceBarWidth = Math.min(isMobile ? 14 : 16, stepX * 0.34);
   const toEnergyY = (value: number) => zeroY - (value / maxPositiveEnergy) * positiveHeight;
   const toFuelY = (value: number) =>
     maxFuelValue > 0 ? zeroY - (value / maxFuelValue) * positiveHeight : zeroY;
@@ -178,17 +189,33 @@ export function EnergyOverviewChart({
   );
   const axisRatios = [0, 0.25, 0.5, 0.75, 1];
 
-  function handlePointerMove(event: ReactPointerEvent<SVGSVGElement>) {
+  function getPointerIndex(event: ReactPointerEvent<SVGSVGElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
     const relativeX = ((event.clientX - bounds.left) / bounds.width) * width;
     const index = Math.round((relativeX - left - stepX / 2) / stepX);
-    setActiveIndex(Math.max(0, Math.min(rows.length - 1, index)));
+    return Math.max(0, Math.min(rows.length - 1, index));
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<SVGSVGElement>) {
+    if (isMobile && event.pointerType === "touch") {
+      return;
+    }
+    setActiveIndex(getPointerIndex(event));
+  }
+
+  function handlePointerDown(event: ReactPointerEvent<SVGSVGElement>) {
+    if (!isMobile) {
+      return;
+    }
+    setActiveIndex(getPointerIndex(event));
   }
 
   const hoverRow = activeIndex !== null ? rows[activeIndex] : null;
   const hoverX = activeIndex !== null ? left + activeIndex * stepX + stepX / 2 : 0;
-  const tooltipW = isMobile ? 180 : 220;
-  const tooltipH = hasReserveCoverage ? (isMobile ? 120 : 130) : isMobile ? 98 : 108;
+  const tooltipW = isMobile ? 174 : 198;
+  const tooltipH = hasReserveCoverage ? (isMobile ? 108 : 116) : isMobile ? 88 : 94;
+  const tooltipTitleFontSize = workspaceChartTooltipTitleFontSize;
+  const tooltipTextFontSize = workspaceChartTooltipTextFontSize;
   const tooltipX = activeIndex !== null
     ? Math.min(Math.max(hoverX + 14, 16), width - tooltipW - 8)
     : 0;
@@ -198,178 +225,193 @@ export function EnergyOverviewChart({
 
   return (
     <ChartCard title={t("charts.energyThroughYear")} helper={chartHelper}>
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="block h-auto w-full overflow-visible"
-        style={{ zIndex: 10, position: "relative" }}
-        onPointerMove={handlePointerMove}
-        onPointerLeave={() => setActiveIndex(null)}
-        role="img"
-        aria-labelledby={`${chartTitleId} ${chartDescId}`}
-      >
-        <title id={chartTitleId}>{t("charts.energyThroughYear")}</title>
-        <desc id={chartDescId}>{chartHelper}</desc>
-        {axisRatios.map((ratio) => {
-          const y = zeroY - positiveHeight * ratio;
-          const energyLabel = maxPositiveEnergy * ratio;
-
-          return (
-            <g key={ratio}>
-              <line x1={left} x2={width - right} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="3 5" />
-              <text x={left - 8} y={y + 5} textAnchor="end" className="fill-slate-500 text-[13px]">
-                {formatNumber(energyLabel, 0)}
-              </text>
-            </g>
-          );
-        })}
-        {hasNegativeBalance ? [0.5, 1].map((ratio) => {
-          const y = zeroY + negativeHeight * ratio;
-          const energyLabel = -maxNegativeEnergy * ratio;
-
-          return (
-            <g key={`neg-${ratio}`}>
-              <line x1={left} x2={width - right} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="3 5" />
-              <text x={left - 8} y={y + 5} textAnchor="end" className="fill-slate-500 text-[13px]">
-                {formatNumber(energyLabel, 0)}
-              </text>
-            </g>
-          );
-        }) : null}
-        {hasReserveCoverage
-          ? axisRatios.map((ratio) => {
-              const y = zeroY - positiveHeight * ratio;
-              const fuelAxisLabel = maxFuelValue * ratio;
-
-              return (
-                <text key={`fuel-axis-${ratio}`} x={width - right + 8} y={y + 5} className="fill-slate-500 text-[13px]">
-                  {formatNumber(fuelAxisLabel, 0)}
-                </text>
-              );
-            })
-          : null}
-
-        <text
-          x={6}
-          y={top + innerHeight / 2}
-          textAnchor="middle"
-          transform={`rotate(-90, 6, ${top + innerHeight / 2})`}
-          className="fill-slate-950 text-[13px] font-semibold"
+      <div className="-mx-1 overflow-x-auto pb-2 pl-1 pr-1 [scrollbar-width:thin]">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="block h-auto w-full overflow-visible"
+          style={{ zIndex: 10, position: "relative", minWidth: isMobile ? `${width}px` : undefined }}
+          onPointerMove={handlePointerMove}
+          onPointerDown={handlePointerDown}
+          onPointerLeave={() => {
+            if (!isMobile) {
+              setActiveIndex(null);
+            }
+          }}
+          role="img"
+          aria-labelledby={`${chartTitleId} ${chartDescId}`}
         >
-          {t("charts.energyAxis")}
-        </text>
-        {hasReserveCoverage ? (
+          <title id={chartTitleId}>{t("charts.energyThroughYear")}</title>
+          <desc id={chartDescId}>{chartHelper}</desc>
+          {axisRatios.map((ratio) => {
+            const y = zeroY - positiveHeight * ratio;
+            const energyLabel = maxPositiveEnergy * ratio;
+
+            return (
+              <g key={ratio}>
+                <line x1={left} x2={width - right} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="3 5" />
+                <text x={left - 8} y={y + 5} textAnchor="end" className={workspaceChartAxisClassName}>
+                  {formatNumber(energyLabel, 0)}
+                </text>
+              </g>
+            );
+          })}
+          {hasNegativeBalance ? [0.5, 1].map((ratio) => {
+            const y = zeroY + negativeHeight * ratio;
+            const energyLabel = -maxNegativeEnergy * ratio;
+
+            return (
+              <g key={`neg-${ratio}`}>
+                <line x1={left} x2={width - right} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="3 5" />
+                <text x={left - 8} y={y + 5} textAnchor="end" className={workspaceChartAxisClassName}>
+                  {formatNumber(energyLabel, 0)}
+                </text>
+              </g>
+            );
+          }) : null}
+          {hasReserveCoverage
+            ? axisRatios.map((ratio) => {
+                const y = zeroY - positiveHeight * ratio;
+                const fuelAxisLabel = maxFuelValue * ratio;
+
+                return (
+                <text key={`fuel-axis-${ratio}`} x={width - right + 5} y={y + 5} className={workspaceChartAxisClassName}>
+                    {formatNumber(fuelAxisLabel, 0)}
+                  </text>
+                );
+              })
+            : null}
+
           <text
-            x={width - 6}
+            x={6}
             y={top + innerHeight / 2}
             textAnchor="middle"
-            transform={`rotate(90, ${width - 6}, ${top + innerHeight / 2})`}
-            className="fill-slate-950 text-[13px] font-semibold"
+            transform={`rotate(-90, 6, ${top + innerHeight / 2})`}
+            className={workspaceChartLabelClassName}
           >
-            {`${fuelLabel} (l)`}
+            {t("charts.energyAxis")}
           </text>
-        ) : null}
-
-        <line x1={left} x2={width - right} y1={zeroY} y2={zeroY} stroke="#94a3b8" strokeWidth="1.5" />
-
-        {rows.map((row, index) => {
-          const barX = left + index * stepX + (stepX - balanceBarWidth) / 2;
-          const pointX = left + index * stepX + stepX / 2;
-          const balance = row.energyBalanceKWh;
-          const isPositive = balance >= 0;
-          const barH = isPositive
-            ? maxPositiveEnergy > 0 ? (Math.abs(balance) / maxPositiveEnergy) * positiveHeight : 0
-            : maxNegativeEnergy > 0 ? (Math.abs(balance) / maxNegativeEnergy) * negativeHeight : 0;
-          const visibleBarH = barH > 0 ? Math.max(barH, 2) : 0;
-
-          return (
-            <g key={row.month}>
-              <rect
-                x={barX}
-                y={isPositive ? zeroY - visibleBarH : zeroY}
-                width={balanceBarWidth}
-                height={visibleBarH}
-                rx="8"
-                fill={isPositive ? CHART_COLORS.positiveBalance : CHART_COLORS.negativeBalance}
-                fillOpacity="0.2"
-              />
-              <circle cx={pointX} cy={toEnergyY(row.loadDemandKWh)} r="5.5" fill={CHART_COLORS.load} />
-              <circle cx={pointX} cy={toEnergyY(row.solarProductionKWh)} r="5.5" fill={CHART_COLORS.solar} />
-              {hasReserveCoverage ? <circle cx={pointX} cy={toFuelY(row.fuelLiters)} r="5.5" fill={fuelColor} /> : null}
-              <text x={pointX} y={height - 10} textAnchor="middle" className="fill-slate-500 text-[13px]">
-                {t(`month.${row.month}`)}
-              </text>
-            </g>
-          );
-        })}
-
-        <path
-          d={loadPath}
-          fill="none"
-          stroke={CHART_COLORS.load}
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-        <path
-          d={solarPath}
-          fill="none"
-          stroke={CHART_COLORS.solar}
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-        {hasReserveCoverage ? (
-          <path d={reservePath} fill="none" stroke={fuelColor} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-        ) : null}
-
-        {activeIndex !== null && hoverRow && (
-          <g>
-            <line x1={hoverX} x2={hoverX} y1={top} y2={top + innerHeight} stroke="#94a3b8" strokeDasharray="4 6" />
-            <circle cx={hoverX} cy={toEnergyY(hoverRow.loadDemandKWh)} r="7" fill={CHART_COLORS.load} stroke="#fff" strokeWidth="2.5" />
-            <circle cx={hoverX} cy={toEnergyY(hoverRow.solarProductionKWh)} r="7" fill={CHART_COLORS.solar} stroke="#fff" strokeWidth="2.5" />
-            {hasReserveCoverage ? (
-              <circle cx={hoverX} cy={toFuelY(hoverRow.fuelLiters)} r="7" fill={fuelColor} stroke="#fff" strokeWidth="2.5" />
-            ) : null}
-
-            <rect
-              x={tooltipX}
-              y={tooltipY}
-              width={tooltipW}
-              height={tooltipH}
-              rx="10"
-              fill="white"
-              stroke="#e2e8f0"
-              strokeWidth="1.5"
-            />
-            <text x={tooltipX + 14} y={tooltipY + 24} fontSize="14" fontWeight="700" fill="#0f172a">
-              {hoverRow.label}
+          {hasReserveCoverage ? (
+            <text
+            x={width - (isMobile ? 8 : 6)}
+            y={top + innerHeight / 2}
+            textAnchor="middle"
+            transform={`rotate(90, ${width - (isMobile ? 8 : 6)}, ${top + innerHeight / 2})`}
+              className={workspaceChartLabelClassName}
+            >
+              {`${fuelLabel} (l)`}
             </text>
-            <circle cx={tooltipX + 14} cy={tooltipY + 46} r="5" fill={CHART_COLORS.load} />
-            <text x={tooltipX + 26} y={tooltipY + 50} fontSize="13" fill="#334155">
-              {`${t("charts.load")}: ${formatNumber(hoverRow.loadDemandKWh, 2)} kWh`}
-            </text>
-            <circle cx={tooltipX + 14} cy={tooltipY + 68} r="5" fill={CHART_COLORS.solar} />
-            <text x={tooltipX + 26} y={tooltipY + 72} fontSize="13" fill="#334155">
-              {`${t("charts.solarProduction")}: ${formatNumber(hoverRow.solarProductionKWh, 2)} kWh`}
-            </text>
-            <circle cx={tooltipX + 14} cy={tooltipY + 90} r="5" fill={hoverRow.energyBalanceKWh >= 0 ? CHART_COLORS.positiveBalance : CHART_COLORS.negativeBalance} />
-            <text x={tooltipX + 26} y={tooltipY + 94} fontSize="13" fill="#334155">
-              {`${t("charts.energyBalance")}: ${formatNumber(hoverRow.energyBalanceKWh, 2)} kWh`}
-            </text>
-            {hasReserveCoverage ? (
-              <>
-                <circle cx={tooltipX + 14} cy={tooltipY + 112} r="5" fill={fuelColor} />
-                <text x={tooltipX + 26} y={tooltipY + 116} fontSize="13" fill="#334155">
-                  {`${fuelLabel}: ${formatNumber(hoverRow.fuelLiters, 2)} l`}
+          ) : null}
+
+          <line x1={left} x2={width - right} y1={zeroY} y2={zeroY} stroke="#94a3b8" strokeWidth="1.5" />
+
+          {rows.map((row, index) => {
+            const barX = left + index * stepX + (stepX - balanceBarWidth) / 2;
+            const pointX = left + index * stepX + stepX / 2;
+            const balance = row.energyBalanceKWh;
+            const isPositive = balance >= 0;
+            const barH = isPositive
+              ? maxPositiveEnergy > 0 ? (Math.abs(balance) / maxPositiveEnergy) * positiveHeight : 0
+              : maxNegativeEnergy > 0 ? (Math.abs(balance) / maxNegativeEnergy) * negativeHeight : 0;
+            const visibleBarH = barH > 0 ? Math.max(barH, 2) : 0;
+
+            return (
+              <g key={row.month}>
+                <rect
+                  x={barX}
+                  y={isPositive ? zeroY - visibleBarH : zeroY}
+                  width={balanceBarWidth}
+                  height={visibleBarH}
+                  rx="8"
+                  fill={isPositive ? CHART_COLORS.positiveBalance : CHART_COLORS.negativeBalance}
+                  fillOpacity="0.2"
+                />
+                <circle cx={pointX} cy={toEnergyY(row.loadDemandKWh)} r={isMobile ? "4.4" : "5.5"} fill={CHART_COLORS.load} />
+                <circle cx={pointX} cy={toEnergyY(row.solarProductionKWh)} r={isMobile ? "4.4" : "5.5"} fill={CHART_COLORS.solar} />
+                {hasReserveCoverage ? <circle cx={pointX} cy={toFuelY(row.fuelLiters)} r={isMobile ? "4.4" : "5.5"} fill={fuelColor} /> : null}
+                <text x={pointX} y={height - 10} textAnchor="middle" className={workspaceChartMonthClassName}>
+                  {t(`month.${row.month}`)}
                 </text>
-              </>
-            ) : null}
-          </g>
-        )}
-      </svg>
+              </g>
+            );
+          })}
 
-      <div className="mt-3 space-y-2" style={{ paddingLeft: `${(left / width) * 100}%` }}>
-        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-950">
+          <path
+            d={loadPath}
+            fill="none"
+            stroke={CHART_COLORS.load}
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          <path
+            d={solarPath}
+            fill="none"
+            stroke={CHART_COLORS.solar}
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          {hasReserveCoverage ? (
+            <path d={reservePath} fill="none" stroke={fuelColor} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+          ) : null}
+
+          {activeIndex !== null && hoverRow && (
+            <g>
+              <line x1={hoverX} x2={hoverX} y1={top} y2={top + innerHeight} stroke="#94a3b8" strokeDasharray="4 6" />
+              <circle cx={hoverX} cy={toEnergyY(hoverRow.loadDemandKWh)} r="7" fill={CHART_COLORS.load} stroke="#fff" strokeWidth="2.5" />
+              <circle cx={hoverX} cy={toEnergyY(hoverRow.solarProductionKWh)} r="7" fill={CHART_COLORS.solar} stroke="#fff" strokeWidth="2.5" />
+              {hasReserveCoverage ? (
+                <circle cx={hoverX} cy={toFuelY(hoverRow.fuelLiters)} r="7" fill={fuelColor} stroke="#fff" strokeWidth="2.5" />
+              ) : null}
+
+              <rect
+                x={tooltipX}
+                y={tooltipY}
+                width={tooltipW}
+                height={tooltipH}
+                rx="8"
+                fill="white"
+                stroke="#e2e8f0"
+                strokeWidth="1.5"
+              />
+              <text x={tooltipX + 10} y={tooltipY + 19} fontSize={tooltipTitleFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a">
+                {hoverRow.label}
+              </text>
+              <circle cx={tooltipX + 10} cy={tooltipY + 34} r={ENERGY_TOOLTIP_DOT_RADIUS} fill={CHART_COLORS.load} />
+              <text x={tooltipX + 20} y={tooltipY + 38} fontSize={tooltipTextFontSize} fill="#334155">
+                {`${t("charts.load")}: ${formatNumber(hoverRow.loadDemandKWh, 2)} kWh`}
+              </text>
+              <circle cx={tooltipX + 10} cy={tooltipY + 52} r={ENERGY_TOOLTIP_DOT_RADIUS} fill={CHART_COLORS.solar} />
+              <text x={tooltipX + 20} y={tooltipY + 56} fontSize={tooltipTextFontSize} fill="#334155">
+                {`${t("charts.solarProduction")}: ${formatNumber(hoverRow.solarProductionKWh, 2)} kWh`}
+              </text>
+              <circle cx={tooltipX + 10} cy={tooltipY + 70} r={ENERGY_TOOLTIP_DOT_RADIUS} fill={hoverRow.energyBalanceKWh >= 0 ? CHART_COLORS.positiveBalance : CHART_COLORS.negativeBalance} />
+              <text x={tooltipX + 20} y={tooltipY + 74} fontSize={tooltipTextFontSize} fill="#334155">
+                {`${t("charts.energyBalance")}: ${formatNumber(hoverRow.energyBalanceKWh, 2)} kWh`}
+              </text>
+              {hasReserveCoverage ? (
+                <>
+                  <circle cx={tooltipX + 10} cy={tooltipY + 88} r={ENERGY_TOOLTIP_DOT_RADIUS} fill={fuelColor} />
+                  <text x={tooltipX + 20} y={tooltipY + 92} fontSize={tooltipTextFontSize} fill="#334155">
+                    {`${fuelLabel}: ${formatNumber(hoverRow.fuelLiters, 2)} l`}
+                  </text>
+                </>
+              ) : null}
+            </g>
+          )}
+        </svg>
+      </div>
+
+      <div className="mt-3 space-y-2" style={{ paddingLeft: isMobile ? 0 : `${(left / width) * 100}%` }}>
+        <div className={`flex flex-wrap gap-x-5 gap-y-2 ${workspaceChartLegendClassName}`}>
+          <span className="inline-flex items-center gap-2">
+            <span
+              className="h-3.5 w-3.5 rounded-full"
+              style={{
+                background: `linear-gradient(90deg, ${CHART_COLORS.negativeBalance} 0 50%, ${CHART_COLORS.positiveBalance} 50% 100%)`
+              }}
+            /> {t("charts.energyBalance")}
+          </span>
           <span className="inline-flex items-center gap-2">
             <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: CHART_COLORS.load }} /> {t("charts.load")}
           </span>
@@ -433,7 +475,7 @@ export function BalanceBarChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
           strokeWidth="1"
           strokeDasharray="3 5"
         />
-        <text x={left - 8} y={y + 4} textAnchor="end" className="fill-slate-500 text-[13px]">
+        <text x={left - 8} y={y + 4} textAnchor="end" className={workspaceChartAxisClassName}>
           {formatNumber(value, 0)}
         </text>
       </g>
@@ -451,7 +493,7 @@ export function BalanceBarChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
           const barPercent = (Math.abs(row.energyBalanceKWh) / maxAbsValue) * 50;
           return (
             <div key={row.month} className="flex items-center gap-0">
-              <span className="w-9 shrink-0 text-right text-sm font-semibold text-slate-500">
+              <span className={`w-9 shrink-0 text-right ${workspaceChartLegendClassName} text-slate-500`}>
                 {t(`month.${row.month}`)}
               </span>
               <div className="relative mx-2 flex h-6 flex-1 items-center">
@@ -474,7 +516,7 @@ export function BalanceBarChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
                   />
                 )}
               </div>
-              <span className={`w-16 shrink-0 text-right text-sm font-bold ${isPositive ? "text-brand-700" : "text-rose-600"}`}>
+              <span className={`w-16 shrink-0 text-right ${workspaceChartLegendClassName} ${isPositive ? "text-brand-700" : "text-rose-600"}`}>
                 {formatNumber(row.energyBalanceKWh)}
               </span>
             </div>
@@ -484,20 +526,20 @@ export function BalanceBarChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
 
       <div className="hidden md:block">
         <svg viewBox={`0 0 ${width} 260`} className="block h-auto w-full overflow-visible">
-          <title>Energibalanse per månad</title>
+          <title>Energibalanse per måned</title>
           <text
             x={6}
             y={(26 + 218) / 2}
             textAnchor="middle"
             transform={`rotate(-90, 6, ${(26 + 218) / 2})`}
-            className="fill-slate-950 text-[13px] font-semibold"
+            className={workspaceChartLabelClassName}
           >
             {t("charts.energyAxis")}
           </text>
           {positiveTickValues.map((value) => renderAxisTick(zeroY - (value / maxPositive) * positiveHeight, value, `pos-${value}`))}
           {negativeTickValues.map((value) => renderAxisTick(zeroY + (value / maxNegative) * negativeHeight, -value, `neg-${value}`))}
           <line x1={left} x2={width - right} y1={zeroY} y2={zeroY} stroke="#94a3b8" strokeWidth="1.5" />
-          <text x={left - 8} y={zeroY + 4} textAnchor="end" className="fill-slate-500 text-[13px]">
+          <text x={left - 8} y={zeroY + 4} textAnchor="end" className={workspaceChartAxisClassName}>
             0
           </text>
 
@@ -522,7 +564,7 @@ export function BalanceBarChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
                   rx="6"
                   fill={isPositive ? CHART_COLORS.positiveBalance : CHART_COLORS.negativeBalance}
                 />
-                <text x={left + index * stepX + stepX / 2} y={250} textAnchor="middle" className="fill-slate-500 text-[13px]">
+                <text x={left + index * stepX + stepX / 2} y={250} textAnchor="middle" className={workspaceChartMonthClassName}>
                   {t(`month.${row.month}`)}
                 </text>
               </g>
@@ -531,7 +573,7 @@ export function BalanceBarChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
         </svg>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-950" style={{ paddingLeft: `${(left / width) * 100}%` }}>
+      <div className={`mt-3 flex flex-wrap gap-x-5 gap-y-2 ${workspaceChartLegendClassName}`} style={{ paddingLeft: 0 }}>
         <span className="inline-flex items-center gap-2">
           <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: CHART_COLORS.negativeBalance }} /> {t("charts.deficit")}
         </span>
@@ -561,8 +603,8 @@ export function CostComparisonChart({
       <div className="space-y-4">
         {items.map((item) => (
           <div key={item.source}>
-            <div className="mb-1 flex items-center justify-between gap-3 text-sm">
-              <span className="font-semibold text-slate-950">{item.source}</span>
+            <div className={`mb-1 flex items-center justify-between gap-3 ${workspaceChartLegendClassName}`}>
+              <span>{item.source}</span>
               <span className="text-slate-950">{formatNumber(item.toc)} kr</span>
             </div>
             <div className="h-4 rounded-full bg-slate-100">

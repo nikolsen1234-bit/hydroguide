@@ -236,12 +236,12 @@ function createEmptyDerivedResults(
     monthlyEnergyBalance: [],
     annualTotals: emptyAnnualTotals(totalWhPerDay, totalAhPerDay),
     systemRecommendation: {
-      releaseArrangement: "Ikkje berekna", primaryMeasurement: "Ikkje berekna",
-      controlMeasurement: "Ikkje berekna", measurementEquipment: "Ikkje berekna",
-      communication: "Ikkje berekna", loggerSetup: "Ikkje berekna",
-      energyMonitoring: "Ikkje berekna", secondarySource: "Ikkje berekna",
+      releaseArrangement: "Ikke beregnet", primaryMeasurement: "Ikke beregnet",
+      controlMeasurement: "Ikke beregnet", measurementEquipment: "Ikke beregnet",
+      communication: "Ikke beregnet", loggerSetup: "Ikke beregnet",
+      energyMonitoring: "Ikke beregnet", secondarySource: "Ikke beregnet",
       secondarySourcePowerW: 0, batteryCapacityAh: 0, batteryAutonomyDays: 0,
-      icingAdaptation: "Ikkje berekna", operationsRequirements: []
+      icingAdaptation: "Ikke beregnet", operationsRequirements: []
     },
     costComparison: { annualEnergyDeficitKWh: 0, alternatives: [] },
     reserveScenarios: {

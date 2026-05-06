@@ -2,7 +2,13 @@ import { CSSProperties } from "react";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import type { EngineMode } from "../types";
-import { workspaceBodyClassName, workspaceMetaClassName, workspaceTitleClassName } from "../styles/workspace";
+import {
+  workspaceBodyClassName,
+  workspaceFieldLabelClassName,
+  workspaceContentValueClassName,
+  workspaceMetaClassName,
+  workspaceTitleClassName
+} from "../styles/workspace";
 
 const leftFadeStyle: CSSProperties = {
   background:
@@ -81,11 +87,11 @@ export default function WelcomePage() {
                 {t("welcome.description2")}
               </p>
               <p className="max-w-[31rem]">
-                {t("welcome.developedBy")} <span className="font-extrabold text-[#163447]">Nikolas Olsen</span>,{" "}
-                <span className="font-extrabold text-[#163447]">Dan Roald Larsen</span>,{" "}
-                <span className="font-extrabold text-[#163447]">Jinn-Marie Bakke</span> {t("welcome.and")}{" "}
-                <span className="font-extrabold text-[#163447]">Espen Espenland</span> {t("welcome.developedBySchool")}{" "}
-                <span className="font-extrabold text-[#163447]">Fagskulen Vestland (2026)</span>.
+                {t("welcome.developedBy")} <span className="font-[var(--hg-type-weight-extra)] text-[#163447]">Nikolas Olsen</span>,{" "}
+                <span className="font-[var(--hg-type-weight-extra)] text-[#163447]">Dan Roald Larsen</span>,{" "}
+                <span className="font-[var(--hg-type-weight-extra)] text-[#163447]">Jinn-Marie Bakke</span> {t("welcome.and")}{" "}
+                <span className="font-[var(--hg-type-weight-extra)] text-[#163447]">Espen Espenland</span> {t("welcome.developedBySchool")}{" "}
+                <span className="font-[var(--hg-type-weight-extra)] text-[#163447]">Fagskulen Vestland (2026)</span>.
               </p>
             </div>
 
@@ -106,10 +112,10 @@ export default function WelcomePage() {
                     >
                       <ModeIcon d={iconPath} className={`mt-0.5 ${active ? "text-sky-600" : "text-slate-400"}`} />
                       <div className="min-w-0">
-                        <span className={`block text-sm font-semibold ${active ? "text-sky-700" : "text-[#163447]"}`}>
+                        <span className={`block ${workspaceFieldLabelClassName} ${active ? "text-sky-700" : "text-[#163447]"}`}>
                           {t(`welcome.mode${key.charAt(0).toUpperCase() + key.slice(1)}Title` as any)}
                         </span>
-                        <span className="mt-0.5 block leading-relaxed text-slate-500" style={{ fontSize: "12.6875px" }}>
+                        <span className={`mt-0.5 block ${workspaceContentValueClassName} text-slate-600`}>
                           {t(`welcome.mode${key.charAt(0).toUpperCase() + key.slice(1)}Desc` as any)}
                         </span>
                       </div>

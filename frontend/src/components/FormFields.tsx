@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useLanguage } from "../i18n";
 import {
+  workspaceContentValueClassName,
   workspaceFieldLabelClassName,
   workspaceFieldLabelRowClassName,
   workspaceFieldStackClassName,
@@ -49,7 +50,7 @@ function FieldError({
   return (
     <p
       id={id}
-      className="text-sm font-medium text-rose-600"
+      className={`${workspaceContentValueClassName} text-rose-600`}
       style={{ minHeight: "1.25rem", visibility: error ? "visible" : "hidden" }}
     >
       {error ?? " "}
@@ -107,7 +108,7 @@ function ChoiceField<T extends string | boolean>({
               key={String(option.value)}
               type="button"
               onClick={() => onChange(option.value)}
-              className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+              className={`rounded-xl border px-3 py-2 ${workspaceFieldLabelClassName} transition ${
                 selected
                   ? "border-brand-300 bg-brand-50 text-brand-700"
                   : "border-slate-200 bg-white text-slate-950 hover:border-brand-300"
@@ -260,7 +261,7 @@ export function NumberField({
           aria-invalid={error ? true : undefined}
         />
         {unit ? (
-          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-semibold text-slate-950">
+          <span className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${workspaceFieldLabelClassName}`}>
             {unit}
           </span>
         ) : null}

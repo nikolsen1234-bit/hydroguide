@@ -14,7 +14,7 @@ Til energidimensjonering brukar HydroGuide eit lokalt PVGIS 6.0 TMY-grunnlag med
 
 HydroGuide har også ein enklare intern modell for situasjonar der du berre vil gjere ei rask vurdering eller teste ulike scenario. Han passar godt tidleg i arbeidet eller som eit første overslag. I mange tilfelle er det naturleg å starte der, og heller gå vidare til full simulering når du treng meir detaljar.
 
-Live: [hydroguide.no](https://hydroguide.no) — API-dokumentasjon: [hydroguide.no/api/docs?ui](https://hydroguide.no/api/docs?ui)
+Live: [hydroguide.no](https://hydroguide.no) — API-dokumentasjon: [hydroguide.no/api](https://hydroguide.no/api)
 
 ## System
 

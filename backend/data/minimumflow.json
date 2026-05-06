@@ -10794,44 +10794,14 @@
   },
   "1169": {
     "navn": "Varalden",
-    "funnet": true,
+    "funnet": false,
     "inntak": [
-      {
-        "inntakFunksjon": null,
-        "perioder": [
-          {
-            "ls": 4500,
-            "periode": null,
-            "note": null
-          },
-          {
-            "ls": 8000,
-            "periode": "01.12 - 31.03",
-            "note": null
-          }
-        ]
-      },
       {
         "inntakFunksjon": null,
         "perioder": [
           {
             "ls": null,
             "periode": null,
-            "note": null
-          }
-        ]
-      },
-      {
-        "inntakFunksjon": null,
-        "perioder": [
-          {
-            "ls": 2500,
-            "periode": "hele året",
-            "note": null
-          },
-          {
-            "ls": 2500,
-            "periode": "hele året",
             "note": null
           }
         ]
@@ -25118,29 +25088,14 @@
   },
   "2026": {
     "navn": "Bergselvi",
-    "funnet": true,
+    "funnet": false,
     "inntak": [
       {
         "inntakFunksjon": null,
         "perioder": [
           {
-            "ls": 40,
-            "periode": "30.09 - 01.05",
-            "note": null
-          },
-          {
-            "ls": 200,
-            "periode": "01.05 - 31.05",
-            "note": null
-          },
-          {
-            "ls": 200,
-            "periode": "01.09 - 30.09",
-            "note": null
-          },
-          {
-            "ls": 300,
-            "periode": "01.06 - 31.08",
+            "ls": null,
+            "periode": null,
             "note": null
           }
         ]
@@ -28070,6 +28025,54 @@
           {
             "ls": null,
             "periode": null,
+            "note": null
+          }
+        ]
+      }
+    ]
+  },
+  "212": {
+    "navn": "Kongsvinger",
+    "funnet": false,
+    "inntak": [
+      {
+        "inntakFunksjon": null,
+        "perioder": [
+          {
+            "ls": null,
+            "periode": null,
+            "note": null
+          }
+        ]
+      }
+    ]
+  },
+  "101": {
+    "navn": "Funna",
+    "funnet": true,
+    "inntak": [
+      {
+        "inntakFunksjon": null,
+        "perioder": [
+          {
+            "ls": 9500,
+            "periode": "hele året",
+            "note": null
+          }
+        ]
+      }
+    ]
+  },
+  "1849": {
+    "navn": "Storåvatn 1",
+    "funnet": true,
+    "inntak": [
+      {
+        "inntakFunksjon": "magasin",
+        "perioder": [
+          {
+            "ls": 100,
+            "periode": "15.06 - 31.10",
             "note": null
           }
         ]

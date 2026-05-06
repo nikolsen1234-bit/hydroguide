@@ -78,7 +78,7 @@ flowchart LR
     angriper[Angriper] -->|/api/keys| waf[Cloudflare WAF]
     waf -.->|403| angriper
 
-    operator[Operatør] -->|/admin/keys<br/>Bearer ADMIN_TOKEN| admin[hydroguide-admin]
+    operator[Operatør] -->|/admin/keys<br/>x-admin-token| admin[hydroguide-admin]
     admin --> kv[(API_KEYS)]
 ```
 
@@ -106,7 +106,7 @@ For trusselbilde og auth-design: [sikkerheit.md](sikkerheit.md).
 | Verifisering av API-nøkler | HMAC-hash i KV | Lekket KV-dump gir ikke brukbare nøkler. |
 | AI-pipeline for NVE-PDF | Lokalt, ikke Worker | OCR + LLM-batch tar minutter — Workers har 30s CPU-grense. |
 | Frontend-routing | Statisk SPA med React Router | Statisk frontend-hosting, ingen SSR-behov. |
-| Public API-format | REST + OpenAPI på `/api/docs?ui` | Standard, lett å dokumentere, lett å teste i nettleser. |
+| Public API-format | REST + OpenAPI vist på `/api`, spek på `/api/docs` | Standard, lett å dokumentere, lett å teste i nettleser. |
 | Cache-policy | Bypass for `/api/*` og `/admin/*` | Auth-state og rate-limit må være ferskt. Statisk frontend caches normalt. |
 
 ## Eksterne avhengigheter

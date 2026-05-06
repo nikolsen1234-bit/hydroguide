@@ -37,7 +37,8 @@ Cloudflare WAF avviser API-prefikser utenfor kontrakten, kildeprober og sensitiv
 | Rute | Worker | Bruk |
 |------|--------|------|
 | `/api/health` | `hydroguide-api` | Enkel helsesjekk |
-| `/api/docs` | `hydroguide-api` | OpenAPI og Swagger UI |
+| `/api` | Statisk frontend | API-siden inne i HydroGuide |
+| `/api/docs` | `hydroguide-api` | OpenAPI og Swagger UI for innebygging |
 | `/api/calculations` | `hydroguide-api` | Offentlig beregnings-API |
 | `/api/nveid` | `hydroguide-api` | NVEID-meny og minstevannføring |
 | `/api/pvgis-tmy` | `hydroguide-api` | PVGIS TMY-proxy |

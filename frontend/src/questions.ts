@@ -39,18 +39,18 @@ export const sections: QuestionSection[] = [
     questions: [
       {
         key: "q1Anleggstype",
-        label: "1. Er anlegget nytt, eksisterande eller ei ombygging?",
+        label: "1. Er anlegget nytt, eksisterende eller en ombygging?",
         labelKey: "questions.q1",
         input: "select",
         options: [
           { value: "nytt", label: "Nytt", labelKey: "questions.option.new" },
-          { value: "eksisterande", label: "Eksisterande", labelKey: "questions.option.existing" },
+          { value: "eksisterande", label: "Eksisterende", labelKey: "questions.option.existing" },
           { value: "ombygging", label: "Ombygging", labelKey: "questions.option.conversion" }
         ]
       },
       {
         key: "q2HogasteMinstevassforing",
-        label: "2. Kor stor er høgaste pålagde minstevassføring?",
+        label: "2. Hvor stor er høyeste pålagte minstevannføring?",
         labelKey: "questions.q2",
         unit: "l/s",
         unitKey: "questions.unit.lps",
@@ -58,25 +58,25 @@ export const sections: QuestionSection[] = [
       },
       {
         key: "q3Slippkravvariasjon",
-        label: "3. Korleis varierer slippkravet over året?",
+        label: "3. Hvordan varierer slippkravet over året?",
         labelKey: "questions.q3",
         input: "select",
         options: [
-          { value: "fast", label: "Fast minstevassføring", labelKey: "questions.option.fixedMinFlow" },
+          { value: "fast", label: "Fast minstevannføring", labelKey: "questions.option.fixedMinFlow" },
           { value: "sesongkrav", label: "Sesongkrav", labelKey: "questions.option.seasonalReq" },
-          { value: "tilsigsstyrt", label: "Tilsigsstyrt minstevassføring", labelKey: "questions.option.inflowControlled" }
+          { value: "tilsigsstyrt", label: "Tilsigsstyrt minstevannføring", labelKey: "questions.option.inflowControlled" }
         ]
       },
       {
         key: "q4Slippmetode",
-        label: "4. Kor og korleis blir minstevassføringa sleppt?",
+        label: "4. Hvor og hvordan slippes minstevannføringen?",
         labelKey: "questions.q4",
-        helper: "Valet avgjer hovudløysinga for slipp og måling.",
+        helper: "Valget avgjør hovedløsningen for slipp og måling.",
         helperKey: "questions.q4.helper",
         input: "select",
         options: [
-          { value: "royr_frostfritt", label: "Gjennom røyr i frostfritt rom etter varegrind", labelKey: "questions.option.pipeInFrostFreeRoom" },
-          { value: "royr_utan_frostfritt", label: "Gjennom røyr i dam utan frostfritt rom", labelKey: "questions.option.pipeThroughDamNoFrost" },
+          { value: "royr_frostfritt", label: "Gjennom rør i frostfritt rom etter varegrind", labelKey: "questions.option.pipeInFrostFreeRoom" },
+          { value: "royr_utan_frostfritt", label: "Gjennom rør i dam uten frostfritt rom", labelKey: "questions.option.pipeThroughDamNoFrost" },
           { value: "luke_utsparing_overloep", label: "Over luke, utsparing eller overløp", labelKey: "questions.option.gateWeirOverflow" },
           { value: "direkte_elveleie", label: "Direkte i elveleie (elvinntak)", labelKey: "questions.option.directRiverRelease" }
         ]
@@ -103,7 +103,7 @@ export const sections: QuestionSection[] = [
       },
       {
         key: "q7BypassVedDriftsstans",
-        label: "7. Må tilsiget sleppast forbi når kraftverket ikkje er i drift?",
+        label: "7. Må tilsiget slippes forbi når kraftverket ikke er i drift?",
         labelKey: "questions.q7",
         input: "jaNei",
         options: JA_NEI_OPTIONS
@@ -116,18 +116,18 @@ export const sections: QuestionSection[] = [
     questions: [
       {
         key: "q8Maleprofil",
-        label: "8. Finst det eit eigna måleprofil nedstrøms slippstaden?",
+        label: "8. Finnes det en egnet måleprofil nedstrøms slippstedet?",
         labelKey: "questions.q8",
         input: "select",
         options: [
-          { value: "naturleg_stabilt", label: "Ja, naturleg stabilt profil", labelKey: "questions.option.naturalStableProfile" },
-          { value: "kan_byggjast_kunstig", label: "Nei, men kan byggjast kunstig", labelKey: "questions.option.canBuildArtificial" },
-          { value: "ingen_eigna_profil", label: "Nei, ingen eigna profil", labelKey: "questions.option.noSuitableProfile" }
+          { value: "naturleg_stabilt", label: "Ja, naturlig stabil profil", labelKey: "questions.option.naturalStableProfile" },
+          { value: "kan_byggjast_kunstig", label: "Nei, men kan bygges kunstig", labelKey: "questions.option.canBuildArtificial" },
+          { value: "ingen_eigna_profil", label: "Nei, ingen egnet profil", labelKey: "questions.option.noSuitableProfile" }
         ]
       },
       {
         key: "q9AllmentaKontroll",
-        label: "9. Skal allmenta kunne kontrollere minstevassføringa på staden?",
+        label: "9. Skal allmennheten kunne kontrollere minstevannføringen på stedet?",
         labelKey: "questions.q9",
         input: "jaNei",
         options: JA_NEI_OPTIONS

@@ -9,10 +9,12 @@ import { useLanguage } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import { useSolarRadiationFetch } from "../hooks/useSolarRadiationFetch";
 import {
+  workspaceContentValueClassName,
   workspaceFieldLabelClassName,
   workspaceFieldLabelRowClassName,
   workspaceInputClassName,
   workspacePageClassName,
+  workspacePrimaryButtonClassName,
   workspaceSubsectionTitleClassName
 } from "../styles/workspace";
 import { MonthKey } from "../types";
@@ -394,7 +396,7 @@ function SolarRadiationModeToggle() {
           key={m}
           role="radio"
           aria-checked={mode === m}
-          className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+          className={`rounded-md px-3 py-1 ${workspaceFieldLabelClassName} transition-colors ${
             mode === m
               ? "bg-white text-slate-800 shadow-sm"
               : "text-slate-400 hover:text-slate-600"
@@ -541,9 +543,9 @@ function useSolarAutoControls(enabled: boolean, errors: ValidationErrors) {
                 updateConfigSectionField("solarRadiationSettings", "tilt", v as number | "");
               }}
             />
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-semibold text-slate-950">°</span>
+            <span className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${workspaceFieldLabelClassName}`}>°</span>
           </div>
-          {errors["solarRadiationSettings.tilt"] ? <p className="text-sm text-red-600">{errors["solarRadiationSettings.tilt"]}</p> : null}
+          {errors["solarRadiationSettings.tilt"] ? <p className={`${workspaceContentValueClassName} text-red-600`}>{errors["solarRadiationSettings.tilt"]}</p> : null}
         </label>
         <label className="block space-y-2">
           <span className={`${workspaceFieldLabelRowClassName} ${workspaceFieldLabelClassName}`}>{t("system.solarRadiationAzimuth")}</span>
@@ -561,9 +563,9 @@ function useSolarAutoControls(enabled: boolean, errors: ValidationErrors) {
                 updateConfigSectionField("solarRadiationSettings", "azimuth", v as number | "");
               }}
             />
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-semibold text-slate-950">°</span>
+            <span className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${workspaceFieldLabelClassName}`}>°</span>
           </div>
-          {errors["solarRadiationSettings.azimuth"] ? <p className="text-sm text-red-600">{errors["solarRadiationSettings.azimuth"]}</p> : null}
+          {errors["solarRadiationSettings.azimuth"] ? <p className={`${workspaceContentValueClassName} text-red-600`}>{errors["solarRadiationSettings.azimuth"]}</p> : null}
         </label>
         <label className="block space-y-2">
           <span className={`${workspaceFieldLabelRowClassName} ${workspaceFieldLabelClassName}`}>{t("system.solarHeightOffset")}</span>
@@ -581,26 +583,26 @@ function useSolarAutoControls(enabled: boolean, errors: ValidationErrors) {
                 updateConfigSectionField("solarRadiationSettings", "heightOffset", v as number | "");
               }}
             />
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-semibold text-slate-950">m</span>
+            <span className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${workspaceFieldLabelClassName}`}>m</span>
           </div>
         </label>
         <div className="space-y-2">
           {(errors["solarRadiationSettings.lat"] || errors["solarRadiationSettings.lon"]) ? (
-            <p className="text-sm text-red-600">
+            <p className={`${workspaceContentValueClassName} text-red-600`}>
               {errors["solarRadiationSettings.lat"] ?? errors["solarRadiationSettings.lon"]}
             </p>
           ) : null}
           <button
             disabled={!canFetch}
             onClick={handleFetch}
-            className="w-full rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className={`${workspacePrimaryButtonClassName} w-full bg-sky-600 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40`}
           >
             {loading ? t("system.solarRadiationFetching") : t("system.solarRadiationFetch")}
           </button>
           <div className="min-h-5 space-y-1">
-            {error && <span className="text-sm text-red-600">{error}</span>}
-            {source && !error && <span className="text-xs text-slate-400">{source}</span>}
-            {servedTmy && !error && <span className="block text-xs text-slate-400">{servedTmy}</span>}
+            {error && <span className={`${workspaceContentValueClassName} text-red-600`}>{error}</span>}
+            {source && !error && <span className={`${workspaceContentValueClassName} text-slate-400`}>{source}</span>}
+            {servedTmy && !error && <span className={`block ${workspaceContentValueClassName} text-slate-400`}>{servedTmy}</span>}
           </div>
         </div>
       </>
@@ -661,8 +663,8 @@ function SolarRadiationTable({
 }) {
   return (
     <>
-      {/* Mobile: flat 3-col grid */}
-      <div className="grid grid-cols-3 gap-4 xl:hidden">
+      {/* Mobile: flat grid */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:hidden">
         {monthRows.flat().map((month) => (
           <SolarRadiationMonthField
             key={`m-${month}`}
@@ -734,7 +736,7 @@ function SolarRadiationMonthField({
           aria-label={`${t("system.solarRadiationAria")} ${MONTH_LABELS[month]}`}
           placeholder={disabled ? "—" : "0.0"}
         />
-        <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[11px] sm:text-sm font-semibold text-slate-950">
+        <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] text-slate-950 sm:text-[length:var(--hg-type-ui-size)]">
           {unitLabel}
         </span>
       </div>

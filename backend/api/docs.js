@@ -146,7 +146,7 @@ const nveidStationSchema = {
 
 const nveidResponseSchema = {
   type: "object",
-  description: "V2 minimum-flow JSON format keyed by NVEID.",
+  description: "Minimum-flow data for the requested power station.",
   additionalProperties: nveidStationSchema
 };
 
@@ -183,7 +183,7 @@ const SPEC = {
       get: {
         tags: ["NVEID"],
         summary: "Get minimum-flow data by NVEID",
-        description: "Returns minimum-flow data in V2 JSON format, keyed by NVEID.",
+        description: "Returns minimum-flow data for the requested power station.",
         parameters: [nveidPathParameter],
         responses: {
           "200": { description: "Minimum-flow data", content: { "application/json": { schema: { $ref: "#/components/schemas/NveidResponse" }, example: nveidResponseExample } } },
@@ -248,19 +248,19 @@ const SPEC = {
 
 const SWAGGER_CSS_SRI = "sha384-rcbEi6xgdPk0iWkAQzT2F3FeBJXdG+ydrawGlfHAFIZG7wU6aKbQaRewysYpmrlW";
 const SWAGGER_JS_SRI = "sha384-NXtFPpN61oWCuN4D42K6Zd5Rt2+uxeIT36R7kpXBuY9tLnZorzrJ4ykpqwJfgjpZ";
-const INLINE_SCRIPT = `SwaggerUIBundle({url:"/api/docs",dom_id:"#s",deepLinking:true,docExpansion:"list",defaultModelRendering:"model",defaultModelExpandDepth:3,defaultModelsExpandDepth:2})`;
+const INLINE_SCRIPT = `SwaggerUIBundle({url:"/api/docs?openapi",dom_id:"#s",deepLinking:true,docExpansion:"list",defaultModelRendering:"model",defaultModelExpandDepth:3,defaultModelsExpandDepth:2})`;
 
 function buildUiHtml(nonce) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HydroGuide API</title>
 <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui.css" integrity="${SWAGGER_CSS_SRI}" crossorigin="anonymous">
-<style>html,body{margin:0;background:#fff}#s{min-height:100vh}.swagger-ui .wrapper{max-width:none!important;padding:0 24px}.swagger-ui .information-container.wrapper{padding-top:16px}.swagger-ui .example,.swagger-ui .body-param__example,.swagger-ui .model-example,.swagger-ui .tab li.tabitem:first-child{display:none!important}</style></head>
+<style>html,body{margin:0;background:#fff;overflow-x:hidden}#s{min-height:100vh}.swagger-ui .wrapper{max-width:none!important;padding:0 24px}.swagger-ui .information-container.wrapper{padding-top:16px}.swagger-ui .example,.swagger-ui .body-param__example,.swagger-ui .model-example,.swagger-ui .tab li.tabitem:first-child{display:none!important}@media(max-width:640px){.swagger-ui,.swagger-ui *{box-sizing:border-box}.swagger-ui .wrapper{max-width:100%!important;padding:0 12px!important}.swagger-ui .info{margin:24px 0!important}.swagger-ui .info .title{display:flex!important;max-width:100%;flex-wrap:wrap;align-items:center;gap:4px 6px;font-size:30px!important;line-height:1.1!important;overflow-wrap:anywhere}.swagger-ui .info p{max-width:100%;white-space:normal;overflow-wrap:anywhere}.swagger-ui .scheme-container{padding:16px 0!important}.swagger-ui .scheme-container .wrapper{display:block!important}.swagger-ui .schemes-server-container,.swagger-ui .auth-wrapper{float:none!important;display:flex!important;max-width:100%;flex-wrap:wrap;align-items:center;gap:10px}.swagger-ui .auth-wrapper{width:100%!important;justify-content:flex-start!important;margin-top:12px}.swagger-ui .auth-wrapper .authorize{max-width:100%}.swagger-ui .opblock .opblock-summary{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:center}.swagger-ui .opblock-summary-path{min-width:0!important;max-width:none!important;white-space:normal!important;overflow-wrap:anywhere}.swagger-ui .opblock-summary-description{grid-column:2/4;white-space:normal!important}.swagger-ui .models,.swagger-ui .model-container,.swagger-ui table{max-width:100%;overflow-x:auto}.swagger-ui .model-box{min-width:0!important}}</style></head>
 <body><div id="s"></div><script src="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui-bundle.js" integrity="${SWAGGER_JS_SRI}" crossorigin="anonymous"></script>
 <script nonce="${nonce}">${INLINE_SCRIPT}</script></body></html>`;
 }
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
-  if (url.searchParams.has("ui")) {
+  if (!url.searchParams.has("openapi")) {
     const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
     return new Response(buildUiHtml(nonce), {
       headers: {

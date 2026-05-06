@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { CostComparisonChart, EnergyOverviewChart } from "../components/SystemCharts";
 import { HorizonChart } from "../components/HorizonChart";
@@ -17,12 +17,11 @@ import { API_ENDPOINTS, STORAGE_KEYS } from "../constants";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage, translateDynamic } from "../i18n";
 import {
-  workspaceBodyClassName,
-  workspaceBodyStrongClassName,
-  workspaceMetaClassName,
+  workspaceContentCategoryClassName,
+  workspaceContentTitleClassName,
+  workspaceContentValueBaseClassName,
+  workspaceContentValueClassName,
   workspacePageClassName,
-  workspaceSectionTitleClassName,
-  workspaceSubsectionTitleClassName,
   workspaceTitleClassName
 } from "../styles/workspace";
 import { BackupSourceName, CostComparisonItem, MonthlyEnergyBalanceRow, ValidationErrors } from "../types";
@@ -33,13 +32,15 @@ import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
 
 const blockerLinkClass =
-  "rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-100";
+  "rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-brand-700 transition hover:bg-brand-100";
 
-const workspaceMetaDetailClassName = `${workspaceMetaClassName} normal-case tracking-normal text-slate-950`;
+const analysisMetricTitleClassName = workspaceContentCategoryClassName;
+const analysisMetricValueBaseClassName = workspaceContentValueBaseClassName;
+const analysisMetricValueClassName = workspaceContentValueClassName;
 
 const ROBUST_PREFIX_RE = /^Robust\s+/i;
 const ROBUST_VARIANT_RE = / med robust utforming/i;
-const ROBUST_RELEASE_RE = /robust slipp-løysing/i;
+const ROBUST_RELEASE_RE = /robust slipp-løsning/i;
 const ROBUST_REGULATION_RE = /robust reguleringskum/i;
 const WHITESPACE_RE = /\s+/g;
 const MAIN_SOLUTION_PARTS_RE = /^(.*?)(?: med (.*?))?(?: \((.*)\))?$/;
@@ -69,22 +70,16 @@ async function getAiExportHash(promptText: string) {
 
 function InfoRow({
   label,
-  value,
-  emphasize = "value"
+  value
 }: {
   label: string;
   value: string;
-  emphasize?: "label" | "value";
 }) {
-  const labelClassName =
-    emphasize === "label" ? `${workspaceSubsectionTitleClassName}` : `${workspaceBodyClassName} text-slate-950`;
-  const valueClassName =
-    emphasize === "label"
-      ? `text-[12.6875px] leading-6 text-right text-slate-700 [overflow-wrap:anywhere]`
-      : `text-[12.6875px] leading-6 font-semibold text-right text-slate-950 [overflow-wrap:anywhere]`;
+  const labelClassName = analysisMetricTitleClassName;
+  const valueClassName = `${analysisMetricValueClassName} text-left sm:text-right`;
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 border-t border-slate-200 py-3 first:border-t-0 first:pt-0 last:pb-0">
+    <div className="grid grid-cols-1 items-baseline gap-1 border-t border-slate-200 py-3 first:border-t-0 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-4">
       <span className={labelClassName}>{label}</span>
       <span className={valueClassName}>{value}</span>
     </div>
@@ -96,7 +91,7 @@ function splitMainSolution(solution: string) {
     .trim()
     .replace(ROBUST_PREFIX_RE, "")
     .replace(ROBUST_VARIANT_RE, " med vern mot is/drivgods")
-    .replace(ROBUST_RELEASE_RE, "passiv slipp-løysing")
+    .replace(ROBUST_RELEASE_RE, "passiv slipp-løsning")
     .replace(ROBUST_REGULATION_RE, "reguleringskum")
     .replace(WHITESPACE_RE, " ");
   const match = normalized.match(MAIN_SOLUTION_PARTS_RE);
@@ -117,20 +112,18 @@ function splitMainSolution(solution: string) {
 function InfoColumn({
   title,
   items,
-  className = "",
-  emphasize = "value"
+  className = ""
 }: {
   title: string;
   items: Array<{ label: string; value: string }>;
   className?: string;
-  emphasize?: "label" | "value";
 }) {
   return (
     <div className={className}>
-      <h3 className={workspaceSubsectionTitleClassName}>{title}</h3>
+      <h3 className={analysisMetricTitleClassName}>{title}</h3>
       <div className="mt-3">
         {items.map((item) => (
-          <InfoRow key={item.label} label={item.label} value={item.value} emphasize={emphasize} />
+          <InfoRow key={item.label} label={item.label} value={item.value} />
         ))}
       </div>
     </div>
@@ -146,17 +139,17 @@ function DetailGroupsPanel({
     <div className="grid gap-6 md:grid-cols-3 md:gap-8">
       {groups.map((group, index) => (
         <div key={group.title} className={index === 0 ? "" : "md:border-l md:border-slate-200 md:pl-8"}>
-          <h3 className={workspaceSubsectionTitleClassName}>{group.title}</h3>
+          <h3 className={analysisMetricTitleClassName}>{group.title}</h3>
           <div className="mt-3 space-y-2">
             {group.items.length === 0 ? (
-              <p className={workspaceBodyClassName}>{group.emptyText}</p>
+              <p className={analysisMetricValueClassName}>{group.emptyText}</p>
             ) : (
               group.items.map((item, itemIndex) => (
                 <div
                   key={`${group.title}-${itemIndex}`}
                   className="border-t border-slate-200 pt-2 first:border-t-0 first:pt-0"
                 >
-                  <p className={`${workspaceBodyClassName} text-slate-950`}>
+                  <p className={analysisMetricValueClassName}>
                     {item.endsWith(".") ? item : `${item}.`}
                   </p>
                 </div>
@@ -175,9 +168,9 @@ function MonthlyTable({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
   return (
     <>
       <div className="hidden overflow-hidden rounded-lg border border-slate-200 lg:block">
-        <table className="w-full table-fixed divide-y divide-slate-200 text-sm">
+        <table className="w-full table-fixed divide-y divide-slate-200">
           <thead className="bg-slate-50">
-            <tr className="text-left text-[0.935rem] leading-6 text-slate-950 sm:text-[0.98rem] font-semibold">
+            <tr className={`${analysisMetricTitleClassName} text-left`}>
               <th className="px-4 py-3">{t("analysis.month")}</th>
               <th className="px-4 py-3 text-right">{t("analysis.sun")}</th>
               <th className="px-4 py-3 text-right">{t("analysis.load")}</th>
@@ -190,60 +183,53 @@ function MonthlyTable({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
             {rows.map((row) => (
               <tr key={row.month}>
                 <td className="px-4 py-3">
-                  <p className="text-[0.935rem] leading-6 text-slate-950 sm:text-[0.98rem] font-semibold">{t(`month.${row.month}`)}</p>
-                  <p className="text-xs text-slate-500">{row.daysInMonth} {t("analysis.days")}</p>
+                  <p className={analysisMetricTitleClassName}>{t(`month.${row.month}`)}</p>
+                  <p className={analysisMetricValueClassName}>{row.daysInMonth} {t("analysis.days")}</p>
                 </td>
-                <td className="px-4 py-3 text-right text-slate-700">{formatNumber(row.solarProductionKWh)} kWh</td>
-                <td className="px-4 py-3 text-right text-slate-700">{formatNumber(row.loadDemandKWh)} kWh</td>
+                <td className={`px-4 py-3 text-right ${analysisMetricValueClassName}`}>{formatNumber(row.solarProductionKWh)} kWh</td>
+                <td className={`px-4 py-3 text-right ${analysisMetricValueClassName}`}>{formatNumber(row.loadDemandKWh)} kWh</td>
                 <td
-                  className={`px-4 py-3 text-right font-semibold ${
+                  className={`px-4 py-3 text-right ${analysisMetricValueBaseClassName} ${
                     row.energyBalanceKWh >= 0 ? "text-emerald-700" : "text-orange-700"
                   }`}
                 >
                   {formatNumber(row.energyBalanceKWh)} kWh
                 </td>
-                <td className="px-4 py-3 text-right text-slate-700">{formatNumber(row.fuelLiters)} l</td>
-                <td className="px-4 py-3 text-right text-slate-700">{formatNumber(row.fuelCost)} kr</td>
+                <td className={`px-4 py-3 text-right ${analysisMetricValueClassName}`}>{formatNumber(row.fuelLiters)} l</td>
+                <td className={`px-4 py-3 text-right ${analysisMetricValueClassName}`}>{formatNumber(row.fuelCost)} kr</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="-mx-4 overflow-x-auto lg:hidden">
-        <table className="w-full min-w-[540px] divide-y divide-slate-200 text-sm">
-          <thead>
-            <tr className="text-left text-[0.935rem] leading-6 text-slate-950 sm:text-[0.98rem] font-semibold">
-              <th className="sticky left-0 bg-white px-4 py-3">{t("analysis.month")}</th>
-              <th className="px-3 py-3 text-right">{t("analysis.sun")}</th>
-              <th className="px-3 py-3 text-right">{t("analysis.load")}</th>
-              <th className="px-3 py-3 text-right">{t("analysis.balance")}</th>
-              <th className="px-3 py-3 text-right">{t("analysis.fuel")}</th>
-              <th className="px-3 py-3 text-right pr-4">{t("analysis.cost")}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200 bg-white">
-            {rows.map((row) => (
-              <tr key={row.month}>
-                <td className="sticky left-0 bg-white px-4 py-2.5">
-                  <p className="text-[0.935rem] leading-6 text-slate-950 sm:text-[0.98rem] font-semibold">{t(`month.${row.month}`)}</p>
-                  <p className={workspaceMetaDetailClassName}>{row.daysInMonth} d</p>
-                </td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-right text-slate-950">{formatNumber(row.solarProductionKWh)} kWh</td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-right text-slate-950">{formatNumber(row.loadDemandKWh)} kWh</td>
-                <td
-                  className={`whitespace-nowrap px-3 py-2.5 text-right font-semibold ${
-                    row.energyBalanceKWh >= 0 ? "text-brand-700" : "text-rose-700"
-                  }`}
-                >
-                  {formatNumber(row.energyBalanceKWh)} kWh
-                </td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-right text-slate-950">{formatNumber(row.fuelLiters)} l</td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-right pr-4 text-slate-950">{formatNumber(row.fuelCost)} kr</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="space-y-3 lg:hidden">
+        {rows.map((row) => (
+          <div key={row.month} className="rounded-lg border border-slate-200 p-3">
+            <div className="flex items-baseline justify-between gap-3 border-b border-slate-200 pb-2">
+              <p className={analysisMetricTitleClassName}>{t(`month.${row.month}`)}</p>
+              <p className={`${analysisMetricValueClassName} text-right`}>{row.daysInMonth} {t("analysis.days")}</p>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
+              {[
+                { label: t("analysis.sun"), value: `${formatNumber(row.solarProductionKWh)} kWh`, tone: analysisMetricValueClassName },
+                { label: t("analysis.load"), value: `${formatNumber(row.loadDemandKWh)} kWh`, tone: analysisMetricValueClassName },
+                {
+                  label: t("analysis.balance"),
+                  value: `${formatNumber(row.energyBalanceKWh)} kWh`,
+                  tone: `${analysisMetricValueBaseClassName} ${row.energyBalanceKWh >= 0 ? "text-brand-700" : "text-rose-700"}`
+                },
+                { label: t("analysis.fuel"), value: `${formatNumber(row.fuelLiters)} l`, tone: analysisMetricValueClassName },
+                { label: t("analysis.cost"), value: `${formatNumber(row.fuelCost)} kr`, tone: analysisMetricValueClassName }
+              ].map((item) => (
+                <div key={item.label}>
+                  <p className={analysisMetricTitleClassName}>{item.label}</p>
+                  <p className={item.tone}>{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </>
   );
@@ -255,8 +241,8 @@ function CostCard({ item }: { item: CostComparisonItem }) {
   return (
     <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
       <div className="flex items-center justify-between gap-3">
-        <h3 className={workspaceSubsectionTitleClassName}>{translateDynamic(item.source, language)}</h3>
-        <p className={workspaceSubsectionTitleClassName}>{formatNumber(item.toc)} kr</p>
+        <h3 className={analysisMetricTitleClassName}>{translateDynamic(item.source, language)}</h3>
+        <p className={`${analysisMetricValueClassName} text-right`}>{formatNumber(item.toc)} kr</p>
       </div>
 
       <div className="mt-3">
@@ -284,8 +270,8 @@ function LifetimePanel({ items }: { items: CostComparisonItem[] }) {
           return (
             <div key={item.source} className="md:px-6 md:first:pl-0 md:last:pr-0">
               <div className="flex items-center justify-between gap-3">
-                <h3 className={workspaceSubsectionTitleClassName}>{translateDynamic(item.source, language)}</h3>
-                <p className="text-sm font-semibold text-slate-500">{formatNumber(item.evaluationHorizonYears)} {t("analysis.yearsAnalysis")}</p>
+                <h3 className={analysisMetricTitleClassName}>{translateDynamic(item.source, language)}</h3>
+                <p className={`${analysisMetricValueClassName} text-right`}>{formatNumber(item.evaluationHorizonYears)} {t("analysis.yearsAnalysis")}</p>
               </div>
 
               <div className="mt-3">
@@ -315,9 +301,9 @@ function ReserveSourceToggle({
   const { t, language } = useLanguage();
 
   return (
-    <div className="flex flex-col gap-2 sm:items-end">
-      <p className="text-[0.935rem] leading-6 text-slate-950 sm:text-[0.98rem] font-semibold text-slate-950">{t("analysis.reserveSourceForDisplay")}</p>
-      <div className="flex w-full rounded-full border border-slate-200 p-1 sm:inline-flex sm:w-auto">
+    <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+      <p className={analysisMetricTitleClassName}>{t("analysis.reserveSourceForDisplay")}</p>
+      <div className="inline-flex w-full rounded-xl border border-slate-200 p-0.5 sm:w-auto sm:rounded-full sm:p-1">
         {options.map((option) => {
           const selected = value === option;
 
@@ -327,7 +313,7 @@ function ReserveSourceToggle({
               type="button"
               onClick={() => onChange(option)}
               aria-pressed={selected}
-              className={`flex-1 rounded-full px-3.5 py-1.5 text-sm font-semibold transition sm:flex-initial ${
+              className={`flex-1 rounded-lg px-2.5 py-1 transition sm:flex-initial sm:rounded-full sm:px-3.5 sm:py-1.5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] ${
                 selected ? "bg-slate-900 text-white" : "text-slate-950 hover:bg-slate-50 hover:text-slate-950"
               }`}
             >
@@ -439,7 +425,7 @@ export default function AnalysisPage() {
       ? activeReserveScenario.secondarySourcePowerW
       : derivedResults?.systemRecommendation.secondarySourcePowerW ?? 0;
   const visibleReserveSourceValue =
-    hasBackupSource ? activeReserveSource : derivedResults?.systemRecommendation.secondarySource ?? "Ikkje berekna";
+    hasBackupSource ? activeReserveSource : derivedResults?.systemRecommendation.secondarySource ?? "Ikke beregnet";
 
   const handleSave = () => {
     if (foundationReady && hasSystemDetails) {
@@ -611,7 +597,7 @@ export default function AnalysisPage() {
       const loadWhPerHour = totalWhPerDay / 24;
 
       if (batteryCapacityWh <= 0 || loadWhPerHour <= 0) {
-        setReliabilityError("Batteri- og lastdata manglar. Lagre konfigurasjonen fyrst.");
+        setReliabilityError("Batteri- og lastdata mangler. Lagre konfigurasjonen først.");
         setReliabilityRunning(false);
         return;
       }
@@ -715,7 +701,7 @@ export default function AnalysisPage() {
                 </NavLink>
               ))}
             </div>
-            <div className={`border-t border-slate-200 pt-4 ${workspaceBodyClassName} text-slate-950`}>
+            <div className={`border-t border-slate-200 pt-4 ${analysisMetricValueClassName}`}>
               {t("analysis.resultPageOpen")}
             </div>
           </div>
@@ -783,15 +769,15 @@ export default function AnalysisPage() {
       <div>
         <h2 className={`max-w-3xl ${workspaceTitleClassName}`}>{solutionLead.title}</h2>
         {(solutionLead.detail || solutionLead.profile) && (
-          <div className="mt-1 max-w-3xl space-y-2 text-[0.935rem] leading-6 text-slate-950 sm:text-[0.98rem]">
+          <div className={`mt-1 max-w-3xl space-y-2 ${workspaceContentValueClassName}`}>
             {solutionLead.detail ? (
               <p>
-                <span className="font-semibold text-slate-950">{t("analysis.execution")}</span> {solutionLead.detail}.
+                <span className={analysisMetricValueBaseClassName}>{t("analysis.execution")}</span> {solutionLead.detail}.
               </p>
             ) : null}
             {solutionLead.profile ? (
               <p>
-                <span className="font-semibold text-slate-950">{t("analysis.profile")}</span> {solutionLead.profile}.
+                <span className={analysisMetricValueBaseClassName}>{t("analysis.profile")}</span> {solutionLead.profile}.
               </p>
             ) : null}
           </div>
@@ -814,11 +800,11 @@ export default function AnalysisPage() {
           >
             {isGuidedMode ? (
               <div className="grid gap-6 lg:grid-cols-2 lg:gap-0 lg:divide-x lg:divide-slate-200">
-                <InfoColumn title={t("analysis.system")} items={systemSummaryItems} className="lg:pr-8" emphasize="label" />
-                <InfoColumn title={t("analysis.reserve")} items={reserveSummaryItems} className="lg:pl-8" emphasize="label" />
+                <InfoColumn title={t("analysis.system")} items={systemSummaryItems} className="lg:pr-8" />
+                <InfoColumn title={t("analysis.reserve")} items={reserveSummaryItems} className="lg:pl-8" />
               </div>
             ) : (
-              <InfoColumn title={t("analysis.reserve")} items={reserveSummaryItems} emphasize="label" />
+              <InfoColumn title={t("analysis.reserve")} items={reserveSummaryItems} />
             )}
           </WorkspaceSection>
 
@@ -829,42 +815,42 @@ export default function AnalysisPage() {
             <div className="hidden md:grid md:grid-cols-3 md:divide-x md:divide-slate-200">
               <div className="divide-y divide-slate-200 md:px-6">
                 <div className="py-4 text-center first:pt-0">
-                  <p className={`${workspaceSubsectionTitleClassName} text-center`}>{t("analysis.solarPerYear")}</p>
-                  <p className="mt-2 text-[12.6875px] leading-6 text-center text-slate-700 [overflow-wrap:anywhere]">
+                  <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.solarPerYear")}</p>
+                  <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
                     {formatNumber(visibleAnnualTotals?.annualSolarProductionKWh ?? 0)} kWh
                   </p>
                 </div>
                 <div className="py-4 text-center last:pb-0">
-                  <p className={`${workspaceSubsectionTitleClassName} text-center`}>{t("analysis.loadPerYear")}</p>
-                  <p className="mt-2 text-[12.6875px] leading-6 text-center text-slate-700 [overflow-wrap:anywhere]">
+                  <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.loadPerYear")}</p>
+                  <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
                     {formatNumber(visibleAnnualTotals?.annualLoadDemandKWh ?? 0)} kWh
                   </p>
                 </div>
               </div>
               <div className="divide-y divide-slate-200 md:px-6">
                 <div className="py-4 text-center first:pt-0">
-                  <p className={`${workspaceSubsectionTitleClassName} text-center`}>{t("analysis.energyBalancePerYear")}</p>
-                  <p className="mt-2 text-[12.6875px] leading-6 text-center text-slate-700 [overflow-wrap:anywhere]">
+                  <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.energyBalancePerYear")}</p>
+                  <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
                     {formatNumber(visibleAnnualTotals?.annualEnergyBalanceKWh ?? 0)} kWh
                   </p>
                 </div>
                 <div className="py-4 text-center last:pb-0">
-                  <p className={`${workspaceSubsectionTitleClassName} text-center`}>{t("analysis.reserveRunPerYear")}</p>
-                  <p className="mt-2 text-[12.6875px] leading-6 text-center text-slate-700 [overflow-wrap:anywhere]">
+                  <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.reserveRunPerYear")}</p>
+                  <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
                     {formatNumber(visibleAnnualTotals?.annualSecondaryRuntimeHours ?? 0)} h
                   </p>
                 </div>
               </div>
               <div className="divide-y divide-slate-200 md:px-6">
                 <div className="py-4 text-center first:pt-0">
-                  <p className={`${workspaceSubsectionTitleClassName} text-center`}>{t("analysis.fuelPerYear")}</p>
-                  <p className="mt-2 text-[12.6875px] leading-6 text-center text-slate-700 [overflow-wrap:anywhere]">
+                  <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.fuelPerYear")}</p>
+                  <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
                     {formatNumber(visibleAnnualTotals?.annualFuelConsumption ?? 0)} l
                   </p>
                 </div>
                 <div className="py-4 text-center last:pb-0">
-                  <p className={`${workspaceSubsectionTitleClassName} text-center`}>{t("analysis.fuelCostPerYear")}</p>
-                  <p className="mt-2 text-[12.6875px] leading-6 text-center text-slate-700 [overflow-wrap:anywhere]">
+                  <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.fuelCostPerYear")}</p>
+                  <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
                     {formatNumber(visibleAnnualTotals?.annualFuelCost ?? 0)} kr
                   </p>
                 </div>
@@ -876,13 +862,13 @@ export default function AnalysisPage() {
                 { label: t("analysis.solarPerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualSolarProductionKWh ?? 0)} kWh` },
                 { label: t("analysis.loadPerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualLoadDemandKWh ?? 0)} kWh` },
                 { label: t("analysis.balancePerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualEnergyBalanceKWh ?? 0)} kWh` },
-              { label: t("analysis.reservePerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualSecondaryRuntimeHours ?? 0)} h` },
+                { label: t("analysis.reservePerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualSecondaryRuntimeHours ?? 0)} h` },
                 { label: t("analysis.fuelPerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualFuelConsumption ?? 0)} l` },
                 { label: t("analysis.fuelCostPerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualFuelCost ?? 0)} kr` },
               ].map((item) => (
-                <div key={item.label} className="flex items-baseline justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                  <p className={workspaceBodyClassName}>{item.label}</p>
-                  <p className={`${workspaceBodyStrongClassName} text-right`}>{item.value}</p>
+                <div key={item.label} className="grid grid-cols-1 gap-1 py-3 first:pt-0 last:pb-0">
+                  <p className={analysisMetricTitleClassName}>{item.label}</p>
+                  <p className={analysisMetricValueClassName}>{item.value}</p>
                 </div>
               ))}
             </div>
@@ -903,7 +889,7 @@ export default function AnalysisPage() {
                 backupSource={
                   hasBackupSource
                     ? activeReserveSource
-                    : derivedResults.systemRecommendation.secondarySource === "Ikkje berekna"
+                    : derivedResults.systemRecommendation.secondarySource === "Ikke beregnet"
                       ? undefined
                       : derivedResults.systemRecommendation.secondarySource
                 }
@@ -914,7 +900,7 @@ export default function AnalysisPage() {
               <div className="mt-6">
                 <div className="mb-0 flex flex-col gap-4 border-b border-slate-200 pb-2 sm:flex-row sm:items-end sm:justify-between">
                   <div className="min-w-0">
-                    <h2 className={workspaceSectionTitleClassName}>Solposisjon</h2>
+                    <h2 className={workspaceContentTitleClassName}>Solposisjon</h2>
                   </div>
                 </div>
                 <PanoramicHorizon
@@ -930,7 +916,7 @@ export default function AnalysisPage() {
               <div className="mt-6">
                 <div className="mb-0 flex flex-col gap-4 border-b border-slate-200 pb-2 sm:flex-row sm:items-end sm:justify-between">
                   <div className="min-w-0">
-                    <h2 className={workspaceSectionTitleClassName}>
+                    <h2 className={workspaceContentTitleClassName}>
                       Innfallsvinkel på panelet (tilt {activeDraft.solarRadiationSettings.tilt !== "" ? Number(activeDraft.solarRadiationSettings.tilt) : 30}°, azimut {activeDraft.solarRadiationSettings.azimuth !== "" ? Number(activeDraft.solarRadiationSettings.azimuth) : 180}°)
                     </h2>
                   </div>
@@ -949,7 +935,7 @@ export default function AnalysisPage() {
               <div className="mt-6">
                 <div className="mb-0 flex flex-col gap-4 border-b border-slate-200 pb-2 sm:flex-row sm:items-end sm:justify-between">
                   <div className="min-w-0">
-                    <h2 className={workspaceSectionTitleClassName}>Horisontprofil</h2>
+                    <h2 className={workspaceContentTitleClassName}>Horisontprofil</h2>
                   </div>
                 </div>
                 <HorizonChart profile={horizonProfile} latDeg={activeDraft.solarRadiationSettings.lat !== "" ? Number(activeDraft.solarRadiationSettings.lat) : undefined} />
@@ -1027,11 +1013,11 @@ export default function AnalysisPage() {
                   type="button"
                   disabled={isGeneratingReport}
                   onClick={handleGenerateReport}
-                  className="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
+                  className="rounded-xl bg-brand-600 px-5 py-2.5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-white transition hover:bg-brand-700 disabled:opacity-50"
                 >
                   {isGeneratingReport ? "Genererer..." : "Generer rapport med AI-underbygging"}
                 </button>
-                {reportError ? <p className="text-sm text-red-600">{reportError}</p> : null}
+                {reportError ? <p className={`${analysisMetricValueClassName} text-red-600`}>{reportError}</p> : null}
               </div>
             </WorkspaceSection>
           ) : null}
@@ -1103,12 +1089,12 @@ function ReliabilitySection({
         <div className="mb-5 flex flex-col gap-4 border-b border-slate-200 pb-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className={workspaceSectionTitleClassName}>{t("reliability.title")}</h2>
+              <h2 className={workspaceContentTitleClassName}>{t("reliability.title")}</h2>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-xs">
-            {running ? <span className="font-semibold text-sky-700">{t("reliability.running")}</span> : null}
-            {error && <span className="text-xs text-red-600">{error}</span>}
+          <div className="flex items-center gap-3 text-[length:var(--hg-type-meta-size)]">
+            {running ? <span className="font-[var(--hg-type-weight-semibold)] text-sky-700">{t("reliability.running")}</span> : null}
+            {error && <span className="text-red-600">{error}</span>}
           </div>
         </div>
         {content}
@@ -1121,9 +1107,9 @@ function ReliabilitySection({
       title={t("reliability.title")}
       description={t("reliability.description")}
       actions={
-        <div className="flex items-center gap-3 text-xs">
-          {running ? <span className="font-semibold text-sky-700">{t("reliability.running")}</span> : null}
-          {error && <span className="text-xs text-red-600">{error}</span>}
+        <div className="flex items-center gap-3 text-[length:var(--hg-type-meta-size)]">
+          {running ? <span className="font-[var(--hg-type-weight-semibold)] text-sky-700">{t("reliability.running")}</span> : null}
+          {error && <span className="text-red-600">{error}</span>}
         </div>
       }
     >

@@ -3,7 +3,7 @@ import { Answers, ConfidenceStatus, Recommendation } from "../types";
 import { dedupe } from "./format";
 
 type FlowBand = "liten" | "middels" | "stor";
-type VariationBand = "låg" | "høg";
+type VariationBand = "lav" | "høy";
 const LOW_FLOW_THRESHOLD = 2;
 
 function classifyFlow(flow: number): FlowBand {
@@ -14,8 +14,8 @@ function classifyFlow(flow: number): FlowBand {
 
 function classifyVariation(answers: Answers): VariationBand {
   return answers.q3Slippkravvariasjon === "sesongkrav" || answers.q3Slippkravvariasjon === "tilsigsstyrt"
-    ? "høg"
-    : "låg";
+    ? "høy"
+    : "lav";
 }
 
 function isInfrequentInspections(inspectionsPerYear: number | ""): boolean {
@@ -32,15 +32,15 @@ function resolveControlMethod(answers: Answers): string {
     flow <= LOW_FLOW_THRESHOLD &&
     (answers.q4Slippmetode === "royr_frostfritt" || answers.q4Slippmetode === "royr_utan_frostfritt")
   ) {
-    return "Volum/tid-måling i behaldar";
+    return "Volum/tid-måling i beholder";
   }
   if (answers.q8Maleprofil === "naturleg_stabilt") {
-    return "Kontroll i naturleg måleprofil nedstrøms";
+    return "Kontroll i naturlig måleprofil nedstrøms";
   }
   if (answers.q8Maleprofil === "kan_byggjast_kunstig") {
-    return "Kontroll i kunstig bygd måleprofil nedstrøms";
+    return "Kontroll i kunstig bygget måleprofil nedstrøms";
   }
-  return "Treng nærare prosjektering";
+  return "Trenger nærmere prosjektering";
 }
 
 function deriveMainSolution(answers: Answers, inspectionsPerYear: number | ""): string {
@@ -52,46 +52,46 @@ function deriveMainSolution(answers: Answers, inspectionsPerYear: number | ""): 
   if (answers.q4Slippmetode === "royr_frostfritt") {
     if (hasVariation) {
       return needsProtection
-        ? "Røyrslipp i frostfritt rom med aktiv reguleringsventil, grovfilter og mengdemålar"
-        : "Røyrslipp i frostfritt rom med aktiv reguleringsventil og mengdemålar";
+        ? "Rørslipp i frostfritt rom med aktiv reguleringsventil, grovfilter og mengdemåler"
+        : "Rørslipp i frostfritt rom med aktiv reguleringsventil og mengdemåler";
     }
     return needsProtection
-      ? "Røyrslipp i frostfritt rom med fast struping, sjølvreinsande inntak og mengdemålar"
-      : "Røyrslipp i frostfritt rom med fast struping og mengdemålar";
+      ? "Rørslipp i frostfritt rom med fast struping, selvrensende inntak og mengdemåler"
+      : "Rørslipp i frostfritt rom med fast struping og mengdemåler";
   }
 
   if (answers.q4Slippmetode === "royr_utan_frostfritt") {
     if (hasVariation) {
       return needsProtection
-        ? "Røyrslipp gjennom dam med aktiv reguleringsventil, grovfilter og mengdemålar"
-        : "Røyrslipp gjennom dam med aktiv reguleringsventil og mengdemålar";
+        ? "Rørslipp gjennom dam med aktiv reguleringsventil, grovfilter og mengdemåler"
+        : "Rørslipp gjennom dam med aktiv reguleringsventil og mengdemåler";
     }
     return needsProtection
-      ? "Røyrslipp gjennom dam med fast struping og mengdemålar"
-      : "Røyrslipp gjennom dam med fast struping og mengdemålar";
+      ? "Rørslipp gjennom dam med fast struping og mengdemåler"
+      : "Rørslipp gjennom dam med fast struping og mengdemåler";
   }
 
   if (answers.q4Slippmetode === "direkte_elveleie") {
     return needsProtection
-      ? "Elveslipp med skjerma måleseksjon og vern mot is/drivgods"
-      : "Elveslipp med definert målepunkt i naturleg elveleie";
+      ? "Elveslipp med skjermet måleseksjon og vern mot is/drivgods"
+      : "Elveslipp med definert målepunkt i naturlig elveleie";
   }
 
   if (hasVariation && needsProtection) {
-    return "Reguleringskum med automatisk ventil, sjølvreinsande innløp og skjerma måleseksjon";
+    return "Reguleringskum med automatisk ventil, selvrensende innløp og skjermet måleseksjon";
   }
   if (hasVariation) {
-    return "Aktivt regulerbar slipp-løysing med ventil og stabilisert måleseksjon";
+    return "Aktivt regulerbar slipp-løsning med ventil og stabilisert måleseksjon";
   }
   if (needsProtection) {
-    return "Passiv slipp-løysing med låg driftsbelastning og vern mot is/drivgods";
+    return "Passiv slipp-løsning med lav driftsbelastning og vern mot is/drivgods";
   }
-  return "Standard slipp-løysing med fast regulering og definert målepunkt";
+  return "Standard slipp-løsning med fast regulering og definert målepunkt";
 }
 
 function deriveStatus(answers: Answers, controlMethod: string): ConfidenceStatus {
-  if (controlMethod === "Treng nærare prosjektering") return "Krev avklaring";
-  if (answers.q8Maleprofil === "ingen_eigna_profil") return "Bør vurderast nærare";
+  if (controlMethod === "Trenger nærmere prosjektering") return "Krev avklaring";
+  if (answers.q8Maleprofil === "ingen_eigna_profil") return "Bør vurderes nærmere";
   return "Anbefalt";
 }
 
@@ -112,51 +112,51 @@ export function calculateRecommendation(answers: Answers, inspectionsPerYear: nu
   const grunngiving = dedupe(
     [
       answers.q1Anleggstype === "eksisterande"
-        ? "Eksisterande anlegg - vurder å byggje vidare på eksisterande infrastruktur"
+        ? "Eksisterende anlegg - vurder å bygge videre på eksisterende infrastruktur"
         : "",
       answers.q1Anleggstype === "ombygging"
-        ? "Ombygging - eksisterande slipp- og målearrangement bør vurderast før nytt arrangement prosjekterast"
+        ? "Ombygging - eksisterende slipp- og målearrangement bør vurderes før nytt arrangement prosjekteres"
         : "",
-      `Minstevassføring er klassifisert som ${flowBand} med ${variation} variasjon`,
+      `Minstevannføring er klassifisert som ${flowBand} med ${variation} variasjon`,
       answers.q4Slippmetode === "royr_frostfritt"
-        ? "Frostfritt uttak etter varegrind gjev prioritet til røyrslipp med intern måling"
+        ? "Frostfritt uttak etter varegrind gir prioritet til rørslipp med intern måling"
         : answers.q4Slippmetode === "royr_utan_frostfritt"
-          ? "Røyrslipp gjennom dam utan frostfritt rom krev ekstra vern mot frost og fukt"
+          ? "Rørslipp gjennom dam uten frostfritt rom krever ekstra vern mot frost og fukt"
           : answers.q4Slippmetode === "direkte_elveleie"
-            ? "Elvinntak gjev slipp direkte i elveleie - krev skjerma eller stabilt målepunkt nedstrøms"
-            : "Utvendig slipp via luke, utsparing eller overløp krev kontrollert målepunkt nedstrøms",
+            ? "Elveinntak gir slipp direkte i elveleie - krever skjermet eller stabilt målepunkt nedstrøms"
+            : "Utvendig slipp via luke, utsparing eller overløp krever kontrollert målepunkt nedstrøms",
       hasVariation
-        ? "Regelkrava krev aktiv regulering gjennom året"
-        : "Regelkrava opnar for enklare fast regulering",
+        ? "Regelkravene krever aktiv regulering gjennom året"
+        : "Regelkravene åpner for enklere fast regulering",
       highFlowPipe
-        ? `Volum/tid-måling i behaldar er ikkje vurdert som eigna når vassføringa overstig ${LOW_FLOW_THRESHOLD} l/s`
+        ? `Volum/tid-måling i beholder er ikke vurdert som egnet når vannføringen overstiger ${LOW_FLOW_THRESHOLD} l/s`
         : "",
       needsProtection
-        ? "NVE 3/2020 legg vekt på driftssikkert arrangement ved vinterforhold, tilstopping og periodar med låg tilsynshyppigheit"
-        : "Driftsforholda tillet standard løysing utan særskilde vinter- og tilsynstiltak",
-      `Kontrollmålemetode er vald etter prioritert regelrekkje: ${controlMethod.toLowerCase()}`
+        ? "NVE 3/2020 legger vekt på driftssikkert arrangement ved vinterforhold, tilstopping og perioder med lav tilsynshyppighet"
+        : "Driftsforholdene tillater standard løsning uten særlige vinter- og tilsynstiltak",
+      `Kontrollmålemetode er valgt etter prioritert regelrekkefølge: ${controlMethod.toLowerCase()}`
     ].filter(Boolean)
   ).slice(0, 5);
 
   const tilleggskrav = dedupe(
     [
       answers.q6Fiskepassasje === "ja"
-        ? "Løysinga skal integrerast med krav til fiskepassasje"
+        ? "Løsningen skal integreres med krav til fiskepassasje"
         : "",
       answers.q7BypassVedDriftsstans === "ja"
         ? "Bypass/slipp skal fungere uavhengig av turbindrift"
         : "",
       answers.q9AllmentaKontroll === "ja"
-        ? "Allmenta skal kunne kontrollere minstevassføringa via synleg vising, skilt eller målestav"
+        ? "Allmennheten skal kunne kontrollere minstevannføringen via synlig visning, skilt eller målestav"
         : "",
       answers.q8Maleprofil === "kan_byggjast_kunstig"
-        ? "Det skal byggjast kunstig måleprofil nedstrøms slippstaden"
+        ? "Det skal bygges kunstig måleprofil nedstrøms slippstedet"
         : "",
       needsProtection
-        ? "Materialval og geometri skal tole is, drivgods, sediment og låg tilsynsfrekvens"
+        ? "Materialval og geometri skal tåle is, drivgods, sediment og lav tilsynsfrekvens"
         : "",
       hasVariation
-        ? "Regulering skal kunne gjennomførast trygt og sporbart ved hyppige endringar"
+        ? "Regulering skal kunne gjennomføres trygt og sporbart ved hyppige endringer"
         : ""
     ].filter(Boolean)
   );

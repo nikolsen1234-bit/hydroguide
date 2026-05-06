@@ -21,7 +21,7 @@ function resolveContentSecurityPolicy(pathname) {
 
 // Routes that set their own CSP (e.g. with a nonce) — do not overwrite.
 function hasOwnCsp(pathname) {
-  return pathname === "/api/docs";
+  return pathname === "/api/docs" || pathname.startsWith("/api/docs/");
 }
 
 export async function onRequest(context) {

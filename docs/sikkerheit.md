@@ -82,7 +82,7 @@ Motvirker: T3, T4, T6.
 | Tiltak | Hvor |
 |--------|-----|
 | HMAC-hash av API-nøkler i KV (SHA-256, konstanttid-sammenligning) | `hydroguide-api` |
-| Bearer-token `ADMIN_TOKEN` for admin-operasjoner | `hydroguide-admin` |
+| `x-admin-token` med `ADMIN_TOKEN` for admin-operasjoner | `hydroguide-admin` |
 | Service binding `REPORT_AI_WORKER` (ingen offentlig AI-route) | `hydroguide-report` -> `hydroguide-ai` |
 | `REPORT_WORKER_TOKEN` som intern bearer mellom report og AI | begge Workerne |
 | `REPORT_ACCESS_CODE_HASH` validerer at rapportkall kommer fra nettsiden | `hydroguide-report` |

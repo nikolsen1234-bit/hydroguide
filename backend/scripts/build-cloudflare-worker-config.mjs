@@ -24,6 +24,7 @@ function isRedactedKey(key) {
 
 const privateConfigPath = resolve(rootDir, "backend/config/cloudflare.private.json");
 const publicConfigPath = resolve(rootDir, "backend/config/cloudflare.public.json");
+const localSecretsPath = resolve(rootDir, ".secrets");
 
 const workers = [
   {
@@ -91,6 +92,7 @@ function usage() {
   node backend/scripts/build-cloudflare-worker-config.mjs --deploy-preflight
 
 Values are read from environment variables first, then from backend/config/cloudflare.private.json.
+Local .secrets is used as a local fallback.
 The private file is intended to be git-crypt encrypted.`);
 }
 
@@ -165,6 +167,10 @@ function readJsonc(relativePath) {
   return JSON.parse(stripJsonc(readFileSync(absolutePath, "utf8")));
 }
 
+function isGitCryptLockedText(text) {
+  return text.includes("GITCRYPT");
+}
+
 function readPrivateValues() {
   if (!existsSync(privateConfigPath)) {
     return {};
@@ -175,7 +181,7 @@ function readPrivateValues() {
   try {
     parsed = JSON.parse(text);
   } catch (error) {
-    if (text.includes("GITCRYPT")) {
+    if (isGitCryptLockedText(text)) {
       return {};
     }
 
@@ -185,19 +191,59 @@ function readPrivateValues() {
   return parsed.cloudflare && typeof parsed.cloudflare === "object" ? parsed.cloudflare : {};
 }
 
+function readLocalSecretsValues() {
+  if (!existsSync(localSecretsPath)) {
+    return {};
+  }
+
+  const values = {};
+  const text = readFileSync(localSecretsPath, "utf8");
+  if (isGitCryptLockedText(text)) {
+    return {};
+  }
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+
+    const separatorIndex = line.indexOf("=");
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const key = line.slice(0, separatorIndex).trim();
+    let value = line.slice(separatorIndex + 1).trim();
+    if (
+      (value.startsWith("\"") && value.endsWith("\"")) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    values[key] = value;
+  }
+
+  return values;
+}
+
 function isRealValue(value) {
   return typeof value === "string" && !omitValues.has(value.trim()) && !value.startsWith("REPLACE_WITH_");
 }
 
-function resolveValues(privateValues) {
+function resolveValues(privateValues, localSecretsValues) {
   const values = {};
   for (const name of deployRequiredNames) {
     const envValue = process.env[name];
     const privateValue = privateValues[name];
+    const localSecretValue = localSecretsValues[name];
     if (isRealValue(envValue)) {
       values[name] = envValue;
     } else if (isRealValue(privateValue)) {
       values[name] = privateValue;
+    } else if (isRealValue(localSecretValue)) {
+      values[name] = localSecretValue;
     }
   }
   return values;
@@ -438,7 +484,8 @@ function main() {
   const needsDeployValues =
     args.has("--deploy-preflight") || args.has("--check-deploy-config") || args.has("--write-deploy-config");
   const privateValues = needsDeployValues ? readPrivateValues() : {};
-  const values = needsDeployValues ? resolveValues(privateValues) : {};
+  const localSecretsValues = needsDeployValues ? readLocalSecretsValues() : {};
+  const values = needsDeployValues ? resolveValues(privateValues, localSecretsValues) : {};
 
   if (args.has("--deploy-preflight")) {
     assertDeployEnv(values);

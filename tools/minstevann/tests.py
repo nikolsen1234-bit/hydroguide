@@ -668,10 +668,10 @@ class TestResultFirstPipeline(unittest.TestCase):
                 "inntak": [
                     {
                         "inntakFunksjon": "hovedinntak",
-                        "sommer_ls": 120,
-                        "sommer_periode": "1. mai - 30. september",
-                        "vinter_ls": 40,
-                        "vinter_periode": "1. oktober - 30. april",
+                        "perioder": [
+                            {"ls": 120, "periode": "1. mai - 30. september", "note": None},
+                            {"ls": 40, "periode": "1. oktober - 30. april", "note": None},
+                        ],
                     }
                 ],
             },
@@ -758,10 +758,10 @@ class TestResultFirstPipeline(unittest.TestCase):
                 "inntak": [
                     {
                         "inntakFunksjon": "hovedinntak",
-                        "sommer_ls": 120,
-                        "sommer_periode": "1. mai - 30. september",
-                        "vinter_ls": 40,
-                        "vinter_periode": "1. oktober - 30. april",
+                        "perioder": [
+                            {"ls": 120, "periode": "1. mai - 30. september", "note": None},
+                            {"ls": 40, "periode": "1. oktober - 30. april", "note": None},
+                        ],
                     }
                 ],
             },

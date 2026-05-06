@@ -32,13 +32,15 @@ python -m pip install -e .\tools\minstevann
 
 Dette installerer `opendataloader-pdf[hybrid]`, som inkluderer Docling og EasyOCR for OCR av skanna PDF-ar. `JAVA_HOME` ma peike pa Java 21.
 
-Start LM Studio, last modellen `gemma-4-E4B-it-Q4_K_M.gguf`, og start Local Server. Verifiser at serveren svarer:
+Start LM Studio, last modellen `gemma-4-E4B-it-Q4_K_M.gguf` med context length `8192`, og start Local Server. Verifiser at serveren svarer:
 
 ```bash
 GET http://127.0.0.1:1234/v1/models
 ```
 
 Default modell-id er `gemma-4-e4b-it`. Host kan overstyrast med `--host` eller `HG_LM_STUDIO_HOST`.
+
+Inference-parametrane er `temperature=0.1`, `top_p=0.95`, `top_k=64`, `max_tokens=2000`, og `stream=false`. Context length er ein LM Studio load-parameter og skal vere `8192`.
 
 ## Korleis Pipelinen Fungerer
 

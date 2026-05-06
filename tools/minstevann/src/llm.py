@@ -125,6 +125,7 @@ def call_lm_studio(
         "stream": False,
         "temperature": 0.1,
         "top_p": 0.95,
+        "top_k": 64,
         "max_tokens": 2000,
         "response_format": {
             "type": "json_schema",

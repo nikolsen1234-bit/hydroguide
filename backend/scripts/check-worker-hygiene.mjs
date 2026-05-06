@@ -26,6 +26,19 @@ const generatedConfigPattern = /^backend\/cloudflare\/.*\.generated\.wrangler\.j
 const WHITESPACE_RE = /\s+/;
 const privateConfigPaths = [".secrets", "backend/config/cloudflare.private.json"];
 const privateConfigPath = "backend/config/cloudflare.private.json";
+const localSecretsPath = ".secrets";
+const generatedWorkerConfigPaths = [
+  "backend/cloudflare/api.generated.wrangler.jsonc",
+  "backend/cloudflare/ai.generated.wrangler.jsonc",
+  "backend/cloudflare/report.generated.wrangler.jsonc",
+  "backend/cloudflare/admin.generated.wrangler.jsonc",
+];
+const deployConfigRequiredNames = [
+  "CLOUDFLARE_ACCOUNT_ID",
+  "KV_API_KEYS_NAMESPACE_ID",
+  "KV_REPORT_RULES_NAMESPACE_ID",
+];
+const omitValues = new Set(["", "OMIT", "REPLACE_ME"]);
 
 function fail(message) {
   console.error(message);
@@ -161,21 +174,30 @@ function checkBranchIsNotBehindUpstream() {
 function runConfigChecks() {
   run(process.execPath, ["backend/scripts/build-cloudflare-worker-config.mjs", "--check-public"]);
 
-  const hasPrivateConfig = hasReadableJsonFile(privateConfigPath);
-  const hasDeployConfigEnv = Boolean(
-    process.env.CLOUDFLARE_ACCOUNT_ID ||
-      process.env.KV_API_KEYS_NAMESPACE_ID ||
-      process.env.KV_REPORT_RULES_NAMESPACE_ID ||
-      process.env.MINIMUM_FLOW_BUCKET_NAME ||
-      process.env.AI_REFERENCE_BUCKET_NAME ||
-      process.env.ASSETS_BUCKET_NAME,
-  );
-
-  if (hasPrivateConfig || hasDeployConfigEnv) {
+  const missingDeployValues = getMissingDeployConfigValues();
+  if (missingDeployValues.length === 0) {
     run(process.execPath, ["backend/scripts/build-cloudflare-worker-config.mjs", "--check-deploy-config"]);
   } else {
-    console.log("Skipping deploy-config check: no private Cloudflare config or deploy env values are available.");
+    console.log(
+      `Skipping deploy-config check: missing local Cloudflare config values: ${missingDeployValues.join(", ")}.`,
+    );
   }
+}
+
+function getMissingDeployConfigValues() {
+  const values = {
+    ...readCloudflarePrivateValues(),
+    ...readLocalSecretsValues(),
+    ...readGeneratedDeployValues(),
+  };
+
+  for (const name of deployConfigRequiredNames) {
+    if (isRealValue(process.env[name])) {
+      values[name] = process.env[name];
+    }
+  }
+
+  return deployConfigRequiredNames.filter((name) => !isRealValue(values[name]));
 }
 
 function hasReadableJsonFile(filePath) {
@@ -190,6 +212,92 @@ function hasReadableJsonFile(filePath) {
   } catch {
     return false;
   }
+}
+
+function readCloudflarePrivateValues() {
+  const absolutePath = resolve(repoRoot, privateConfigPath);
+  if (!existsSync(absolutePath)) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(absolutePath, "utf8"));
+    return parsed.cloudflare && typeof parsed.cloudflare === "object" ? parsed.cloudflare : {};
+  } catch {
+    return {};
+  }
+}
+
+function readLocalSecretsValues() {
+  const absolutePath = resolve(repoRoot, localSecretsPath);
+  if (!existsSync(absolutePath)) {
+    return {};
+  }
+
+  const values = {};
+  const text = readFileSync(absolutePath, "utf8");
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+
+    const separatorIndex = line.indexOf("=");
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const key = line.slice(0, separatorIndex).trim();
+    let value = line.slice(separatorIndex + 1).trim();
+    if (
+      (value.startsWith("\"") && value.endsWith("\"")) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    values[key] = value;
+  }
+
+  return values;
+}
+
+function readGeneratedDeployValues() {
+  const values = {};
+
+  for (const configPath of generatedWorkerConfigPaths) {
+    const absolutePath = resolve(repoRoot, configPath);
+    if (!existsSync(absolutePath)) {
+      continue;
+    }
+
+    let config;
+    try {
+      config = JSON.parse(readFileSync(absolutePath, "utf8"));
+    } catch {
+      continue;
+    }
+
+    if (isRealValue(config.account_id)) {
+      values.CLOUDFLARE_ACCOUNT_ID ??= config.account_id;
+    }
+
+    for (const namespace of config.kv_namespaces ?? []) {
+      if (namespace.binding === "API_KEYS" && isRealValue(namespace.id)) {
+        values.KV_API_KEYS_NAMESPACE_ID ??= namespace.id;
+      }
+      if (namespace.binding === "REPORT_RULES" && isRealValue(namespace.id)) {
+        values.KV_REPORT_RULES_NAMESPACE_ID ??= namespace.id;
+      }
+    }
+  }
+
+  return values;
+}
+
+function isRealValue(value) {
+  return typeof value === "string" && !omitValues.has(value.trim()) && !value.startsWith("REPLACE_WITH_");
 }
 
 const files = getCandidateFiles();

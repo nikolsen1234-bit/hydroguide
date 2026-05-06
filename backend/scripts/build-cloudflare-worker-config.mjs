@@ -24,6 +24,7 @@ function isRedactedKey(key) {
 
 const privateConfigPath = resolve(rootDir, "backend/config/cloudflare.private.json");
 const publicConfigPath = resolve(rootDir, "backend/config/cloudflare.public.json");
+const localSecretsPath = resolve(rootDir, ".secrets");
 
 const workers = [
   {
@@ -91,6 +92,7 @@ function usage() {
   node backend/scripts/build-cloudflare-worker-config.mjs --deploy-preflight
 
 Values are read from environment variables first, then from backend/config/cloudflare.private.json.
+Local .secrets and existing generated Wrangler configs are used as local fallbacks.
 The private file is intended to be git-crypt encrypted.`);
 }
 
@@ -185,19 +187,92 @@ function readPrivateValues() {
   return parsed.cloudflare && typeof parsed.cloudflare === "object" ? parsed.cloudflare : {};
 }
 
+function readLocalSecretsValues() {
+  if (!existsSync(localSecretsPath)) {
+    return {};
+  }
+
+  const values = {};
+  const text = readFileSync(localSecretsPath, "utf8");
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+
+    const separatorIndex = line.indexOf("=");
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const key = line.slice(0, separatorIndex).trim();
+    let value = line.slice(separatorIndex + 1).trim();
+    if (
+      (value.startsWith("\"") && value.endsWith("\"")) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    values[key] = value;
+  }
+
+  return values;
+}
+
+function readGeneratedDeployValues() {
+  const values = {};
+
+  for (const worker of workers) {
+    const absolutePath = resolve(rootDir, worker.generatedPath);
+    if (!existsSync(absolutePath)) {
+      continue;
+    }
+
+    let config;
+    try {
+      config = readJsonc(worker.generatedPath);
+    } catch {
+      continue;
+    }
+
+    if (isRealValue(config.account_id)) {
+      values.CLOUDFLARE_ACCOUNT_ID ??= config.account_id;
+    }
+
+    for (const namespace of config.kv_namespaces ?? []) {
+      if (namespace.binding === "API_KEYS" && isRealValue(namespace.id)) {
+        values.KV_API_KEYS_NAMESPACE_ID ??= namespace.id;
+      }
+      if (namespace.binding === "REPORT_RULES" && isRealValue(namespace.id)) {
+        values.KV_REPORT_RULES_NAMESPACE_ID ??= namespace.id;
+      }
+    }
+  }
+
+  return values;
+}
+
 function isRealValue(value) {
   return typeof value === "string" && !omitValues.has(value.trim()) && !value.startsWith("REPLACE_WITH_");
 }
 
-function resolveValues(privateValues) {
+function resolveValues(privateValues, localSecretsValues, generatedDeployValues) {
   const values = {};
   for (const name of deployRequiredNames) {
     const envValue = process.env[name];
     const privateValue = privateValues[name];
+    const localSecretValue = localSecretsValues[name];
+    const generatedDeployValue = generatedDeployValues[name];
     if (isRealValue(envValue)) {
       values[name] = envValue;
     } else if (isRealValue(privateValue)) {
       values[name] = privateValue;
+    } else if (isRealValue(localSecretValue)) {
+      values[name] = localSecretValue;
+    } else if (isRealValue(generatedDeployValue)) {
+      values[name] = generatedDeployValue;
     }
   }
   return values;
@@ -438,7 +513,9 @@ function main() {
   const needsDeployValues =
     args.has("--deploy-preflight") || args.has("--check-deploy-config") || args.has("--write-deploy-config");
   const privateValues = needsDeployValues ? readPrivateValues() : {};
-  const values = needsDeployValues ? resolveValues(privateValues) : {};
+  const localSecretsValues = needsDeployValues ? readLocalSecretsValues() : {};
+  const generatedDeployValues = needsDeployValues ? readGeneratedDeployValues() : {};
+  const values = needsDeployValues ? resolveValues(privateValues, localSecretsValues, generatedDeployValues) : {};
 
   if (args.has("--deploy-preflight")) {
     assertDeployEnv(values);

@@ -9,7 +9,8 @@ const args = new Set(process.argv.slice(2));
 const allFiles = args.has("--all");
 const ci = args.has("--ci");
 const changedMode = args.has("--changed");
-const allowPrivateConfig = args.has("--allow-private-config");
+const allowPrivateConfig =
+  args.has("--allow-private-config") || process.env.HYDROGUIDE_ALLOW_PRIVATE_CONFIG_COMMIT === "1";
 const stagedMode = args.has("--staged") || (!allFiles && !changedMode);
 
 const workerFilePatterns = [
@@ -26,6 +27,13 @@ const generatedConfigPattern = /^backend\/cloudflare\/.*\.generated\.wrangler\.j
 const WHITESPACE_RE = /\s+/;
 const privateConfigPaths = [".secrets", "backend/config/cloudflare.private.json"];
 const privateConfigPath = "backend/config/cloudflare.private.json";
+const localSecretsPath = ".secrets";
+const deployConfigRequiredNames = [
+  "CLOUDFLARE_ACCOUNT_ID",
+  "KV_API_KEYS_NAMESPACE_ID",
+  "KV_REPORT_RULES_NAMESPACE_ID",
+];
+const omitValues = new Set(["", "OMIT", "REPLACE_ME"]);
 
 function fail(message) {
   console.error(message);
@@ -104,6 +112,7 @@ function checkPrivateConfig(files) {
       "Private Cloudflare config is staged:",
       ...privateFiles.map((file) => `- ${file}`),
       "Keep generated/private deploy values local unless this commit explicitly rotates encrypted config.",
+      "If this is intentional, rerun the commit with HYDROGUIDE_ALLOW_PRIVATE_CONFIG_COMMIT=1.",
     ].join("\n"),
   );
 }
@@ -161,21 +170,40 @@ function checkBranchIsNotBehindUpstream() {
 function runConfigChecks() {
   run(process.execPath, ["backend/scripts/build-cloudflare-worker-config.mjs", "--check-public"]);
 
-  const hasPrivateConfig = hasReadableJsonFile(privateConfigPath);
-  const hasDeployConfigEnv = Boolean(
-    process.env.CLOUDFLARE_ACCOUNT_ID ||
-      process.env.KV_API_KEYS_NAMESPACE_ID ||
-      process.env.KV_REPORT_RULES_NAMESPACE_ID ||
-      process.env.MINIMUM_FLOW_BUCKET_NAME ||
-      process.env.AI_REFERENCE_BUCKET_NAME ||
-      process.env.ASSETS_BUCKET_NAME,
-  );
-
-  if (hasPrivateConfig || hasDeployConfigEnv) {
+  const missingDeployValues = getMissingDeployConfigValues();
+  if (missingDeployValues.length === 0) {
     run(process.execPath, ["backend/scripts/build-cloudflare-worker-config.mjs", "--check-deploy-config"]);
-  } else {
-    console.log("Skipping deploy-config check: no private Cloudflare config or deploy env values are available.");
+    return;
   }
+
+  if (hasLocalDeployConfigSource()) {
+    fail(`Local Cloudflare config is incomplete. Missing: ${missingDeployValues.join(", ")}.`);
+  }
+
+  console.log("Skipping deploy-config check: no local Cloudflare config source is available.");
+}
+
+function getMissingDeployConfigValues() {
+  const values = {
+    ...readCloudflarePrivateValues(),
+    ...readLocalSecretsValues(),
+  };
+
+  for (const name of deployConfigRequiredNames) {
+    if (isRealValue(process.env[name])) {
+      values[name] = process.env[name];
+    }
+  }
+
+  return deployConfigRequiredNames.filter((name) => !isRealValue(values[name]));
+}
+
+function hasLocalDeployConfigSource() {
+  return hasReadableJsonFile(privateConfigPath) || hasReadableSecretsFile(localSecretsPath) || hasDeployConfigEnv();
+}
+
+function hasDeployConfigEnv() {
+  return deployConfigRequiredNames.some((name) => isRealValue(process.env[name]));
 }
 
 function hasReadableJsonFile(filePath) {
@@ -185,11 +213,95 @@ function hasReadableJsonFile(filePath) {
   }
 
   try {
-    JSON.parse(readFileSync(absolutePath, "utf8"));
+    const text = readFileSync(absolutePath, "utf8");
+    if (isGitCryptLockedText(text)) {
+      return false;
+    }
+
+    JSON.parse(text);
     return true;
   } catch {
     return false;
   }
+}
+
+function hasReadableSecretsFile(filePath) {
+  const absolutePath = resolve(repoRoot, filePath);
+  if (!existsSync(absolutePath)) {
+    return false;
+  }
+
+  try {
+    const values = readLocalSecretsValues();
+    return Object.keys(values).length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function readCloudflarePrivateValues() {
+  const absolutePath = resolve(repoRoot, privateConfigPath);
+  if (!existsSync(absolutePath)) {
+    return {};
+  }
+
+  try {
+    const text = readFileSync(absolutePath, "utf8");
+    if (isGitCryptLockedText(text)) {
+      return {};
+    }
+
+    const parsed = JSON.parse(text);
+    return parsed.cloudflare && typeof parsed.cloudflare === "object" ? parsed.cloudflare : {};
+  } catch {
+    return {};
+  }
+}
+
+function readLocalSecretsValues() {
+  const absolutePath = resolve(repoRoot, localSecretsPath);
+  if (!existsSync(absolutePath)) {
+    return {};
+  }
+
+  const values = {};
+  const text = readFileSync(absolutePath, "utf8");
+  if (isGitCryptLockedText(text)) {
+    return values;
+  }
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+
+    const separatorIndex = line.indexOf("=");
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const key = line.slice(0, separatorIndex).trim();
+    let value = line.slice(separatorIndex + 1).trim();
+    if (
+      (value.startsWith("\"") && value.endsWith("\"")) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    values[key] = value;
+  }
+
+  return values;
+}
+
+function isRealValue(value) {
+  return typeof value === "string" && !omitValues.has(value.trim()) && !value.startsWith("REPLACE_WITH_");
+}
+
+function isGitCryptLockedText(text) {
+  return text.includes("GITCRYPT");
 }
 
 const files = getCandidateFiles();

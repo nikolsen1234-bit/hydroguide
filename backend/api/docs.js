@@ -248,7 +248,7 @@ const SPEC = {
 
 const SWAGGER_CSS_SRI = "sha384-rcbEi6xgdPk0iWkAQzT2F3FeBJXdG+ydrawGlfHAFIZG7wU6aKbQaRewysYpmrlW";
 const SWAGGER_JS_SRI = "sha384-NXtFPpN61oWCuN4D42K6Zd5Rt2+uxeIT36R7kpXBuY9tLnZorzrJ4ykpqwJfgjpZ";
-const INLINE_SCRIPT = `SwaggerUIBundle({url:"/api/docs?openapi",dom_id:"#s",deepLinking:true,docExpansion:"list",defaultModelRendering:"model",defaultModelExpandDepth:3,defaultModelsExpandDepth:2})`;
+const INLINE_SCRIPT = `SwaggerUIBundle({url:"/api?openapi",dom_id:"#s",deepLinking:true,docExpansion:"list",defaultModelRendering:"model",defaultModelExpandDepth:3,defaultModelsExpandDepth:2})`;
 
 function buildUiHtml(nonce) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HydroGuide API</title>

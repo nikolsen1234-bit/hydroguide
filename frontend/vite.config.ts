@@ -42,8 +42,8 @@ const canonicalJsChunkNames = new Map([
 const canonicalAssetNames = new Map([["index.css", "index-14iAWX-t.css"]]);
 
 const functionRoutes = new Map([
+  ["/api", path.join(__dirname, "..", "backend", "api", "docs.js")],
   ["/api/health", path.join(__dirname, "..", "backend", "api", "health.js")],
-  ["/api/docs", path.join(__dirname, "..", "backend", "api", "docs.js")],
   ["/api/calculations", path.join(__dirname, "..", "backend", "api", "calculations.js")],
   ["/admin/keys", path.join(__dirname, "..", "backend", "admin", "keys", "index.js")],
   ["/api/nveid", path.join(__dirname, "..", "backend", "api", "nveid.js")],

@@ -1,9 +1,12 @@
 import { useEffect } from "react";
 
-const API_DOCS_URL = "/api/docs?ui";
+const API_DOCS_URL = "/api";
+const RELOAD_GUARD_KEY = "hydroguide:api-docs-reload";
 
 export default function ApiPage() {
   useEffect(() => {
+    if (sessionStorage.getItem(RELOAD_GUARD_KEY) === "1") return;
+    sessionStorage.setItem(RELOAD_GUARD_KEY, "1");
     window.location.replace(API_DOCS_URL);
   }, []);
 

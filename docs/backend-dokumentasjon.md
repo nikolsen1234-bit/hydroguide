@@ -50,9 +50,9 @@ API-et har tre kategorier endepunkter: offentlige endepunkter, frontend-hjelpere
 
 ```mermaid
 flowchart TB
-    subgraph public[Offentlig API — dokumentert i /api/docs]
+    subgraph public[Offentlig API — dokumentert i /api]
         p1[GET /api/health]
-        p2[GET /api/docs]
+        p2[GET /api]
         p3[POST /api/calculations]
         p4[GET /api/NVEID/{id}]
         p5[GET /api/pvgis-tmy]
@@ -76,19 +76,18 @@ flowchart TB
     end
 ```
 
-### Offentlig API (dokumentert i `/api/docs`)
+### Offentlig API (dokumentert i `/api`)
 
 | Endepunkt | Hva det gjør |
 |-----------|--------------|
 | `GET /api/health` | Helsesjekk. Svarer `{status, timestamp}`. |
-| `GET /api` | Nettsidens API-side. Sender nettleseren vidare til `/api/docs?ui`. |
-| `GET /api/docs` | OpenAPI-spek. `?ui` gir Swagger UI som toppnivåside. |
+| `GET /api` | OpenAPI og Swagger UI. `?openapi` gir OpenAPI-spek. |
 | `POST /api/calculations` | Hovedberegning: gitt inntak + utstyr, returnerer energibudsjett, batteristørrelse, kostnad over levetid. |
 | `GET /api/calculations` | Returnerer input-skjema. |
 | `GET /api/NVEID/{id}` | Offentlig minstevannføring for én stasjon. |
 | `GET /api/pvgis-tmy` | Proxy for PVGIS soldata. |
 
-Krever `Authorization: Bearer <api-key>` på alle unntatt `/api/health`, `/api` og `/api/docs`.
+Krever `Authorization: Bearer <api-key>` på alle unntatt `/api/health` og `/api`.
 
 ### Frontend-hjelpere
 

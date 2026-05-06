@@ -221,8 +221,8 @@ function buildReportHtml(
   const balancePositive = visibleAnnualTotals.annualEnergyBalanceKWh >= 0;
   const recommendedSource = derivedResults.systemRecommendation.secondarySource;
   const selectedRuntimeItem =
-    derivedResults.costComparison.items.find((item) => item.source === activeReserveSource) ??
-    derivedResults.costComparison.items[0] ??
+    derivedResults.costComparison.alternatives.find((item) => item.source === activeReserveSource) ??
+    derivedResults.costComparison.alternatives[0] ??
     null;
 
   return `<!DOCTYPE html>
@@ -335,7 +335,7 @@ ${selectedRuntimeItem ? `
   <div style="overflow:hidden;border-radius:0.375rem;border:1px solid #c2c6d1;">
     <table>
       <thead><tr><th>Kjelde</th><th style="border-left:1px solid #c2c6d1;">Investering</th><th style="border-left:1px solid #c2c6d1;">Drivstoff/\u00e5r</th><th style="border-left:1px solid #c2c6d1;">Vedlikehald/\u00e5r</th><th style="border-left:1px solid #c2c6d1;">CO\u2082/\u00e5r</th><th style="border-left:1px solid #c2c6d1;">TOC</th></tr></thead>
-      <tbody>${derivedResults.costComparison.items.map((item) => costRow(item, item.source === recommendedSource)).join("")}</tbody>
+      <tbody>${derivedResults.costComparison.alternatives.map((item) => costRow(item, item.source === recommendedSource)).join("")}</tbody>
     </table>
   </div>
 </section>

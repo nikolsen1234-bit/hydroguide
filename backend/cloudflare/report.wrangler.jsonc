@@ -18,6 +18,10 @@
     {
       "pattern": "hydroguide.no/api/report*",
       "zone_name": "hydroguide.no"
+    },
+    {
+      "pattern": "www.hydroguide.no/api/report*",
+      "zone_name": "hydroguide.no"
     }
   ]
 }

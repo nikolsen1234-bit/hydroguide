@@ -470,7 +470,7 @@ function ResultRow({ label, value, tone = "default" }: { label: string; value: s
   );
 }
 
-export default function SiktlinjeRadioPage() {
+export default function RadioLinkPage() {
   const { activeDraft, resetDraft, saveDraftMetadata, updateConfigSectionField, updateRadioLinkEndpoint, updateCachedRadioAnalysis } = useConfigurationContext();
   const { t } = useLanguage();
   const [analysis, setAnalysis] = useState<RadioLinkAnalysis | null>(
@@ -615,7 +615,7 @@ export default function SiktlinjeRadioPage() {
             onChange={(event) =>
               updateConfigSectionField("radioLink", "fresnelFactor", clampFresnelFactor(Number(event.target.value)))
             }
-            className="radio-link-slider min-w-0 flex-1"
+            className="radiolink-slider min-w-0 flex-1"
           />
           <div className="inline-flex min-w-[3.75rem] justify-center rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-950 tabular-nums">
             {formatNumber(form.fresnelFactor, 1)}
@@ -876,7 +876,7 @@ export default function SiktlinjeRadioPage() {
                   onChange={(event) =>
                     updateConfigSectionField("radioLink", "fresnelFactor", clampFresnelFactor(Number(event.target.value)))
                   }
-                  className="radio-link-slider min-w-0 flex-1"
+                  className="radiolink-slider min-w-0 flex-1"
                 />
                 <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-sm font-bold text-slate-950 tabular-nums">
                   {formatNumber(form.fresnelFactor, 1)}

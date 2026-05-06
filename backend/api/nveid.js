@@ -1,4 +1,5 @@
 /**
+ * GET /api/NVEID/:NVEID
  * GET /api/nveid
  * GET /api/nveid/:nveID
  * GET /api/nveid/:nveID/minimum-flow
@@ -24,7 +25,25 @@ function parseNveID(value) {
 
 function routeRequest(request) {
   const url = new URL(request.url);
+  const publicPrefix = "/api/NVEID";
+
+  if (url.pathname === publicPrefix || url.pathname === `${publicPrefix}/`) {
+    return { type: "public-index" };
+  }
+
+  if (url.pathname.startsWith(`${publicPrefix}/`)) {
+    const segments = url.pathname.slice(publicPrefix.length).split("/").filter(Boolean);
+    const nveID = parseNveID(segments[0]);
+    if (Number.isNaN(nveID)) return { type: "invalid-id" };
+    if (nveID !== null && segments.length === 1) return { type: "public-id", nveID };
+    return { type: "not-found", nveID };
+  }
+
   const prefix = "/api/nveid";
+  if (!url.pathname.startsWith(prefix)) {
+    return { type: "not-found" };
+  }
+
   const suffix = url.pathname.startsWith(prefix) ? url.pathname.slice(prefix.length) : "";
   const segments = suffix.split("/").filter(Boolean);
 
@@ -64,6 +83,10 @@ export async function onRequestGet(context) {
     return createApiResponse(createIndexResponse(), { cacheControl: "public, max-age=3600" });
   }
 
+  if (route.type === "public-index") {
+    return createApiResponse(createPublicIndexResponse(), { cacheControl: "public, max-age=3600" });
+  }
+
   let minimumFlowData;
   try {
     minimumFlowData = await readMinimumFlowData(context.env);
@@ -96,6 +119,11 @@ export async function onRequestGet(context) {
     return createApiResponse(await createConcessionResponse(nveID, entry), { cacheControl: "public, max-age=3600" });
   }
 
+  if (route.type === "public-id") {
+    const concession = await resolveConcession(nveID, entry);
+    return createApiResponse(createPublicNveIDResponse(nveID, entry, concession), { cacheControl: "public, max-age=3600" });
+  }
+
   return createApiResponse(createNveIDIndexResponse(nveID, entry), { cacheControl: "public, max-age=3600" });
 }
 
@@ -108,6 +136,15 @@ function createIndexResponse() {
     path: "/api/nveid",
     endpoints: [
       "/api/nveid/{nveID}"
+    ]
+  };
+}
+
+function createPublicIndexResponse() {
+  return {
+    path: "/api/NVEID",
+    endpoints: [
+      "/api/NVEID/{NVEID}"
     ]
   };
 }
@@ -135,6 +172,72 @@ function createMinimumFlowResponse(nveID, entry) {
     funnet: boolOrFalse(entry?.funnet),
     inntak: Array.isArray(entry?.inntak) ? entry.inntak : []
   };
+}
+
+function createPublicNveIDResponse(nveID, entry, concession) {
+  return {
+    [String(nveID)]: {
+      url: readPublicPdfUrl(entry, concession),
+      navn: entry?.navn ?? "",
+      funnet: boolOrFalse(entry?.funnet),
+      inntak: normalizePublicIntakes(entry?.inntak)
+    }
+  };
+}
+
+function normalizePublicIntakes(inntak) {
+  const items = Array.isArray(inntak) && inntak.length > 0 ? inntak : [{ inntakFunksjon: null }];
+  return items.map((item) => ({
+    inntakFunksjon: readFirstString(item?.inntakFunksjon, item?.navn),
+    perioder: normalizePublicPeriods(item)
+  }));
+}
+
+function normalizePublicPeriods(item) {
+  if (Array.isArray(item?.perioder) && item.perioder.length > 0) {
+    return item.perioder.map(normalizePublicPeriod);
+  }
+
+  const periods = [
+    ...readPublicPeriodArray(item?.sommer_delperioder),
+    ...readPublicPeriodArray(item?.vinter_delperioder)
+  ];
+
+  if (item?.sommer_ls != null || item?.sommer_periode != null) {
+    periods.push({ ls: item.sommer_ls ?? null, periode: item.sommer_periode ?? null, note: null });
+  }
+
+  if (item?.vinter_ls != null || item?.vinter_periode != null) {
+    periods.push({ ls: item.vinter_ls ?? null, periode: item.vinter_periode ?? null, note: null });
+  }
+
+  if (periods.length === 0) {
+    periods.push({ ls: null, periode: null, note: null });
+  }
+
+  return periods.map(normalizePublicPeriod);
+}
+
+function readPublicPeriodArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function normalizePublicPeriod(period) {
+  return {
+    ls: typeof period?.ls === "number" ? period.ls : null,
+    periode: readFirstString(period?.periode),
+    note: readFirstString(period?.note)
+  };
+}
+
+function readPublicPdfUrl(entry, concession) {
+  return readFirstString(
+    entry?.url,
+    entry?.chosen_pdf_url,
+    entry?.concessionPdfUrl,
+    entry?.concession?.pdfUrl,
+    concession?.pdfUrl
+  );
 }
 
 async function createConcessionResponse(nveID, entry, knownConcession = null) {

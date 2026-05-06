@@ -1,6 +1,5 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { useCallback } from "react";
 import { CostComparisonChart, EnergyOverviewChart } from "../components/SystemCharts";
 import { HorizonChart } from "../components/HorizonChart";
 import { PanoramicHorizon } from "../components/PanoramicHorizon";
@@ -46,8 +45,7 @@ const WHITESPACE_RE = /\s+/g;
 const MAIN_SOLUTION_PARTS_RE = /^(.*?)(?: med (.*?))?(?: \((.*)\))?$/;
 const QUESTION_KEY_RE = /^q\d+/i;
 
-// Detailed/PVGIS mode is temporarily dormant, but kept easy to reactivate.
-const PVGIS_DETAILED_MODE_ENABLED = false;
+const PVGIS_DETAILED_MODE_ENABLED = true;
 
 async function getAiExportHash(promptText: string) {
   const storedHash = window.sessionStorage.getItem(STORAGE_KEYS.AI_EXPORT_HASH);
@@ -364,7 +362,7 @@ export default function AnalysisPage() {
   const engineMode = activeDraft.engineMode ?? "standard";
   const isCalculatorMode = engineMode === "standard";
   const isGuidedMode = !isCalculatorMode;
-  const showAdvancedSimulation = (PVGIS_DETAILED_MODE_ENABLED && engineMode === "detailed") || engineMode === "combined";
+  const showAdvancedSimulation = PVGIS_DETAILED_MODE_ENABLED && engineMode === "detailed";
   const showReliabilitySimulation = showAdvancedSimulation;
   const showHorizonProfile = showAdvancedSimulation;
   const usesFoundationQuestions = isGuidedMode;
@@ -695,7 +693,7 @@ export default function AnalysisPage() {
       ? [
           {
             label: t("main.title"),
-            path: "/parametere",
+            path: language === "en" ? "/projectbasis" : "/prosjektgrunnlag",
             count: countMatchingErrors(foundationErrors, foundationErrorPredicate)
           }
         ].filter((item) => item.count > 0)
@@ -732,7 +730,7 @@ export default function AnalysisPage() {
   const detailBlockers = [
     {
       label: t("analysis.technicalParameters"),
-      path: "/system",
+      path: language === "en" ? "/systems" : "/parametere",
       count: countMatchingErrors(
         detailErrors,
         (key) =>
@@ -748,7 +746,7 @@ export default function AnalysisPage() {
     },
     {
       label: t("analysis.powerLabel"),
-      path: "/effektbudsjett",
+      path: language === "en" ? "/components" : "/komponenter",
       count: countMatchingErrors(detailErrors, (key) => key.startsWith("equipmentRows."))
     }
   ].filter((item) => item.count > 0);
@@ -970,7 +968,7 @@ export default function AnalysisPage() {
             title={t("analysis.reserveLifetime")}
             description={t("analysis.reserveLifetimeDesc")}
           >
-            <LifetimePanel items={derivedResults.costComparison.items} />
+            <LifetimePanel items={derivedResults.costComparison.alternatives} />
           </WorkspaceSection>
 
           <WorkspaceSection
@@ -978,10 +976,10 @@ export default function AnalysisPage() {
             description={t("analysis.tocComparisonDesc")}
           >
             <div className="space-y-6">
-              <CostComparisonChart items={derivedResults.costComparison.items} />
+              <CostComparisonChart items={derivedResults.costComparison.alternatives} />
 
               <div className="border-t border-slate-200 pt-5 md:grid md:gap-0 md:grid-cols-2 md:divide-x md:divide-slate-200">
-                {derivedResults.costComparison.items.map((item, index) => (
+                {derivedResults.costComparison.alternatives.map((item, index) => (
                   <div
                     key={item.source}
                     className={`${index === 0 ? "pb-5 md:pb-0 md:pr-6" : "border-t border-slate-200 pt-5 md:border-t-0 md:pt-0 md:pl-6"}`}

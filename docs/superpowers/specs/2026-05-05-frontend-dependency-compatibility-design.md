@@ -57,7 +57,7 @@ Verification:
 - `npm ci` in `frontend`
 - `npm run build` in `frontend`
 - Confirm lazy-loaded routes compile
-- Check core routes: `/`, `/oversikt`, `/system`, `/analyse`, `/siktlinje-radio`, `/api`
+- Check core routes: `/`, `/oversikt`, `/prosjektgrunnlag`, `/projectbasis`, `/parametere`, `/systems`, `/komponenter`, `/components`, `/analyse`, `/radiolinje`, `/radiolink`, `/api`
 - Look for blank page, navigation errors, route redirects, and provider/rendering regressions
 
 ## Pass C: Tailwind 4 And TypeScript 6

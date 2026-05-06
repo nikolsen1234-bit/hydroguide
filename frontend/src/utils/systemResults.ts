@@ -54,13 +54,13 @@ function calculateAnnualEnergyDeficitKWh(configuration: PlantConfiguration, tota
 
 function selectRecommendedBackupSource(
   configuration: PlantConfiguration,
-  items: CostComparisonItem[]
+  alternatives: CostComparisonItem[]
 ): BackupSourceName | "Ikkje berekna" {
   if (configuration.systemParameters.hasBackupSource !== true) {
     return "Ikkje berekna";
   }
 
-  const bestItem = items.reduce<CostComparisonItem | null>((best, item) => {
+  const bestItem = alternatives.reduce<CostComparisonItem | null>((best, item) => {
     if (best === null || item.toc < best.toc) {
       return item;
     }
@@ -365,7 +365,7 @@ function calculateCostComparison(configuration: PlantConfiguration, annualEnergy
   if (configuration.systemParameters.hasBackupSource !== true) {
     return {
       annualEnergyDeficitKWh: round(annualEnergyDeficitKWh, 2),
-      items: []
+      alternatives: []
     };
   }
 
@@ -399,7 +399,7 @@ function calculateCostComparison(configuration: PlantConfiguration, annualEnergy
 
   return {
     annualEnergyDeficitKWh: round(annualEnergyDeficitKWh, 2),
-    items: [buildItem("Brenselcelle"), buildItem("Dieselaggregat")]
+    alternatives: [buildItem("Brenselcelle"), buildItem("Dieselaggregat")]
   };
 }
 
@@ -443,7 +443,7 @@ function calculateDerivedResults(
   const totalAhPerDay = round(equipmentBudgetRows.reduce((sum, row) => sum + row.ahPerDay, 0), 2);
   const annualEnergyDeficitKWh = calculateAnnualEnergyDeficitKWh(configuration, totalWhPerDay);
   const costComparison = calculateCostComparison(configuration, annualEnergyDeficitKWh);
-  const recommendedSource = selectRecommendedBackupSource(configuration, costComparison.items);
+  const recommendedSource = selectRecommendedBackupSource(configuration, costComparison.alternatives);
   const systemRecommendation = calculateSystemRecommendation(
     configuration,
     recommendation,
@@ -451,7 +451,7 @@ function calculateDerivedResults(
     recommendedSource
   );
   const monthlyEnergyBalance = calculateMonthlyEnergyBalance(configuration, totalWhPerDay, recommendedSource);
-  const costItemsBySource = new Map(costComparison.items.map((item) => [item.source, item] as const));
+  const costItemsBySource = new Map(costComparison.alternatives.map((item) => [item.source, item] as const));
   const reserveScenarios =
     configuration.systemParameters.hasBackupSource === true
       ? {

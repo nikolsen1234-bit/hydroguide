@@ -208,7 +208,7 @@ export interface CostComparisonItem {
 
 export interface CostComparison {
   annualEnergyDeficitKWh: number;
-  items: CostComparisonItem[];
+  alternatives: CostComparisonItem[];
 }
 
 export interface ReserveScenarioResult {

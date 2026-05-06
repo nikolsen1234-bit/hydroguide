@@ -33,7 +33,6 @@ import {
   createBlankConfiguration,
   createResetConfiguration,
   makeId,
-  migrateV1Answers,
   normalizeConfiguration,
   nowIso
 } from "../utils/configuration";
@@ -149,8 +148,8 @@ function createExportPayload(configuration: PlantConfiguration) {
     andre: stripEmptyValues(configuration.other),
     solinnstraling: stripEmptyValues(configuration.monthlySolarRadiation),
     solinnstralingInnstillingar: stripEmptyValues(configuration.solarRadiationSettings),
-    effektbudsjett: configuration.equipmentBudgetSettings,
-    siktlinjeRadio: {
+    komponenter: configuration.equipmentBudgetSettings,
+    radiolinje: {
       pointA: stripEmptyValues(configuration.radioLink.pointA),
       pointB: stripEmptyValues(configuration.radioLink.pointB),
       frequencyMHz: configuration.radioLink.frequencyMHz,
@@ -185,10 +184,6 @@ function downloadExport(name: string, content: string) {
 }
 
 function toImportedPartialConfiguration(raw: Record<string, unknown>): Partial<PlantConfiguration> {
-  if (!("sporsmal" in raw)) {
-    return raw as Partial<PlantConfiguration>;
-  }
-
   const equipmentRows = Array.isArray(raw.utstyr)
     ? (raw.utstyr as Array<{
         aktiv?: boolean;
@@ -202,9 +197,17 @@ function toImportedPartialConfiguration(raw: Record<string, unknown>): Partial<P
         powerW: row.effektW,
         runtimeHoursPerDay: row.timarPerDag
       }))
-    : undefined;
+    : raw.equipmentRows as PlantConfiguration["equipmentRows"] | undefined;
 
   const coords = raw.koordinater as { lat?: number; lng?: number } | undefined;
+  const nveId =
+    typeof raw.nveId === "number"
+      ? String(raw.nveId)
+      : typeof raw.nveId === "string"
+        ? raw.nveId
+        : typeof raw.locationPlaceId === "string"
+          ? raw.locationPlaceId
+          : null;
 
   return {
     engineMode:
@@ -213,20 +216,20 @@ function toImportedPartialConfiguration(raw: Record<string, unknown>): Partial<P
         : undefined,
     name: raw.name as string | undefined,
     location: raw.location as string | undefined,
-    locationPlaceId: typeof raw.nveId === "number" ? String(raw.nveId) : (typeof raw.nveId === "string" ? raw.nveId : null),
-    locationLat: coords?.lat ?? null,
-    locationLng: coords?.lng ?? null,
-    answers: raw.sporsmal ? migrateV1Answers(raw.sporsmal as Record<string, unknown>) : undefined,
-    systemParameters: raw.systemparametere as Partial<PlantConfiguration["systemParameters"]> | undefined,
-    solar: raw.sol as Partial<PlantConfiguration["solar"]> | undefined,
-    battery: raw.batteri as Partial<PlantConfiguration["battery"]> | undefined,
-    fuelCell: raw.brenselcelle as Partial<PlantConfiguration["fuelCell"]> | undefined,
+    locationPlaceId: nveId,
+    locationLat: typeof raw.locationLat === "number" ? raw.locationLat : coords?.lat ?? null,
+    locationLng: typeof raw.locationLng === "number" ? raw.locationLng : coords?.lng ?? null,
+    answers: (raw.sporsmal ?? raw.answers) as Partial<PlantConfiguration["answers"]> | undefined,
+    systemParameters: (raw.systemparametere ?? raw.systemParameters) as Partial<PlantConfiguration["systemParameters"]> | undefined,
+    solar: (raw.sol ?? raw.solar) as Partial<PlantConfiguration["solar"]> | undefined,
+    battery: (raw.batteri ?? raw.battery) as Partial<PlantConfiguration["battery"]> | undefined,
+    fuelCell: (raw.brenselcelle ?? raw.fuelCell) as Partial<PlantConfiguration["fuelCell"]> | undefined,
     diesel: raw.diesel as Partial<PlantConfiguration["diesel"]> | undefined,
-    other: raw.andre as Partial<PlantConfiguration["other"]> | undefined,
-    monthlySolarRadiation: raw.solinnstraling as Partial<PlantConfiguration["monthlySolarRadiation"]> | undefined,
-    solarRadiationSettings: raw.solinnstralingInnstillingar as Partial<PlantConfiguration["solarRadiationSettings"]> | undefined,
-    equipmentBudgetSettings: raw.effektbudsjett as Partial<PlantConfiguration["equipmentBudgetSettings"]> | undefined,
-    radioLink: raw.siktlinjeRadio as Partial<PlantConfiguration["radioLink"]> | undefined,
+    other: (raw.andre ?? raw.other) as Partial<PlantConfiguration["other"]> | undefined,
+    monthlySolarRadiation: (raw.solinnstraling ?? raw.monthlySolarRadiation) as Partial<PlantConfiguration["monthlySolarRadiation"]> | undefined,
+    solarRadiationSettings: (raw.solinnstralingInnstillingar ?? raw.solarRadiationSettings) as Partial<PlantConfiguration["solarRadiationSettings"]> | undefined,
+    equipmentBudgetSettings: (raw.komponenter ?? raw.equipmentBudgetSettings) as Partial<PlantConfiguration["equipmentBudgetSettings"]> | undefined,
+    radioLink: (raw.radiolinje ?? raw.radioLink) as Partial<PlantConfiguration["radioLink"]> | undefined,
     equipmentRows
   } as Partial<PlantConfiguration>;
 }
@@ -419,8 +422,7 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
       }
 
       const raw = parsed as Record<string, unknown>;
-      const importedEquipmentRows =
-        Array.isArray(raw.utstyr) ? raw.utstyr : Array.isArray(raw.equipmentRows) ? raw.equipmentRows : null;
+      const importedEquipmentRows = Array.isArray(raw.utstyr) ? raw.utstyr : null;
 
       if (importedEquipmentRows && importedEquipmentRows.length > MAX_CONFIGURATION_EQUIPMENT_ROWS) {
         throw new Error(`Importfila inneheld for mange utstyrsrader. Maks er ${MAX_CONFIGURATION_EQUIPMENT_ROWS}.`);

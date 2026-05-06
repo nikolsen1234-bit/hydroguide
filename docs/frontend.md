@@ -10,11 +10,11 @@ Frontend er React/Vite-appen for `hydroguide.no`. Den bruker TypeScript, Tailwin
 flowchart LR
     welcome["/  WelcomePage"]
     overview["/oversikt OverviewPage"]
-    main["/parametere MainPage<br/>9 spørsmål om inntaket"]
-    system["/system SystemPage<br/>sol/batteri/reserve"]
-    budget["/effektbudsjett BudgetPage<br/>utstyrslast"]
+    main["/prosjektgrunnlag / /projectbasis MainPage<br/>9 spørsmål om inntaket"]
+    system["/parametere / /systems SystemPage<br/>sol/batteri/reserve"]
+    components["/komponenter / /components ComponentsPage<br/>utstyrslast"]
     analysis["/analyse AnalysisPage<br/>energianalyse + tilråding"]
-    radio["/siktlinje-radio SiktlinjeRadioPage"]
+    radio["/radiolinje / /radiolink RadioLinkPage"]
     docs["/dokumentasjon DocumentationPage"]
     api["/api ApiPage"]
     contact["/kontakt ContactPage"]
@@ -22,8 +22,8 @@ flowchart LR
     welcome --> overview
     overview --> main
     main --> system
-    system --> budget
-    budget --> analysis
+    system --> components
+    components --> analysis
     overview -.->|kalkulator-modus| analysis
     welcome -.-> radio
     welcome -.-> docs
@@ -31,7 +31,7 @@ flowchart LR
     welcome -.-> contact
 ```
 
-Hovedflyten er "5-trinns konfigurasjon": Velkomst → Oversikt → Parameter → System → Budsjett → Analyse. Sidesporene (radiolink, dokumentasjon, API, kontakt) er tilgjengelige hele tiden.
+Hovedflyten er "5-trinns konfigurasjon": Velkomst → Oversikt → Prosjektgrunnlag → Parametere → Komponenter → Analyse. Sidesporene (radiolink, dokumentasjon, API, kontakt) er tilgjengelige hele tiden.
 
 ## Sider
 
@@ -39,11 +39,11 @@ Hovedflyten er "5-trinns konfigurasjon": Velkomst → Oversikt → Parameter →
 |------|------|--------|-------------|
 | `WelcomePage` | `/` | `frontend/src/pages/WelcomePage.tsx` | Landingsside og modusvelger |
 | `OverviewPage` | `/oversikt` | `OverviewPage.tsx` | Sammendrag av konfigurasjon |
-| `MainPage` | `/parametere` | `MainPage.tsx` | Spørsmål Q1-Q9 om inntaket |
-| `SystemPage` | `/system` | `SystemPage.tsx` | Sol, batteri, reservekraft |
-| `BudgetPage` | `/effektbudsjett` | `BudgetPage.tsx` | Utstyrsbudsjett, effekt og forbruk |
+| `MainPage` | `/prosjektgrunnlag`, `/projectbasis` | `MainPage.tsx` | Spørsmål Q1-Q9 om inntaket |
+| `SystemPage` | `/parametere`, `/systems` | `SystemPage.tsx` | Sol, batteri, reservekraft |
+| `ComponentsPage` | `/komponenter`, `/components` | `ComponentsPage.tsx` | Komponenter, effekt og forbruk |
 | `AnalysisPage` | `/analyse` | `AnalysisPage.tsx` | Energianalyse time for time, tilråding |
-| `SiktlinjeRadioPage` | `/siktlinje-radio` | `SiktlinjeRadioPage.tsx` | Siktlinje og Fresnel-sone for radiolink |
+| `RadioLinkPage` | `/radiolinje`, `/radiolink` | `RadioLinkPage.tsx` | Siktlinje og Fresnel-sone for radiolink |
 | `DocumentationPage` | `/dokumentasjon` | `DocumentationPage.tsx` | Teknisk bakgrunn med formler |
 | `ContactPage` | `/kontakt` | `ContactPage.tsx` | Prosjektgruppe og kontakt |
 | `ApiPage` | `/api` | `ApiPage.tsx` | Innebygd visning av offentlig API |

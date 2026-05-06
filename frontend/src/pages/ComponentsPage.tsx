@@ -10,9 +10,9 @@ import { formatNumber } from "../utils/format";
 import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
 
-type BudgetUnit = "wh" | "ah";
+type ComponentUnit = "wh" | "ah";
 
-export default function BudgetPage() {
+export default function ComponentsPage() {
   const { t, language } = useLanguage();
   const {
     activeDraft,
@@ -27,7 +27,7 @@ export default function BudgetPage() {
   const errors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
 
   const displayUnit = activeDraft.equipmentBudgetSettings.displayUnit;
-  const dailyUnitLabel = `${displayUnit === "ah" ? "Ah" : "Wh"}/${t("budget.perDay")}`;
+  const dailyUnitLabel = `${displayUnit === "ah" ? "Ah" : "Wh"}/${t("components.perDay")}`;
   const canShowDailyConsumption = displayUnit !== "ah" || Number(activeDraft.battery.nominalVoltage) > 0;
   const getRowDailyValue = (row: (typeof outputs.derivedResults.equipmentBudgetRows)[number]) =>
     displayUnit === "ah" ? row.ahPerDay : row.whPerDay;
@@ -38,18 +38,18 @@ export default function BudgetPage() {
 
   return (
     <main className={workspacePageClassName}>
-      <WorkspaceHeader title={t("budget.title")} />
+    <WorkspaceHeader title={t("components.title")} />
 
-      <WorkspaceSection title={t("budget.equipmentListTitle")}>
+      <WorkspaceSection title={t("components.equipmentListTitle")}>
         <div className="mb-4 flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <button type="button" onClick={addEquipmentRow} className={workspaceSecondaryButtonClassName}>
-              {t("budget.addRow")}
+              {t("components.addRow")}
             </button>
             <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
               {[
-                { value: "wh" as BudgetUnit, label: "Wh" },
-                { value: "ah" as BudgetUnit, label: "Ah" }
+                { value: "wh" as ComponentUnit, label: "Wh" },
+                { value: "ah" as ComponentUnit, label: "Ah" }
               ].map((option) => (
                 <button
                   key={option.value}
@@ -70,10 +70,10 @@ export default function BudgetPage() {
           <table className="w-full table-fixed divide-y divide-slate-200 text-sm">
             <thead>
               <tr className={`text-left ${workspaceMetaClassName} text-slate-950`}>
-                <th className="w-20 px-4 py-2">{t("budget.active")}</th>
-                <th className="w-[34%] px-4 py-2">{t("budget.equipment")}</th>
-                <th className="w-[16%] px-4 py-2">{t("budget.power")}</th>
-                <th className="w-[16%] px-4 py-2">{t("budget.hoursPerDay")}</th>
+                <th className="w-20 px-4 py-2">{t("components.active")}</th>
+                <th className="w-[34%] px-4 py-2">{t("components.equipment")}</th>
+                <th className="w-[16%] px-4 py-2">{t("components.power")}</th>
+                <th className="w-[16%] px-4 py-2">{t("components.hoursPerDay")}</th>
                 <th className="w-[18%] px-4 py-2" />
                 <th className="w-20 px-4 py-2" />
               </tr>
@@ -92,13 +92,13 @@ export default function BudgetPage() {
                           row.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-950 hover:bg-slate-300"
                         }`}
                       >
-                        {row.active ? t("budget.on") : t("budget.off")}
+                        {row.active ? t("components.on") : t("components.off")}
                       </button>
                     </td>
                     <td className="px-4 py-3 align-middle">
                       <TextField
                         label=" "
-                        ariaLabel={`${t("budget.equipment")} ${index + 1}`}
+                        ariaLabel={`${t("components.equipment")} ${index + 1}`}
                         value={row.name}
                         error={errors[`equipmentRows.${row.id}.name`]}
                         onChange={(next) => updateEquipmentRow(row.id, "name", next)}
@@ -107,7 +107,7 @@ export default function BudgetPage() {
                     <td className="px-4 py-3 align-middle">
                       <NumberField
                         label=" "
-                        ariaLabel={`${t("budget.power")} ${index + 1}`}
+                        ariaLabel={`${t("components.power")} ${index + 1}`}
                         unit="W"
                         value={sourceRow?.powerW ?? ""}
                         error={errors[`equipmentRows.${row.id}.powerW`]}
@@ -119,7 +119,7 @@ export default function BudgetPage() {
                     <td className="px-4 py-3 align-middle">
                       <NumberField
                         label=" "
-                        ariaLabel={`${t("budget.hoursPerDay")} ${index + 1}`}
+                        ariaLabel={`${t("components.hoursPerDay")} ${index + 1}`}
                         unit="h"
                         value={sourceRow?.runtimeHoursPerDay ?? ""}
                         error={errors[`equipmentRows.${row.id}.runtimeHoursPerDay`]}
@@ -138,7 +138,7 @@ export default function BudgetPage() {
                         onClick={() => removeEquipmentRow(row.id)}
                         className="inline-flex min-h-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                       >
-                        {t("budget.delete")}
+                        {t("components.delete")}
                       </button>
                     </td>
                   </tr>
@@ -162,25 +162,25 @@ export default function BudgetPage() {
                       row.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-950 hover:bg-slate-300"
                     }`}
                   >
-                    {row.active ? t("budget.on") : t("budget.off")}
+                    {row.active ? t("components.on") : t("components.off")}
                   </button>
                   <button
                     type="button"
                     onClick={() => removeEquipmentRow(row.id)}
                     className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                   >
-                    {t("budget.delete")}
+                    {t("components.delete")}
                   </button>
                 </div>
                 <div className="mt-3 space-y-3">
                   <TextField
-                    label={t("budget.equipment")}
+                    label={t("components.equipment")}
                     value={row.name}
                     error={errors[`equipmentRows.${row.id}.name`]}
                     onChange={(next) => updateEquipmentRow(row.id, "name", next)}
                   />
                   <NumberField
-                    label={t("budget.power")}
+                    label={t("components.power")}
                     unit="W"
                     value={sourceRow?.powerW ?? ""}
                     error={errors[`equipmentRows.${row.id}.powerW`]}
@@ -189,7 +189,7 @@ export default function BudgetPage() {
                     onChange={(next) => updateEquipmentRow(row.id, "powerW", next)}
                   />
                   <NumberField
-                    label={t("budget.hoursPerDayMobile")}
+                    label={t("components.hoursPerDayMobile")}
                     unit="h"
                     value={sourceRow?.runtimeHoursPerDay ?? ""}
                     error={errors[`equipmentRows.${row.id}.runtimeHoursPerDay`]}
@@ -209,7 +209,7 @@ export default function BudgetPage() {
 
         <div className="mt-5 flex justify-start sm:justify-end">
           <div className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-950 shadow-sm sm:w-auto sm:text-left">
-            {`${t("budget.dailyConsumption")} ${
+            {`${t("components.dailyConsumption")} ${
               canShowDailyConsumption ? `${formatNumber(totalPerDay as number)} ${dailyUnitLabel}` : t("overview.notCalculated")
             }`}
           </div>

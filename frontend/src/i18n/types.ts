@@ -150,20 +150,20 @@ export interface Translations {
   "system.co2FactorDiesel": string;
   "system.co2Helper": string;
 
-  // Budget Page
-  "budget.title": string;
-  "budget.equipmentListTitle": string;
-  "budget.addRow": string;
-  "budget.active": string;
-  "budget.equipment": string;
-  "budget.power": string;
-  "budget.hoursPerDay": string;
-  "budget.hoursPerDayMobile": string;
-  "budget.perDay": string;
-  "budget.delete": string;
-  "budget.on": string;
-  "budget.off": string;
-  "budget.dailyConsumption": string;
+  // Components Page
+  "components.title": string;
+  "components.equipmentListTitle": string;
+  "components.addRow": string;
+  "components.active": string;
+  "components.equipment": string;
+  "components.power": string;
+  "components.hoursPerDay": string;
+  "components.hoursPerDayMobile": string;
+  "components.perDay": string;
+  "components.delete": string;
+  "components.on": string;
+  "components.off": string;
+  "components.dailyConsumption": string;
 
   // Analysis Page
   "analysis.title": string;
@@ -442,7 +442,7 @@ export interface Translations {
   "location.failedSuggestions": string;
   "location.failedSearch": string;
 
-  // Radio Link Map
+  // Radiolink Map
   "radioMap.clickToMove": string;
   "radioMap.nextClick": string;
   "radioMap.mapFailed": string;

@@ -18,6 +18,10 @@
     {
       "pattern": "hydroguide.no/admin/*",
       "zone_name": "hydroguide.no"
+    },
+    {
+      "pattern": "www.hydroguide.no/admin/*",
+      "zone_name": "hydroguide.no"
     }
   ]
 }

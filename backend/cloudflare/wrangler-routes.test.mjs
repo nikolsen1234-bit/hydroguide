@@ -20,6 +20,19 @@ test("nveid Worker route catches both /api/nveid and nested nveid paths", async 
   assert.equal(nveidRoute?.pattern, "hydroguide.no/api/nveid*");
 });
 
+test("public NVEID Worker route is mounted on /api/NVEID without numeric catch-all routes", async () => {
+  const config = await readConfig("./api.wrangler.jsonc");
+  const patterns = new Set(config.routes.map((route) => route.pattern));
+
+  assert.equal(patterns.has("hydroguide.no/api/NVEID*"), true);
+  assert.equal(patterns.has("www.hydroguide.no/api/NVEID*"), true);
+
+  for (let digit = 1; digit <= 9; digit += 1) {
+    assert.equal(patterns.has(`hydroguide.no/api/${digit}*`), false);
+    assert.equal(patterns.has(`www.hydroguide.no/api/${digit}*`), false);
+  }
+});
+
 test("workers.dev subdomain is disabled for every HydroGuide Worker", async () => {
   for (const path of workerConfigPaths) {
     const config = await readConfig(path);

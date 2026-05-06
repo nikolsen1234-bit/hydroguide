@@ -7,7 +7,7 @@ export const en: Translations = {
   "nav.technicalParameters": "Technical Parameters",
   "nav.components": "Components",
   "nav.analysis": "Analysis",
-  "nav.radioLink": "Radio Link",
+  "nav.radioLink": "Radiolink",
   "nav.documentation": "Documentation",
   "nav.info": "Info",
   "nav.api": "API",
@@ -150,19 +150,19 @@ export const en: Translations = {
   "system.co2FactorDiesel": "CO2 factor diesel",
   "system.co2Helper": "Used in reserve comparison to calculate annual emissions. Enter in kg CO2 per liter of fuel.",
 
-  // Budget Page
-  "budget.title": "Components",
-  "budget.equipmentListTitle": "Equipment List and Consumption",
-  "budget.addRow": "Add row",
-  "budget.active": "Active",
-  "budget.equipment": "Equipment",
-  "budget.power": "Power",
-  "budget.hoursPerDay": "Hours/day",
-  "budget.hoursPerDayMobile": "Hours per day",
-  "budget.delete": "Delete",
-  "budget.on": "On",
-  "budget.off": "Off",
-  "budget.dailyConsumption": "Energy consumption per day:",
+  // Components Page
+  "components.title": "Components",
+  "components.equipmentListTitle": "Equipment List and Consumption",
+  "components.addRow": "Add row",
+  "components.active": "Active",
+  "components.equipment": "Equipment",
+  "components.power": "Power",
+  "components.hoursPerDay": "Hours/day",
+  "components.hoursPerDayMobile": "Hours per day",
+  "components.delete": "Delete",
+  "components.on": "On",
+  "components.off": "Off",
+  "components.dailyConsumption": "Energy consumption per day:",
 
   // Analysis Page
   "analysis.title": "Analysis and Recommendation",
@@ -243,7 +243,7 @@ export const en: Translations = {
   "analysis.notAnswered": "Not answered",
 
   // Siktlinje Radio Page
-  "radio.title": "Radio Link",
+  "radio.title": "Radiolink",
   "radio.noProfile": "No profile loaded yet.",
   "radio.terrain": "Terrain",
   "radio.earthCurve": "Earth Curve",
@@ -348,7 +348,7 @@ export const en: Translations = {
   "docs.horizonYears": "evaluation horizon in years",
   "docs.fuelCostPerYear": "fuel costs per year",
   "docs.maintenanceCostPerYear": "maintenance cost per year",
-  "docs.radioLinkSection": "Radio Link",
+  "docs.radioLinkSection": "Radiolink",
   "docs.radioLinkDesc": "The radio link page uses standard formulas for terrain distance, earth curvature, Fresnel zone, free space loss, and rain attenuation in the line-of-sight assessment.",
   "docs.terrainDistance": "Terrain Distance",
   "docs.terrainDistanceLead": "The distance between two coordinate points is estimated from the earth radius and coordinate differences.",
@@ -440,7 +440,7 @@ export const en: Translations = {
   "location.failedSuggestions": "Could not fetch suggestions right now.",
   "location.failedSearch": "Could not complete the search.",
 
-  // Radio Link Map
+  // Radiolink Map
   "radioMap.clickToMove": "Click to move point {point}, or drag A/B",
   "radioMap.nextClick": "Next click sets point {point}",
   "radioMap.mapFailed": "The map could not be loaded.",
@@ -462,7 +462,7 @@ export const en: Translations = {
   "charts.energyOverviewHelper": "Lines show load, solar and {fuel} in liters.",
   "charts.energyOverviewHelperNoReserve": "Lines show load and solar. Dimmed bars in the background show surplus or deficit per month.",
   "charts.energyBalanceHelper": "Positive values are surplus from solar. Negative values are energy deficit to be covered by the reserve source.",
-  "budget.perDay": "Day",
+  "components.perDay": "Day",
   "radio.masl": "m a.s.l.",
 
   // Months

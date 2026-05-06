@@ -21,7 +21,7 @@ const cloudflareHosts = ["localhost", "127.0.0.1", ".trycloudflare.com"];
 const canonicalJsChunkNames = new Map([
   ["AnalysisPage", "AnalysisPage-DW49hPYf.js"],
   ["ApiPage", "ApiPage-dNgpZCXI.js"],
-  ["BudgetPage", "BudgetPage-B8bGVTeL.js"],
+  ["ComponentsPage", "ComponentsPage-B8bGVTeL.js"],
   ["chunk", "chunk-B3K2TuZy.js"],
   ["ContactPage", "ContactPage-B90tnn8j.js"],
   ["DocumentationPage", "DocumentationPage-CqfD4sMe.js"],
@@ -32,7 +32,7 @@ const canonicalJsChunkNames = new Map([
   ["leaflet-src", "leaflet-src-DWk_SuGo.js"],
   ["MainPage", "MainPage-CWWzLUjE.js"],
   ["OverviewPage", "OverviewPage-DzvnAPo5.js"],
-  ["SiktlinjeRadioPage", "SiktlinjeRadioPage-CdFnUkGd.js"],
+  ["RadioLinkPage", "RadioLinkPage-CdFnUkGd.js"],
   ["SystemCharts", "SystemCharts-Ds9X225g.js"],
   ["SystemPage", "SystemPage-DGjHx9u5.js"],
   ["WelcomePage", "WelcomePage-YyXq5FMH.js"],
@@ -57,6 +57,12 @@ type BridgeRequest = NodeJS.ReadableStream & {
   url?: string;
   method?: string;
   headers?: Record<string, string | string[] | undefined>;
+};
+
+type BridgeServer = {
+  middlewares: {
+    use: (handler: (req: BridgeRequest, res: any, next: (error?: unknown) => void) => void) => void;
+  };
 };
 
 async function readRequestBody(req: BridgeRequest) {
@@ -103,32 +109,40 @@ function functionsDevBridge() {
 
   return {
     name: "functions-dev-bridge",
-    configureServer(server: { middlewares: { use: (handler: (req: BridgeRequest, res: any, next: (error?: unknown) => void) => void) => void } }) {
-      // Rewrite extensionless public HTML paths so Vite serves the file
-      // instead of falling through to the SPA index.html.
-      server.middlewares.use((req, _res, next) => {
-        if (req.url && req.url.split("?")[0] === "/nve-kart-standalone") {
-          req.url = req.url.replace("/nve-kart-standalone", "/nve-kart-standalone.html");
-        }
-        next();
-      });
-      server.middlewares.use((req, res, next) => { handleRequest(req, res).then((handled) => { if (!handled) next(); }, next); });
+    configureServer(server: BridgeServer) {
+      installBridgeMiddleware(server, handleRequest);
     },
-    configurePreviewServer(server: { middlewares: { use: (handler: (req: BridgeRequest, res: any, next: (error?: unknown) => void) => void) => void } }) {
-      server.middlewares.use((req, _res, next) => {
-        if (req.url && req.url.split("?")[0] === "/nve-kart-standalone") {
-          req.url = req.url.replace("/nve-kart-standalone", "/nve-kart-standalone.html");
-        }
-        next();
-      });
-      server.middlewares.use((req, res, next) => { handleRequest(req, res).then((handled) => { if (!handled) next(); }, next); });
+    configurePreviewServer(server: BridgeServer) {
+      installBridgeMiddleware(server, handleRequest);
     }
   };
+}
+
+function installBridgeMiddleware(
+  server: BridgeServer,
+  handleRequest: (req: BridgeRequest, res: any) => Promise<boolean>
+) {
+  // Rewrite extensionless public HTML paths so Vite serves the file
+  // instead of falling through to the SPA index.html.
+  server.middlewares.use((req, _res, next) => {
+    if (req.url && req.url.split("?")[0] === "/nve-kart-standalone") {
+      req.url = req.url.replace("/nve-kart-standalone", "/nve-kart-standalone.html");
+    }
+    next();
+  });
+  server.middlewares.use((req, res, next) => {
+    handleRequest(req, res).then((handled) => {
+      if (!handled) next();
+    }, next);
+  });
 }
 
 function resolveFunctionModule(pathname: string) {
   const exact = functionRoutes.get(pathname);
   if (exact) return exact;
+  if (/^\/api\/NVEID(?:\/.*)?$/.test(pathname)) {
+    return functionRoutes.get("/api/nveid") ?? null;
+  }
   for (const [route, modulePath] of functionRoutes) {
     if (pathname.startsWith(`${route}/`)) return modulePath;
   }

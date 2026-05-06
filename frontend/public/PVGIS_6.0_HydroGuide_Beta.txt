@@ -26,8 +26,7 @@
   "sol": {
     "panelPowerWp": 425,
     "panelCount": 2,
-    "systemEfficiency": 0.8,
-    "lifetimeYears": 10
+    "systemEfficiency": 0.8
   },
   "batteri": {
     "nominalVoltage": 12.8,
@@ -65,12 +64,11 @@
     "locationName": "Markåni inntak",
     "mapZoom": 15
   },
-  "effektbudsjett": {
+  "komponenter": {
     "displayUnit": "wh",
-    "useRuntimeHoursPerDay": true,
-    "showPurchaseCost": false
+    "useRuntimeHoursPerDay": true
   },
-  "siktlinjeRadio": {
+  "radiolinje": {
     "pointA": {
       "coordinate": "60.61540, 5.80658",
       "antennaHeight": 10,
@@ -88,15 +86,15 @@
     "rainFactor": 25
   },
   "utstyr": [
-    { "aktiv": true, "namn": "Victron BMS", "innkjopsprisKr": "", "effektW": 0.1, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "VICTRON Lynx Distributor", "innkjopsprisKr": "", "effektW": 2.4, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "VICTRON Orion TR Omformer DC-DC", "innkjopsprisKr": "", "effektW": 1.2, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Victron Cerbo GX - MK2", "innkjopsprisKr": "", "effektW": 2.8, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "VICTRON SmartSolar MPPT 250/100", "innkjopsprisKr": "", "effektW": 0.042, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Siemens FMS5020", "innkjopsprisKr": "", "effektW": 6.45, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Teltonika RUT956", "innkjopsprisKr": "", "effektW": 7, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Efoy Pro 1800", "innkjopsprisKr": "", "effektW": 0.5, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Efoy Fuel Manager FM4", "innkjopsprisKr": "", "effektW": 0.0374, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Dataloggar", "innkjopsprisKr": "", "effektW": 7, "timarPerDag": 24 }
+    { "aktiv": true, "namn": "Victron BMS", "effektW": 0.1, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "VICTRON Lynx Distributor", "effektW": 2.4, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "VICTRON Orion TR Omformer DC-DC", "effektW": 1.2, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Victron Cerbo GX - MK2", "effektW": 2.8, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "VICTRON SmartSolar MPPT 250/100", "effektW": 0.042, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Siemens FMS5020", "effektW": 6.45, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Teltonika RUT956", "effektW": 7, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Efoy Pro 1800", "effektW": 0.5, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Efoy Fuel Manager FM4", "effektW": 0.0374, "timarPerDag": 24 },
+    { "aktiv": true, "namn": "Dataloggar", "effektW": 7, "timarPerDag": 24 }
   ]
 }

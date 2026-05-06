@@ -1,7 +1,7 @@
 import { calculateNumericResults, normalizeCalculationRequest } from "../../backend/services/calculations/_calculationCore.js";
 
 const referenceRequest = {
-  systemParameters: {
+  systemparametere: {
     hasBackupSource: true,
     batteryMode: "ah",
     batteryValue: 500,
@@ -90,8 +90,8 @@ function assertClose(label, actual, expectedValue, tolerance = 0.02) {
 }
 
 const calculations = calculateNumericResults(normalizeCalculationRequest(referenceRequest));
-const fuelCell = calculations.costComparison.items.find((item) => item.source === "Brenselcelle");
-const diesel = calculations.costComparison.items.find((item) => item.source === "Dieselaggregat");
+const fuelCell = calculations.costComparison.alternatives.find((item) => item.source === "Brenselcelle");
+const diesel = calculations.costComparison.alternatives.find((item) => item.source === "Dieselaggregat");
 const sharedInvestmentRegression = calculateNumericResults(
   normalizeCalculationRequest({
     ...referenceRequest,
@@ -105,8 +105,8 @@ const sharedInvestmentRegression = calculateNumericResults(
     }
   })
 );
-const sharedFuelCell = sharedInvestmentRegression.costComparison.items.find((item) => item.source === "Brenselcelle");
-const sharedDiesel = sharedInvestmentRegression.costComparison.items.find((item) => item.source === "Dieselaggregat");
+const sharedFuelCell = sharedInvestmentRegression.costComparison.alternatives.find((item) => item.source === "Brenselcelle");
+const sharedDiesel = sharedInvestmentRegression.costComparison.alternatives.find((item) => item.source === "Dieselaggregat");
 const replacementRegression = calculateNumericResults(
   normalizeCalculationRequest({
     ...referenceRequest,
@@ -120,8 +120,8 @@ const replacementRegression = calculateNumericResults(
     }
   })
 );
-const replacementFuelCell = replacementRegression.costComparison.items.find((item) => item.source === "Brenselcelle");
-const replacementDiesel = replacementRegression.costComparison.items.find((item) => item.source === "Dieselaggregat");
+const replacementFuelCell = replacementRegression.costComparison.alternatives.find((item) => item.source === "Brenselcelle");
+const replacementDiesel = replacementRegression.costComparison.alternatives.find((item) => item.source === "Dieselaggregat");
 
 assertClose("totalWhPerDay", calculations.totals.totalWhPerDay, expected.totalWhPerDay);
 assertClose("totalAhPerDay", calculations.totals.totalAhPerDay, expected.totalAhPerDay);

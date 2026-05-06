@@ -13,7 +13,7 @@ import {
 } from "../services/calculations/_calculationCore.js";
 
 function usagePayload(rl) {
-  return { requests_remaining: rl.remaining, reset_at: rl.resetAt };
+  return { requestsRemaining: rl.remaining, resetAt: rl.resetAt };
 }
 
 export async function onRequestPost(context) {
@@ -26,9 +26,9 @@ export async function onRequestPost(context) {
       {
         error: "Rate limit exceeded.",
         usage: {
-          requests_remaining: 0,
-          retry_after_seconds: rl.retryAfterSeconds,
-          reset_at: rl.resetAt
+          requestsRemaining: 0,
+          retryAfterSeconds: rl.retryAfterSeconds,
+          resetAt: rl.resetAt
         }
       },
       { status: 429, headers: { "retry-after": String(rl.retryAfterSeconds) } }

@@ -58,8 +58,7 @@ function buildSolarDrafts(values: Record<MonthKey, number | "">): Record<MonthKe
 type ValidationErrors = ReturnType<typeof validateConfiguration>;
 
 const SOLAR_MONTH_ROWS: MonthKey[][] = [MONTH_KEYS.slice(0, 4), MONTH_KEYS.slice(4, 8), MONTH_KEYS.slice(8, 12)];
-// Detailed/PVGIS solar mode is temporarily dormant so it can be reactivated cleanly later.
-const PVGIS_DETAILED_MODE_ENABLED = false;
+const PVGIS_DETAILED_MODE_ENABLED = true;
 
 export default function SystemPage() {
   const { activeDraft, resetDraft, saveDraftMetadata } = useConfigurationContext();

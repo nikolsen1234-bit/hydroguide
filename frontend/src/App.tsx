@@ -1,5 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
-import { useRef } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Link, Navigate, NavLink, Route, Routes } from "react-router-dom";
 import BuildInfoBadge from "./components/BuildInfoBadge";
 import HydroGuideLogo from "./components/HydroGuideLogo";
@@ -10,7 +9,7 @@ import type { TranslationKey } from "./i18n";
 import { workspaceBodyClassName } from "./styles/workspace";
 import type { EngineMode } from "./types";
 
-const BudgetPage = lazy(() => import("./pages/BudgetPage"));
+const ComponentsPage = lazy(() => import("./pages/ComponentsPage"));
 const AnalysisPage = lazy(() => import("./pages/AnalysisPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const ApiPage = lazy(() => import("./pages/ApiPage"));
@@ -18,7 +17,7 @@ const DocumentationPage = lazy(() => import("./pages/DocumentationPage"));
 const OverviewPage = lazy(() => import("./pages/OverviewPage"));
 const WelcomePage = lazy(() => import("./pages/WelcomePage"));
 const MainPage = lazy(() => import("./pages/MainPage"));
-const SiktlinjeRadioPage = lazy(() => import("./pages/SiktlinjeRadioPage"));
+const RadioLinkPage = lazy(() => import("./pages/RadioLinkPage"));
 const SystemPage = lazy(() => import("./pages/SystemPage"));
 
 function SidebarIcon({ path }: { path: string }) {
@@ -29,25 +28,28 @@ function SidebarIcon({ path }: { path: string }) {
   );
 }
 
-const navItems: Array<{ to: string; labelKey: TranslationKey; icon: string; modes?: EngineMode[] }> = [
+const navItems: Array<{ to: string; toEn?: string; labelKey: TranslationKey; icon: string; modes?: EngineMode[] }> = [
   {
     to: "/oversikt",
     labelKey: "nav.overview",
     icon: "M3.75 9.75 12 3l8.25 6.75v9A2.25 2.25 0 0 1 18 21H6a2.25 2.25 0 0 1-2.25-2.25v-9Z"
   },
   {
-    to: "/parametere",
+    to: "/prosjektgrunnlag",
+    toEn: "/projectbasis",
     labelKey: "nav.projectBasis",
     icon: "m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10",
     modes: ["detailed", "combined"]
   },
   {
-    to: "/system",
+    to: "/parametere",
+    toEn: "/systems",
     labelKey: "nav.technicalParameters",
     icon: "M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75"
   },
   {
-    to: "/effektbudsjett",
+    to: "/komponenter",
+    toEn: "/components",
     labelKey: "nav.components",
     icon: "M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437"
   },
@@ -57,7 +59,8 @@ const navItems: Array<{ to: string; labelKey: TranslationKey; icon: string; mode
     icon: "M3 3v18h18M7 14v3m4-6v6m4-8v8m4-10v10"
   },
   {
-    to: "/siktlinje-radio",
+    to: "/radiolinje",
+    toEn: "/radiolink",
     labelKey: "nav.radioLink",
     icon: "M4.9 16.1C1 12.2 1 5.8 4.9 1.9M7.8 4.7a6.14 6.14 0 0 0-.8 7.5M16.2 4.8c2 2 2.26 5.11.8 7.47M19.1 1.9a9.96 9.96 0 0 1 0 14.1M10 9a2 2 0 1 0 4 0 2 2 0 0 0-4 0ZM9.5 18h5M8 22l4-11 4 11"
   },
@@ -139,7 +142,7 @@ function LanguageToggle() {
 }
 
 function SidebarContent({ onNavigate, titleId }: { onNavigate?: () => void; titleId?: string }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { activeDraft } = useConfigurationContext();
   const currentMode = activeDraft.engineMode ?? "standard";
   const visibleNavItems = navItems.filter((item) => !item.modes || item.modes.includes(currentMode));
@@ -155,7 +158,13 @@ function SidebarContent({ onNavigate, titleId }: { onNavigate?: () => void; titl
       <div className="hide-scrollbar min-h-0 flex-1 overflow-y-auto">
         <nav className="mt-5 space-y-3">
           {visibleNavItems.map((item) => (
-            <SideTab key={item.labelKey} to={item.to} labelKey={item.labelKey} icon={item.icon} onClick={onNavigate} />
+            <SideTab
+              key={item.labelKey}
+              to={language === "en" && item.toEn ? item.toEn : item.to}
+              labelKey={item.labelKey}
+              icon={item.icon}
+              onClick={onNavigate}
+            />
           ))}
         </nav>
       </div>
@@ -327,15 +336,24 @@ export default function App() {
             <Routes>
               <Route path="/" element={<WelcomePage />} />
               <Route path="/oversikt" element={<OverviewPage />} />
-              <Route path="/parametere" element={calculatorMode ? <Navigate to="/oversikt" replace /> : <MainPage />} />
-              <Route path="/system" element={<SystemPage />} />
-              <Route path="/effektbudsjett" element={<BudgetPage />} />
+              <Route
+                path="/prosjektgrunnlag"
+                element={calculatorMode ? <Navigate to="/oversikt" replace /> : <MainPage />}
+              />
+              <Route
+                path="/projectbasis"
+                element={calculatorMode ? <Navigate to="/oversikt" replace /> : <MainPage />}
+              />
+              <Route path="/parametere" element={<SystemPage />} />
+              <Route path="/systems" element={<SystemPage />} />
+              <Route path="/komponenter" element={<ComponentsPage />} />
+              <Route path="/components" element={<ComponentsPage />} />
               <Route path="/analyse" element={<AnalysisPage />} />
-              <Route path="/siktlinje-radio" element={<SiktlinjeRadioPage />} />
+              <Route path="/radiolinje" element={<RadioLinkPage />} />
+              <Route path="/radiolink" element={<RadioLinkPage />} />
               <Route path="/dokumentasjon" element={<DocumentationPage />} />
               <Route path="/kontakt" element={<ContactPage />} />
               <Route path="/api" element={<ApiPage />} />
-              <Route path="/anbefaling" element={<Navigate to="/analyse" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

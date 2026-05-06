@@ -58,6 +58,14 @@ const ROUTES = [
     }
   },
   {
+    name: "nveid-public",
+    pattern: /^\/api\/NVEID(?:\/.*)?$/,
+    handlers: {
+      GET: getNveid,
+      OPTIONS: () => handleCorsOptions()
+    }
+  },
+  {
     name: "pvgis-tmy",
     pattern: /^\/api\/pvgis-tmy(?:\/.*)?$/,
     handlers: {

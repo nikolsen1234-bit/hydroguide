@@ -30,57 +30,11 @@ import {
   SolarRadiationSettings,
   SystemParameters
 } from "../types";
-import type { Answers } from "../types";
 import { formatLocationLabel } from "./format";
 import { calculateConfigurationOutputs, calculateEquipmentBudgetRows } from "./systemResults";
 import { validateConfiguration } from "./validation";
 
-const PVGIS_DETAILED_MODE_ENABLED = false;
-
-/**
- * Migrates V1 expanded answer keys (q1-q19) to V2 compact answer keys (q1-q9).
- * If the input already has V2 keys (no q7FrostfrittUttakEtterVaregrind), returns as-is.
- */
-export function migrateV1Answers(e: Record<string, unknown>): Partial<Answers> {
-  if (!("q2Inntakstype" in e) && !("q7FrostfrittUttakEtterVaregrind" in e)) {
-    return e as Partial<Answers>;
-  }
-
-  let slippmetode = "";
-  if (e.q2Inntakstype === "elvinntak") {
-    slippmetode = "direkte_elveleie";
-  } else if (e.q7FrostfrittUttakEtterVaregrind === "ja") {
-    slippmetode = "royr_frostfritt";
-  } else if (e.q7FrostfrittUttakEtterVaregrind === "nei") {
-    slippmetode = "luke_utsparing_overloep";
-  }
-
-  let maleprofil = "";
-  if (e.q11StabiltNaturlegMaleprofil === "ja") {
-    maleprofil = "naturleg_stabilt";
-  } else if (e.q12KanByggjeKunstigMaleprofil === "ja") {
-    maleprofil = "kan_byggjast_kunstig";
-  } else if (e.q11StabiltNaturlegMaleprofil === "nei" && e.q12KanByggjeKunstigMaleprofil === "nei") {
-    maleprofil = "ingen_eigna_profil";
-  }
-
-  return {
-    q1Anleggstype: (e.q1Anleggstype as string) ?? "",
-    q2HogasteMinstevassforing: (e.q4HogasteMinstevassforing as number | "") ?? "",
-    q3Slippkravvariasjon:
-      e.q10MaRegulerastOfte === "ja"
-        ? "tilsigsstyrt"
-        : e.q6StorSkilnadSlippkrav === "ja"
-          ? "sesongkrav"
-          : (e.q5Reguleringskrav as string) ?? "",
-    q4Slippmetode: slippmetode,
-    q5IsSedimentTilstopping: (e.q8UtsettForIsSedimentTilstopping as string) ?? "",
-    q6Fiskepassasje: (e.q3FiskepassasjeKrav as string) ?? "",
-    q7BypassVedDriftsstans: (e.q15SleppForbiVedDriftsstans as string) ?? "",
-    q8Maleprofil: maleprofil,
-    q9AllmentaKontroll: (e.q14AllmentaKontrollPaStaden as string) ?? "",
-  } as Partial<Answers>;
-}
+const PVGIS_DETAILED_MODE_ENABLED = true;
 
 export function nowIso(): string {
   return new Date().toISOString();
@@ -289,7 +243,7 @@ function createEmptyDerivedResults(
       secondarySourcePowerW: 0, batteryCapacityAh: 0, batteryAutonomyDays: 0,
       icingAdaptation: "Ikkje berekna", operationsRequirements: []
     },
-    costComparison: { annualEnergyDeficitKWh: 0, items: [] },
+    costComparison: { annualEnergyDeficitKWh: 0, alternatives: [] },
     reserveScenarios: {
       fuelCell: emptyReserveScenario("Brenselcelle", totalWhPerDay, totalAhPerDay),
       diesel: emptyReserveScenario("Dieselaggregat", totalWhPerDay, totalAhPerDay)

@@ -37,6 +37,15 @@ const QUESTION_ALLOWED_VALUES = {
   "battery.batteryMode": ["ah", "autonomyDays"]
 };
 
+const BACKUP_SOURCE_VALIDATION_FIELDS = [
+  ["purchaseCost", "Innkjøpskostnad", { min: 0, allowZero: true }],
+  ["powerW", "Effekt"],
+  ["fuelConsumptionPerKWh", "Drivstofforbruk", { min: 0, allowZero: true }],
+  ["fuelPrice", "Drivstoffpris", { min: 0, allowZero: true }],
+  ["lifetime", "Levetid"],
+  ["annualMaintenance", "Årleg vedlikehald", { min: 0, allowZero: true }]
+];
+
 function makeId(prefix = "cfg") {
   return `${prefix}-${crypto.randomUUID()}`;
 }
@@ -159,7 +168,7 @@ function mapImportedPayload(raw) {
     return {};
   }
 
-  const legacyParams = raw.systemparametere ?? raw.systemParameters ?? {};
+  const sourceSystemParameters = raw.systemparametere ?? {};
   const sourceBattery = raw.batteri ?? raw.battery ?? {};
   const sourceBackupSource = raw.backupSource ?? {};
   const importedEquipmentRows = Array.isArray(raw.utstyr)
@@ -176,17 +185,17 @@ function mapImportedPayload(raw) {
     solar: raw.sol ?? raw.solar,
     battery: {
       ...sourceBattery,
-      batteryMode: sourceBattery.batteryMode ?? legacyParams.batteryMode,
-      batteryValue: sourceBattery.batteryValue ?? legacyParams.batteryValue
+      batteryMode: sourceBattery.batteryMode ?? sourceSystemParameters.batteryMode,
+      batteryValue: sourceBattery.batteryValue ?? sourceSystemParameters.batteryValue
     },
     backupSource: {
-      hasBackupSource: sourceBackupSource.hasBackupSource ?? legacyParams.hasBackupSource,
+      hasBackupSource: sourceBackupSource.hasBackupSource ?? sourceSystemParameters.hasBackupSource,
       fuelCell: sourceBackupSource.fuelCell ?? raw.brenselcelle ?? raw.fuelCell,
       diesel: sourceBackupSource.diesel ?? raw.diesel
     },
     other: raw.andre ?? raw.other,
     monthlySolarRadiation: raw.solinnstraling ?? raw.monthlySolarRadiation,
-    equipmentBudgetSettings: raw.effektbudsjett ?? raw.equipmentBudgetSettings,
+    equipmentBudgetSettings: raw.komponenter,
     equipmentRows: importedEquipmentRows ?? raw.equipmentRows
   };
 }
@@ -241,6 +250,18 @@ function validateRequiredNumber(errors, key, value, label, options = {}) {
   }
 }
 
+function validateBackupSourceOption(errors, key, values, label) {
+  for (const [field, fieldLabel, options] of BACKUP_SOURCE_VALIDATION_FIELDS) {
+    validateRequiredNumber(
+      errors,
+      `${key}.${field}`,
+      values[field],
+      `${fieldLabel} ${label}`,
+      options
+    );
+  }
+}
+
 export function validateCalculationRequest(configuration) {
   const errors = {};
 
@@ -274,55 +295,10 @@ export function validateCalculationRequest(configuration) {
     { min: 0, max: 1 }
   );
 
-  if (configuration.backupSource.hasBackupSource === true) {    validateRequiredNumber(errors, "fuelCell.purchaseCost", configuration.fuelCell.purchaseCost, "Innkjøpskostnad brenselcelle", {
-      min: 0,
-      allowZero: true
-    });
-    validateRequiredNumber(errors, "fuelCell.powerW", configuration.fuelCell.powerW, "Effekt brenselcelle");
+  if (configuration.backupSource.hasBackupSource === true) {
+    validateBackupSourceOption(errors, "fuelCell", configuration.fuelCell, "brenselcelle");
+    validateBackupSourceOption(errors, "diesel", configuration.diesel, "diesel");
     validateRequiredNumber(
-      errors,
-      "fuelCell.fuelConsumptionPerKWh",
-      configuration.fuelCell.fuelConsumptionPerKWh,
-      "Drivstofforbruk brenselcelle",
-      { min: 0, allowZero: true }
-    );
-    validateRequiredNumber(errors, "fuelCell.fuelPrice", configuration.fuelCell.fuelPrice, "Drivstoffpris brenselcelle", {
-      min: 0,
-      allowZero: true
-    });
-    validateRequiredNumber(errors, "fuelCell.lifetime", configuration.fuelCell.lifetime, "Levetid brenselcelle");
-    validateRequiredNumber(
-      errors,
-      "fuelCell.annualMaintenance",
-      configuration.fuelCell.annualMaintenance,
-      "Årleg vedlikehald brenselcelle",
-      { min: 0, allowZero: true }
-    );
-
-    validateRequiredNumber(errors, "diesel.purchaseCost", configuration.diesel.purchaseCost, "Innkjøpskostnad diesel", {
-      min: 0,
-      allowZero: true
-    });
-    validateRequiredNumber(errors, "diesel.powerW", configuration.diesel.powerW, "Effekt diesel");
-    validateRequiredNumber(
-      errors,
-      "diesel.fuelConsumptionPerKWh",
-      configuration.diesel.fuelConsumptionPerKWh,
-      "Drivstofforbruk diesel",
-      { min: 0, allowZero: true }
-    );
-    validateRequiredNumber(errors, "diesel.fuelPrice", configuration.diesel.fuelPrice, "Drivstoffpris diesel", {
-      min: 0,
-      allowZero: true
-    });
-    validateRequiredNumber(errors, "diesel.lifetime", configuration.diesel.lifetime, "Levetid diesel");
-    validateRequiredNumber(
-      errors,
-      "diesel.annualMaintenance",
-      configuration.diesel.annualMaintenance,
-      "Årleg vedlikehald diesel",
-      { min: 0, allowZero: true }
-    );    validateRequiredNumber(
       errors,
       "other.evaluationHorizonYears",
       configuration.other.evaluationHorizonYears,
@@ -532,7 +508,7 @@ function calculateCostComparison(configuration, annualEnergyDeficitKWh) {
   if (configuration.backupSource.hasBackupSource !== true) {
     return {
       annualEnergyDeficitKWh: round(annualEnergyDeficitKWh, 2),
-      items: []
+      alternatives: []
     };
   }
 
@@ -559,7 +535,7 @@ function calculateCostComparison(configuration, annualEnergyDeficitKWh) {
 
   return {
     annualEnergyDeficitKWh: round(annualEnergyDeficitKWh, 2),
-    items: [buildItem("Brenselcelle"), buildItem("Dieselaggregat")]
+    alternatives: [buildItem("Brenselcelle"), buildItem("Dieselaggregat")]
   };
 }
 
@@ -856,7 +832,7 @@ export function calculateNumericResults(configuration) {
     0
   );
   const costComparison = calculateCostComparison(configuration, annualEnergyDeficitKWh);
-  const costItemsBySource = new Map(costComparison.items.map((item) => [item.source, item]));
+  const costItemsBySource = new Map(costComparison.alternatives.map((item) => [item.source, item]));
   const scenarios = {
     fuelCell: createScenario(
       configuration,

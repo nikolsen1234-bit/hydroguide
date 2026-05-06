@@ -150,19 +150,19 @@ export const nn: Translations = {
   "system.co2FactorDiesel": "CO2-faktor diesel",
   "system.co2Helper": "Brukt i reserve-samanlikninga for å berekne årlege utslepp. Oppgi i kg CO2 per liter drivstoff.",
 
-  // Budget Page
-  "budget.title": "Komponenter",
-  "budget.equipmentListTitle": "Utstyrsliste og forbruk",
-  "budget.addRow": "Legg til rad",
-  "budget.active": "Aktiv",
-  "budget.equipment": "Utstyr",
-  "budget.power": "Effekt",
-  "budget.hoursPerDay": "Timer/døgn",
-  "budget.hoursPerDayMobile": "Timer per døgn",
-  "budget.delete": "Slett",
-  "budget.on": "På",
-  "budget.off": "Av",
-  "budget.dailyConsumption": "Energiforbruk per dag:",
+  // Components Page
+  "components.title": "Komponenter",
+  "components.equipmentListTitle": "Utstyrsliste og forbruk",
+  "components.addRow": "Legg til rad",
+  "components.active": "Aktiv",
+  "components.equipment": "Utstyr",
+  "components.power": "Effekt",
+  "components.hoursPerDay": "Timer/døgn",
+  "components.hoursPerDayMobile": "Timer per døgn",
+  "components.delete": "Slett",
+  "components.on": "På",
+  "components.off": "Av",
+  "components.dailyConsumption": "Energiforbruk per dag:",
 
   // Analysis Page
   "analysis.title": "Analyse og anbefaling",
@@ -440,7 +440,7 @@ export const nn: Translations = {
   "location.failedSuggestions": "Klarte ikkje å hente forslag akkurat no.",
   "location.failedSearch": "Klarte ikkje å fullføre søket.",
 
-  // Radio Link Map
+  // Radiolink Map
   "radioMap.clickToMove": "Klikk for a flytte punkt {point}, eller dra A/B",
   "radioMap.nextClick": "Neste klikk set punkt {point}",
   "radioMap.mapFailed": "Kartet kunne ikkje lastast.",
@@ -462,7 +462,7 @@ export const nn: Translations = {
   "charts.energyOverviewHelper": "Linjer viser last, sol og {fuel} i liter.",
   "charts.energyOverviewHelperNoReserve": "Linjer viser last og sol. Dempa søyler i bakgrunnen viser overskot eller underskot per månad.",
   "charts.energyBalanceHelper": "Positive verdiar er overskot frå sol. Negative verdiar er energimangel som må dekkjast av reservekjelde.",
-  "budget.perDay": "Dag",
+  "components.perDay": "Dag",
   "radio.masl": "moh",
 
   // Months

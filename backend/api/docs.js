@@ -104,59 +104,68 @@ const calculationsResponseSchema = {
 };
 
 const nveidPathParameter = {
-  name: "nveID",
+  name: "NVEID",
   in: "path",
   required: true,
   schema: { type: "integer", minimum: 1 },
   description: "NVE power station ID"
 };
 
-const endpointInfoSchema = {
+const nullableNumber = { oneOf: [n, { type: "null" }] };
+const nullableString = { oneOf: [s, { type: "null" }] };
+
+const nveidPeriodSchema = {
   type: "object",
+  required: ["ls", "periode", "note"],
   properties: {
-    method: s,
-    path: s,
-    description: s
+    ls: nullableNumber,
+    periode: nullableString,
+    note: nullableString
   }
 };
 
-const nveidIndexSchema = {
+const nveidIntakeSchema = {
   type: "object",
+  required: ["inntakFunksjon", "perioder"],
   properties: {
-    path: s,
-    description: s,
-    endpoints: { type: "array", items: endpointInfoSchema }
+    inntakFunksjon: nullableString,
+    perioder: { type: "array", items: nveidPeriodSchema }
   }
 };
 
-const nveidStationIndexSchema = {
+const nveidStationSchema = {
   type: "object",
+  required: ["navn", "funnet", "url", "inntak"],
   properties: {
-    path: s,
-    nveID: { type: "integer" },
-    description: s,
-    endpoints: { type: "array", items: endpointInfoSchema },
-    links: { type: "object", additionalProperties: s }
-  }
-};
-
-const minimumFlowIntakeSchema = {
-  type: "object",
-  additionalProperties: true,
-  properties: {
-    navn: s,
-    sommer_ls: n,
-    vinter_ls: n
-  }
-};
-
-const minimumFlowResponseSchema = {
-  type: "object",
-  properties: {
-    nveID: { type: "integer" },
     navn: s,
     funnet: b,
-    inntak: { type: "array", items: minimumFlowIntakeSchema }
+    url: nullableString,
+    inntak: { type: "array", items: nveidIntakeSchema }
+  }
+};
+
+const nveidResponseSchema = {
+  type: "object",
+  description: "V2 minimum-flow JSON format keyed by NVEID.",
+  additionalProperties: nveidStationSchema
+};
+
+const nveidResponseExample = {
+  "2026": {
+    navn: "Bergselvi",
+    funnet: true,
+    url: "https://www.nve.no/kdb/sc2026.pdf",
+    inntak: [
+      {
+        inntakFunksjon: "Hovedinntak",
+        perioder: [
+          { ls: 200, periode: "01.05 - 31.05", note: null },
+          { ls: 300, periode: "01.06 - 31.08", note: null },
+          { ls: 200, periode: "01.09 - 30.09", note: null },
+          { ls: 40, periode: "30.09 - 01.05", note: null }
+        ]
+      }
+    ]
   }
 };
 
@@ -173,53 +182,17 @@ const SPEC = {
     { name: "NVEID", description: "Minimum-flow data by NVEID" }
   ],
   paths: {
-    "/nveid": {
+    "/NVEID/{NVEID}": {
       get: {
         tags: ["NVEID"],
-        summary: "List NVEID endpoints",
-        description: "Returns available NVEID data endpoints.",
-        responses: {
-          "200": { description: "Endpoint list", content: { "application/json": { schema: { $ref: "#/components/schemas/NveidIndex" } } } }
-        }
-      }
-    },
-    "/nveid/{nveID}": {
-      get: {
-        tags: ["NVEID"],
-        summary: "Get power station data endpoints",
-        description: "Returns data endpoints for the power station corresponding to the given NVEID.",
+        summary: "Get minimum-flow data by NVEID",
+        description: "Returns minimum-flow data in V2 JSON format, keyed by NVEID.",
         parameters: [nveidPathParameter],
         responses: {
-          "200": { description: "Endpoint list for one power station", content: { "application/json": { schema: { $ref: "#/components/schemas/NveidStationIndex" } } } },
-          "400": { description: "Invalid NVEID" },
-          "404": { description: "NVEID resource not found" }
-        }
-      }
-    },
-    "/nveid/{nveID}/minimum-flow": {
-      get: {
-        tags: ["NVEID"],
-        summary: "Get minimum-flow data",
-        description: "Returns minimum-flow data for the power station corresponding to the given NVEID.",
-        parameters: [nveidPathParameter],
-        responses: {
-          "200": { description: "Minimum-flow data", content: { "application/json": { schema: { $ref: "#/components/schemas/MinimumFlowResponse" } } } },
+          "200": { description: "Minimum-flow data", content: { "application/json": { schema: { $ref: "#/components/schemas/NveidResponse" }, example: nveidResponseExample } } },
           "400": { description: "Invalid NVEID" },
           "404": { description: "No data for NVEID" },
           "503": { description: "Minimum-flow data unavailable" }
-        }
-      }
-    },
-    "/nveid/{nveID}/concession": {
-      get: {
-        tags: ["NVEID"],
-        summary: "Get concession link",
-        description: "Returns the NVE concession (konsesjonssak) link for the power station corresponding to the given NVEID.",
-        parameters: [nveidPathParameter],
-        responses: {
-          "200": { description: "Concession link", content: { "application/json": { schema: { type: "object", properties: { nveID: { type: "string" }, kdbNr: { type: "string" }, concessionUrl: { type: "string", format: "uri" } } } } } },
-          "400": { description: "Invalid NVEID" },
-          "404": { description: "No data for NVEID" }
         }
       }
     },
@@ -267,9 +240,7 @@ const SPEC = {
           usage: { type: "object", properties: { requests_remaining: { type: "integer" }, reset_at: { type: "string", format: "date-time" } } }
         }
       },
-      NveidIndex: nveidIndexSchema,
-      NveidStationIndex: nveidStationIndexSchema,
-      MinimumFlowResponse: minimumFlowResponseSchema,
+      NveidResponse: nveidResponseSchema,
       ValidationError: {
         type: "object",
         properties: { error: s, validationErrors: { type: "object", additionalProperties: s }, usage: { type: "object" } }

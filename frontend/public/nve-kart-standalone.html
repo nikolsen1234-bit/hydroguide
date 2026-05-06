@@ -637,9 +637,9 @@ async function fetchJson(url) {
 
 async function searchAddress(q) {
   const d = await fetchJson(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=10&utkoordsys=4326`);
-  // Behald berre adresser der adressetekst *startar* med søkestrengen.
-  // "bergen" skal ikkje matcha "Lille Bergen 1" fordi brukaren ikkje har
-  // skrive "lille". Søkestrengen må vera prefiks av gatenamnet.
+  // Behold bare adresser der adressetekst *starter* med søkestrengen.
+  // "bergen" skal ikke matche "Lille Bergen 1" fordi brukeren ikke har
+  // skrevet "lille". Søkestrengen må være prefiks av gatenavnet.
   const needle = q.trim().toLowerCase();
   return (d?.adresser ?? [])
     .filter(a => (a.adressetekst ?? "").toLowerCase().startsWith(needle))
@@ -683,10 +683,10 @@ async function searchPlace(q) {
     placeType: n.navneobjekttype,
   });
 
-  // Viss det finst ein Kommune som startar med søket \u2014 returner berre den.
+  // Hvis det finnes en Kommune som starter med søket, returner bare den.
   // "bergen" -> "Bergen kommune"; "stord" -> "Stord kommune"; "bømlo" -> "Bømlo kommune".
   // Dedupliser på kommunenavn fordi fleire oppslag ("Stord" + "Stord kommune")
-  // kan begge ha navneobjekttype=Kommune og same kommunenavn.
+  // kan begge ha navneobjekttype=Kommune og samme kommunenavn.
   const kommuner = feats.filter(n =>
     n.navneobjekttype === "Kommune" &&
     (n.kommuner?.[0]?.kommunenavn ?? "").toLowerCase().startsWith(needle)
@@ -752,13 +752,13 @@ async function loadNvePlants() {
   return nvePlantsCache;
 }
 
-// Google-style match: alle søkjeord må matcha namn eller kommune. Eit ord
-// matchar anten eksakt (heilt ord i namn) eller som prefiks av siste ord
-// medan brukaren skriv. Score prioriterer eksakte ord-treff framfor
-// substring, så "blåfalli v" returnerer berre "Blåfalli V" (V = heilt ord)
-// og ikkje "Blåfalli Vik" eller "Blåfalli IV".
-// Én regel: søkestrengen må finnes som substring i "{namn} kraftverk {kommune}".
-// Rangering: tidlegare posisjon vinn, kortare namn vinn ved likt treff.
+// Google-style match: alle søkeord må matche navn eller kommune. Ett ord
+// matcher enten eksakt (helt ord i navn) eller som prefiks av siste ord
+// mens brukeren skriver. Score prioriterer eksakte ord-treff foran
+// substring, så "blåfalli v" returnerer bare "Blåfalli V" (V = helt ord)
+// og ikke "Blåfalli Vik" eller "Blåfalli IV".
+// Én regel: søkestrengen må finnes som substring i "{navn} kraftverk {kommune}".
+// Rangering: tidligere posisjon vinner, kortere navn vinner ved likt treff.
 async function searchNveHydro(q) {
   if (q.length < 2) return [];
   const plants = await loadNvePlants();
@@ -780,9 +780,9 @@ async function searchAll(query) {
     searchAddress(q).catch(() => []),
     searchPlace(q).catch(() => []),
   ]);
-  // Interleave: fyrst 3 stader, så 3 adresser, så kraftverk.
-  // Garanterer at brukarar som søker "bergen" / "gravdalsrinden 42"
-  // alltid ser stad/adresse-treff før NVE-substring-match i kommuneNavn.
+  // Interleave: først 3 steder, så 3 adresser, så kraftverk.
+  // Garanterer at brukere som søker "bergen" / "gravdalsrinden 42"
+  // alltid ser sted/adresse-treff før NVE-substring-match i kommuneNavn.
   return [...stad.slice(0, 3), ...adresse.slice(0, 3), ...nve].slice(0, 10);
 }
 
@@ -966,7 +966,7 @@ function renderSuggestions(list) {
     suggestionsEl.innerHTML = "";
     return;
   }
-  const labels = { kraftverk: T.powerPlant || "Kraftverk", adresse: T.address || "Adresse", stad: T.place2 || "Stad" };
+  const labels = { kraftverk: T.powerPlant || "Kraftverk", adresse: T.address || "Adresse", stad: T.place2 || "Sted" };
   suggestionsEl.innerHTML = list.map((s, i) =>
     `<li><button type="button" data-idx="${i}">
       <span class="kind ${s.kind}">${labels[s.kind]}</span>
@@ -1053,12 +1053,12 @@ function formatMinFlowEntry(entry) {
   if (!Array.isArray(entry.inntak) || !entry.inntak.length) return { text: "Ingen krav registrert", items: null };
 
   const seasonLabels = {
-    heileAret: "heile året",
+    heileAret: "hele året",
     heleAret: "hele året",
     var: "vår",
-    sommer: "sommar",
-    host: "haust",
-    høst: "haust",
+    sommer: "sommer",
+    host: "høst",
+    høst: "høst",
     vinter: "vinter",
   };
   const order = ["heileAret", "heleAret", "var", "sommer", "host", "høst", "vinter"];
@@ -1075,7 +1075,7 @@ function formatMinFlowEntry(entry) {
 
     const parts = [];
     for (const value of formatSeasonFlow(intake, "sommer")) {
-      parts.push(`sommar: ${value}`);
+      parts.push(`sommer: ${value}`);
     }
     for (const value of formatSeasonFlow(intake, "vinter")) {
       parts.push(`vinter: ${value}`);
@@ -1100,7 +1100,7 @@ function formatMinFlowEntry(entry) {
 
 function formatLiveMinFlowResults(results) {
   if (!results || !results.length) return { text: null, items: null };
-  const seasonLabels = { 1: "heile året", 2: "vår", 3: "sommar", 4: "haust", 5: "vinter" };
+  const seasonLabels = { 1: "hele året", 2: "vår", 3: "sommer", 4: "høst", 5: "vinter" };
   const grouped = new Map();
   for (const r of results) {
     const flow = r.minFlowLs != null
@@ -1156,10 +1156,10 @@ function geometryLatLngBounds(geom) {
   return [[minY, minX], [maxY, maxX]];
 }
 
-// Slår opp dammar (fleire damlag) og magasin via vannkraftverkNr og
+// Slår opp dammer (flere damlag) og magasin via vannkraftverkNr og
 // returnerer objekt med {name, latlng, layerName, attributes} per rad \u2014
-// kartet panorerer til latlng og opnar popup når brukaren klikkar.
-// Hentar *alle* felt slik at popup-innhaldet blir likt som ved vanleg klikk.
+// kartet panorerer til latlng og åpner popup når brukeren klikker.
+// Henter *alle* felt slik at popup-innholdet blir likt som ved vanlig klikk.
 async function loadPlantExtras(verkNr) {
   if (verkNr == null) return null;
   const base = NVE_MAPSERVER;

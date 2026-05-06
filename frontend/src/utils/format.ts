@@ -3,7 +3,7 @@ export function dedupe(items: string[]): string[] {
 }
 
 export function formatNumber(value: number, digits = 2): string {
-  return new Intl.NumberFormat("nn-NO", {
+  return new Intl.NumberFormat("nb-NO", {
     minimumFractionDigits: 0,
     maximumFractionDigits: digits
   }).format(value);

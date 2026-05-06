@@ -153,7 +153,7 @@ export function calculateRecommendation(answers: Answers, inspectionsPerYear: nu
         ? "Det skal bygges kunstig måleprofil nedstrøms slippstedet"
         : "",
       needsProtection
-        ? "Materialval og geometri skal tåle is, drivgods, sediment og lav tilsynsfrekvens"
+        ? "Materialvalg og geometri skal tåle is, drivgods, sediment og lav tilsynsfrekvens"
         : "",
       hasVariation
         ? "Regulering skal kunne gjennomføres trygt og sporbart ved hyppige endringer"

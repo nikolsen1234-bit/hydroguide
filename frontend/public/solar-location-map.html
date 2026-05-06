@@ -182,7 +182,7 @@
 
 <div id="search-wrap" class="search-wrap">
   <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
-  <input id="search-input" type="text" placeholder="Søk stad, adresse, kraftverk eller koordinat..." autocomplete="off" />
+  <input id="search-input" type="text" placeholder="Søk sted, adresse, kraftverk eller koordinat..." autocomplete="off" />
   <div class="spinner"></div>
   <ul id="suggestions"></ul>
 </div>
@@ -502,7 +502,7 @@ document.addEventListener("mousedown", e => {
 function renderSuggestions(list) {
   currentSuggestions = list;
   if (!list.length) { suggestionsEl.classList.remove("open"); suggestionsEl.innerHTML = ""; return; }
-  const labels = { adresse: "Adresse", stad: "Stad", kraftverk: "Kraftverk", koordinat: "Koordinat" };
+  const labels = { adresse: "Adresse", stad: "Sted", kraftverk: "Kraftverk", koordinat: "Koordinat" };
   const kindCls = { adresse: "adresse", stad: "stad", kraftverk: "kraftverk", koordinat: "stad" };
   suggestionsEl.innerHTML = list.map((s, i) =>
     `<li><button type="button" data-idx="${i}">

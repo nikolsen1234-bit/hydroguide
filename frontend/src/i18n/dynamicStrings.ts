@@ -100,7 +100,7 @@ const dynamicTranslations: Record<string, string> = {
     "An artificial measurement profile shall be built downstream of the release point",
   "Målepunktet må oppgraderes for repeterbar kontrollmåling med lav usikkerhet":
     "The measurement point must be upgraded for repeatable control measurement with low uncertainty",
-  "Materialval og geometri skal tåle is, drivgods, sediment og lav tilsynsfrekvens":
+  "Materialvalg og geometri skal tåle is, drivgods, sediment og lav tilsynsfrekvens":
     "Material selection and geometry shall withstand ice, debris, sediment, and low inspection frequency",
   "Regulering skal kunne gjennomføres trygt og sporbart ved hyppige endringer":
     "Regulation shall be carried out safely and traceably with frequent changes",

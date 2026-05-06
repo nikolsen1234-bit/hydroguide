@@ -1,6 +1,6 @@
 {
   "engineMode": "standard",
-  "name": "Markåni kraftverk — Forenkla",
+  "name": "Markåni kraftverk — Forenklet",
   "location": "Markåni kraftverk (Vaksdal)",
   "nveId": 2034,
   "sporsmal": {

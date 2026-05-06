@@ -55,7 +55,7 @@ export const nn: Translations = {
   "main.inspectionsPerYear": "Tilsyn per år",
   "main.perYear": "Per år",
   "main.locationAndCommunication": "Lokasjon og kommunikasjon",
-  "main.locationDescription": "Dekningsval styrer hvordan anlegget kan kobles til alarm, energiovervåking og driftssystem.",
+  "main.locationDescription": "Dekningsvalg styrer hvordan anlegget kan kobles til alarm, energiovervåking og driftssystem.",
   "main.4gCoverage": "4G-dekning på lokasjon",
   "main.nbIotCoverage": "NB-IoT-dekning på lokasjon",
   "main.lineOfSight": "Fri sikt under 15 km til basestasjon",

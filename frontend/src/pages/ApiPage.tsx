@@ -24,7 +24,7 @@ function loadSwaggerAssets() {
     const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${SWAGGER_JS_URL}"]`);
     if (existingScript) {
       existingScript.addEventListener("load", () => resolve(), { once: true });
-      existingScript.addEventListener("error", () => reject(new Error("Swagger UI kunne ikkje lastast.")), { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Swagger UI kunne ikke lastes.")), { once: true });
       return;
     }
 
@@ -32,7 +32,7 @@ function loadSwaggerAssets() {
     script.src = SWAGGER_JS_URL;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Swagger UI kunne ikkje lastast."));
+    script.onerror = () => reject(new Error("Swagger UI kunne ikke lastes."));
     document.body.appendChild(script);
   });
 }

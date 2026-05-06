@@ -89,7 +89,7 @@ export const sections: QuestionSection[] = [
     questions: [
       {
         key: "q5IsSedimentTilstopping",
-        label: "5. Er anlegget utsett for is, drivgods, sediment eller tilstopping?",
+        label: "5. Er anlegget utsatt for is, drivgods, sediment eller tilstopping?",
         labelKey: "questions.q5",
         input: "jaNei",
         options: JA_NEI_OPTIONS

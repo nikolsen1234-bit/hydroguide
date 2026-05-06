@@ -24,8 +24,8 @@ test("API documentation Worker route is mounted on /api only", async () => {
   const config = await readConfig("./api.wrangler.jsonc");
   const patterns = new Set(config.routes.map((route) => route.pattern));
 
-  assert.equal(patterns.has("hydroguide.no/api"), true);
-  assert.equal(patterns.has("www.hydroguide.no/api"), true);
+  assert.equal(patterns.has("hydroguide.no/api*"), true);
+  assert.equal(patterns.has("www.hydroguide.no/api*"), true);
   assert.equal(patterns.has("hydroguide.no/api/docs*"), false);
   assert.equal(patterns.has("www.hydroguide.no/api/docs*"), false);
 });

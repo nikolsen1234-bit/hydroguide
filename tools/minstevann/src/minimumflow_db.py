@@ -71,13 +71,48 @@ def normalize_period(text: Any) -> str | None:
     return value
 
 
+def normalize_ls(value: Any) -> int | float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return int(value) if value == int(value) else value
+    return None
+
+
+def normalize_note(value: Any) -> str | None:
+    return value if isinstance(value, str) and value.strip() else None
+
+
+def normalize_period_entry(period: Any) -> dict:
+    if not isinstance(period, dict):
+        return {"ls": None, "periode": None, "note": None}
+    return {
+        "ls": normalize_ls(period.get("ls")),
+        "periode": normalize_period(period.get("periode")),
+        "note": normalize_note(period.get("note")),
+    }
+
+
+def normalize_periods(periods: Any) -> list[dict]:
+    if not isinstance(periods, list):
+        return [{"ls": None, "periode": None, "note": None}]
+    normalized = [normalize_period_entry(period) for period in periods]
+    normalized = [
+        period
+        for period in normalized
+        if period["ls"] is not None or period["periode"] is not None or period["note"] is not None
+    ]
+    return normalized or [{"ls": None, "periode": None, "note": None}]
+
+
 def empty_inntak() -> dict:
     return {
         "inntakFunksjon": None,
-        "sommer_ls": None,
-        "sommer_periode": None,
-        "vinter_ls": None,
-        "vinter_periode": None,
+        "perioder": [
+            {"ls": None, "periode": None, "note": None}
+        ],
     }
 
 
@@ -88,22 +123,9 @@ def format_minimumflow_entry(result) -> dict:
     for item in assembled.get("inntak", []) or []:
         if not isinstance(item, dict):
             continue
-
-        sommer_periode = normalize_period(item.get("sommer_periode"))
-        vinter_periode = normalize_period(item.get("vinter_periode"))
-        sommer_ls = item.get("sommer_ls")
-        vinter_ls = item.get("vinter_ls")
-
-        if sommer_periode == "hele året":
-            vinter_ls = None
-            vinter_periode = None
-
         inntak.append({
             "inntakFunksjon": item.get("inntakFunksjon"),
-            "sommer_ls": sommer_ls,
-            "sommer_periode": sommer_periode,
-            "vinter_ls": vinter_ls,
-            "vinter_periode": vinter_periode,
+            "perioder": normalize_periods(item.get("perioder")),
         })
 
     return {

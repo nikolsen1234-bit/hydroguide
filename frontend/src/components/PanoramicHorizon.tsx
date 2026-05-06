@@ -123,7 +123,7 @@ const CH = H - PAD_T - PAD_B;
 
 
 const SUN_PATHS = [
-  { doy: 172, color: "#d97706", label: "Sommarsol (21. juni)", lw: 3 },
+  { doy: 172, color: "#d97706", label: "Sommersol (21. juni)", lw: 3 },
   { doy: 80, color: "#dc2626", label: "Jevndøgn (21. mars)", lw: 2.5 },
   { doy: 355, color: "#2563eb", label: "Vintersol (21. des.)", lw: 3 },
 ] as const;

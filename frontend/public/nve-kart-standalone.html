@@ -652,8 +652,8 @@ async function searchAddress(q) {
     .filter(s => s.lat && s.lon);
 }
 
-// Zoom-nivå tilpassa kor stort staden er. Store ting som Fylke/Kommune/By
-// treng låg zoom (breitt view), småting som Bekk/Seter/Bygning høg zoom.
+// Zoom-nivå tilpasset hvor stort stedet er. Store ting som Fylke/Kommune/By
+// trenger lav zoom (bred visning), småting som Bekk/Seter/Bygning høy zoom.
 const PLACE_ZOOM = {
   "Fylke": 8, "Kommune": 10, "By": 12, "Tettsted": 13,
   "Bygd": 14, "Grend": 14, "Gard": 15,

@@ -163,7 +163,7 @@ export function HorizonChart({ profile, latDeg }: HorizonChartProps) {
 
     // Sun paths
     const sunCandidates = [
-      { path: summerPath, label: "Sommarsol", color: "#84cc16" },
+      { path: summerPath, label: "Sommersol", color: "#84cc16" },
       { path: equinoxPath, label: "Jevndøgn", color: "#f59e0b" },
       { path: winterPath, label: "Vintersol", color: "#3b82f6" },
     ];
@@ -268,7 +268,7 @@ export function HorizonChart({ profile, latDeg }: HorizonChartProps) {
       <div className={`mt-8 flex flex-wrap items-center justify-start gap-x-5 gap-y-3 sm:mt-16 sm:justify-center ${workspaceChartLegendClassName} text-slate-700`}>
         <span className="flex items-center gap-2">
           <span className="inline-block h-0.5 w-4 shrink-0" style={{ borderTop: "3px dashed #84cc16" }} />
-          Sommarsol (21. juni)
+          Sommersol (21. juni)
         </span>
         <span className="flex items-center gap-2">
           <span className="inline-block h-0.5 w-4 shrink-0" style={{ borderTop: "2px dashed #f59e0b" }} />

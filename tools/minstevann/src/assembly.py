@@ -376,35 +376,6 @@ def _classify_period(period_text: str | None, fallback_text: str | None = None) 
     return "ukjent"
 
 
-def _complement_period(other_period: str | None) -> str | None:
-    if not other_period:
-        return None
-    m = re.search(r"(\d{1,2})\s*[./]\s*(\d{1,2})\s*[-–]\s*(\d{1,2})\s*[./]\s*(\d{1,2})", other_period)
-    if not m:
-        return None
-    try:
-        _, _, end_d, end_m = (int(x) for x in m.groups())
-    except ValueError:
-        return None
-    d, mo = end_d + 1, end_m
-    if d > 30:
-        d = 1
-        mo = mo + 1 if mo < 12 else 1
-    sm = re.search(r"^\s*(\d{1,2})\s*[./]\s*(\d{1,2})", other_period)
-    if not sm:
-        return None
-    try:
-        start_d, start_m = int(sm.group(1)), int(sm.group(2))
-    except ValueError:
-        return None
-    e_d = start_d - 1
-    e_m = start_m
-    if e_d < 1:
-        e_d = 30
-        e_m = e_m - 1 if e_m > 1 else 12
-    return f"{d}.{mo} – {e_d}.{e_m}"
-
-
 MONTHS_MAP = {
     'januar': '01', 'februar': '02', 'mars': '03', 'april': '04',
     'mai': '05', 'juni': '06', 'juli': '07', 'august': '08',

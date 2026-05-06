@@ -4,29 +4,25 @@ from src.assembly import format_ls
 
 
 def format_report(results: list) -> str:
-    def _format_bucket(inntak: dict, bucket: str) -> list[str]:
-        details = inntak.get(f"{bucket}_delperioder") or []
-        if details:
-            if len(details) == 1:
-                d = details[0]
-                label = f"{format_ls(d.get('ls'))}"
-                if d.get("periode"):
-                    label += f" ({d['periode']})"
-                return [label]
-            return [
-                f"{format_ls(d.get('ls'))} ({d.get('periode') or 'ukjent periode'})"
-                for d in details
-            ]
+    def _is_real_period(period: dict) -> bool:
+        return any(period.get(key) is not None for key in ("ls", "periode", "note"))
 
-        ls_val = inntak.get(f"{bucket}_ls")
-        period = inntak.get(f"{bucket}_periode")
-        if ls_val is None and not period:
-            legacy = inntak.get(f"minstevannforing_{bucket}")
-            return [legacy] if legacy else ["-"]
+    def _format_period(period: dict) -> str:
+        ls_val = period.get("ls")
+        periode = period.get("periode")
+        note = period.get("note")
         label = format_ls(ls_val) if ls_val is not None else "-"
-        if period:
-            label += f" ({period})"
-        return [label]
+        if periode:
+            label += f" ({periode})"
+        if note:
+            label = f"{label} - {note}" if label != "-" else str(note)
+        return label
+
+    def _real_periods(inntak: dict) -> list[dict]:
+        return [
+            period for period in (inntak.get("perioder") or [])
+            if isinstance(period, dict) and _is_real_period(period)
+        ]
 
     lines = []
     lines.append("=" * 78)
@@ -59,15 +55,7 @@ def format_report(results: list) -> str:
             inntak_list = llm.get("inntak", []) or []
             real_inntak = [
                 innt for innt in inntak_list
-                if isinstance(innt, dict) and (
-                    innt.get("navn")
-                    or innt.get("minstevannforing_sommer")
-                    or innt.get("minstevannforing_vinter")
-                    or innt.get("sommer_ls") is not None
-                    or innt.get("vinter_ls") is not None
-                    or innt.get("sommer_delperioder")
-                    or innt.get("vinter_delperioder")
-                )
+                if isinstance(innt, dict) and _real_periods(innt)
             ]
             if not real_inntak:
                 lines.append("  (funnet=true men ingen inntak-data returnert)")
@@ -76,17 +64,8 @@ def format_report(results: list) -> str:
                 inntak_navn = innt.get("navn") or f"Inntak {i}"
                 inntak_type = innt.get("inntakstype") or innt.get("inntakFunksjon") or "?"
                 lines.append(f"  Inntak {i}: {inntak_navn}  ({inntak_type})")
-                sommer_lines = _format_bucket(innt, "sommer")
-                vinter_lines = _format_bucket(innt, "vinter")
-                lines.append(f"    Minstevannforing sommer: {sommer_lines[0]}")
-                for extra in sommer_lines[1:]:
-                    lines.append(f"                              {extra}")
-                lines.append(f"    Minstevannforing vinter: {vinter_lines[0]}")
-                for extra in vinter_lines[1:]:
-                    lines.append(f"                              {extra}")
-                andre = innt.get("andre_krav")
-                if andre:
-                    lines.append(f"    Andre krav:              {andre}")
+                period_text = "; ".join(_format_period(period) for period in _real_periods(innt))
+                lines.append(f"    Minstevannforing: {period_text}")
         else:
             grunn = llm.get("grunn", "ukjent")
             lines.append(f"  Grunn:          {grunn}")

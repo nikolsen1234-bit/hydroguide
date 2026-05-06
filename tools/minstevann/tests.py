@@ -6,6 +6,7 @@ from src.assembly import assemble_inntak_from_claims
 from src.models import NveidResult
 from src.snippet import extract_inntak_inventory, _sanitize_inventory_name
 from src.minimumflow_db import format_minimumflow_entry, normalize_period
+from src.report import format_report
 import run as pipeline
 
 
@@ -662,6 +663,31 @@ class ExtractBackendRegressions(unittest.TestCase):
                 ],
             },
         )
+
+    def test_report_renders_period_based_inntak(self):
+        result = NveidResult(
+            nveId=1696,
+            source_kdb_nr=123,
+            navn="Testverk",
+            konsesjon_url="https://example.test/konsesjon",
+            llm_result={
+                "funnet": True,
+                "inntak": [
+                    {
+                        "inntakFunksjon": "hovedinntak",
+                        "perioder": [
+                            {"ls": 120, "periode": "01.05 - 30.09", "note": None},
+                            {"ls": 40, "periode": "01.10 - 30.04", "note": None},
+                        ],
+                    }
+                ],
+            },
+        )
+
+        report = format_report([result])
+
+        self.assertIn("Minstevannforing: 120 l/s (01.05 - 30.09); 40 l/s (01.10 - 30.04)", report)
+        self.assertNotIn("ingen inntak-data returnert", report)
 
 
 from src.pdf_preparse import classify_elements, RELEVANCE_RE, CONTENT_TYPES

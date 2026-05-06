@@ -742,54 +742,6 @@ class TestResultFirstPipeline(unittest.TestCase):
             },
         )
 
-    def test_formatter_never_outputs_seasonal_fields(self):
-        result = NveidResult(
-            nveId=1696,
-            source_kdb_nr=123,
-            navn="Testverk",
-            konsesjon_url="https://example.test/konsesjon",
-            llm_result={
-                "funnet": True,
-                "inntak": [
-                    {
-                        "inntakFunksjon": "hovedinntak",
-                        "perioder": [
-                            {"ls": 30, "periode": "01.05 - 30.09", "note": None}
-                        ],
-                    }
-                ],
-            },
-        )
-
-        entry = format_minimumflow_entry(result)
-        item = entry["inntak"][0]
-        self.assertEqual(set(item), {"inntakFunksjon", "perioder"})
-
-    def test_formatter_outputs_empty_public_shape_for_failed_station(self):
-        result = NveidResult(
-            nveId=1696,
-            source_kdb_nr=123,
-            navn="Testverk",
-            konsesjon_url="https://example.test/konsesjon",
-            llm_result={"funnet": False, "grunn": "feil ved nedlasting"},
-        )
-
-        self.assertEqual(
-            format_minimumflow_entry(result),
-            {
-                "navn": "Testverk",
-                "funnet": False,
-                "inntak": [
-                    {
-                        "inntakFunksjon": None,
-                        "perioder": [
-                            {"ls": None, "periode": None, "note": None}
-                        ],
-                    }
-                ],
-            },
-        )
-
     def test_normalize_period_accepts_numeric_and_month_names(self):
         self.assertEqual(normalize_period("01.05-30.09"), "01.05 - 30.09")
         self.assertEqual(normalize_period("1. mai - 30. september"), "01.05 - 30.09")

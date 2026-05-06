@@ -27,12 +27,6 @@ const WHITESPACE_RE = /\s+/;
 const privateConfigPaths = [".secrets", "backend/config/cloudflare.private.json"];
 const privateConfigPath = "backend/config/cloudflare.private.json";
 const localSecretsPath = ".secrets";
-const generatedWorkerConfigPaths = [
-  "backend/cloudflare/api.generated.wrangler.jsonc",
-  "backend/cloudflare/ai.generated.wrangler.jsonc",
-  "backend/cloudflare/report.generated.wrangler.jsonc",
-  "backend/cloudflare/admin.generated.wrangler.jsonc",
-];
 const deployConfigRequiredNames = [
   "CLOUDFLARE_ACCOUNT_ID",
   "KV_API_KEYS_NAMESPACE_ID",
@@ -177,18 +171,20 @@ function runConfigChecks() {
   const missingDeployValues = getMissingDeployConfigValues();
   if (missingDeployValues.length === 0) {
     run(process.execPath, ["backend/scripts/build-cloudflare-worker-config.mjs", "--check-deploy-config"]);
-  } else {
-    console.log(
-      `Skipping deploy-config check: missing local Cloudflare config values: ${missingDeployValues.join(", ")}.`,
-    );
+    return;
   }
+
+  if (hasLocalDeployConfigSource()) {
+    fail(`Local Cloudflare config is incomplete. Missing: ${missingDeployValues.join(", ")}.`);
+  }
+
+  console.log("Skipping deploy-config check: no local Cloudflare config source is available.");
 }
 
 function getMissingDeployConfigValues() {
   const values = {
     ...readCloudflarePrivateValues(),
     ...readLocalSecretsValues(),
-    ...readGeneratedDeployValues(),
   };
 
   for (const name of deployConfigRequiredNames) {
@@ -200,6 +196,14 @@ function getMissingDeployConfigValues() {
   return deployConfigRequiredNames.filter((name) => !isRealValue(values[name]));
 }
 
+function hasLocalDeployConfigSource() {
+  return hasReadableJsonFile(privateConfigPath) || hasReadableSecretsFile(localSecretsPath) || hasDeployConfigEnv();
+}
+
+function hasDeployConfigEnv() {
+  return deployConfigRequiredNames.some((name) => isRealValue(process.env[name]));
+}
+
 function hasReadableJsonFile(filePath) {
   const absolutePath = resolve(repoRoot, filePath);
   if (!existsSync(absolutePath)) {
@@ -207,8 +211,27 @@ function hasReadableJsonFile(filePath) {
   }
 
   try {
-    JSON.parse(readFileSync(absolutePath, "utf8"));
+    const text = readFileSync(absolutePath, "utf8");
+    if (isGitCryptLockedText(text)) {
+      return false;
+    }
+
+    JSON.parse(text);
     return true;
+  } catch {
+    return false;
+  }
+}
+
+function hasReadableSecretsFile(filePath) {
+  const absolutePath = resolve(repoRoot, filePath);
+  if (!existsSync(absolutePath)) {
+    return false;
+  }
+
+  try {
+    const values = readLocalSecretsValues();
+    return Object.keys(values).length > 0;
   } catch {
     return false;
   }
@@ -221,7 +244,12 @@ function readCloudflarePrivateValues() {
   }
 
   try {
-    const parsed = JSON.parse(readFileSync(absolutePath, "utf8"));
+    const text = readFileSync(absolutePath, "utf8");
+    if (isGitCryptLockedText(text)) {
+      return {};
+    }
+
+    const parsed = JSON.parse(text);
     return parsed.cloudflare && typeof parsed.cloudflare === "object" ? parsed.cloudflare : {};
   } catch {
     return {};
@@ -236,6 +264,9 @@ function readLocalSecretsValues() {
 
   const values = {};
   const text = readFileSync(absolutePath, "utf8");
+  if (isGitCryptLockedText(text)) {
+    return values;
+  }
 
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -263,41 +294,12 @@ function readLocalSecretsValues() {
   return values;
 }
 
-function readGeneratedDeployValues() {
-  const values = {};
-
-  for (const configPath of generatedWorkerConfigPaths) {
-    const absolutePath = resolve(repoRoot, configPath);
-    if (!existsSync(absolutePath)) {
-      continue;
-    }
-
-    let config;
-    try {
-      config = JSON.parse(readFileSync(absolutePath, "utf8"));
-    } catch {
-      continue;
-    }
-
-    if (isRealValue(config.account_id)) {
-      values.CLOUDFLARE_ACCOUNT_ID ??= config.account_id;
-    }
-
-    for (const namespace of config.kv_namespaces ?? []) {
-      if (namespace.binding === "API_KEYS" && isRealValue(namespace.id)) {
-        values.KV_API_KEYS_NAMESPACE_ID ??= namespace.id;
-      }
-      if (namespace.binding === "REPORT_RULES" && isRealValue(namespace.id)) {
-        values.KV_REPORT_RULES_NAMESPACE_ID ??= namespace.id;
-      }
-    }
-  }
-
-  return values;
-}
-
 function isRealValue(value) {
   return typeof value === "string" && !omitValues.has(value.trim()) && !value.startsWith("REPLACE_WITH_");
+}
+
+function isGitCryptLockedText(text) {
+  return text.includes("GITCRYPT");
 }
 
 const files = getCandidateFiles();

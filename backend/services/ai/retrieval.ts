@@ -353,7 +353,7 @@ export async function runAiSearch(
   rules: Rules
 ): Promise<RetrievalResult> {
   if (!env.AI_SEARCH_INSTANCE) {
-    throw new Error("AI Search er ikkje konfigurert.");
+    throw new Error("AI Search er ikke konfigurert.");
   }
 
   const maxResults = parsePositiveInteger(env.AI_SEARCH_MAX_RESULTS, DEFAULT_AI_SEARCH_MAX_RESULTS);
@@ -369,7 +369,7 @@ export async function runAiSearch(
 
   const searchViaRest = async (currentQuery: string, threshold: number, rerankingEnabled: boolean): Promise<unknown> => {
     if (!env.AI_SEARCH_API_TOKEN || !env.AI_SEARCH_ACCOUNT_ID) {
-      throw new Error("AI Search REST er ikkje konfigurert.");
+      throw new Error("AI Search REST er ikke konfigurert.");
     }
 
     const aiSearchToken = await resolveSecret(env.AI_SEARCH_API_TOKEN);
@@ -383,7 +383,7 @@ export async function runAiSearch(
         body: JSON.stringify(buildAiSearchRestPayload(currentQuery, maxResults, threshold, rerankingEnabled)),
       }),
       AI_SEARCH_TIMEOUT_MS,
-      "AI Search svarte ikkje i tide."
+      "AI Search svarte ikke i tide."
     );
 
     const payload = await response.json().catch(() => ({}));
@@ -415,13 +415,13 @@ export async function runAiSearch(
           },
         }),
         AI_SEARCH_TIMEOUT_MS,
-        "AI Search svarte ikkje i tide."
+        "AI Search svarte ikke i tide."
       );
     } catch {
       return withTimeout(
         searchClient.search(buildAiSearchRestPayload(currentQuery, maxResults, threshold, rerankingEnabled)),
         AI_SEARCH_TIMEOUT_MS,
-        "AI Search svarte ikkje i tide."
+        "AI Search svarte ikke i tide."
       );
     }
   };
@@ -434,8 +434,8 @@ export async function runAiSearch(
       try {
         return await searchViaBinding(currentQuery, threshold, rerankingEnabled);
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error("AI Search-binding feila.");
-        console.error("AI Search binding feila:", error instanceof Error ? error.message : error);
+        lastError = error instanceof Error ? error : new Error("AI Search-binding feilet.");
+        console.error("AI Search binding feilet:", error instanceof Error ? error.message : error);
       }
     }
 
@@ -444,12 +444,12 @@ export async function runAiSearch(
       try {
         return await searchViaRest(currentQuery, threshold, rerankingEnabled);
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error("AI Search REST feila.");
-        console.error("AI Search REST feila:", error instanceof Error ? error.message : error);
+        lastError = error instanceof Error ? error : new Error("AI Search REST feilet.");
+        console.error("AI Search REST feilet:", error instanceof Error ? error.message : error);
       }
     }
 
-    throw lastError ?? new Error("AI Search er ikkje konfigurert.");
+    throw lastError ?? new Error("AI Search er ikke konfigurert.");
   };
 
   let payload = await searchAiSearch(query, scoreThreshold, enableReranking);
@@ -495,7 +495,7 @@ export async function retrieveEvidence(
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.error("AI Search feila, fell tilbake til KV:", msg);
+      console.error("AI Search feilet, falt tilbake til KV:", msg);
       if (configured === "ai-search" || !keywordMap) {
         throw error;
       }
@@ -536,7 +536,7 @@ export function mapAnswersToBucketKeywords(body: NormalizedBody): Record<BucketP
       is === "ja" ? "is_frost" : "",
       is === "ja" ? "sediment_tilstopping" : "",
       "kontroll_vs_ordinaer",
-      profil.includes("ingen") ? "ikkje_stabilt_profil" : "",
+      profil.includes("ingen") ? "ikke_stabilt_profil" : "",
     ].filter(Boolean),
     drift: ["tilsyn", "vedlikehald", "kalibrering"],
   };
@@ -720,7 +720,7 @@ export async function retrieveStructuredEvidence(
         return bucketedToRetrievalResult(mergedBuckets, "hybrid");
       }
     } catch (error) {
-      console.error("AI Search feila, brukar berre KV:", error instanceof Error ? error.message : error);
+      console.error("AI Search feilet, bruker bare KV:", error instanceof Error ? error.message : error);
     }
   }
 
@@ -800,7 +800,7 @@ export async function searchVectorize(env: Env, queryText: string, rules: Rules)
             }
           }
         } catch (error) {
-          console.error(`R2 fallback for ${match.id} feila:`, error instanceof Error ? error.message : error);
+          console.error(`R2 fallback for ${match.id} feilet:`, error instanceof Error ? error.message : error);
         }
       }
 
@@ -854,13 +854,13 @@ export async function retrieveHybridEvidence(
   const [vectorizeResult, autoragResult] = await Promise.all([
     runVectorize
       ? searchVectorize(env, query, rules).catch((error) => {
-          console.error("Vectorize feila:", error instanceof Error ? error.message : error);
+          console.error("Vectorize feilet:", error instanceof Error ? error.message : error);
           return [] as EvidenceCandidate[];
         })
       : Promise.resolve([] as EvidenceCandidate[]),
     runAutoRAG
       ? runAiSearch(env, body, rules).catch((error) => {
-          console.error("AutoRAG feila i hybrid:", error instanceof Error ? error.message : error);
+          console.error("AutoRAG feilet i hybrid:", error instanceof Error ? error.message : error);
           return null;
         })
       : Promise.resolve(null),

@@ -294,7 +294,7 @@ export default {
         const rl = checkGenerationRateLimit(request);
         if (!rl.allowed) {
           return jsonResponse(
-            { error: "For mange førespurnader. Prøv igjen seinare." },
+            { error: "For mange forespørsler. Prøv igjen senere." },
             429,
             { ...corsHeaders, "retry-after": String(rl.retryAfterSeconds) },
           );
@@ -302,7 +302,7 @@ export default {
       }
 
       if (!env.REPORT_WORKER_TOKEN) {
-        return jsonResponse({ error: "Tenesta er ikkje konfigurert." }, 503, corsHeaders);
+        return jsonResponse({ error: "Tjenesten er ikke konfigurert." }, 503, corsHeaders);
       }
       if (!isServiceBinding) {
         const authHeader = request.headers.get("authorization") ?? "";
@@ -438,7 +438,7 @@ export default {
 
       return jsonResponse(
         {
-          error: "Generering feila. Prøv igjen seinare.",
+          error: "Generering feilet. Prøv igjen senere.",
         },
         502,
         corsHeaders

@@ -115,13 +115,13 @@ export function buildDocumentedProjectDataText(body: NormalizedBody): string {
   const lines = [
     body.lokasjon ? `- Lokasjon: ${body.lokasjon}` : "",
     body.anleggstype ? `- Type anlegg: ${body.anleggstype}` : "",
-    body.hydrologi ? `- Minstevassforing / variasjon: ${body.hydrologi}` : "",
-    body.hovudloysing ? `- Hovudloysing: ${body.hovudloysing}` : "",
+    body.hydrologi ? `- Minstevannføring / variasjon: ${body.hydrologi}` : "",
+    body.hovudloysing ? `- Hovedløsning: ${body.hovudloysing}` : "",
     body.slippmetode ? `- Slippmetode: ${body.slippmetode}` : "",
-    body.primaermaaling ? `- Maling i ordinaer drift: ${body.primaermaaling}` : "",
-    body.kontrollmaaling ? `- Kontrollmaling for verifikasjon: ${body.kontrollmaaling}` : "",
-    body.maleprinsipp ? `- Maleprinsipp: ${body.maleprinsipp}` : "",
-    body.maleutstyr ? `- Maleutstyr: ${body.maleutstyr}` : "",
+    body.primaermaaling ? `- Måling i ordinær drift: ${body.primaermaaling}` : "",
+    body.kontrollmaaling ? `- Kontrollmåling for verifikasjon: ${body.kontrollmaaling}` : "",
+    body.maleprinsipp ? `- Måleprinsipp: ${body.maleprinsipp}` : "",
+    body.maleutstyr ? `- Måleutstyr: ${body.maleutstyr}` : "",
     body.loggeroppsett ? `- Loggeroppsett: ${body.loggeroppsett}` : "",
     body.reserveLogger ? `- Reserve-/backup-logger: ${body.reserveLogger}` : "",
     body.kommunikasjon ? `- Kommunikasjon: ${body.kommunikasjon}` : "",
@@ -375,7 +375,7 @@ export async function callViaGateway(
   maxOutputTokens: number
 ): Promise<{ raw: OpenAIResponsePayload; model: string }> {
   if (!isGatewayEnabled(env)) {
-    throw new Error("AI Gateway er ikkje konfigurert.");
+    throw new Error("AI Gateway er ikke konfigurert.");
   }
 
   const requestTimeoutMs = parsePositiveInteger(
@@ -438,11 +438,11 @@ export async function runSelfFeedback(
   // Load feedback prompt from KV
   let feedbackPrompt = await env.REPORT_RULES?.get("prompt:self_feedback:v1");
   if (!feedbackPrompt) {
-    feedbackPrompt = `Vurder denne teksten på ein skala frå 1-5. Returner JSON: {"score": N, "flags": ["..."]}
-Krav: Teksten skal vere på nynorsk, 120-250 ord, underbygge løysinga med NVE-kjelder, ikkje blande kontrollmåling med primærmåling, og vere sjølvberande (lesbar utan resten av rapporten).`;
+    feedbackPrompt = `Vurder denne teksten på en skala fra 1-5. Returner JSON: {"score": N, "flags": ["..."]}
+Krav: Teksten skal være på bokmål, 120-250 ord, underbygge løsningen med NVE-kilder, ikke blande kontrollmåling med primærmåling, og være selvstendig lesbar uten resten av rapporten.`;
   }
 
-  const userMsg = `TEKST:\n${generatedText}\n\nEVIDENS:\n${evidenceText}\n\nLØYSING: ${body.hovudloysing ?? ""}\nPRIMÆRMÅLING: ${body.primaermaaling ?? ""}\nKONTROLLMÅLING: ${body.kontrollmaaling ?? ""}`;
+  const userMsg = `TEKST:\n${generatedText}\n\nEVIDENS:\n${evidenceText}\n\nLØSNING: ${body.hovudloysing ?? ""}\nPRIMÆRMÅLING: ${body.primaermaaling ?? ""}\nKONTROLLMÅLING: ${body.kontrollmaaling ?? ""}`;
 
   try {
     const result = await callViaGateway(env, feedbackPrompt, userMsg, feedbackModel, maxOutputTokens);
@@ -541,5 +541,5 @@ export async function generateWithFallback(
   }
 
   // All steps failed
-  throw new Error(`Alle genereringssteg feila:\n${errors.join("\n")}`);
+  throw new Error(`Alle genereringssteg feilet:\n${errors.join("\n")}`);
 }

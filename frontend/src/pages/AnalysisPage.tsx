@@ -484,7 +484,7 @@ export default function AnalysisPage() {
       }
 
       if (!response.ok || !responseBody?.text?.trim()) {
-        throw new Error(responseBody?.error || "AI-generering feila.");
+        throw new Error(responseBody?.error || "AI-generering feilet.");
       }
 
       aiRecommendationText = responseBody.text.trim();
@@ -498,7 +498,7 @@ export default function AnalysisPage() {
         visibleMonthlyEnergyBalance
       );
     } catch (error) {
-      setReportError(error instanceof Error ? error.message : "Ukjend feil.");
+      setReportError(error instanceof Error ? error.message : "Ukjent feil.");
     }
 
     if (!aiRecommendationText) {
@@ -647,7 +647,7 @@ export default function AnalysisPage() {
 
       setReliabilityMetrics(computeReliabilityMetrics(sim, batteryCapacityWh, maxDoD, loadWhPerHour));
     } catch (e) {
-      setReliabilityError(e instanceof Error ? e.message : "Ukjend feil under simulering.");
+      setReliabilityError(e instanceof Error ? e.message : "Ukjent feil under simulering.");
     } finally {
       setReliabilityRunning(false);
     }

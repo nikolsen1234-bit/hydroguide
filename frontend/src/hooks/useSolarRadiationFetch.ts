@@ -72,7 +72,7 @@ export function useSolarRadiationFetch() {
 
         return radiation;
       } catch (e) {
-        const message = e instanceof Error ? e.message : "Ukjend feil";
+        const message = e instanceof Error ? e.message : "Ukjent feil";
         setState({ loading: false, error: message, source: null, servedTmy: null, horizonProfile: null });
         return null;
       }

@@ -15,7 +15,7 @@ const GT_RE = />/g;
 const DQUOTE_RE = /"/g;
 const SQUOTE_RE = /'/g;
 const TRIM_QUOTES_RE = /^["']|["']$/g;
-const FAGLEG_PREFIX_RE = /^Fagleg underbygging:\s*/i;
+const AI_REPORT_PREFIX_RE = /^Faglig underbygging:\s*/i;
 const WHITESPACE_RE = /\s+/g;
 const SENTENCE_BOUNDARY_RE = /([.!?])\s+(?=[A-ZÆØÅ])/g;
 const SEMICOLON_SPLIT_RE = /\s*;\s*/;
@@ -55,7 +55,7 @@ function renderAiRecommendationText(text: string): string {
   const normalized = text
     .trim()
     .replace(TRIM_QUOTES_RE, "")
-    .replace(FAGLEG_PREFIX_RE, "")
+    .replace(AI_REPORT_PREFIX_RE, "")
     .replace(WHITESPACE_RE, " ");
 
   if (!normalized) {
@@ -105,7 +105,7 @@ function renderAiRecommendationText(text: string): string {
   return (paragraphs.length > 0 ? paragraphs : [sanitized])
     .map(
       (paragraph, index) =>
-        `<p${index > 0 ? ` style="margin-top:0.5rem;"` : ""}>${index === 0 ? `<strong>Fagleg underbygging:</strong> ` : ""}${esc(restoreAbbreviations(paragraph))}</p>`
+        `<p${index > 0 ? ` style="margin-top:0.5rem;"` : ""}>${index === 0 ? `<strong>Faglig underbygging:</strong> ` : ""}${esc(restoreAbbreviations(paragraph))}</p>`
     )
     .join("");
 }

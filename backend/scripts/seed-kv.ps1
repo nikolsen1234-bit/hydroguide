@@ -26,7 +26,7 @@ if (-not (Test-Path -LiteralPath $seedPath)) {
   throw "Could not find seed file at $seedPath"
 }
 
-$seed = Get-Content -LiteralPath $seedPath -Raw | ConvertFrom-Json
+$seed = Get-Content -LiteralPath $seedPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $tempDir = Join-Path $env:TEMP ("hydroguide-kv-" + [Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $tempDir | Out-Null
 

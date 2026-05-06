@@ -3,6 +3,17 @@
   "name": "Markåni kraftverk — Forenkla",
   "location": "Markåni kraftverk (Vaksdal)",
   "nveId": 2034,
+  "sporsmal": {
+    "q1Anleggstype": "nytt",
+    "q2HogasteMinstevassforing": 19,
+    "q3Slippkravvariasjon": "tilsigsstyrt",
+    "q4Slippmetode": "royr_frostfritt",
+    "q5IsSedimentTilstopping": "ja",
+    "q6Fiskepassasje": "ja",
+    "q7BypassVedDriftsstans": "ja",
+    "q8Maleprofil": "naturleg_stabilt",
+    "q9AllmentaKontroll": "ja"
+  },
   "systemparametere": {
     "4gCoverage": true,
     "nbIotCoverage": true,
@@ -15,7 +26,8 @@
   "sol": {
     "panelPowerWp": 425,
     "panelCount": 2,
-    "systemEfficiency": 0.8
+    "systemEfficiency": 0.8,
+    "lifetimeYears": 10
   },
   "batteri": {
     "nominalVoltage": 12.8,
@@ -56,9 +68,82 @@
     "nov": 0.26,
     "des": 0.02
   },
+  "utstyr": [
+    {
+      "aktiv": true,
+      "namn": "Victron BMS",
+      "innkjopsprisKr": "",
+      "effektW": 0.1,
+      "timerPerDag": 24
+    },
+    {
+      "aktiv": true,
+      "namn": "VICTRON Lynx Distributor",
+      "innkjopsprisKr": "",
+      "effektW": 2.4,
+      "timerPerDag": 24
+    },
+    {
+      "aktiv": true,
+      "namn": "VICTRON Orion TR Omformer DC-DC",
+      "innkjopsprisKr": "",
+      "effektW": 1.2,
+      "timerPerDag": 24
+    },
+    {
+      "aktiv": true,
+      "namn": "Victron Cerbo GX - MK2",
+      "innkjopsprisKr": "",
+      "effektW": 2.8,
+      "timerPerDag": 24
+    },
+    {
+      "aktiv": true,
+      "namn": "VICTRON SmartSolar MPPT 250/100",
+      "innkjopsprisKr": "",
+      "effektW": 0.042,
+      "timerPerDag": 24
+    },
+    {
+      "aktiv": true,
+      "namn": "Siemens FMS5020",
+      "innkjopsprisKr": "",
+      "effektW": 6.45,
+      "timerPerDag": 24
+    },
+    {
+      "aktiv": true,
+      "namn": "Teltonika RUT956",
+      "innkjopsprisKr": "",
+      "effektW": 7,
+      "timerPerDag": 24
+    },
+    {
+      "aktiv": true,
+      "namn": "Efoy Pro 1800",
+      "innkjopsprisKr": "",
+      "effektW": 0.5,
+      "timerPerDag": 24
+    },
+    {
+      "aktiv": true,
+      "namn": "Efoy Fuel Manager FM4",
+      "innkjopsprisKr": "",
+      "effektW": 0.0374,
+      "timerPerDag": 24
+    },
+    {
+      "aktiv": true,
+      "namn": "Dataloggar",
+      "innkjopsprisKr": "",
+      "effektW": 7,
+      "timerPerDag": 24
+    }
+  ],
   "komponenter": {
     "displayUnit": "wh",
-    "useRuntimeHoursPerDay": true
+    "useRuntimeHoursPerDay": true,
+    "showPurchaseCost": false
   },
   "radiolinje": {
     "pointA": {
@@ -76,17 +161,5 @@
     "kFactor": "4/3",
     "polarization": "horizontal",
     "rainFactor": 25
-  },
-  "utstyr": [
-    { "aktiv": true, "namn": "Victron BMS", "effektW": 0.1, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "VICTRON Lynx Distributor", "effektW": 2.4, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "VICTRON Orion TR Omformer DC-DC", "effektW": 1.2, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Victron Cerbo GX - MK2", "effektW": 2.8, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "VICTRON SmartSolar MPPT 250/100", "effektW": 0.042, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Siemens FMS5020", "effektW": 6.45, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Teltonika RUT956", "effektW": 7, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Efoy Pro 1800", "effektW": 0.5, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Efoy Fuel Manager FM4", "effektW": 0.0374, "timarPerDag": 24 },
-    { "aktiv": true, "namn": "Dataloggar", "effektW": 7, "timarPerDag": 24 }
-  ]
+  }
 }

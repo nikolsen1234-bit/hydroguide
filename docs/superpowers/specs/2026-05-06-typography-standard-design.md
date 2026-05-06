@@ -9,7 +9,9 @@ The three core content levels are included in that total.
 
 This pass standardizes workspace/page content typography across the frontend, with the analysis page as the first target because it currently exposes the problem most clearly.
 
-SVG/chart internals are left unchanged for now unless they already use shared text classes outside the SVG. Status colors may remain different when the size, weight, and line height stay the same.
+Status colors may remain different when the size, weight, and line height stay the same.
+
+Chart text should also be standardized where the same chart concept appears on more than one page. The front page and analysis page must use the same typography for chart numbers and month labels.
 
 ## Typography Levels
 
@@ -47,6 +49,7 @@ The analysis page should map all normal content to the three core levels:
 - Metric labels, month names, table row labels, and group names use Level 2.
 - Numbers, descriptions, coordinates, costs, `10 års analyse`, and other displayed content use Level 3.
 - Energy balance values use the Level 3 base typography plus the existing positive/negative color.
+- Chart numbers and chart month labels use the shared chart typography on both the front page and analysis page.
 
 ## Verification
 
@@ -54,5 +57,6 @@ After implementation:
 
 - Count unique typography tokens in `frontend/src`.
 - Confirm the count is 10 or less, excluding only non-typography color changes.
+- Confirm chart numbers and month labels match on the front page and analysis page.
 - Run `npm.cmd run build`.
 - Keep the local session available for visual review before any deployment.

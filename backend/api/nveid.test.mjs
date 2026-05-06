@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { onRequestGet } from "./nveid.js";
+
+const minimumFlowData = JSON.parse(readFileSync(new URL("../data/minimumflow.json", import.meta.url), "utf8"));
 
 function requestFor(path) {
   return new Request(`https://hydroguide.no${path}`);
@@ -25,6 +28,22 @@ function envWithData(data, onGet = () => {}) {
 async function readJson(response) {
   return response.json();
 }
+
+test("canonical minimumflow.json is perioder-only", () => {
+  assert.ok(Object.keys(minimumFlowData).length > 0);
+
+  for (const [nveID, station] of Object.entries(minimumFlowData)) {
+    assert.ok(Array.isArray(station.inntak), `${nveID} must have inntak array`);
+
+    for (const [index, intake] of station.inntak.entries()) {
+      assert.equal("sommer_ls" in intake, false, `${nveID} inntak ${index} must not have sommer_ls`);
+      assert.equal("sommer_periode" in intake, false, `${nveID} inntak ${index} must not have sommer_periode`);
+      assert.equal("vinter_ls" in intake, false, `${nveID} inntak ${index} must not have vinter_ls`);
+      assert.equal("vinter_periode" in intake, false, `${nveID} inntak ${index} must not have vinter_periode`);
+      assert.ok(Array.isArray(intake.perioder) && intake.perioder.length > 0, `${nveID} inntak ${index} must have perioder`);
+    }
+  }
+});
 
 test("/api/nveid returns endpoint index without reading minimum-flow data", async () => {
   let readAttempted = false;

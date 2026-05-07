@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import WorkspaceHeader from "../components/WorkspaceHeader";
+import { workspaceBodyMutedClassName, workspacePageClassName } from "../styles/workspace";
 
 const API_SPEC_URL = "/api/openapi";
 const SWAGGER_CSS_URL = "https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui.css";
@@ -68,13 +70,19 @@ export default function ApiPage() {
   }, []);
 
   return (
-    <main className="min-h-full bg-white text-slate-900">
+    <main className={workspacePageClassName}>
+      <WorkspaceHeader title="API" />
       {error ? (
-        <div className="flex min-h-[24rem] items-center justify-center px-6 text-sm font-medium text-red-700">
+        <div className="hg-card flex min-h-[24rem] items-center justify-center px-6 text-sm font-medium text-red-700">
           {error}
         </div>
       ) : null}
-      <div ref={containerRef} className="api-docs min-h-full px-3 py-2 md:px-6 md:py-4" />
+      <section className="hg-card overflow-hidden">
+        <div className="border-b border-[var(--hg-hairline-2)] px-4 py-3">
+          <p className={workspaceBodyMutedClassName}>OpenAPI-spesifikasjon for HydroGuide-endepunkter.</p>
+        </div>
+        <div ref={containerRef} className="api-docs min-h-full bg-[var(--hg-surface)] px-3 py-2 md:px-6 md:py-4" />
+      </section>
     </main>
   );
 }

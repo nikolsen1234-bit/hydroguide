@@ -225,8 +225,7 @@ function validateRecommendationAccess(configuration: Pick<PlantConfiguration, "n
 export function validateConfiguration(configuration: PlantConfiguration): ValidationErrors {
   const errors: ValidationErrors = {};
   const calculatorMode = (configuration.engineMode ?? "standard") === "standard";
-  const usesSolarAuto =
-    (configuration.engineMode ?? "standard") === "detailed" && configuration.solarRadiationSettings.mode === "auto";
+  const usesSolarAuto = false;
 
   if (!calculatorMode) {
     Object.assign(errors, validateRecommendationAccess(configuration));

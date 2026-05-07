@@ -34,7 +34,7 @@ import { formatLocationLabel } from "./format";
 import { calculateConfigurationOutputs, calculateEquipmentBudgetRows } from "./systemResults";
 import { validateConfiguration } from "./validation";
 
-const PVGIS_DETAILED_MODE_ENABLED = true;
+const PVGIS_DETAILED_MODE_ENABLED = false;
 
 export function nowIso(): string {
   return new Date().toISOString();
@@ -113,7 +113,7 @@ function normalizeSolarRadiationSettings(value: Partial<SolarRadiationSettings> 
       : 13;
 
   return {
-    mode: value?.mode === "auto" ? "auto" : "manual",
+    mode: "manual",
     lat: normalizeNumber(value?.lat),
     lon: normalizeNumber(value?.lon),
     tilt: normalizeNumber(value?.tilt),
@@ -310,7 +310,7 @@ export function normalizeConfiguration(
   const normalizedBase: PlantConfiguration = {
     id: typeof value.id === "string" && value.id.trim() ? value.id : makeId(),
     engineMode:
-      value.engineMode === "combined"
+      value.engineMode === "combined" || (!PVGIS_DETAILED_MODE_ENABLED && value.engineMode === "detailed")
         ? "combined"
         : PVGIS_DETAILED_MODE_ENABLED && value.engineMode === "detailed"
           ? "detailed"

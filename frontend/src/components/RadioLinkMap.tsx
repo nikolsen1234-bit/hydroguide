@@ -26,13 +26,13 @@ function getCalculatedFitOptions() {
 function createMarkerIcon(L: LeafletNamespace, label: string, tone: "warm" | "cool") {
   const palette =
     tone === "cool"
-      ? { fill: "#9bd3ff", stroke: "#163447", text: "#163447" }
-      : { fill: "#f3c48b", stroke: "#4a2a12", text: "#4a2a12" };
+      ? { fill: "var(--hg-accent-soft)", stroke: "var(--hg-accent-2)", text: "var(--hg-accent)" }
+      : { fill: "var(--hg-warn-soft)", stroke: "var(--hg-hairline)", text: "var(--hg-warn)" };
 
   return L.divIcon({
     className: "",
     html: `
-      <div style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;background:${palette.fill};border:2px solid ${palette.stroke};box-shadow:0 10px 24px rgba(15,23,42,.18);font-family:var(--hg-type-font-family);font-size:var(--hg-type-chart-size);font-weight:var(--hg-type-weight-bold);line-height:var(--hg-type-category-leading);color:${palette.text};">
+      <div style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:${palette.fill};border:1px solid ${palette.stroke};font-family:var(--hg-type-mono-family);font-size:var(--hg-type-chart-size);font-weight:var(--hg-type-weight-bold);line-height:var(--hg-type-category-leading);color:${palette.text};">
         ${label}
       </div>
     `,
@@ -225,8 +225,8 @@ export default function RadioLinkMap({
           [pointB.lat, pointB.lng]
         ],
         {
-          color: "#0f4c81",
-          weight: 3,
+          color: "var(--hg-accent-2)",
+          weight: 2,
           opacity: 0.9
         }
       ).addTo(map);
@@ -263,10 +263,10 @@ export default function RadioLinkMap({
   }, []);
 
   return (
-    <div className="radiolink-map isolate relative h-full min-h-[280px] overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-100">
+    <div className="radiolink-map isolate relative h-full min-h-[280px] overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)]">
       <div ref={containerRef} className="h-full w-full" />
 
-      <div className="pointer-events-none absolute right-3 top-3 z-[1000] max-w-[8.75rem] whitespace-normal rounded-md border border-slate-200 bg-white/95 px-2 py-0.5 text-center text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-slate-700 shadow-md [overflow-wrap:anywhere] sm:right-4 sm:top-4 sm:max-w-[calc(100%-5.5rem)] sm:rounded-full sm:px-3 sm:py-1.5 sm:text-[length:var(--hg-type-ui-size)]">
+      <div className="pointer-events-none absolute right-3 top-3 z-[1000] max-w-[8.75rem] whitespace-normal rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)]/95 px-2 py-0.5 text-center text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-[var(--hg-ink)] [overflow-wrap:anywhere] sm:right-4 sm:top-4 sm:max-w-[calc(100%-5.5rem)] sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-[length:var(--hg-type-ui-size)]">
         {pointA && pointB
           ? t("radioMap.clickToMove").replace("{point}", nextPoint === "pointA" ? "A" : "B")
           : t("radioMap.nextClick").replace("{point}", nextPoint === "pointA" ? "A" : "B")}
@@ -278,12 +278,12 @@ export default function RadioLinkMap({
         </div>
       ) : null}
 
-      <div className="absolute bottom-1 right-1 z-20 max-w-[calc(100%-0.75rem)] whitespace-normal rounded-sm bg-white/90 px-1.5 py-0.5 text-right text-[length:var(--hg-type-meta-size)] leading-[var(--hg-type-category-leading)] text-slate-700 [overflow-wrap:anywhere]">
+      <div className="absolute bottom-1 right-1 z-20 max-w-[calc(100%-0.75rem)] whitespace-normal rounded-sm bg-[var(--hg-surface)]/90 px-1.5 py-0.5 text-right text-[length:var(--hg-type-meta-size)] leading-[var(--hg-type-category-leading)] text-[var(--hg-muted)] [overflow-wrap:anywhere]">
         <a
           href="https://leafletjs.com"
           target="_blank"
           rel="noreferrer"
-          className="text-[#2563eb] underline underline-offset-1"
+          className="text-[var(--hg-accent)] underline underline-offset-1"
         >
           Leaflet
         </a>{" "}

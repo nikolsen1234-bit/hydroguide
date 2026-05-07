@@ -38,7 +38,7 @@ export function HelpTip({ text, iconClassName = workspaceHelpIconClassName }: { 
         i
       </button>
       {open ? (
-        <span className={`absolute left-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white px-3 py-2.5 normal-case text-slate-700 shadow-lg sm:left-1/2 sm:w-56 sm:-translate-x-1/2 ${workspaceContentValueClassName}`}>
+        <span className={`absolute left-0 top-full z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 py-2.5 text-left leading-5 normal-case text-[var(--hg-ink-2)] sm:left-1/2 sm:w-72 sm:-translate-x-1/2 ${workspaceContentValueClassName}`}>
           {text}
         </span>
       ) : null}
@@ -85,7 +85,7 @@ export default function WorkspaceActions({
   }, [exportConfiguration, showFeedback, t]);
 
   return (
-    <div className="border-t border-slate-200 pt-5">
+    <div className="border-t border-[var(--hg-hairline)] pt-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <button type="button" onClick={handleReset} className={`w-full sm:w-auto ${workspaceDangerButtonClassName}`}>
           {t("shared.reset")}

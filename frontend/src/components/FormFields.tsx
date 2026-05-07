@@ -110,8 +110,8 @@ function ChoiceField<T extends string | boolean>({
               onClick={() => onChange(option.value)}
               className={`rounded-xl border px-3 py-2 ${workspaceFieldLabelClassName} transition ${
                 selected
-                  ? "border-brand-300 bg-brand-50 text-brand-700"
-                  : "border-slate-200 bg-white text-slate-950 hover:border-brand-300"
+                  ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
+                  : "border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[var(--hg-ink)] hover:border-[var(--hg-accent-2)]"
               }`}
             >
               {option.label}

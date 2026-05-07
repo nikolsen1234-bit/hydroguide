@@ -2,6 +2,7 @@ export type Language = "nn" | "en";
 
 export interface Translations {
   // App / Navigation
+  "nav.welcome": string;
   "nav.overview": string;
   "nav.projectBasis": string;
   "nav.technicalParameters": string;

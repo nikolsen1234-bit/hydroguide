@@ -56,9 +56,9 @@ export default function BuildInfoBadge() {
   }, []);
 
   return (
-    <div className="mt-6 px-3 pb-2 pt-6 text-center">
+    <div className="flex h-[74px] flex-col justify-end px-3 pb-2 text-center">
       <p className={workspaceMetaMutedClassName}>{t("shared.lastUpdated")}</p>
-      <p className={`mt-1 ${workspaceBodyMutedClassName}`}>{formatBuildTimestamp(buildInfo.updatedAt)}</p>
+      <p className={`mt-1 min-h-[1.25rem] ${workspaceBodyMutedClassName}`}>{formatBuildTimestamp(buildInfo.updatedAt)}</p>
     </div>
   );
 }

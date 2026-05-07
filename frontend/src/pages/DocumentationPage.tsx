@@ -6,7 +6,10 @@ import { useLanguage } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import {
   workspaceBodyClassName,
+  workspaceBodyMutedClassName,
   workspaceContentValueBaseClassName,
+  workspaceContentValueClassName,
+  workspaceMetaClassName,
   workspacePageClassName,
   workspaceSubsectionTitleClassName
 } from "../styles/workspace";
@@ -306,12 +309,12 @@ function ensureMathJaxLoaded(): Promise<void> {
 }
 
 function InlineMath({ tex }: { tex: string }) {
-  return <span className={`${workspaceContentValueBaseClassName} text-slate-950`}>{`\\(${tex}\\)`}</span>;
+  return <span className={`${workspaceContentValueBaseClassName} text-[var(--hg-ink)]`}>{`\\(${tex}\\)`}</span>;
 }
 
 function FormulaBlock({ tex }: { tex: string }) {
   return (
-    <div className="my-4 max-w-full overflow-x-auto overflow-y-hidden py-1 text-left text-[length:var(--hg-type-category-size)] text-slate-950">
+    <div className="my-4 max-w-full overflow-x-auto overflow-y-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-bg)] px-4 py-3 text-left text-[length:var(--hg-type-category-size)] text-[var(--hg-ink)]">
       {`\\[${tex}\\]`}
     </div>
   );
@@ -324,8 +327,8 @@ function DefinitionList({ items, heading }: { items: FormulaItem[]; heading: str
       <table className="w-full text-left">
         <tbody>
           {items.map((item) => (
-            <tr key={item.symbol} className="border-t border-slate-100 first:border-t-0">
-              <td className={`w-28 whitespace-nowrap py-2 pr-4 align-top sm:w-36 ${workspaceContentValueBaseClassName} text-slate-950`}>
+            <tr key={item.symbol} className="border-t border-[var(--hg-hairline-2)] first:border-t-0">
+              <td className={`w-28 whitespace-nowrap py-2 pr-4 align-top sm:w-36 ${workspaceContentValueBaseClassName} text-[var(--hg-ink)]`}>
                 <InlineMath tex={item.symbol} />
               </td>
               <td className={`py-2 align-top ${workspaceBodyClassName}`}>
@@ -372,25 +375,48 @@ export default function DocumentationPage() {
     <main className={workspacePageClassName}>
       <WorkspaceHeader title={t("docs.title")} />
 
-      <div ref={mathDocumentRef} className="min-w-0 space-y-12">
-        {sections.map((section) => (
-          <WorkspaceSection key={section.title} title={section.title}>
+      <div ref={mathDocumentRef} className="min-w-0 space-y-4">
+        <section className="hg-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+          <p className={`${workspaceMetaClassName} shrink-0`}>På denne siden</p>
+          <div className="flex flex-wrap gap-3">
+            {sections.map((section, index) => (
+              <a
+                key={section.title}
+                href={`#doc-${index}`}
+                className="inline-flex items-baseline gap-2 text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink-2)] transition hover:text-[var(--hg-accent)]"
+              >
+                <span className="hg-mono text-[10px] text-[var(--hg-muted)]">{index + 1}</span>
+                {section.title}
+              </a>
+            ))}
+          </div>
+        </section>
+
+        {sections.map((section, index) => (
+          <div id={`doc-${index}`} key={section.title} className="scroll-mt-4">
+            <WorkspaceSection title={section.title} description={section.description || undefined}>
             <div className="space-y-8">
-              {section.description ? <p className={workspaceBodyClassName}>{section.description}</p> : null}
               {section.entries.map((entry, index) => (
                 <article
                   key={`${section.title}-${entry.title || index}`}
-                  className="border-t border-slate-200 pt-6 first:border-t-0 first:pt-0"
+                  className="border-t border-[var(--hg-hairline-2)] pt-6 first:border-t-0 first:pt-0"
                 >
                   {entry.title ? <h3 className={workspaceSubsectionTitleClassName}>{entry.title}</h3> : null}
-                  {entry.lead ? <p className={`mt-1 ${workspaceBodyClassName}`}>{entry.lead}</p> : null}
+                  {entry.lead ? <p className={`mt-1 ${workspaceBodyMutedClassName}`}>{entry.lead}</p> : null}
                   {entry.formula ? <FormulaBlock tex={entry.formula} /> : null}
                   {entry.items && entry.items.length > 0 ? <DefinitionList items={entry.items} heading={t("docs.explanations")} /> : null}
                 </article>
               ))}
             </div>
           </WorkspaceSection>
+          </div>
         ))}
+        <section className="rounded-lg border border-[var(--hg-hairline-2)] bg-[var(--hg-surface-2)] p-4">
+          <p className={workspaceContentValueClassName}>HydroGuide er et støtteverktøy.</p>
+          <p className={`mt-1 ${workspaceBodyClassName}`}>
+            Formelgrunnlaget skal kontrolleres mot prosjektkrav og faglig vurdering før endelig bruk.
+          </p>
+        </section>
       </div>
     </main>
   );

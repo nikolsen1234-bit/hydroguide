@@ -5,32 +5,73 @@
 @tailwind utilities;
 
 :root {
-  color: #020617;
-  background-color: #f8fafc;
+  color: var(--hg-ink);
+  background-color: var(--hg-bg);
   font-size: var(--hg-type-root-size);
   --hg-type-font-family: "Manrope Variable", Manrope, system-ui, sans-serif;
+  --hg-type-mono-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --hg-type-root-size: 14.5px;
-  --hg-type-page-title-size: 1.9rem;
-  --hg-type-page-title-leading: 1.02;
-  --hg-type-section-title-size: 1.688rem;
-  --hg-type-section-title-leading: 1.08;
-  --hg-type-category-size: 1rem;
+  --hg-type-page-title-size: 1.655rem;
+  --hg-type-page-title-leading: 1.08;
+  --hg-type-section-title-size: 0.9rem;
+  --hg-type-section-title-leading: 1.2;
+  --hg-type-category-size: 0.9rem;
   --hg-type-category-leading: 1.25;
-  --hg-type-content-size: 0.935rem;
-  --hg-type-content-leading: 1.5rem;
-  --hg-type-ui-size: 0.875rem;
-  --hg-type-meta-size: 0.75rem;
+  --hg-type-content-size: 0.9rem;
+  --hg-type-content-leading: 1.55;
+  --hg-type-ui-size: 0.83rem;
+  --hg-type-meta-size: 0.69rem;
   --hg-type-chart-size: 12px;
   --hg-type-weight-medium: 500;
   --hg-type-weight-semibold: 600;
   --hg-type-weight-bold: 700;
   --hg-type-weight-extra: 800;
   --hg-type-tight-tracking: -0.02em;
-  --hg-type-title-tracking: -0.04em;
+  --hg-type-title-tracking: -0.03em;
   --hg-type-chart-tick-tracking: 0;
   --hg-type-label-tracking: 0.04em;
   --hg-chart-tooltip-title-size: 12px;
   --hg-chart-tooltip-text-size: 11px;
+  --hg-bg: #f6f7f9;
+  --hg-surface: #ffffff;
+  --hg-surface-2: #f8fafc;
+  --hg-ink: #0b1320;
+  --hg-ink-2: #1f2937;
+  --hg-muted: #64748b;
+  --hg-hairline: #e6e9ee;
+  --hg-hairline-2: #eef1f4;
+  --hg-accent: #1d4ed8;
+  --hg-accent-2: #2563eb;
+  --hg-accent-soft: #eef4ff;
+  --hg-ok: #047857;
+  --hg-ok-soft: #ecfdf5;
+  --hg-warn: #b45309;
+  --hg-warn-soft: #fffbeb;
+  --hg-rail: #0b1320;
+  --hg-rail-ink: #cfd6e2;
+  --hg-rail-ink-active: #ffffff;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --hg-bg: #0b1018;
+  --hg-surface: #10151f;
+  --hg-surface-2: #161c2a;
+  --hg-ink: #e6edf7;
+  --hg-ink-2: #c4cdde;
+  --hg-muted: #7e8aa3;
+  --hg-hairline: #1f2738;
+  --hg-hairline-2: #1a2030;
+  --hg-accent: #7aa2ff;
+  --hg-accent-2: #5a87f0;
+  --hg-accent-soft: #172244;
+  --hg-ok: #5eddb1;
+  --hg-ok-soft: #0e2a25;
+  --hg-warn: #f0b04a;
+  --hg-warn-soft: #2a1f0c;
+  --hg-rail: #070b13;
+  --hg-rail-ink: #a3afc6;
+  --hg-rail-ink-active: #f5f9ff;
 }
 
 * {
@@ -40,8 +81,132 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(160deg, #f8fafc 0%, #eef2ff 22%, #f8fafc 55%, #eef6ff 100%);
+  background: var(--hg-bg);
   font-family: var(--hg-type-font-family);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.hg-app-shell {
+  min-height: 100vh;
+  background: var(--hg-bg);
+  color: var(--hg-ink);
+}
+
+.hg-rail {
+  background: var(--hg-rail);
+  color: var(--hg-rail-ink);
+}
+
+.hg-workspace-frame {
+  background: var(--hg-bg);
+  border-color: var(--hg-hairline);
+}
+
+.hg-theme-button {
+  border: 1px solid var(--hg-hairline);
+  background: var(--hg-surface-2);
+  color: var(--hg-ink-2);
+}
+
+.hg-theme-button[aria-pressed="true"] {
+  border-color: var(--hg-accent-2);
+  background: var(--hg-accent-soft);
+  color: var(--hg-accent);
+}
+
+.hg-card {
+  background: var(--hg-surface);
+  border: 1px solid var(--hg-hairline);
+  border-radius: 10px;
+}
+
+.hg-card-header {
+  border-bottom: 1px solid var(--hg-hairline-2);
+}
+
+.hg-muted {
+  color: var(--hg-muted);
+}
+
+.hg-mono {
+  font-family: var(--hg-type-mono-family);
+}
+
+.hg-app-shell .bg-white {
+  background-color: var(--hg-surface) !important;
+}
+
+.hg-app-shell .bg-slate-50,
+.hg-app-shell .bg-slate-100,
+.hg-app-shell .bg-slate-200,
+.hg-app-shell .bg-slate-300 {
+  background-color: var(--hg-surface-2) !important;
+}
+
+.hg-app-shell .bg-brand-50 {
+  background-color: var(--hg-accent-soft) !important;
+}
+
+.hg-app-shell .bg-brand-600,
+.hg-app-shell .bg-brand-700,
+.hg-app-shell .bg-slate-900 {
+  background-color: var(--hg-accent) !important;
+}
+
+.hg-app-shell .border-slate-100,
+.hg-app-shell .border-slate-200,
+.hg-app-shell .border-slate-300,
+.hg-app-shell .border-brand-200,
+.hg-app-shell .border-brand-300 {
+  border-color: var(--hg-hairline) !important;
+}
+
+.hg-app-shell .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--hg-hairline) !important;
+}
+
+.hg-app-shell .text-slate-950,
+.hg-app-shell .text-slate-900,
+.hg-app-shell .text-slate-800,
+.hg-app-shell .text-slate-700 {
+  color: var(--hg-ink) !important;
+}
+
+.hg-app-shell .text-slate-600,
+.hg-app-shell .text-slate-500,
+.hg-app-shell .text-slate-400 {
+  color: var(--hg-muted) !important;
+}
+
+.hg-app-shell .text-brand-700,
+.hg-app-shell .text-brand-600,
+.hg-app-shell .text-sky-700,
+.hg-app-shell .text-sky-600 {
+  color: var(--hg-accent) !important;
+}
+
+.hg-app-shell .rounded-xl,
+.hg-app-shell .rounded-2xl,
+.hg-app-shell .rounded-3xl {
+  border-radius: 10px !important;
+}
+
+.hg-app-shell .shadow-sm,
+.hg-app-shell .shadow,
+.hg-app-shell .shadow-lg,
+.hg-app-shell .shadow-xl,
+.hg-app-shell .shadow-2xl {
+  box-shadow: none !important;
+}
+
+.hg-app-shell [style*="drop-shadow"] {
+  filter: none !important;
 }
 
 .leaflet-container,

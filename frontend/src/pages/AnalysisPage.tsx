@@ -10,18 +10,21 @@ import { fetchHourlyClimateYear } from "../lib/metClient";
 import { hourlyIrradianceForYear } from "../lib/solarEngine";
 import { simulateBattery, computeReliabilityMetrics } from "../lib/batterySimulator";
 import type { ReliabilityMetrics } from "../types";
-import WorkspaceActions from "../components/WorkspaceActions";
 import WorkspaceHeader from "../components/WorkspaceHeader";
 import WorkspaceSection from "../components/WorkspaceSection";
 import { API_ENDPOINTS, STORAGE_KEYS } from "../constants";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage, translateDynamic } from "../i18n";
 import {
+  workspaceBodyMutedClassName,
   workspaceContentCategoryClassName,
   workspaceContentTitleClassName,
   workspaceContentValueBaseClassName,
   workspaceContentValueClassName,
+  workspaceMetaClassName,
   workspacePageClassName,
+  workspacePrimaryButtonClassName,
+  workspaceSecondaryButtonClassName,
   workspaceTitleClassName
 } from "../styles/workspace";
 import { BackupSourceName, CostComparisonItem, MonthlyEnergyBalanceRow, ValidationErrors } from "../types";
@@ -32,7 +35,7 @@ import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
 
 const blockerLinkClass =
-  "rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-brand-700 transition hover:bg-brand-100";
+  "rounded-lg border border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] px-4 py-2 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-[var(--hg-accent)] transition hover:bg-[var(--hg-surface-2)]";
 
 const analysisMetricTitleClassName = workspaceContentCategoryClassName;
 const analysisMetricValueBaseClassName = workspaceContentValueBaseClassName;
@@ -46,7 +49,7 @@ const WHITESPACE_RE = /\s+/g;
 const MAIN_SOLUTION_PARTS_RE = /^(.*?)(?: med (.*?))?(?: \((.*)\))?$/;
 const QUESTION_KEY_RE = /^q\d+/i;
 
-const PVGIS_DETAILED_MODE_ENABLED = true;
+const PVGIS_DETAILED_MODE_ENABLED = false;
 
 async function getAiExportHash(promptText: string) {
   const storedHash = window.sessionStorage.getItem(STORAGE_KEYS.AI_EXPORT_HASH);
@@ -326,6 +329,73 @@ function ReserveSourceToggle({
   );
 }
 
+function AnalysisRunStrip({
+  hasResults,
+  disabled,
+  onRun
+}: {
+  hasResults: boolean;
+  disabled: boolean;
+  onRun: () => void;
+}) {
+  return (
+    <section className="hg-card flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className={workspaceMetaClassName}>Beregning</p>
+        <p className={workspaceBodyMutedClassName}>
+          {hasResults ? "Resultatene er beregnet fra gjeldende inndata." : "Fyll ut manglende felt for å åpne anbefaling og energibilde."}
+        </p>
+      </div>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onRun}
+        className="inline-flex items-center justify-center rounded-lg bg-[var(--hg-accent)] px-4 py-2 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-white transition hover:bg-[var(--hg-accent-2)] disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        Oppdater beregning
+      </button>
+    </section>
+  );
+}
+
+function AnalysisKpiStrip({
+  annualEnergyKWh,
+  loadKWh,
+  reserveHours,
+  autonomyDays
+}: {
+  annualEnergyKWh: number | null;
+  loadKWh: number | null;
+  reserveHours: number | null;
+  autonomyDays: number | null;
+}) {
+  const items = [
+    { label: "Solproduksjon", value: annualEnergyKWh, unit: "kWh", sub: "per år" },
+    { label: "Last", value: loadKWh, unit: "kWh", sub: "per år" },
+    { label: "Reserve", value: reserveHours, unit: "t", sub: "per år" },
+    { label: "Autonomi", value: autonomyDays, unit: "dager", sub: "batteribank" }
+  ];
+
+  return (
+    <section className="hg-card grid overflow-hidden sm:grid-cols-2 xl:grid-cols-4">
+      {items.map((item, index) => (
+        <div key={item.label} className={`p-4 ${index === 0 ? "" : "border-t border-[var(--hg-hairline-2)] sm:border-l sm:border-t-0"}`}>
+          <p className={workspaceMetaClassName}>{item.label}</p>
+          <p className="mt-2 flex items-baseline gap-1">
+            <span className="hg-mono text-[1.65rem] font-[var(--hg-type-weight-bold)] tracking-[var(--hg-type-title-tracking)] text-[var(--hg-ink)]">
+              {item.value === null ? "-" : formatNumber(item.value, item.unit === "dager" ? 1 : 0)}
+            </span>
+            <span className="text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]">
+              {item.unit}
+            </span>
+          </p>
+          <p className={workspaceBodyMutedClassName}>{item.sub}</p>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function countMatchingErrors(errors: ValidationErrors, predicate: (key: string) => boolean) {
   return Object.keys(errors).filter(predicate).length;
 }
@@ -333,8 +403,7 @@ function countMatchingErrors(errors: ValidationErrors, predicate: (key: string) 
 export default function AnalysisPage() {
   const { t, language } = useLanguage();
   const d = (value: string) => translateDynamic(value, language);
-  const { activeDraft, resetDraft, saveDraft, saveDraftMetadata } = useConfigurationContext();
-  const [, setErrors] = useState<ValidationErrors>({});
+  const { activeDraft, saveDraft, saveDraftMetadata } = useConfigurationContext();
   const [reserveSourceOverrides, setReserveSourceOverrides] = useState<Partial<Record<string, BackupSourceName>>>({});
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
@@ -434,11 +503,6 @@ export default function AnalysisPage() {
     }
 
     saveDraftMetadata();
-  };
-
-  const handleReset = () => {
-    resetDraft();
-    setErrors({});
   };
 
   const handleGenerateReport = async () => {
@@ -674,8 +738,8 @@ export default function AnalysisPage() {
     void runReliabilitySimulation();
   }, [reliabilityCanRun, reliabilityRunKey, showReliabilitySimulation]);
 
-  if (isGuidedMode && (!foundationReady || !recommendation)) {
-    const blockers = usesFoundationQuestions
+  const foundationBlockers =
+    isGuidedMode && (!foundationReady || !recommendation) && usesFoundationQuestions
       ? [
           {
             label: t("main.title"),
@@ -684,33 +748,6 @@ export default function AnalysisPage() {
           }
         ].filter((item) => item.count > 0)
       : [];
-
-    return (
-      <main className={workspacePageClassName}>
-        <WorkspaceHeader title={t("analysis.title")} />
-
-        <WorkspaceSection
-          title={t("analysis.recommendation")}
-          description={t("analysis.completeData")}
-        >
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-3">
-              {blockers.map((blocker) => (
-                <NavLink key={blocker.label} to={blocker.path} className={blockerLinkClass}>
-                  {`${blocker.label}: ${blocker.count} ${t("analysis.fields")}`}
-                </NavLink>
-              ))}
-            </div>
-            <div className={`border-t border-slate-200 pt-4 ${analysisMetricValueClassName}`}>
-              {t("analysis.resultPageOpen")}
-            </div>
-          </div>
-        </WorkspaceSection>
-
-        <WorkspaceActions onReset={handleReset} onSave={handleSave} />
-      </main>
-    );
-  }
 
   const solutionLead = recommendation ? splitMainSolution(d(recommendation.hovudloysing)) : null;
   const detailBlockers = [
@@ -736,6 +773,7 @@ export default function AnalysisPage() {
       count: countMatchingErrors(detailErrors, (key) => key.startsWith("equipmentRows."))
     }
   ].filter((item) => item.count > 0);
+  const missingBlockers = foundationBlockers.length > 0 ? foundationBlockers : detailBlockers;
 
   const systemSummaryItems = derivedResults
     ? [
@@ -787,7 +825,40 @@ export default function AnalysisPage() {
 
   return (
     <main className={workspacePageClassName}>
-      <WorkspaceHeader title={t("analysis.title")} />
+      <WorkspaceHeader
+        title={t("analysis.title")}
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!foundationReady || !hasSystemDetails}
+              className={`${workspaceSecondaryButtonClassName} disabled:cursor-not-allowed disabled:opacity-45`}
+            >
+              Kjør på nytt
+            </button>
+            {showRecommendationContent && recommendation ? (
+              <button
+                type="button"
+                disabled={isGeneratingReport}
+                onClick={handleGenerateReport}
+                className={`${workspacePrimaryButtonClassName} disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                {isGeneratingReport ? "Genererer..." : "Generer rapport"}
+              </button>
+            ) : null}
+          </>
+        }
+      />
+
+      <AnalysisRunStrip hasResults={Boolean(derivedResults)} disabled={!foundationReady || !hasSystemDetails} onRun={handleSave} />
+
+      <AnalysisKpiStrip
+        annualEnergyKWh={visibleAnnualTotals ? visibleAnnualTotals.annualSolarProductionKWh : null}
+        loadKWh={visibleAnnualTotals ? visibleAnnualTotals.annualLoadDemandKWh : null}
+        reserveHours={visibleAnnualTotals ? visibleAnnualTotals.annualSecondaryRuntimeHours : null}
+        autonomyDays={derivedResults ? derivedResults.systemRecommendation.batteryAutonomyDays : null}
+      />
 
       {derivedResults ? (
         <>
@@ -1006,33 +1077,19 @@ export default function AnalysisPage() {
             </WorkspaceSection>
           ) : null}
 
-          {showRecommendationContent && recommendation ? (
-            <WorkspaceSection title="Rapport">
-              <div className="flex flex-wrap items-center gap-4">
-                <button
-                  type="button"
-                  disabled={isGeneratingReport}
-                  onClick={handleGenerateReport}
-                  className="rounded-xl bg-brand-600 px-5 py-2.5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-white transition hover:bg-brand-700 disabled:opacity-50"
-                >
-                  {isGeneratingReport ? "Genererer..." : "Generer rapport med AI-underbygging"}
-                </button>
-                {reportError ? <p className={`${analysisMetricValueClassName} text-red-600`}>{reportError}</p> : null}
-              </div>
-            </WorkspaceSection>
-          ) : null}
+          {reportError ? <p className={`${analysisMetricValueClassName} text-red-600`}>{reportError}</p> : null}
         </>
       ) : (
         <>
           {showRecommendationContent ? recommendationSection : null}
 
-          {isGuidedMode && detailBlockers.length > 0 ? (
+          {isGuidedMode && missingBlockers.length > 0 ? (
             <WorkspaceSection
               title={t("analysis.missingForFull")}
               description={t("analysis.missingForFullDesc")}
             >
               <div className="flex flex-wrap gap-3">
-                {detailBlockers.map((blocker) => (
+                {missingBlockers.map((blocker) => (
                   <NavLink key={blocker.label} to={blocker.path} className={blockerLinkClass}>
                     {`${blocker.label}: ${blocker.count} ${t("analysis.fields")}`}
                   </NavLink>
@@ -1042,8 +1099,6 @@ export default function AnalysisPage() {
           ) : null}
         </>
       )}
-
-      <WorkspaceActions onReset={handleReset} onSave={handleSave} />
     </main>
   );
 }

@@ -1,176 +1,115 @@
 import WorkspaceHeader from "../components/WorkspaceHeader";
 import WorkspaceSection from "../components/WorkspaceSection";
-import { useLanguage } from "../i18n";
 import {
-  workspaceBodyClassName,
-  workspaceBodyStrongClassName,
+  workspaceBodyMutedClassName,
+  workspaceContentValueClassName,
   workspaceMetaClassName,
-  workspacePageClassName,
-  workspacePrimaryButtonClassName
+  workspacePageClassName
 } from "../styles/workspace";
 
 const teamMembers = [
-  { name: "Nikolas Olsen", titleKey: "contact.projectLeader" as const, email: "nikolas.o@live.com", imageSrc: "https://files.hydroguide.no/nikolas-olsen.jpg" },
-  { name: "Dan Roald Larsen", titleKey: "contact.placeholder" as const, email: "placeholder@epost.no" },
-  { name: "Jinn-Marie Bakke", titleKey: "contact.placeholder" as const, email: "placeholder@epost.no" },
-  { name: "Espen Espenland", titleKey: "contact.placeholder" as const, email: "placeholder@epost.no" }
+  { name: "Nikolas Olsen", role: "Prosjektleder", email: "nikolas.o@live.com" },
+  { name: "Dan Roald Larsen", role: "Hydraulikk", email: "placeholder@epost.no" },
+  { name: "Jinn-Marie Bakke", role: "Kraftsystem", email: "placeholder@epost.no" },
+  { name: "Espen Espenland", role: "Kommunikasjon", email: "placeholder@epost.no" }
 ];
 
-function TeamMemberCard({
-  name,
-  title,
-  email,
-  imageSrc
-}: {
-  name: string;
-  title: string;
-  email: string;
-  imageSrc?: string;
-}) {
-  return (
-    <article className="space-y-4">
-      <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-[2rem] bg-slate-100 text-slate-500">
-        {imageSrc ? (
-          <img src={imageSrc} alt={name} className="h-full w-full object-cover" />
-        ) : (
-          <svg viewBox="0 0 24 24" fill="none" className="h-14 w-14 stroke-current" strokeWidth="1.8" aria-hidden="true">
-            <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M5 20a7 7 0 0 1 14 0" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
-      </div>
-      <div>
-        <p className={workspaceBodyStrongClassName}>{name}</p>
-        <p className={`mt-1 ${workspaceMetaClassName}`}>{title}</p>
-        <a href={`mailto:${email}`} className={`mt-1.5 inline-block text-brand-700 ${workspaceBodyClassName}`}>
-          {email}
-        </a>
-      </div>
-    </article>
-  );
+const resources = [
+  { name: "Kalkulator", meta: "Eksempelfil · TXT", href: "/Kalkulator.txt", download: "Kalkulator.txt" },
+  { name: "HydroGuide", meta: "Eksempelfil · TXT", href: "/HydroGuide.txt", download: "HydroGuide.txt" },
+  { name: "Metodegrunnlag", meta: "Dokumentasjon", href: "/dokumentasjon" },
+  { name: "NVE Atlas", meta: "Ekstern lenke", href: "https://atlas.nve.no/" }
+];
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("");
 }
 
-function DownloadIcon({ className = "h-5 w-5" }: { className?: string }) {
+function Icon({ path }: { path: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      <path
-        d="M12 4.75v9.5m0 0 4-4m-4 4-4-4M5 16.75v1.5A1.75 1.75 0 0 0 6.75 20h10.5A1.75 1.75 0 0 0 19 18.25v-1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 stroke-current" strokeWidth="1.7" aria-hidden="true">
+      <path d={path} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-export default function ContactPage() {
-  const { t } = useLanguage();
+const downloadIcon =
+  "M12 4.75v9.5m0 0 4-4m-4 4-4-4M5 16.75v1.5A1.75 1.75 0 0 0 6.75 20h10.5A1.75 1.75 0 0 0 19 18.25v-1.5";
+const infoIcon = "M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z";
 
+export default function ContactPage() {
   return (
     <main className={workspacePageClassName}>
-      <WorkspaceHeader title={t("contact.title")} />
+      <WorkspaceHeader title="Info" />
 
-      <WorkspaceSection title={t("contact.gettingStarted")}>
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
-          <div className="w-full space-y-5 lg:w-1/2">
-            <p className={`max-w-3xl ${workspaceBodyClassName}`}>
-              {t("contact.gettingStartedDesc")}
+      <div className="flex flex-col gap-4">
+        <WorkspaceSection title="Teamet" description="Fagskulen Vestland · 2026">
+          <div>
+            <p className={`max-w-2xl ${workspaceBodyMutedClassName}`}>
+              Hovedprosjekt i elektroautomasjon, utviklet av fire studenter med fagbakgrunn i hydraulikk,
+              kraftsystem og kommunikasjon.
             </p>
-            <ol className={`space-y-2 ${workspaceBodyClassName}`}>
-              <li>{t("contact.gettingStartedStep1")}</li>
-              <li>{t("contact.gettingStartedStep2")}</li>
-              <li>{t("contact.gettingStartedStep3")}</li>
-            </ol>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {teamMembers.map((member) => (
+                <article key={member.name} className="flex min-w-0 items-center gap-4 rounded-lg border border-[var(--hg-hairline)] p-4">
+                  <div className="hg-mono flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[0.82rem] font-[var(--hg-type-weight-bold)] text-[var(--hg-accent)]">
+                    {initials(member.name)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className={workspaceContentValueClassName}>{member.name}</p>
+                    <p className="hg-mono mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted)]">{member.role}</p>
+                    <a href={`mailto:${member.email}`} className="mt-1 block truncate text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-medium)] text-[var(--hg-accent)]">
+                      {member.email}
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
-          <div className="flex w-full flex-col items-start gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:flex-shrink-0 lg:flex-col lg:pt-1">
-            <a
-              href="/Kalkulator.txt"
-              download="Kalkulator.txt"
-              className={`inline-flex ${workspacePrimaryButtonClassName} gap-2`}
-            >
-              <DownloadIcon className="h-4 w-4" />
-              Kalkulator
-            </a>
-            <a
-              href="/HydroGuide.txt"
-              download="HydroGuide.txt"
-              className={`inline-flex ${workspacePrimaryButtonClassName} gap-2`}
-            >
-              <DownloadIcon className="h-4 w-4" />
-              HydroGuide
-            </a>
-            {/*
-            <a
-              href="/PVGIS_6.0_HydroGuide_Beta.txt"
-              download="PVGIS_6.0_HydroGuide_Beta.txt"
-              className={`inline-flex ${workspacePrimaryButtonClassName} gap-2`}
-            >
-              <DownloadIcon className="h-4 w-4" />
-              PVGIS 6.0 + HydroGuide (Beta)
-            </a>
-            */}
+        </WorkspaceSection>
+
+        <WorkspaceSection title="Ressurser" description="Nedlastinger og referanser">
+          <div>
+            {resources.map((resource, index) => (
+              <a
+                key={resource.name}
+                href={resource.href}
+                download={resource.download}
+                className={`flex items-center justify-between gap-4 px-1 py-3 transition hover:bg-[var(--hg-surface-2)] ${
+                  index === 0 ? "" : "border-t border-[var(--hg-hairline-2)]"
+                }`}
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className="text-[var(--hg-accent)]">
+                    <Icon path={downloadIcon} />
+                  </span>
+                  <span className={workspaceContentValueClassName}>{resource.name}</span>
+                </span>
+                <span className="hg-mono shrink-0 text-right text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">
+                  {resource.meta}
+                </span>
+              </a>
+            ))}
           </div>
-        </div>
-      </WorkspaceSection>
+        </WorkspaceSection>
 
-      <WorkspaceSection title={t("contact.aboutTitle")}>
-
-        <p className={`max-w-3xl ${workspaceBodyClassName}`}>
-          {t("contact.aboutDesc")}
-        </p>
-        <ul className={`mt-4 max-w-3xl space-y-2.5 ${workspaceBodyClassName}`}>
-          <li className="flex gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-            <span>{t("contact.aboutBullet1")}</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-            <span>{t("contact.aboutBullet2")}</span>
-          </li>
-          <li className="flex gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-            <span>{t("contact.aboutBullet3")}</span>
-          </li>
-        </ul>
-        <p className={`mt-4 max-w-3xl ${workspaceBodyClassName}`}>
-          {t("contact.aboutDataIntro")}
-        </p>
-        <p className={`mt-3 max-w-3xl ${workspaceBodyClassName}`}>
-          {t("contact.aboutDataNVE")}
-        </p>
-        <p className={`mt-3 max-w-3xl ${workspaceBodyClassName}`}>
-          {t("contact.aboutDataSim")}
-        </p>
-        <p className={`mt-3 max-w-3xl ${workspaceBodyClassName}`}>
-          {t("contact.aboutDataSimple")}
-        </p>
-      </WorkspaceSection>
-
-      <WorkspaceSection title={t("contact.contactTitle")}>
-        <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
-          {teamMembers.map((member) => (
-            <TeamMemberCard
-              key={member.name}
-              name={member.name}
-              title={t(member.titleKey)}
-              email={member.email}
-              imageSrc={member.imageSrc}
-            />
-          ))}
-        </div>
-      </WorkspaceSection>
-
-      <WorkspaceSection title={t("contact.responsibilityTitle")}>
-        <p className={`max-w-3xl ${workspaceBodyClassName}`}>
-          {t("contact.responsibilityText")}
-        </p>
-      </WorkspaceSection>
-
-      <WorkspaceSection title={t("contact.licenseTitle")}>
-        <p className={`max-w-3xl ${workspaceBodyClassName}`}>
-          {t("contact.licenseText")}
-        </p>
-      </WorkspaceSection>
-
+        <section className="flex gap-3 rounded-lg border border-[var(--hg-hairline-2)] bg-[var(--hg-surface-2)] p-4">
+          <span className="mt-0.5 text-[var(--hg-muted)]">
+            <Icon path={infoIcon} />
+          </span>
+          <div>
+            <p className={workspaceMetaClassName}>Ansvar</p>
+            <p className={`mt-1 ${workspaceBodyMutedClassName}`}>
+              HydroGuide er veiledende og erstatter ikke faglig skjønn. Resultater, anbefalinger og eksportert
+              materiale må kontrolleres før de brukes i prosjektering eller myndighetsdialog.
+            </p>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

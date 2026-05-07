@@ -19,8 +19,8 @@ export type SolarRadiationMode = "manual" | "auto";
 /**
  * "standard"  - Calculator mode.
  * "combined"  - HydroGuide mode.
- * "detailed"  - Dormant PVGIS mode. Keep the type member so stored configs and
- *               commented PVGIS code remain easy to reactivate later.
+ * "detailed"  - Legacy import value. Runtime normalization maps this to
+ *               "combined" because the public UI no longer supports PVGIS.
  */
 export type EngineMode = "standard" | "detailed" | "combined";
 

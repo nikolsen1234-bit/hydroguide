@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { BooleanChoiceField, NumberField, SelectField } from "../components/FormFields";
-import WorkspaceActions, { HelpTip } from "../components/WorkspaceActions";
+import { HelpTip } from "../components/WorkspaceActions";
 import WorkspaceHeader from "../components/WorkspaceHeader";
 import WorkspaceSection from "../components/WorkspaceSection";
 import { MONTH_KEYS, MONTH_LABELS } from "../constants";
@@ -60,22 +60,33 @@ function buildSolarDrafts(values: Record<MonthKey, number | "">): Record<MonthKe
 type ValidationErrors = ReturnType<typeof validateConfiguration>;
 
 const SOLAR_MONTH_ROWS: MonthKey[][] = [MONTH_KEYS.slice(0, 4), MONTH_KEYS.slice(4, 8), MONTH_KEYS.slice(8, 12)];
-const PVGIS_DETAILED_MODE_ENABLED = true;
+const PVGIS_DETAILED_MODE_ENABLED = false;
 
 export default function SystemPage() {
-  const { activeDraft, resetDraft, saveDraftMetadata } = useConfigurationContext();
+  const { activeDraft, saveDraftMetadata } = useConfigurationContext();
   const { t, language } = useLanguage();
-  const errors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const validationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
+  const errors = showValidationErrors ? validationErrors : {};
+  const handleSave = () => {
+    setShowValidationErrors(true);
+    saveDraftMetadata();
+  };
 
   return (
     <main className={workspacePageClassName}>
-      <WorkspaceHeader title={t("system.title")} />
+      <WorkspaceHeader
+        title={t("system.title")}
+        actions={
+          <button type="button" onClick={handleSave} className={workspacePrimaryButtonClassName}>
+            {t("shared.save")}
+          </button>
+        }
+      />
       <SolarSettingsSection errors={errors} />
       <BatterySettingsSection errors={errors} />
       <ReserveSourceSection errors={errors} />
       {activeDraft.systemParameters.hasBackupSource === true ? <SecondarySourcesSection errors={errors} /> : null}
-
-      <WorkspaceActions onReset={resetDraft} onSave={saveDraftMetadata} />
     </main>
   );
 }
@@ -173,7 +184,7 @@ function SolarSettingsSection({ errors }: { errors: ValidationErrors }) {
   return (
     <WorkspaceSection
       title={t("system.solarTitle")}
-      description={t("system.solarDescription")}
+      description="Panel + månedsserie"
       actions={supportsSolarAuto ? <SolarRadiationModeToggle /> : undefined}
     >
         <SolarSectionLayout
@@ -250,7 +261,7 @@ function BatterySettingsSection({ errors }: { errors: ValidationErrors }) {
     activeDraft.systemParameters.batteryMode === "" ? t("system.batteryModeHelper") : undefined;
 
   return (
-    <WorkspaceSection title={t("system.batteryTitle")} description={t("system.batteryDescription")}>
+    <WorkspaceSection title={t("system.batteryTitle")} description="Spenning, kapasitet og DoD">
       <div className="grid gap-5 md:grid-cols-2">
         <NumberField
           label={t("system.nominalVoltage")}
@@ -303,8 +314,8 @@ function ReserveSourceSection({ errors }: { errors: ValidationErrors }) {
   const { t } = useLanguage();
 
   return (
-    <WorkspaceSection title={t("system.reserveSourceTitle")} description={t("system.reserveSourceDescription")}>
-      <div className="max-w-xl">
+    <WorkspaceSection title={t("system.reserveSourceTitle")} description="Oppgi om systemet skal ha reservekilde">
+      <div className="max-w-3xl">
         <BooleanChoiceField
           label={t("system.hasReserveSource")}
           value={activeDraft.systemParameters.hasBackupSource}
@@ -321,7 +332,7 @@ function SecondarySourcesSection({ errors }: { errors: ValidationErrors }) {
   const { t } = useLanguage();
 
   return (
-    <WorkspaceSection title={t("system.secondarySourceTitle")} description={t("system.secondarySourceDescription")}>
+    <WorkspaceSection title={t("system.secondarySourceTitle")} description="Kostnad, drift og utslipp">
       <div className="grid gap-6 xl:grid-cols-2">
         {[
           { section: "fuelCell" as const, titleKey: "system.fuelCell" as TranslationKey },

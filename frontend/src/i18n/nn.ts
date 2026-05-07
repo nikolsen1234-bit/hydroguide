@@ -27,11 +27,11 @@ export const nn: Translations = {
   "welcome.and": "og",
   "welcome.modeTitle": "Velg analysemodus",
   "welcome.modeStandardTitle": "Kalkulator",
-  "welcome.modeStandardDesc": "Bruker HydroGuides egne formler for en rask og oversiktlig vurdering basert på prosjektets nøkkeldata.",
+  "welcome.modeStandardDesc": "Rask beregningsstøtte basert på HydroGuide egne formler og prosjektets nøkkeldata.",
   "welcome.modeDetailedTitle": "PVGIS 6.0 + HydroGuide (Beta)",
   "welcome.modeDetailedDesc": "Kombinerer HydroGuide med PVGIS 6.0 for en mer grundig analyse med timeverdier, horisontprofil og klimadata.",
   "welcome.modeCombinedTitle": "HydroGuide",
-  "welcome.modeCombinedDesc": "Gir et strukturert prosjektgrunnlag med relevante spørsmål og et godt utgangspunkt for videre vurderinger.",
+  "welcome.modeCombinedDesc": "Strukturert veiledning til vurdering av minstevannføringsarrangement.",
 
   // Overview Page
   "overview.title": "Oversikt",

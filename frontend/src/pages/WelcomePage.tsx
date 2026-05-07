@@ -5,7 +5,6 @@ import type { EngineMode } from "../types";
 import {
   workspaceBodyClassName,
   workspaceFieldLabelClassName,
-  workspaceContentValueClassName,
   workspaceMetaClassName,
   workspaceTitleClassName
 } from "../styles/workspace";
@@ -115,7 +114,7 @@ export default function WelcomePage() {
                         <span className={`block ${workspaceFieldLabelClassName} ${active ? "text-sky-700" : "text-[#163447]"}`}>
                           {t(`welcome.mode${key.charAt(0).toUpperCase() + key.slice(1)}Title` as any)}
                         </span>
-                        <span className={`mt-0.5 block ${workspaceContentValueClassName} text-slate-600`}>
+                        <span className={`mt-1 block ${workspaceBodyClassName} text-[#36586c]`}>
                           {t(`welcome.mode${key.charAt(0).toUpperCase() + key.slice(1)}Desc` as any)}
                         </span>
                       </div>

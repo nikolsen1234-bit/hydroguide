@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import fallbackBuildInfo from "../generated/build-info.json";
 import { useLanguage } from "../i18n";
-import { workspaceBodyMutedClassName, workspaceMetaMutedClassName } from "../styles/workspace";
 
 type BuildInfo = {
   updatedAt?: string | null;
@@ -57,8 +56,12 @@ export default function BuildInfoBadge() {
 
   return (
     <div className="flex h-[74px] flex-col justify-end px-3 pb-2 text-center">
-      <p className={workspaceMetaMutedClassName}>{t("shared.lastUpdated")}</p>
-      <p className={`mt-1 min-h-[1.25rem] ${workspaceBodyMutedClassName}`}>{formatBuildTimestamp(buildInfo.updatedAt)}</p>
+      <p className="hg-mono text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-medium)] uppercase tracking-[0.14em] text-[var(--hg-rail-ink)]">
+        {t("shared.lastUpdated")}
+      </p>
+      <p className="mt-1 min-h-[1.25rem] text-[length:var(--hg-type-content-size)] leading-[var(--hg-type-content-leading)] text-[var(--hg-rail-ink)]">
+        {formatBuildTimestamp(buildInfo.updatedAt)}
+      </p>
     </div>
   );
 }

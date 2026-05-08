@@ -169,16 +169,21 @@ export const EMPTY_RADIO_LINK_CONFIGURATION: RadioLinkConfiguration = {
   pointA: {
     coordinate: "",
     antennaHeight: "",
-    heightScale: DEFAULT_HEIGHT_SCALE
+    heightScale: DEFAULT_HEIGHT_SCALE,
+    antennaGainDbi: 8
   },
   pointB: {
     coordinate: "",
     antennaHeight: "",
-    heightScale: DEFAULT_HEIGHT_SCALE
+    heightScale: DEFAULT_HEIGHT_SCALE,
+    antennaGainDbi: 12
   },
   frequencyMHz: 450,
   fresnelFactor: 0.6,
   kFactor: DEFAULT_K_FACTOR,
   polarization: DEFAULT_POLARIZATION,
-  rainFactor: 25
+  rainFactor: 25,
+  txPowerDbm: 27,
+  rxSensitivityDbm: -110,
+  lineLossDb: 3.5
 };

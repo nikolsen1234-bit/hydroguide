@@ -76,14 +76,14 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
         icon: "M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437"
       },
       {
-        to: "/analyse",
-        labelKey: "nav.analysis",
-        icon: "M3 3v18h18M7 14v3m4-6v6m4-8v8m4-10v10"
-      },
-      {
         to: "/radiolinje",
         labelKey: "nav.radioLink",
         icon: "M4.9 16.1C1 12.2 1 5.8 4.9 1.9M7.8 4.7a6.14 6.14 0 0 0-.8 7.5M16.2 4.8c2 2 2.26 5.11.8 7.47M19.1 1.9a9.96 9.96 0 0 1 0 14.1M10 9a2 2 0 1 0 4 0 2 2 0 0 0-4 0ZM9.5 18h5M8 22l4-11 4 11"
+      },
+      {
+        to: "/analyse",
+        labelKey: "nav.analysis",
+        icon: "M3 3v18h18M7 14v3m4-6v6m4-8v8m4-10v10"
       }
     ]
   },
@@ -177,17 +177,18 @@ function SidebarContent({
 }) {
   const { t } = useLanguage();
   const { activeDraft } = useConfigurationContext();
+  const isCalculatorMode = (activeDraft.engineMode ?? "standard") === "standard";
 
   return (
     <>
       <div className="shrink-0">
-        <div className="flex h-7 items-center gap-2">
+        <div className="relative flex h-7 items-center">
           <Link to="/" aria-label={t("app.goToWelcome")} className="block h-7 min-w-0 flex-1 px-1">
-            <HydroGuideLogo variant="white" className="max-h-7 object-contain object-left" />
+            <HydroGuideLogo
+              variant="white"
+              className="absolute left-1 top-1/2 h-14 w-auto max-w-none -translate-y-1/2 origin-[left_center] object-contain object-left"
+            />
           </Link>
-          <span className="hg-mono rounded border border-[#2b3650] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[#9ca8c0]">
-            v2.4
-          </span>
         </div>
         {titleId ? <p id={titleId} className="sr-only">HydroGuide</p> : null}
         <div className="mt-5 h-px bg-[#1a2438]" />
@@ -195,10 +196,10 @@ function SidebarContent({
 
       <div className="h-[52px] shrink-0 rounded-lg border border-[#1f2c45] bg-[#10192b] px-3 py-2">
         <p className="truncate text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-bold)] text-white">
-          {activeDraft.name.trim() || t("shared.unnamed")}
+          {t("overview.projectName")}
         </p>
         <p className="hg-mono mt-1 truncate text-[length:var(--hg-type-meta-size)] text-[#7e8ca6]">
-          {activeDraft.locationPlaceId ? `NVE ${activeDraft.locationPlaceId}` : "NVE ikke valgt"}
+          {activeDraft.name.trim() || t("shared.unnamed")}
         </p>
       </div>
 
@@ -210,9 +211,11 @@ function SidebarContent({
                 {group.label}
               </p>
               <div className="space-y-1">
-                {group.items.map((item) => (
-                  <SideTab key={item.labelKey} to={item.to} labelKey={item.labelKey} icon={item.icon} onClick={onNavigate} />
-                ))}
+                {group.items
+                  .filter((item) => !(isCalculatorMode && item.to === "/prosjektgrunnlag"))
+                  .map((item) => (
+                    <SideTab key={item.labelKey} to={item.to} labelKey={item.labelKey} icon={item.icon} onClick={onNavigate} />
+                  ))}
               </div>
             </div>
           ))}
@@ -220,10 +223,6 @@ function SidebarContent({
       </div>
 
       <div className="min-h-[134px] shrink-0 space-y-3">
-        <div className="hg-mono flex items-center gap-2 text-[10px] text-[#7e8ca6]">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          <span>Norsk modus</span>
-        </div>
         <ThemeToggle theme={theme} setTheme={setTheme} />
         <BuildInfoBadge />
       </div>
@@ -239,6 +238,8 @@ export default function App() {
   const drawerRef = useRef<HTMLElement>(null);
   const appShellRef = useRef<HTMLDivElement>(null);
   const { t, language, setLanguage } = useLanguage();
+  const { activeDraft } = useConfigurationContext();
+  const isCalculatorMode = (activeDraft.engineMode ?? "standard") === "standard";
 
   const setTheme = (nextTheme: ThemeMode) => {
     setThemeState(nextTheme);
@@ -407,8 +408,8 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<WelcomePage />} />
                 <Route path="/oversikt" element={<OverviewPage />} />
-                <Route path="/prosjektgrunnlag" element={<MainPage />} />
-                <Route path="/projectbasis" element={<MainPage />} />
+                <Route path="/prosjektgrunnlag" element={isCalculatorMode ? <Navigate to="/oversikt" replace /> : <MainPage />} />
+                <Route path="/projectbasis" element={isCalculatorMode ? <Navigate to="/oversikt" replace /> : <MainPage />} />
                 <Route path="/parametere" element={<SystemPage />} />
                 <Route path="/systems" element={<SystemPage />} />
                 <Route path="/komponenter" element={<ComponentsPage />} />

@@ -33,6 +33,8 @@ export interface RadioLinkAnalysis {
   linkDistanceKm: number;
   freeSpaceLossDb: number;
   rainAttenuationDb: number;
+  estimatedMarginDb: number;
+  receivedPowerDbm: number;
   azimuthA: number;
   azimuthB: number;
   elevationA: number;
@@ -128,6 +130,12 @@ export async function runRadioLinkAnalysis(input: RadioLinkFormState): Promise<R
     throw new Error("Regnfaktor må være 0 eller mer.");
   }
 
+  const antennaGainA = toEditableNumber(input.pointA.antennaGainDbi);
+  const antennaGainB = toEditableNumber(input.pointB.antennaGainDbi);
+  const txPowerDbm = toEditableNumber(input.txPowerDbm);
+  const rxSensitivityDbm = toEditableNumber(input.rxSensitivityDbm);
+  const lineLossDb = toEditableNumber(input.lineLossDb);
+
   const terrainDistance = calculateDistance(pointA.lat, pointA.lng, pointB.lat, pointB.lng);
 
   if (!Number.isFinite(terrainDistance) || terrainDistance <= 0) {
@@ -164,6 +172,10 @@ export async function runRadioLinkAnalysis(input: RadioLinkFormState): Promise<R
     input.rainFactor
   );
 
+  const freeSpaceLossDb = 20 * (Math.log((4 * Math.PI * terrainDistance) / waveLength) / Math.LN10);
+  const rainAttenuationDb = Math.abs(rainAttenuation);
+  const receivedPowerDbm = txPowerDbm + antennaGainA + antennaGainB - freeSpaceLossDb - rainAttenuationDb - lineLossDb;
+
   return {
     pointA,
     pointB,
@@ -174,8 +186,10 @@ export async function runRadioLinkAnalysis(input: RadioLinkFormState): Promise<R
     rainFactor: input.rainFactor,
     terrainDistanceKm: terrainDistance / 1000,
     linkDistanceKm: linkDistance / 1000,
-    freeSpaceLossDb: 20 * (Math.log((4 * Math.PI * terrainDistance) / waveLength) / Math.LN10),
-    rainAttenuationDb: Math.abs(rainAttenuation),
+    freeSpaceLossDb,
+    rainAttenuationDb,
+    estimatedMarginDb: receivedPowerDbm - rxSensitivityDbm,
+    receivedPowerDbm,
     azimuthA: azimuth[0],
     azimuthB: azimuth[1],
     elevationA: degrees[0],
@@ -243,6 +257,10 @@ function toFiniteNumber(value: string) {
   const normalized = value.trim().replace(",", ".");
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toEditableNumber(value: number | "") {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
 function getMinimumClearance(reference: number[], terrain: number[]) {

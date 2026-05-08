@@ -11,6 +11,7 @@ import {
 export default function WorkspaceSection({
   title,
   description,
+  kicker,
   actions,
   collapsible = false,
   defaultExpanded = true,
@@ -18,6 +19,7 @@ export default function WorkspaceSection({
 }: {
   title: ReactNode;
   description?: string;
+  kicker?: string;
   actions?: ReactNode;
   collapsible?: boolean;
   defaultExpanded?: boolean;
@@ -30,6 +32,11 @@ export default function WorkspaceSection({
     <section className={`hg-card ${workspaceSectionClassName}`}>
       <div className={`hg-card-header px-4 py-3 ${workspaceSectionHeaderClassName}`}>
         <div className="min-w-0">
+          {kicker ? (
+            <p className="hg-mono mb-1 text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.18em] text-[var(--hg-ink-2)]">
+              {kicker}
+            </p>
+          ) : null}
           <div className={workspaceSectionHeadingRowClassName}>
             {typeof title === "string" ? <h2 className={workspaceSectionTitleClassName}>{title}</h2> : title}
             {useInlineMeta ? <p className={workspaceMetaClassName}>{description}</p> : null}

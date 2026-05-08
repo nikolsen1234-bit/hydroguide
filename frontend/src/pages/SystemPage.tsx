@@ -1,757 +1,503 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { BooleanChoiceField, NumberField, SelectField } from "../components/FormFields";
-import { HelpTip } from "../components/WorkspaceActions";
-import WorkspaceHeader from "../components/WorkspaceHeader";
-import WorkspaceSection from "../components/WorkspaceSection";
-import { MONTH_KEYS, MONTH_LABELS } from "../constants";
+import { useEffect, useRef, useState } from "react";
+import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
-import type { TranslationKey } from "../i18n";
-import { useSolarRadiationFetch } from "../hooks/useSolarRadiationFetch";
-import {
-  workspaceContentValueClassName,
-  workspaceFieldLabelClassName,
-  workspaceFieldLabelRowClassName,
-  workspaceInputClassName,
-  workspacePageClassName,
-  workspacePrimaryButtonClassName,
-  workspaceSubsectionTitleClassName
-} from "../styles/workspace";
-import { MonthKey } from "../types";
-import { validateConfiguration } from "../utils/validation";
+import { workspacePageClassName } from "../styles/workspace";
 
-const secondarySourceFields: Array<{
-  key: "purchaseCost" | "powerW" | "fuelConsumptionPerKWh" | "fuelPrice" | "lifetime" | "annualMaintenance";
-  labelKey: TranslationKey;
-  min: number;
-  step: number;
-  unit?: string;
-  unitKey?: TranslationKey;
-}> = [
-  { key: "purchaseCost", labelKey: "system.purchaseCost", min: 0, step: 1, unit: "kr" },
-  { key: "powerW", labelKey: "system.power", min: 0, step: 1, unit: "W" },
-  { key: "fuelConsumptionPerKWh", labelKey: "system.fuelConsumption", min: 0, step: 0.01, unit: "L/kWh" },
-  { key: "fuelPrice", labelKey: "system.fuelPrice", min: 0, step: 0.01, unit: "kr/L" },
-  { key: "lifetime", labelKey: "system.technicalLifetime", min: 0, step: 1, unitKey: "system.hours" },
-  { key: "annualMaintenance", labelKey: "system.annualMaintenance", min: 0, step: 1, unitKey: "system.krPerYear" }
-];
-
-function reserveCo2Field(section: "fuelCell" | "diesel") {
-  return section === "fuelCell"
-    ? { key: "co2Methanol" as const, labelKey: "system.co2FactorFuelCell" as TranslationKey }
-    : { key: "co2Diesel" as const, labelKey: "system.co2FactorDiesel" as TranslationKey };
-}
-
-function InlineInfo({ text }: { text: string }) {
-  return <HelpTip text={text} />;
-}
-
-function formatDecimalDraft(value: number | ""): string {
-  return value === "" ? "" : String(value);
-}
-
-function buildSolarDrafts(values: Record<MonthKey, number | "">): Record<MonthKey, string> {
-  return Object.fromEntries(MONTH_KEYS.map((month) => [month, formatDecimalDraft(values[month])])) as Record<
-    MonthKey,
-    string
-  >;
-}
-
-type ValidationErrors = ReturnType<typeof validateConfiguration>;
-
-const SOLAR_MONTH_ROWS: MonthKey[][] = [MONTH_KEYS.slice(0, 4), MONTH_KEYS.slice(4, 8), MONTH_KEYS.slice(8, 12)];
-const PVGIS_DETAILED_MODE_ENABLED = false;
+const MONTH_LABELS = ["JAN", "FEB", "MAR", "APR", "MAI", "JUN", "JUL", "AUG", "SEP", "OKT", "NOV", "DES"];
+const DEFAULT_MONTH_VALUES = [0.4, 1.0, 2.7, 4.2, 5.6, 5.2, 5.1, 4.1, 2.4, 1.2, 0.5, 0.3];
 
 export default function SystemPage() {
-  const { activeDraft, saveDraftMetadata } = useConfigurationContext();
-  const { t, language } = useLanguage();
-  const [showValidationErrors, setShowValidationErrors] = useState(false);
-  const validationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
-  const errors = showValidationErrors ? validationErrors : {};
-  const handleSave = () => {
-    setShowValidationErrors(true);
-    saveDraftMetadata();
-  };
+  const { saveDraftMetadata } = useConfigurationContext();
+  const { t } = useLanguage();
 
   return (
-    <main className={workspacePageClassName}>
+    <main className={`${workspacePageClassName} hg-tp hg-tp-fullheight flex h-full flex-col gap-3 !pb-3`}>
       <WorkspaceHeader
         title={t("system.title")}
         actions={
-          <button type="button" onClick={handleSave} className={workspacePrimaryButtonClassName}>
-            {t("shared.save")}
-          </button>
+          <>
+            <WorkspaceHeaderActionButton
+              icon={workspaceHeaderActionIcons.reset}
+              label="Tilbakestill"
+              onClick={() => {}}
+            />
+            <WorkspaceHeaderActionButton
+              icon={workspaceHeaderActionIcons.save}
+              label="Lagre"
+              onClick={() => saveDraftMetadata()}
+              primary
+            />
+          </>
         }
       />
-      <SolarSettingsSection errors={errors} />
-      <BatterySettingsSection errors={errors} />
-      <ReserveSourceSection errors={errors} />
-      {activeDraft.systemParameters.hasBackupSource === true ? <SecondarySourcesSection errors={errors} /> : null}
+
+      <KpiStrip />
+
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <EnergiSeksjon />
+        <ReserveSection />
+      </div>
     </main>
   );
 }
 
-function SolarSettingsSection({ errors }: { errors: ValidationErrors }) {
-  const { activeDraft, updateConfigSectionField } = useConfigurationContext();
-  const { t } = useLanguage();
-  const supportsSolarAuto = PVGIS_DETAILED_MODE_ENABLED && (activeDraft.engineMode ?? "standard") === "detailed";
-  const [solarRadiationDrafts, setSolarRadiationDrafts] = useState<Record<MonthKey, string>>(() =>
-    buildSolarDrafts(activeDraft.monthlySolarRadiation)
-  );
-  const focusedSolarMonthRef = useRef<MonthKey | null>(null);
-  const previousSolarDraftConfigIdRef = useRef(activeDraft.id);
-  const isAutoMode = supportsSolarAuto && activeDraft.solarRadiationSettings.mode === "auto";
-  const autoControls = useSolarAutoControls(supportsSolarAuto, errors);
-
-  useEffect(() => {
-    if (!supportsSolarAuto && activeDraft.solarRadiationSettings.mode === "auto") {
-      updateConfigSectionField("solarRadiationSettings", "mode", "manual");
-    }
-  }, [activeDraft.solarRadiationSettings.mode, supportsSolarAuto, updateConfigSectionField]);
-
-  useEffect(() => {
-    const configChanged = previousSolarDraftConfigIdRef.current !== activeDraft.id;
-    previousSolarDraftConfigIdRef.current = activeDraft.id;
-
-    setSolarRadiationDrafts((prev) => {
-      const next = buildSolarDrafts(activeDraft.monthlySolarRadiation);
-      const focusedMonth = focusedSolarMonthRef.current;
-
-      if (!configChanged && focusedMonth) {
-        next[focusedMonth] = prev[focusedMonth];
-      }
-
-      return next;
-    });
-  }, [activeDraft.id, activeDraft.monthlySolarRadiation]);
-
-  const handleSolarRadiationChange = (month: MonthKey, rawValue: string) => {
-    const normalized = rawValue.replace(",", ".");
-
-    if (!/^\d*(?:\.\d*)?$/.test(normalized)) {
-      return;
-    }
-
-    setSolarRadiationDrafts((prev) => ({
-      ...prev,
-      [month]: normalized
-    }));
-
-    if (normalized === "") {
-      updateConfigSectionField("monthlySolarRadiation", month, "");
-      return;
-    }
-
-    if (normalized === "." || normalized.endsWith(".")) {
-      return;
-    }
-
-    const numericValue = Number(normalized);
-    if (!Number.isNaN(numericValue)) {
-      updateConfigSectionField("monthlySolarRadiation", month, numericValue);
-    }
-  };
-
-  const handleSolarRadiationBlur = (month: MonthKey) => {
-    focusedSolarMonthRef.current = null;
-    const draftValue = solarRadiationDrafts[month];
-
-    if (draftValue === "" || draftValue === ".") {
-      setSolarRadiationDrafts((prev) => ({
-        ...prev,
-        [month]: ""
-      }));
-      updateConfigSectionField("monthlySolarRadiation", month, "");
-      return;
-    }
-
-    const numericValue = Number(draftValue);
-    if (Number.isNaN(numericValue)) {
-      setSolarRadiationDrafts((prev) => ({
-        ...prev,
-        [month]: formatDecimalDraft(activeDraft.monthlySolarRadiation[month])
-      }));
-      return;
-    }
-
-    setSolarRadiationDrafts((prev) => ({
-      ...prev,
-      [month]: draftValue
-    }));
-    updateConfigSectionField("monthlySolarRadiation", month, numericValue);
-  };
-
+function KpiStrip() {
   return (
-    <WorkspaceSection
-      title={t("system.solarTitle")}
-      description="Panel + månedsserie"
-      actions={supportsSolarAuto ? <SolarRadiationModeToggle /> : undefined}
-    >
-        <SolarSectionLayout
-          isAuto={isAutoMode}
-          panelFields={<SolarPanelFields errors={errors} />}
-          radiationTable={
-            <SolarRadiationTable
-              monthRows={SOLAR_MONTH_ROWS}
-              solarRadiationDrafts={solarRadiationDrafts}
-              focusedSolarMonthRef={focusedSolarMonthRef}
-              handleSolarRadiationChange={handleSolarRadiationChange}
-              handleSolarRadiationBlur={handleSolarRadiationBlur}
-              disabled={isAutoMode}
-              unitLabel="kWh/m²"
-            />
-          }
-          autoControls={autoControls}
-        />
-      </WorkspaceSection>
+    <section className="hg-tp-kpi grid grid-cols-2 gap-0 border-y border-[var(--hg-hairline)] md:grid-cols-4">
+      <KpiTile kicker="SOLYTELSE · DØGN" value="0.38" unit="kWh/d" trend="▲ 12 %" />
+      <KpiTile kicker="BATTERIKAPASITET" value="1.44" unit="kWh" trend="3 dagar autonomi" />
+      <KpiTile kicker="RESERVEBRUK · ÅR" value="3.1" unit="%" trend="▼ 0.4 pp" />
+      <KpiTile kicker="CO₂ · ÅR" value="12" unit="kg" trend="Metanol" />
+    </section>
   );
 }
 
-function SolarPanelFields({ errors }: { errors: ValidationErrors }) {
-  const { activeDraft, updateConfigSectionField } = useConfigurationContext();
-  const { t } = useLanguage();
-
+function KpiTile({ kicker, value, unit, trend }: { kicker: string; value: string; unit: string; trend: string }) {
   return (
-    <>
-      <NumberField
-        label={t("system.panelPower")}
-        unit="Wp"
-        value={activeDraft.solar.panelPowerWp}
-        error={errors["solar.panelPowerWp"]}
-        min={0}
-        step={1}
-        onChange={(next) => updateConfigSectionField("solar", "panelPowerWp", next)}
-      />
-      <NumberField
-        label={t("system.panelCount")}
-        unit={t("system.pcs")}
-        value={activeDraft.solar.panelCount}
-        error={errors["solar.panelCount"]}
-        min={0}
-        step={1}
-        onChange={(next) => updateConfigSectionField("solar", "panelCount", next)}
-      />
-      <NumberField
-        label={t("system.systemEfficiency")}
-        helper={t("system.efficiencyHelper")}
-        placeholder="0-1"
-        value={activeDraft.solar.systemEfficiency}
-        error={errors["solar.systemEfficiency"]}
-        min={0}
-        max={1}
-        step={0.01}
-        onChange={(next) => updateConfigSectionField("solar", "systemEfficiency", next)}
-      />
-    </>
-  );
-}
-
-function BatterySettingsSection({ errors }: { errors: ValidationErrors }) {
-  const { activeDraft, updateConfigSectionField } = useConfigurationContext();
-  const { t } = useLanguage();
-
-  const batteryValueLabel = t("system.desiredAutonomy");
-  const batteryValueUnit =
-    activeDraft.systemParameters.batteryMode === "autonomyDays"
-      ? t("system.days")
-      : activeDraft.systemParameters.batteryMode === "ah"
-        ? "Ah"
-        : undefined;
-  const batteryValueHelper =
-    activeDraft.systemParameters.batteryMode === "" ? t("system.batteryModeHelper") : undefined;
-
-  return (
-    <WorkspaceSection title={t("system.batteryTitle")} description="Spenning, kapasitet og DoD">
-      <div className="grid gap-5 md:grid-cols-2">
-        <NumberField
-          label={t("system.nominalVoltage")}
-          unit="V"
-          value={activeDraft.battery.nominalVoltage}
-          error={errors["battery.nominalVoltage"]}
-          min={0}
-          step={0.1}
-          onChange={(next) => updateConfigSectionField("battery", "nominalVoltage", next)}
-        />
-        <SelectField
-          label={t("system.autonomyInput")}
-          value={activeDraft.systemParameters.batteryMode}
-          error={errors["systemParameters.batteryMode"]}
-          options={[
-            { value: "autonomyDays", label: t("system.autonomyDays") },
-            { value: "ah", label: t("system.batteryBankSize") }
-          ]}
-          onChange={(next) =>
-            updateConfigSectionField("systemParameters", "batteryMode", next as "ah" | "autonomyDays")
-          }
-        />
-        <NumberField
-          label={batteryValueLabel}
-          helper={batteryValueHelper}
-          unit={batteryValueUnit}
-          value={activeDraft.systemParameters.batteryValue}
-          error={errors["systemParameters.batteryValue"]}
-          min={0}
-          step={0.1}
-          onChange={(next) => updateConfigSectionField("systemParameters", "batteryValue", next)}
-        />
-        <NumberField
-          label={t("system.maxDod")}
-          placeholder="0-1"
-          value={activeDraft.battery.maxDepthOfDischarge}
-          error={errors["battery.maxDepthOfDischarge"]}
-          min={0}
-          max={1}
-          step={0.01}
-          onChange={(next) => updateConfigSectionField("battery", "maxDepthOfDischarge", next)}
-        />
+    <div className="flex flex-col gap-1 border-r border-[var(--hg-hairline)] px-4 py-2 last:border-r-0">
+      <span className="hg-mono text-[9px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.18em] text-[var(--hg-ink-2)]">
+        {kicker}
+      </span>
+      <div className="flex items-baseline gap-1.5">
+        <span className="hg-mono text-[22px] font-[var(--hg-type-weight-extra)] leading-none text-[var(--hg-ink)]">
+          {value}
+        </span>
+        <span className="hg-mono text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.12em] text-[var(--hg-ink-2)]">
+          {unit}
+        </span>
       </div>
-    </WorkspaceSection>
-  );
-}
-
-function ReserveSourceSection({ errors }: { errors: ValidationErrors }) {
-  const { activeDraft, updateConfigSectionField } = useConfigurationContext();
-  const { t } = useLanguage();
-
-  return (
-    <WorkspaceSection title={t("system.reserveSourceTitle")} description="Oppgi om systemet skal ha reservekilde">
-      <div className="max-w-3xl">
-        <BooleanChoiceField
-          label={t("system.hasReserveSource")}
-          value={activeDraft.systemParameters.hasBackupSource}
-          error={errors["systemParameters.hasBackupSource"]}
-          onChange={(next) => updateConfigSectionField("systemParameters", "hasBackupSource", next)}
-        />
-      </div>
-    </WorkspaceSection>
-  );
-}
-
-function SecondarySourcesSection({ errors }: { errors: ValidationErrors }) {
-  const { activeDraft, updateConfigSectionField } = useConfigurationContext();
-  const { t } = useLanguage();
-
-  return (
-    <WorkspaceSection title={t("system.secondarySourceTitle")} description="Kostnad, drift og utslipp">
-      <div className="grid gap-6 xl:grid-cols-2">
-        {[
-          { section: "fuelCell" as const, titleKey: "system.fuelCell" as TranslationKey },
-          { section: "diesel" as const, titleKey: "system.dieselGenerator" as TranslationKey }
-        ].map((source, index) => {
-          const co2Field = reserveCo2Field(source.section);
-
-          return (
-            <div
-              key={source.section}
-              className={index === 1 ? "border-t border-slate-200 pt-6 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0" : ""}
-            >
-              <div className="mb-4 flex items-center gap-2">
-                <h3 className={workspaceSubsectionTitleClassName}>{t(source.titleKey)}</h3>
-                <InlineInfo text={t("system.sameInputHelper")} />
-              </div>
-
-              <div className="divide-y divide-slate-200">
-                {secondarySourceFields.map((field) => (
-                  <div key={`${source.section}.${field.key}`} className="py-5 first:pt-0 last:pb-0">
-                    <NumberField
-                      label={t(field.labelKey)}
-                      unit={field.unitKey ? t(field.unitKey) : field.unit}
-                      value={activeDraft[source.section][field.key]}
-                      error={errors[`${source.section}.${field.key}`]}
-                      min={field.min}
-                      step={field.step}
-                      onChange={(next) => updateConfigSectionField(source.section, field.key, next)}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 border-t border-slate-200 pt-5">
-                <NumberField
-                  label={t(co2Field.labelKey)}
-                  helper={t("system.co2Helper")}
-                  unit="kg/L"
-                  value={activeDraft.other[co2Field.key]}
-                  error={errors[`other.${co2Field.key}`]}
-                  min={0}
-                  step={0.001}
-                  onChange={(next) => updateConfigSectionField("other", co2Field.key, next)}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </WorkspaceSection>
-  );
-}
-
-function SolarRadiationModeToggle() {
-  const { activeDraft, updateConfigSectionField } = useConfigurationContext();
-  const { t } = useLanguage();
-  const mode = activeDraft.solarRadiationSettings.mode;
-
-  const handleModeChange = (m: "manual" | "auto") => {
-    updateConfigSectionField("solarRadiationSettings", "mode", m);
-    if (m === "auto") {
-      for (const key of MONTH_KEYS) {
-        updateConfigSectionField("monthlySolarRadiation", key, "");
-      }
-    }
-  };
-
-  return (
-    <div className="flex gap-0.5 rounded-lg bg-slate-100 p-0.5" role="radiogroup">
-      {(["manual", "auto"] as const).map((m) => (
-        <button
-          key={m}
-          role="radio"
-          aria-checked={mode === m}
-          className={`rounded-md px-3 py-1 ${workspaceFieldLabelClassName} transition-colors ${
-            mode === m
-              ? "bg-white text-slate-800 shadow-sm"
-              : "text-slate-400 hover:text-slate-600"
-          }`}
-          onClick={() => handleModeChange(m)}
-        >
-          {m === "manual" ? t("system.solarRadiationManual") : t("system.solarRadiationAutomatic")}
-        </button>
-      ))}
+      <span className="hg-mono text-[10px] font-[var(--hg-type-weight-medium)] text-[var(--hg-ink-2)]">
+        {trend}
+      </span>
     </div>
   );
 }
 
-function useSolarAutoControls(enabled: boolean, errors: ValidationErrors) {
-  const { activeDraft, updateConfigSectionField } = useConfigurationContext();
-  const { t } = useLanguage();
-  const { loading, error, source, servedTmy, fetchSolarRadiation } = useSolarRadiationFetch();
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-
-  const s = activeDraft.solarRadiationSettings;
-  const isAuto = enabled && s.mode === "auto";
-  const initialSolarMapSrc = useMemo(() => {
-    const params = new URLSearchParams();
-
-    if (typeof s.lat === "number" && typeof s.lon === "number") {
-      params.set("lat", String(s.lat));
-      params.set("lng", String(s.lon));
-      params.set("zoom", String(typeof s.mapZoom === "number" ? s.mapZoom : 13));
-      if (typeof s.locationName === "string" && s.locationName.trim()) {
-        params.set("name", s.locationName.trim());
-      }
-    }
-
-    const query = params.toString();
-    return query ? `/solar-location-map.html?${query}` : "/solar-location-map.html";
-  }, [activeDraft.id, isAuto]);
-
-  // Listen for map location messages
-  useEffect(() => {
-    if (!isAuto) return;
-    function handleMessage(event: MessageEvent) {
-      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
-      const data = event.data;
-      if (data?.type === "hydroguide:solar-location" && data.detail) {
-        const { lat, lng, name, zoom } = data.detail;
-        if (typeof lat === "number" && typeof lng === "number") {
-          updateConfigSectionField("solarRadiationSettings", "lat", lat);
-          updateConfigSectionField("solarRadiationSettings", "lon", lng);
-        }
-        if (typeof name === "string") {
-          updateConfigSectionField("solarRadiationSettings", "locationName", name);
-        }
-        if (typeof zoom === "number") {
-          updateConfigSectionField("solarRadiationSettings", "mapZoom", zoom);
-        }
-      }
-      if (data?.type === "hydroguide:solar-map-zoom" && typeof data.zoom === "number") {
-        updateConfigSectionField("solarRadiationSettings", "mapZoom", data.zoom);
-      }
-    }
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [isAuto, updateConfigSectionField]);
-
-  // Sync saved location to map on mount and when values change.
-  const hasSyncedRef = useRef(false);
-  useEffect(() => {
-    if (!isAuto || s.lat === "" || s.lon === "") return;
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const sendLocation = () => {
-      iframe.contentWindow?.postMessage({
-        type: "hydroguide:set-solar-location",
-        detail: { lat: Number(s.lat), lng: Number(s.lon), name: s.locationName || "", zoom: s.mapZoom || 13 }
-      }, window.location.origin);
-      hasSyncedRef.current = true;
-    };
-
-    // Always listen for load (iframe remounts on navigation)
-    iframe.addEventListener("load", sendLocation, { once: true });
-
-    // If iframe already loaded (HMR / fast re-render), also send now
-    if (hasSyncedRef.current) {
-      sendLocation();
-    }
-
-    return () => iframe.removeEventListener("load", sendLocation);
-  }, [isAuto, s.lat, s.lon, s.locationName, s.mapZoom]);
-
-  if (!isAuto) return null;
-
-  const handleFetch = async () => {
-    const latVal = Number(s.lat);
-    const lonVal = Number(s.lon);
-    const tiltVal = Number(s.tilt);
-    const azVal = Number(s.azimuth);
-    const heightVal = s.heightOffset !== "" ? Number(s.heightOffset) : 0;
-    if ([latVal, lonVal, tiltVal, azVal].some(Number.isNaN)) return;
-
-    const result = await fetchSolarRadiation(latVal, lonVal, tiltVal, azVal, heightVal);
-    if (result) {
-      for (const key of MONTH_KEYS) {
-        updateConfigSectionField("monthlySolarRadiation", key, result[key]);
-      }
-    }
-  };
-
-  const canFetch = s.lat !== "" && s.lon !== ""
-    && s.tilt !== "" && s.azimuth !== ""
-    && !loading;
-
-  return {
-    map: (
-      <div className="flex flex-1 flex-col gap-3">
-        <div className={workspaceFieldLabelRowClassName}>
-          <span className={workspaceFieldLabelClassName}>{t("system.solarPanelPlacement")}</span>
-        </div>
-        <div className="flex-1 overflow-hidden rounded-2xl border border-slate-200" style={{ minHeight: "280px" }}>
-          <iframe
-            ref={iframeRef}
-            title={t("system.solarPanelPlacement")}
-            src={initialSolarMapSrc}
-            className="block h-full w-full border-0"
-          />
-        </div>
-      </div>
-    ),
-    controls: (
-      <>
-        <label className="block space-y-2">
-          <span className={`${workspaceFieldLabelRowClassName} ${workspaceFieldLabelClassName}`}>{t("system.solarRadiationTilt")}</span>
-          <div className="relative">
-            <input
-              type="number"
-              min={0}
-              max={90}
-              step={1}
-              className={`pr-10 ${workspaceInputClassName} hide-number-spin`}
-              value={s.tilt}
-              placeholder="45"
-              onChange={(e) => {
-                const v = e.target.value === "" ? "" : Number(e.target.value);
-                updateConfigSectionField("solarRadiationSettings", "tilt", v as number | "");
-              }}
-            />
-            <span className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${workspaceFieldLabelClassName}`}>°</span>
-          </div>
-          {errors["solarRadiationSettings.tilt"] ? <p className={`${workspaceContentValueClassName} text-red-600`}>{errors["solarRadiationSettings.tilt"]}</p> : null}
-        </label>
-        <label className="block space-y-2">
-          <span className={`${workspaceFieldLabelRowClassName} ${workspaceFieldLabelClassName}`}>{t("system.solarRadiationAzimuth")}</span>
-          <div className="relative">
-            <input
-              type="number"
-              min={0}
-              max={360}
-              step={1}
-              className={`pr-10 ${workspaceInputClassName} hide-number-spin`}
-              value={s.azimuth}
-              placeholder="180"
-              onChange={(e) => {
-                const v = e.target.value === "" ? "" : Number(e.target.value);
-                updateConfigSectionField("solarRadiationSettings", "azimuth", v as number | "");
-              }}
-            />
-            <span className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${workspaceFieldLabelClassName}`}>°</span>
-          </div>
-          {errors["solarRadiationSettings.azimuth"] ? <p className={`${workspaceContentValueClassName} text-red-600`}>{errors["solarRadiationSettings.azimuth"]}</p> : null}
-        </label>
-        <label className="block space-y-2">
-          <span className={`${workspaceFieldLabelRowClassName} ${workspaceFieldLabelClassName}`}>{t("system.solarHeightOffset")}</span>
-          <div className="relative">
-            <input
-              type="number"
-              min={0}
-              max={200}
-              step={1}
-              className={`pr-10 ${workspaceInputClassName} hide-number-spin`}
-              value={s.heightOffset}
-              placeholder="0"
-              onChange={(e) => {
-                const v = e.target.value === "" ? "" : Number(e.target.value);
-                updateConfigSectionField("solarRadiationSettings", "heightOffset", v as number | "");
-              }}
-            />
-            <span className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${workspaceFieldLabelClassName}`}>m</span>
-          </div>
-        </label>
-        <div className="space-y-2">
-          {(errors["solarRadiationSettings.lat"] || errors["solarRadiationSettings.lon"]) ? (
-            <p className={`${workspaceContentValueClassName} text-red-600`}>
-              {errors["solarRadiationSettings.lat"] ?? errors["solarRadiationSettings.lon"]}
-            </p>
-          ) : null}
-          <button
-            disabled={!canFetch}
-            onClick={handleFetch}
-            className={`${workspacePrimaryButtonClassName} w-full bg-sky-600 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40`}
-          >
-            {loading ? t("system.solarRadiationFetching") : t("system.solarRadiationFetch")}
-          </button>
-          <div className="min-h-5 space-y-1">
-            {error && <span className={`${workspaceContentValueClassName} text-red-600`}>{error}</span>}
-            {source && !error && <span className={`${workspaceContentValueClassName} text-slate-400`}>{source}</span>}
-            {servedTmy && !error && <span className={`block ${workspaceContentValueClassName} text-slate-400`}>{servedTmy}</span>}
-          </div>
-        </div>
-      </>
-    ),
-  };
-}
-
-function SolarSectionLayout({
-  isAuto,
-  panelFields,
-  radiationTable,
-  autoControls,
-}: {
-  isAuto: boolean;
-  panelFields: React.ReactNode;
-  radiationTable: React.ReactNode;
-  autoControls: { map: React.ReactNode; controls: React.ReactNode } | null;
-}) {
-  if (!isAuto) {
-    return (
-      <div className="grid gap-4 xl:grid-cols-[minmax(18rem,0.84fr)_minmax(24rem,1.16fr)] xl:grid-rows-3 xl:gap-x-8">
-        <div className="space-y-4 xl:row-span-3 xl:grid xl:grid-rows-subgrid xl:space-y-0">{panelFields}</div>
-        <div className="space-y-4 xl:row-span-3 xl:grid xl:min-w-0 xl:grid-rows-subgrid xl:space-y-0">{radiationTable}</div>
-      </div>
-    );
-  }
-
+function SectionHeader({ title, actions }: { kicker?: string; title: string; actions?: React.ReactNode }) {
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:gap-8">
-      <div className="space-y-5">
-        <div className="space-y-4">{panelFields}</div>
-        <div className="space-y-4">{radiationTable}</div>
+    <div className="flex flex-wrap items-end justify-between gap-3 pb-2">
+      <div className="min-w-0">
+        <h2 className="text-[15px] font-[var(--hg-type-weight-extra)] leading-tight tracking-tight text-[var(--hg-ink)]">
+          {title}
+        </h2>
       </div>
-      <div className="flex flex-col gap-4">
-        {autoControls?.map}
-        <div className="grid grid-cols-3 gap-4">{autoControls?.controls}</div>
-      </div>
+      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
     </div>
   );
 }
 
-function SolarRadiationTable({
-  monthRows,
-  solarRadiationDrafts,
-  focusedSolarMonthRef,
-  handleSolarRadiationChange,
-  handleSolarRadiationBlur,
-  unitLabel = "kWh/m²",
-  disabled = false,
-}: {
-  monthRows: MonthKey[][];
-  solarRadiationDrafts: Record<MonthKey, string>;
-  focusedSolarMonthRef: React.MutableRefObject<MonthKey | null>;
-  handleSolarRadiationChange: (month: MonthKey, value: string) => void;
-  handleSolarRadiationBlur: (month: MonthKey) => void;
-  unitLabel?: string;
-  disabled?: boolean;
-}) {
-  return (
-    <>
-      {/* Mobile: flat grid */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:hidden">
-        {monthRows.flat().map((month) => (
-          <SolarRadiationMonthField
-            key={`m-${month}`}
-            month={month}
-            value={solarRadiationDrafts[month]}
-            focusedSolarMonthRef={focusedSolarMonthRef}
-            onChange={handleSolarRadiationChange}
-            onBlur={handleSolarRadiationBlur}
-            unitLabel={unitLabel}
-            disabled={disabled}
-          />
-        ))}
-      </div>
-      {/* Desktop: 3 rows of 4 for subgrid alignment */}
-      {monthRows.map((row, rowIndex) => (
-        <div key={`solar-row-${rowIndex}`} className="hidden gap-4 xl:flex">
-          {row.map((month) => (
-            <SolarRadiationMonthField
-              key={month}
-              month={month}
-              value={solarRadiationDrafts[month]}
-              focusedSolarMonthRef={focusedSolarMonthRef}
-              onChange={handleSolarRadiationChange}
-              onBlur={handleSolarRadiationBlur}
-              unitLabel={unitLabel}
-              disabled={disabled}
-            />
-          ))}
-        </div>
-      ))}
-    </>
-  );
-}
-
-function SolarRadiationMonthField({
-  month,
+function FlatField({
+  label,
   value,
-  focusedSolarMonthRef,
-  onChange,
-  onBlur,
-  unitLabel = "kWh/m²",
-  disabled = false,
+  unit,
+  hint,
+  info,
+  highlighted,
 }: {
-  month: MonthKey;
-  value: string;
-  focusedSolarMonthRef: React.MutableRefObject<MonthKey | null>;
-  onChange: (month: MonthKey, value: string) => void;
-  onBlur: (month: MonthKey) => void;
-  unitLabel?: string;
-  disabled?: boolean;
+  label: string;
+  value?: string;
+  unit?: string;
+  hint?: string;
+  info?: boolean;
+  highlighted?: boolean;
 }) {
-  const { t } = useLanguage();
-
+  const [v, setV] = useState(value ?? "");
+  const [focused, setFocused] = useState(false);
+  const borderColor = focused
+    ? "border-[var(--hg-accent)]"
+    : highlighted
+      ? "border-[var(--hg-accent)]"
+      : "border-[var(--hg-hairline)]";
   return (
-    <label className="block min-w-0 flex-1 space-y-2">
-      <span className={`${workspaceFieldLabelRowClassName} ${workspaceFieldLabelClassName} justify-center`}>{MONTH_LABELS[month]}</span>
-      <div className="relative">
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className={`hg-mono flex items-center gap-1 text-[9px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.16em] transition-colors ${focused ? "text-[var(--hg-accent)]" : "text-[var(--hg-ink-2)]"}`}>
+        {label}
+        {info ? <span className="inline-flex h-3 w-3 items-center justify-center rounded-full border border-[var(--hg-hairline)] text-[8px]">i</span> : null}
+      </span>
+      <div className={`flex items-baseline gap-2 border-b-2 ${borderColor} pb-0.5 transition-colors`}>
         <input
           type="text"
-          inputMode="decimal"
-          value={value}
-          disabled={disabled}
-          onFocus={() => {
-            focusedSolarMonthRef.current = month;
+          value={v}
+          onChange={(e) => setV(e.target.value)}
+          onFocus={(e) => {
+            setFocused(true);
+            e.target.select();
           }}
-          onChange={(e) => onChange(month, e.target.value)}
-          onBlur={() => onBlur(month)}
-          className={`pr-14 sm:pr-20 ${workspaceInputClassName} ${disabled ? "bg-slate-50 text-slate-500 cursor-not-allowed" : ""}`}
-          aria-label={`${t("system.solarRadiationAria")} ${MONTH_LABELS[month]}`}
-          placeholder={disabled ? "—" : "0.0"}
+          onBlur={() => setFocused(false)}
+          className="hg-mono min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] font-[var(--hg-type-weight-extra)] text-[var(--hg-ink)] outline-none focus:text-[var(--hg-accent)]"
         />
-        <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] text-slate-950 sm:text-[length:var(--hg-type-ui-size)]">
-          {unitLabel}
-        </span>
+        {unit ? (
+          <span className="hg-mono shrink-0 text-[11px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.12em] text-[var(--hg-ink-2)]">
+            {unit}
+          </span>
+        ) : null}
+      </div>
+      {hint ? <span className="hg-mono text-[10px] text-[var(--hg-ink-2)]">{hint}</span> : null}
+    </label>
+  );
+}
+
+function FlatSelect({ label, value, options }: { label: string; value: string; options: string[] }) {
+  const [v, setV] = useState(value);
+  const [focused, setFocused] = useState(false);
+  return (
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="hg-mono text-[9px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.16em] text-[var(--hg-ink-2)]">
+        {label}
+      </span>
+      <div className={`flex items-center justify-between gap-2 border-b-2 ${focused ? "border-[var(--hg-accent)]" : "border-[var(--hg-hairline)]"} pb-0.5 transition-colors`}>
+        <select
+          value={v}
+          onChange={(e) => setV(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          className="hg-mono min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[13px] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none"
+        >
+          {options.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+        <span className="text-[var(--hg-ink-2)]">▾</span>
       </div>
     </label>
   );
 }
 
+function PillToggle({ options, selected, fullWidth = false }: { options: string[]; selected: string; fullWidth?: boolean }) {
+  const [active, setActive] = useState(selected);
+  return (
+    <div
+      className={`grid rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] p-0.5 ${fullWidth ? "w-full" : "inline-grid"}`}
+      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+    >
+      {options.map((opt) => {
+        const isActive = active === opt;
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => setActive(opt)}
+            className={`hg-mono flex items-center justify-center rounded-[5px] border px-2 py-1.5 text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.14em] transition ${
+              isActive
+                ? "border-[var(--hg-accent)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
+                : "border-transparent text-[var(--hg-ink-2)] hover:text-[var(--hg-ink)]"
+            }`}
+          >
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function EnergiSeksjon() {
+  const [values, setValues] = useState<number[]>(DEFAULT_MONTH_VALUES);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const sum = values.reduce((acc, v) => acc + (Number.isFinite(v) ? v : 0), 0);
+
+  return (
+    <section className="hg-tp-section flex min-h-0 flex-1 flex-col border-t-2 border-[var(--hg-ink)] pt-2">
+      <div className="grid gap-x-8 gap-y-3 lg:grid-cols-2">
+        {/* Solcellesystem felter — sentrert vertikalt for å spegle batteri-blokka */}
+        <div className="flex flex-col">
+          <SectionHeader
+            title="SOLCELLESYSTEM"
+            actions={
+              <button
+                type="button"
+                onClick={() => setPanelOpen(true)}
+                className="hg-mono px-2 py-1.5 text-[11px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.12em] text-[var(--hg-accent)]"
+              >
+                Rediger månadsverdiar
+              </button>
+            }
+          />
+          <div className="flex flex-1 items-center">
+            <div className="grid w-full gap-x-6 gap-y-3 sm:grid-cols-3">
+              <FlatField label="PANELEFFEKT" value="420" unit="Wp" />
+              <FlatField label="ANTALL" value="12" unit="stk" />
+              <FlatField label="VIRK.GRAD" value="0.85" unit="0-1" />
+            </div>
+          </div>
+        </div>
+
+        {/* Batteribank felter */}
+        <div>
+          <SectionHeader title="BATTERIBANK" />
+          <div className="grid gap-x-6 gap-y-3 md:grid-cols-3">
+            <FlatField label="DC-SPENNING" value="12" unit="V" />
+            <div className="flex flex-col gap-1">
+              <span className="hg-mono text-[9px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.16em] text-[var(--hg-ink-2)]">
+                BATTERITYPE
+              </span>
+              <PillToggle options={["AGM", "NiMH", "Na-ion", "Li-ion"]} selected="Li-ion" fullWidth />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="hg-mono text-[9px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.16em] text-[var(--hg-ink-2)]">
+                INNGANG
+              </span>
+              <PillToggle options={["DAGAR", "AH"]} selected="AH" fullWidth />
+            </div>
+            <FlatField label="BANKSTORLEIK" value="3" unit="Ah" />
+            <FlatField label="MAKS DOD" value="0.80" unit="0-1" />
+            <FlatField label="ESTIMERT KAPASITET" value="1.44" unit="kWh" info highlighted />
+          </div>
+        </div>
+      </div>
+
+      {/* Grafen — full breidde under */}
+      <div className="mt-2 flex min-h-0 flex-1 flex-col">
+        <p className="hg-mono mb-1 text-[9px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.18em] text-[var(--hg-ink-2)]">
+          MÅNADLEG SOLINNSTRÅLING · KWH/M²
+        </p>
+        <div className="min-h-0 flex-1">
+          <RadiationBarChart values={values} />
+        </div>
+        <p className="hg-mono mt-1 text-right text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.12em] text-[var(--hg-ink-2)]">
+          SUM: {sum.toFixed(2)} KWH/M² · ÅR
+        </p>
+      </div>
+
+      <MonthlyValuesPanel
+        open={panelOpen}
+        values={values}
+        baseline={DEFAULT_MONTH_VALUES}
+        onChange={(i, v) => setValues((prev) => prev.map((p, idx) => (idx === i ? v : p)))}
+        onClose={() => setPanelOpen(false)}
+        onReset={() => setValues(DEFAULT_MONTH_VALUES)}
+      />
+    </section>
+  );
+}
+
+function RadiationBarChart({ values }: { values: number[] }) {
+  const rawMax = Math.max(...values);
+  const max = rawMax > 0 ? rawMax : 6;
+  const niceMax = Math.ceil(max);
+  const gridLines = [0.25, 0.5, 0.75, 1];
+
+  return (
+    <div className="relative h-full">
+      <div className="pointer-events-none absolute inset-x-0 top-[18px] bottom-[20px]">
+        {gridLines.map((g) => (
+          <div
+            key={g}
+            className="absolute inset-x-0 border-t border-[var(--hg-ink-2)]/30"
+            style={{ bottom: `${g * 100}%` }}
+          >
+            <span className="hg-mono absolute -top-[7px] left-0 bg-[var(--hg-bg)] pr-1 text-[10px] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]">
+              {(niceMax * g).toFixed(g === 1 ? 0 : 1)}
+            </span>
+          </div>
+        ))}
+        <div className="absolute inset-x-0 bottom-0 border-t-2 border-[var(--hg-ink)]" />
+      </div>
+      <div className="relative grid h-full grid-cols-12 items-end gap-3">
+        {values.map((v, i) => {
+          const ratio = v / niceMax;
+          const barHeight = `${Math.max(ratio * 100, v > 0 ? 2 : 0)}%`;
+          return (
+            <div key={i} className="flex h-full flex-col items-center justify-end">
+              <span className="hg-mono mb-0.5 text-[10px] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]">
+                {v.toFixed(1)}
+              </span>
+              <div
+                className="w-[68%] rounded-[2px]"
+                style={{ height: barHeight, minHeight: v > 0 ? 2 : 0, background: "#60a5fa" }}
+                aria-label={`${MONTH_LABELS[i]}: ${v.toFixed(1)} kWh/m²`}
+              />
+              <span className="hg-mono mt-1 text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.12em] text-[var(--hg-ink)]">
+                {MONTH_LABELS[i]}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const FULL_MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Des"];
+
+function MonthlyValuesPanel({
+  open,
+  values,
+  baseline,
+  onChange,
+  onClose,
+  onReset,
+}: {
+  open: boolean;
+  values: number[];
+  baseline: number[];
+  onChange: (index: number, value: number) => void;
+  onClose: () => void;
+  onReset: () => void;
+}) {
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+
+  useEffect(() => {
+    if (open) {
+      const id = window.setTimeout(() => {
+        inputsRef.current[0]?.focus();
+        inputsRef.current[0]?.select();
+      }, 220);
+      return () => window.clearTimeout(id);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [open, onClose]);
+
+  const parseValue = (raw: string): number => {
+    const normalized = raw.replace(",", ".").trim();
+    if (normalized === "") return 0;
+    const n = Number(normalized);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, i: number) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (i < values.length - 1) {
+        inputsRef.current[i + 1]?.focus();
+        inputsRef.current[i + 1]?.select();
+      } else {
+        onClose();
+      }
+    }
+  };
+
+  return (
+    <>
+      <div
+        className={`fixed inset-0 z-30 bg-black/35 transition-opacity duration-200 ${
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        onClick={onClose}
+        aria-hidden={!open}
+      />
+      <aside
+        className={`fixed right-0 top-0 z-40 flex h-full w-full max-w-[520px] flex-col border-l border-[var(--hg-hairline)] bg-[var(--hg-surface)] shadow-2xl transition-transform duration-300 ease-out ${
+          open ? "translate-x-0" : "translate-x-full"
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Månadsverdiar"
+      >
+        <header className="flex items-start justify-between border-b border-[var(--hg-hairline)] px-6 py-4">
+          <div>
+            <p className="hg-mono text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.18em] text-[var(--hg-ink-2)]">
+              MÅNADSVERDIAR
+            </p>
+            <h2 className="mt-1 text-[18px] font-[var(--hg-type-weight-extra)] tracking-tight text-[var(--hg-ink)]">
+              SOL · KWH/M² PER MÅNAD
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Lukk"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--hg-hairline)] text-[var(--hg-ink-2)] hover:text-[var(--hg-ink)]"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" strokeWidth="1.8" stroke="currentColor">
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+        </header>
+
+        <div className="flex-1 overflow-y-auto px-6 py-3">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-6 border-b border-[var(--hg-hairline)] pb-2">
+            <span className="hg-mono text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.18em] text-[var(--hg-ink-2)]">
+              MÅNAD
+            </span>
+            <span className="hg-mono text-right text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.18em] text-[var(--hg-ink-2)]">
+              KWH/M²
+            </span>
+            <span className="hg-mono text-right text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.18em] text-[var(--hg-ink-2)]">
+              Δ FRÅ STANDARD
+            </span>
+          </div>
+          {values.map((v, i) => {
+            const delta = v - baseline[i];
+            const deltaText = delta === 0 ? "0.00" : `${delta > 0 ? "+" : ""}${delta.toFixed(2)}`;
+            const deltaColor = delta === 0 ? "text-[var(--hg-ink-2)]" : delta > 0 ? "text-emerald-600" : "text-rose-600";
+            return (
+              <div key={i} className="grid grid-cols-[auto_1fr_auto] items-center gap-x-6 border-b border-[var(--hg-hairline-2)] py-2">
+                <span className="text-[14px] font-[var(--hg-type-weight-medium)] text-[var(--hg-ink)]">
+                  {FULL_MONTH_LABELS[i]}
+                </span>
+                <input
+                  ref={(el) => {
+                    inputsRef.current[i] = el;
+                  }}
+                  type="text"
+                  inputMode="decimal"
+                  value={Number.isFinite(v) ? String(v) : ""}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => onChange(i, parseValue(e.target.value))}
+                  onKeyDown={(e) => handleKeyDown(e, i)}
+                  className="hg-mono w-full bg-transparent text-right text-[14px] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none focus:text-[var(--hg-accent)]"
+                  aria-label={`${FULL_MONTH_LABELS[i]} kWh/m²`}
+                />
+                <span className={`hg-mono text-right text-[12px] font-[var(--hg-type-weight-bold)] ${deltaColor}`}>
+                  {deltaText}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        <footer className="flex items-center justify-between border-t border-[var(--hg-hairline)] px-6 py-3">
+          <button
+            type="button"
+            onClick={onReset}
+            className="hg-mono text-[11px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.12em] text-[var(--hg-ink-2)] hover:text-[var(--hg-ink)]"
+          >
+            Tilbakestill til standard
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md bg-[var(--hg-accent)] px-4 py-2 text-[13px] font-[var(--hg-type-weight-bold)] text-white hover:bg-[var(--hg-accent-2)]"
+          >
+            Lagre
+          </button>
+        </footer>
+      </aside>
+    </>
+  );
+}
+
+function ReserveSection() {
+  return (
+    <section className="hg-tp-section border-t-2 border-[var(--hg-ink)] pt-2">
+      <SectionHeader
+        title="RESERVEKJELDE"
+        actions={<PillToggle options={["MED RESERVE", "BERRE SOL + BATTERI"]} selected="MED RESERVE" />}
+      />
+      <div className="grid gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-5">
+        <FlatSelect label="TYPE KJELDE" value="Metanol brenselcelle" options={["Metanol brenselcelle", "Diesel aggregat"]} />
+        <FlatField label="INNKJØP" value="65000" unit="kr" />
+        <FlatField label="EFFEKT" value="240" unit="W" />
+        <FlatField label="FORBRUK" value="0.85" unit="L/kWh" />
+        <FlatField label="DRIVSTOFF" value="39" unit="kr/L" />
+      </div>
+
+      <div className="mt-3 grid gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-5">
+        <FlatField label="LEVETID" value="8000" unit="t" />
+        <FlatField label="VEDLIKEHALD" value="4000" unit="kr/år" />
+        <FlatField label="CO₂-FAKTOR" value="1.37" unit="kg/L" />
+      </div>
+
+    </section>
+  );
+}

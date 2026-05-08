@@ -49,10 +49,10 @@ export const workspaceChartTooltipTextFontSize = "var(--hg-chart-tooltip-text-si
 export const workspaceFieldLabelClassName =
   "text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-[var(--hg-ink-2)]";
 export const workspaceFieldLabelRowClassName = "flex items-center gap-2";
-export const workspaceFieldStackClassName = "space-y-2";
+export const workspaceFieldStackClassName = "space-y-1.5";
 
 export const workspaceInputClassName =
-  "w-full rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 py-2 text-[length:var(--hg-type-content-size)] text-[var(--hg-ink)] outline-none ring-[var(--hg-accent-2)] transition placeholder:text-[var(--hg-muted)] focus:ring-2";
+  "h-9 w-full rounded-[7px] border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 py-[9px] font-[var(--hg-type-mono-family)] text-[13px] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)] outline-none transition placeholder:font-[var(--hg-type-weight-medium)] placeholder:text-[var(--hg-muted)] focus:border-[var(--hg-accent-2)] focus:bg-[var(--hg-surface)] focus:ring-2 focus:ring-[rgba(37,99,235,0.12)] disabled:cursor-not-allowed disabled:bg-[var(--hg-surface-2)] disabled:text-[var(--hg-muted)]";
 
 export const workspaceTallInputClassName =
   "h-12 w-full rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-4 text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-medium)] text-[var(--hg-ink)] outline-none transition placeholder:text-[var(--hg-muted)] focus:border-[var(--hg-accent-2)] focus:bg-[var(--hg-accent-soft)]";

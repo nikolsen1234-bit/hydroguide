@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { FEEDBACK_TIMEOUT_MS } from "../constants";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
@@ -14,6 +14,7 @@ import {
 export function HelpTip({ text, iconClassName = workspaceHelpIconClassName }: { text: string; iconClassName?: string }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
+  const tooltipId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -33,12 +34,18 @@ export function HelpTip({ text, iconClassName = workspaceHelpIconClassName }: { 
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-label={text}
+        aria-expanded={open}
+        aria-controls={open ? tooltipId : undefined}
         className={iconClassName}
       >
         i
       </button>
       {open ? (
-        <span className={`absolute left-0 top-full z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 py-2.5 text-left leading-5 normal-case text-[var(--hg-ink-2)] sm:left-1/2 sm:w-72 sm:-translate-x-1/2 ${workspaceContentValueClassName}`}>
+        <span
+          id={tooltipId}
+          role="tooltip"
+          className={`absolute left-0 top-full z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 py-2.5 text-left leading-5 normal-case text-[var(--hg-ink-2)] sm:left-1/2 sm:w-72 sm:-translate-x-1/2 ${workspaceContentValueClassName}`}
+        >
           {text}
         </span>
       ) : null}

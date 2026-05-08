@@ -10,7 +10,7 @@ import { fetchHourlyClimateYear } from "../lib/metClient";
 import { hourlyIrradianceForYear } from "../lib/solarEngine";
 import { simulateBattery, computeReliabilityMetrics } from "../lib/batterySimulator";
 import type { ReliabilityMetrics } from "../types";
-import WorkspaceHeader from "../components/WorkspaceHeader";
+import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
 import WorkspaceSection from "../components/WorkspaceSection";
 import { API_ENDPOINTS, STORAGE_KEYS } from "../constants";
 import { useConfigurationContext } from "../context/ConfigurationContext";
@@ -23,8 +23,6 @@ import {
   workspaceContentValueClassName,
   workspaceMetaClassName,
   workspacePageClassName,
-  workspacePrimaryButtonClassName,
-  workspaceSecondaryButtonClassName,
   workspaceTitleClassName
 } from "../styles/workspace";
 import { BackupSourceName, CostComparisonItem, MonthlyEnergyBalanceRow, ValidationErrors } from "../types";
@@ -829,23 +827,22 @@ export default function AnalysisPage() {
         title={t("analysis.title")}
         actions={
           <>
-            <button
-              type="button"
+            <WorkspaceHeaderActionButton
+              icon={workspaceHeaderActionIcons.run}
+              label="Kjør på nytt"
+              subLabel="Analyse"
               onClick={handleSave}
               disabled={!foundationReady || !hasSystemDetails}
-              className={`${workspaceSecondaryButtonClassName} disabled:cursor-not-allowed disabled:opacity-45`}
-            >
-              Kjør på nytt
-            </button>
+            />
             {showRecommendationContent && recommendation ? (
-              <button
-                type="button"
+              <WorkspaceHeaderActionButton
+                icon={workspaceHeaderActionIcons.report}
                 disabled={isGeneratingReport}
                 onClick={handleGenerateReport}
-                className={`${workspacePrimaryButtonClassName} disabled:cursor-not-allowed disabled:opacity-50`}
-              >
-                {isGeneratingReport ? "Genererer..." : "Generer rapport"}
-              </button>
+                label={isGeneratingReport ? "Genererer..." : "Generer rapport"}
+                subLabel="PDF"
+                primary
+              />
             ) : null}
           </>
         }

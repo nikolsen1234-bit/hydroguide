@@ -263,7 +263,7 @@ export default function RadioLinkMap({
   }, []);
 
   return (
-    <div className="radiolink-map isolate relative h-full min-h-[280px] overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)]">
+    <div className="radiolink-map isolate relative h-full min-h-[220px] overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)]">
       <div ref={containerRef} className="h-full w-full" />
 
       <div className="pointer-events-none absolute right-3 top-3 z-[1000] max-w-[8.75rem] whitespace-normal rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)]/95 px-2 py-0.5 text-center text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-[var(--hg-ink)] [overflow-wrap:anywhere] sm:right-4 sm:top-4 sm:max-w-[calc(100%-5.5rem)] sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-[length:var(--hg-type-ui-size)]">

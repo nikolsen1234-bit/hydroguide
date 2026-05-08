@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
 import RadioLinkMap from "../components/RadioLinkMap";
-import WorkspaceHeader from "../components/WorkspaceHeader";
+import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
 import WorkspaceSection from "../components/WorkspaceSection";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
@@ -11,13 +11,9 @@ import {
   workspaceChartTooltipTitleFontSize,
   workspaceFieldLabelClassName,
   workspaceFieldLabelRowClassName,
-  workspaceFieldStackClassName,
   workspaceMetaClassName,
   workspacePageClassName,
-  workspacePrimaryButtonClassName,
-  workspaceSecondaryButtonClassName,
-  workspaceSubsectionTitleClassName,
-  workspaceTallInputClassName
+  workspaceSubsectionTitleClassName
 } from "../styles/workspace";
 import type { HeightScale, KFactorKey } from "../types";
 import { formatNumber } from "../utils/format";
@@ -31,19 +27,26 @@ import {
   type RadioLinkFormState
 } from "../utils/radioLink";
 
-const fieldClassName = workspaceTallInputClassName;
-
-const numberFieldClassName = `${fieldClassName} hide-number-spin`;
-const segmentedControlClassName = "inline-flex shrink-0 rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)] p-0.5";
-const segmentedButtonClassName =
-  "rounded-md px-3 py-1.5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] transition";
-const activeSegmentClassName = "bg-[var(--hg-accent)] text-white";
-const inactiveSegmentClassName = "text-[var(--hg-muted)] hover:bg-[var(--hg-surface)] hover:text-[var(--hg-ink)]";
-const endpointPanelClassName = "rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)] p-3";
+const activeSegmentClassName = "border-[var(--hg-accent)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]";
+const inactiveSegmentClassName = "border-transparent text-[var(--hg-ink-2)] hover:text-[var(--hg-ink)]";
+const endpointPanelClassName = "rounded-[8px] border border-[var(--hg-hairline)] bg-[var(--hg-surface)] p-2.5 2xl:p-3.5";
 const endpointBadgeClassName = (tone: "cool" | "warm") =>
   tone === "cool"
     ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
     : "border-[var(--hg-hairline)] bg-[var(--hg-warn-soft)] text-[var(--hg-warn)]";
+const radioBlueprintPanelClassName = "border-t-2 border-[var(--hg-ink)] pt-1.5";
+const radioBlueprintKickerClassName =
+  "hg-mono text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.14em] text-[var(--hg-ink-2)]";
+const radioBlueprintTitleClassName =
+  "text-[15px] font-[var(--hg-type-weight-extra)] leading-tight tracking-normal text-[var(--hg-ink)]";
+const radioBlueprintControlLineClassName =
+  "mt-0.5 flex items-baseline gap-2 border-b-2 border-[var(--hg-hairline)] pb-0.5 transition-colors focus-within:border-[var(--hg-accent)]";
+const radioBlueprintInputClassName =
+  "hg-mono min-w-0 flex-1 border-0 bg-transparent p-0 text-[15px] font-[var(--hg-type-weight-extra)] text-[var(--hg-ink)] outline-none placeholder:text-[var(--hg-muted)] focus:text-[var(--hg-accent)]";
+const radioBlueprintSelectClassName =
+  "hg-mono min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[15px] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none focus:text-[var(--hg-accent)]";
+const radioBlueprintUnitClassName =
+  "hg-mono shrink-0 text-[12px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.1em] text-[var(--hg-ink-2)]";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -69,7 +72,7 @@ function InlineUnitInput({
   step: _step,
   allowEmpty = false,
   placeholder,
-  inputPaddingClassName = "pr-20",
+  inputPaddingClassName: _inputPaddingClassName = "pr-20",
   onChange
 }: {
   label: string;
@@ -94,9 +97,9 @@ function InlineUnitInput({
   }, [value]);
 
   return (
-    <label className={`block ${workspaceFieldStackClassName}`}>
-      <span className={workspaceFieldLabelClassName}>{label}</span>
-      <div className="relative">
+    <label className="flex min-w-0 flex-col gap-1">
+      {label ? <span className={radioBlueprintKickerClassName}>{label}</span> : null}
+      <div className={radioBlueprintControlLineClassName}>
         <input
           type="text"
           inputMode={inputMode}
@@ -165,9 +168,9 @@ function InlineUnitInput({
 
             onChange(numericValue);
           }}
-          className={`${numberFieldClassName} ${inputPaddingClassName}`}
+          className={`${radioBlueprintInputClassName} hide-number-spin`}
         />
-        <span className={`pointer-events-none absolute inset-y-0 right-4 flex items-center ${workspaceFieldLabelClassName}`}>
+        <span className={radioBlueprintUnitClassName}>
           {unit}
         </span>
       </div>
@@ -175,24 +178,96 @@ function InlineUnitInput({
   );
 }
 
-function ProfileChart({ analysis }: { analysis: RadioLinkAnalysis | null }) {
+function EmptyProfilePreview({ compact = false }: { compact?: boolean }) {
+  const heightClassName = compact ? "h-full min-h-0" : "h-64";
+
+  return (
+    <div className={`${heightClassName} overflow-hidden rounded-[8px] border border-[var(--hg-hairline)] bg-[var(--hg-surface)]`}>
+      <svg viewBox="0 0 900 315" preserveAspectRatio={compact ? "none" : "xMidYMid meet"} className="h-full w-full" role="img" aria-label="Forhåndsvisning av terrengprofil">
+        <rect width="900" height="315" fill="var(--hg-surface)" />
+        {[0, 1, 2, 3, 4].map((step) => {
+          const y = 38 + step * 52;
+          return (
+            <g key={step}>
+              <line x1="58" x2="868" y1={y} y2={y} stroke="var(--hg-hairline)" strokeDasharray="4 7" />
+              <text x="42" y={y + 4} textAnchor="end" fontSize="11" fill="var(--hg-muted)">
+                {1200 - step * 300}
+              </text>
+            </g>
+          );
+        })}
+        {[0, 1, 2, 3, 4, 5].map((step) => {
+          const x = 58 + step * 162;
+          return <line key={step} x1={x} x2={x} y1="38" y2="262" stroke="var(--hg-hairline-2)" />;
+        })}
+        <text x="17" y="32" fontSize="11" fontWeight="700" fill="var(--hg-muted)">
+          moh
+        </text>
+        <path
+          d="M58 262 L58 74 L96 132 L138 156 L180 185 L225 170 L272 198 L318 184 L360 215 L404 222 L448 196 L494 228 L536 240 L582 223 L628 238 L674 216 L716 226 L760 203 L806 218 L848 94 L868 262 Z"
+          fill="url(#radio-empty-terrain-fill)"
+        />
+        <path
+          d="M58 74 L96 132 L138 156 L180 185 L225 170 L272 198 L318 184 L360 215 L404 222 L448 196 L494 228 L536 240 L582 223 L628 238 L674 216 L716 226 L760 203 L806 218 L848 94"
+          fill="none"
+          stroke="#5f9d55"
+          strokeWidth="2"
+        />
+        <path d="M58 104 C255 126 472 155 848 142" fill="none" stroke="var(--hg-accent-2)" strokeWidth="2.3" />
+        <path
+          d="M58 88 C250 103 460 130 848 124M58 120 C260 147 486 175 848 162"
+          fill="none"
+          stroke="#60a5fa"
+          strokeWidth="1.5"
+          strokeDasharray="6 7"
+        />
+        <path d="M58 246 C310 224 570 192 848 232" fill="none" stroke="var(--hg-muted)" strokeWidth="1.5" strokeDasharray="6 7" />
+        <g>
+          <rect x="74" y="55" width="25" height="25" rx="6" fill="var(--hg-accent-soft)" stroke="var(--hg-accent-2)" />
+          <text x="86.5" y="72" textAnchor="middle" fontSize="12" fontWeight="800" fill="var(--hg-accent)">
+            A
+          </text>
+          <rect x="824" y="125" width="25" height="25" rx="6" fill="var(--hg-warn-soft)" stroke="var(--hg-warn)" />
+          <text x="836.5" y="142" textAnchor="middle" fontSize="12" fontWeight="800" fill="var(--hg-warn)">
+            B
+          </text>
+        </g>
+        {[0, 1, 2, 3, 4].map((step) => {
+          const x = 58 + step * 202.5;
+          return (
+            <text key={step} x={x} y="292" textAnchor={step === 0 ? "start" : step === 4 ? "end" : "middle"} fontSize="11" fill="var(--hg-muted)">
+              {step * 40} km
+            </text>
+          );
+        })}
+        <defs>
+          <linearGradient id="radio-empty-terrain-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#dff0d7" />
+            <stop offset="100%" stopColor="#f8fafc" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+}
+
+function ProfileChart({ analysis, compact = false }: { analysis: RadioLinkAnalysis | null; compact?: boolean }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const isMobile = useIsMobile();
   const { t } = useLanguage();
+  const isCompactDesktop = compact && !isMobile;
 
   if (!analysis) {
-    return (
-      <div className={`flex h-64 items-center justify-center rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)] text-[var(--hg-muted)] ${workspaceBodyClassName}`}>
-        {t("radio.noProfile")}
-      </div>
-    );
+    return <EmptyProfilePreview compact={isCompactDesktop} />;
   }
 
-  const width = isMobile ? 430 : 1200;
-  const height = isMobile ? 300 : 360;
+  const width = isMobile ? 430 : isCompactDesktop ? 1040 : 1200;
+  const height = isMobile ? 300 : isCompactDesktop ? 285 : 360;
   const padding = isMobile
     ? { top: 16, right: 8, bottom: 34, left: 36 }
-    : { top: 22, right: 12, bottom: 42, left: 56 };
+    : isCompactDesktop
+      ? { top: 18, right: 10, bottom: 36, left: 48 }
+      : { top: 22, right: 12, bottom: 42, left: 56 };
 
   const yAxisFontSize = "var(--hg-type-chart-size)";
   const tooltipTitleFontSize = workspaceChartTooltipTitleFontSize;
@@ -258,11 +333,11 @@ function ProfileChart({ analysis }: { analysis: RadioLinkAnalysis | null }) {
   }
 
   return (
-    <div className="space-y-5">
-      <div className={`pt-2 ${isMobile ? "" : "xl:-mx-4 2xl:-mx-6"}`}>
+    <div className={isCompactDesktop ? "flex h-full min-h-0 flex-col" : "space-y-5"}>
+      <div className={`${isCompactDesktop ? "min-h-0 flex-1" : "pt-2"} ${isMobile || isCompactDesktop ? "" : "xl:-mx-4 2xl:-mx-6"}`}>
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="block h-auto w-full cursor-crosshair"
+          className={`${isCompactDesktop ? "h-full" : "h-auto"} block w-full cursor-crosshair`}
           role="img"
           aria-label={t("radio.terrainProfile")}
           onPointerMove={handlePointerMove}
@@ -371,7 +446,7 @@ function ProfileChart({ analysis }: { analysis: RadioLinkAnalysis | null }) {
         </svg>
       </div>
 
-      <div className={`flex flex-wrap gap-3 ${workspaceMetaClassName}`} style={{ paddingLeft: isMobile ? 0 : `${(padding.left / width) * 100}%` }}>
+      <div className={`flex flex-wrap ${isCompactDesktop ? "hidden" : "gap-3"} ${workspaceMetaClassName}`} style={{ paddingLeft: isMobile ? 0 : `${(padding.left / width) * 100}%` }}>
         <span className="flex items-center gap-2">
           <span className="h-3.5 w-3.5 rounded-sm bg-[var(--hg-ink-2)]" />
           {t("radio.terrain")}
@@ -393,83 +468,6 @@ function ProfileChart({ analysis }: { analysis: RadioLinkAnalysis | null }) {
   );
 }
 
-function StationPanel({
-  label,
-  tone,
-  endpoint,
-  onCoordinateChange,
-  onHeightChange,
-  onScaleChange
-}: {
-  label: string;
-  tone: "cool" | "warm";
-  endpoint: RadioLinkEndpointInput;
-  onCoordinateChange: (value: string) => void;
-  onHeightChange: (value: number | "") => void;
-  onScaleChange: (value: HeightScale) => void;
-}) {
-  const { t } = useLanguage();
-  const heightScaleOptions = [
-    { value: "AGL" as HeightScale, label: t("radio.agl") },
-    { value: "ASL" as HeightScale, label: t("radio.asl") }
-  ];
-  const heightUnit = endpoint.heightScale === "AGL" ? t("radio.metersAboveGround") : t("radio.metersAboveSeaLevel");
-
-  return (
-    <section className={endpointPanelClassName}>
-      <div className="space-y-4">
-        <label className="block">
-          <span className={`${workspaceFieldLabelRowClassName} mb-2 gap-3`}>
-            <span className={`hg-mono inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-2 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-extra)] ${endpointBadgeClassName(tone)}`}>
-              {label}
-            </span>
-            <span className={workspaceFieldLabelClassName}>{t("radio.location")} {label}</span>
-          </span>
-          <input
-            value={endpoint.coordinate}
-            onChange={(event) => onCoordinateChange(event.target.value)}
-            className={fieldClassName}
-            placeholder={t("radio.coordinateXY")}
-          />
-        </label>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <span className={workspaceFieldLabelClassName}>{t("radio.antennaHeight")}</span>
-            <div className={segmentedControlClassName}>
-              {heightScaleOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => onScaleChange(option.value)}
-                  className={`${segmentedButtonClassName} ${
-                    endpoint.heightScale === option.value
-                      ? activeSegmentClassName
-                      : inactiveSegmentClassName
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <InlineUnitInput
-            label=""
-            unit={heightUnit}
-            value={endpoint.antennaHeight}
-            min={0}
-            allowEmpty
-            placeholder={t("radio.enterHeight")}
-            inputPaddingClassName="pr-40"
-            onChange={onHeightChange}
-          />
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function ResultRow({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "good" | "bad" }) {
   const valueClassName =
     tone === "good" ? "text-[var(--hg-ok)]" : tone === "bad" ? "text-rose-600" : "text-[var(--hg-ink)]";
@@ -482,8 +480,225 @@ function ResultRow({ label, value, tone = "default" }: { label: string; value: s
   );
 }
 
+function PendingMetric({ widthClassName = "w-16" }: { widthClassName?: string }) {
+  return (
+    <span
+      className={`inline-block h-2 rounded-full bg-[var(--hg-hairline)] align-middle ${widthClassName}`}
+      aria-label="Ikke beregnet"
+    />
+  );
+}
+
+function ResultCell({
+  value,
+  className = ""
+}: {
+  value: string;
+  className?: string;
+}) {
+  return (
+    <td className={`px-3 py-1.5 tabular-nums ${className}`}>
+      {value === "-" ? <PendingMetric widthClassName="w-12" /> : value}
+    </td>
+  );
+}
+
+function BlueprintPanel({
+  title,
+  actions,
+  children,
+  className = ""
+}: {
+  eyebrow?: string;
+  title: ReactNode;
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`${radioBlueprintPanelClassName} ${className}`}>
+      <div className="mb-1 flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
+          {typeof title === "string" ? <h2 className={radioBlueprintTitleClassName}>{title}</h2> : title}
+        </div>
+        {actions ? <div className="shrink-0">{actions}</div> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function StatusPill({ tone, children }: { tone: "ok" | "muted"; children: ReactNode }) {
+  return (
+    <span
+      className={`hg-mono inline-flex h-6 items-center gap-1.5 rounded-md border px-2 text-[10px] font-[var(--hg-type-weight-bold)] uppercase leading-none tracking-[0.14em] ${
+        tone === "ok"
+          ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+          : "border-[var(--hg-hairline)] bg-[var(--hg-surface-2)] text-[var(--hg-ink-2)]"
+      }`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${tone === "ok" ? "bg-emerald-700" : "bg-[var(--hg-muted)]"}`} />
+      {children}
+    </span>
+  );
+}
+
+function BlueprintTextInput({
+  label,
+  value,
+  placeholder,
+  onChange
+}: {
+  label: string;
+  value: string;
+  placeholder?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block min-w-0">
+      <span className={radioBlueprintKickerClassName}>{label}</span>
+      <div className={radioBlueprintControlLineClassName}>
+        <input
+          value={value}
+          placeholder={placeholder}
+          onChange={(event) => onChange(event.target.value)}
+          className={radioBlueprintInputClassName}
+        />
+      </div>
+    </label>
+  );
+}
+
+function BlueprintNumberInput({
+  label,
+  unit,
+  value,
+  min,
+  onChange
+}: {
+  label: string;
+  unit: string;
+  value: number | "";
+  min?: number;
+  onChange: (value: number | "") => void;
+}) {
+  const allowNegative = min === undefined || min < 0;
+  const [draftValue, setDraftValue] = useState(() => formatNumberDraft(value));
+  const isEditingRef = useRef(false);
+
+  useEffect(() => {
+    if (!isEditingRef.current) {
+      setDraftValue(formatNumberDraft(value));
+    }
+  }, [value]);
+
+  return (
+    <label className="block min-w-0">
+      <span className={radioBlueprintKickerClassName}>{label}</span>
+      <span className={radioBlueprintControlLineClassName}>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={draftValue}
+          onFocus={() => {
+            isEditingRef.current = true;
+          }}
+          onChange={(event) => {
+            const normalized = event.target.value.replace(",", ".");
+            const pattern = allowNegative ? /^-?\d*(?:\.\d*)?$/ : /^\d*(?:\.\d*)?$/;
+            if (!pattern.test(normalized)) {
+              return;
+            }
+            setDraftValue(normalized);
+            if (normalized === "" || normalized === "." || normalized === "-" || normalized === "-." || normalized.endsWith(".")) {
+              onChange(normalized === "" ? "" : value);
+              return;
+            }
+            const numericValue = Number(normalized);
+            if (!Number.isNaN(numericValue)) {
+              onChange(numericValue);
+            }
+          }}
+          onBlur={() => {
+            isEditingRef.current = false;
+            if (draftValue === "" || draftValue === "." || draftValue === "-" || draftValue === "-.") {
+              onChange("");
+              setDraftValue("");
+              return;
+            }
+            const numericValue = Number(draftValue);
+            if (Number.isNaN(numericValue)) {
+              setDraftValue(formatNumberDraft(value));
+              return;
+            }
+            onChange(numericValue);
+          }}
+          className={radioBlueprintInputClassName}
+        />
+        <span className={radioBlueprintUnitClassName}>{unit}</span>
+      </span>
+    </label>
+  );
+}
+
+function BlueprintSelect({
+  label,
+  value,
+  options,
+  onChange
+}: {
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block min-w-0">
+      <span className={radioBlueprintKickerClassName}>{label}</span>
+      <div className={`${radioBlueprintControlLineClassName} items-center justify-between`}>
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={radioBlueprintSelectClassName}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <span className="text-[var(--hg-ink-2)]">▾</span>
+      </div>
+    </label>
+  );
+}
+
+function BlueprintReadout({
+  label,
+  value,
+  unit,
+  tone = "default"
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  tone?: "default" | "good" | "bad" | "accent";
+}) {
+  const toneClassName =
+    tone === "good" ? "text-[var(--hg-ok)]" : tone === "bad" ? "text-rose-600" : tone === "accent" ? "text-[var(--hg-accent)]" : "text-[var(--hg-ink)]";
+  return (
+    <div className="min-w-0">
+      <p className={radioBlueprintKickerClassName}>{label}</p>
+      <p className={`${radioBlueprintControlLineClassName} font-[var(--hg-type-mono-family)] text-[15px] font-[var(--hg-type-weight-extra)] tabular-nums ${toneClassName}`}>
+        <span className="min-w-0 truncate">{value === "-" ? <PendingMetric widthClassName="w-14" /> : value}</span>
+        {unit && value !== "-" ? <span className={radioBlueprintUnitClassName}>{unit}</span> : null}
+      </p>
+    </div>
+  );
+}
+
 export default function RadioLinkPage() {
-  const { activeDraft, resetDraft, saveDraftMetadata, updateConfigSectionField, updateRadioLinkEndpoint, updateCachedRadioAnalysis } = useConfigurationContext();
+  const { activeDraft, saveDraftMetadata, updateConfigSectionField, updateRadioLinkEndpoint, updateCachedRadioAnalysis } = useConfigurationContext();
   const { t } = useLanguage();
   const [analysis, setAnalysis] = useState<RadioLinkAnalysis | null>(
     (activeDraft.cachedRadioAnalysis as RadioLinkAnalysis) ?? null
@@ -562,120 +777,7 @@ export default function RadioLinkPage() {
     void calculate(form);
   }
 
-  function handleReset() {
-    requestIdRef.current += 1;
-    setLoading(false);
-    setError(null);
-    setAnalysis(null);
-    updateCachedRadioAnalysis(null);
-    setShowMapMarkers(false);
-    resetDraft();
-  }
-
-  /* ---- Shared fragments reused by both mobile and desktop layouts ---- */
-
-  const stationPanels = (
-    <>
-      <StationPanel
-        label="A"
-        tone="cool"
-        endpoint={form.pointA}
-        onCoordinateChange={(value) => updateRadioLinkEndpoint("pointA", { coordinate: value })}
-        onHeightChange={(value) => updateRadioLinkEndpoint("pointA", { antennaHeight: value })}
-        onScaleChange={(value) => updateRadioLinkEndpoint("pointA", { heightScale: value })}
-      />
-      <StationPanel
-        label="B"
-        tone="warm"
-        endpoint={form.pointB}
-        onCoordinateChange={(value) => updateRadioLinkEndpoint("pointB", { coordinate: value })}
-        onHeightChange={(value) => updateRadioLinkEndpoint("pointB", { antennaHeight: value })}
-        onScaleChange={(value) => updateRadioLinkEndpoint("pointB", { heightScale: value })}
-      />
-    </>
-  );
-
-  const radioParamFields = (
-    <>
-      <InlineUnitInput
-        label={t("radio.frequency")}
-        unit="MHz"
-        min={1}
-        step={0.1}
-        value={form.frequencyMHz}
-        onChange={(value) => {
-          if (value === "") {
-            return;
-          }
-
-          updateConfigSectionField("radioLink", "frequencyMHz", value);
-        }}
-      />
-
-      <label className={`block ${workspaceFieldStackClassName}`}>
-        <span className={workspaceFieldLabelClassName}>{t("radio.fresnel")}</span>
-        <div className="flex h-12 items-center gap-3">
-          <input
-            type="range"
-            min="0.6"
-            max="3"
-            step="0.1"
-            value={form.fresnelFactor}
-            onChange={(event) =>
-              updateConfigSectionField("radioLink", "fresnelFactor", clampFresnelFactor(Number(event.target.value)))
-            }
-            className="radiolink-slider min-w-0 flex-1"
-          />
-          <div className="hg-mono inline-flex min-w-[3.75rem] justify-center rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 py-1 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)] tabular-nums">
-            {formatNumber(form.fresnelFactor, 1)}
-          </div>
-        </div>
-      </label>
-
-      <label className={`block ${workspaceFieldStackClassName}`}>
-        <span className={workspaceFieldLabelClassName}>{t("radio.kFactor")}</span>
-        <select
-          value={form.kFactor}
-          onChange={(event) => updateConfigSectionField("radioLink", "kFactor", event.target.value as KFactorKey)}
-          className={fieldClassName}
-        >
-          <option value="4/3">4/3</option>
-          <option value="1">1</option>
-          <option value="2/3">2/3</option>
-          <option value="-2/3">-2/3</option>
-        </select>
-      </label>
-
-      <label className={`block ${workspaceFieldStackClassName}`}>
-        <span className={workspaceFieldLabelClassName}>{t("radio.polarization")}</span>
-        <select
-          value={form.polarization}
-          onChange={(event) =>
-            updateConfigSectionField("radioLink", "polarization", event.target.value as "horizontal" | "vertical")
-          }
-          className={fieldClassName}
-        >
-          <option value="horizontal">{t("radio.horizontal")}</option>
-          <option value="vertical">{t("radio.vertical")}</option>
-        </select>
-      </label>
-
-      <InlineUnitInput
-        label={t("radio.rain")}
-        unit="mm/h"
-        min={0}
-        step={1}
-        value={form.rainFactor}
-        onChange={(value) => {
-          if (value === "") {
-            return;
-          }
-
-          updateConfigSectionField("radioLink", "rainFactor", value);
-        }}
-      />
-    </>
-  );
+  /* ---- Shared fragments reused by mobile and desktop layouts ---- */
 
   const resultRows = (
     <>
@@ -692,6 +794,11 @@ export default function RadioLinkPage() {
       <ResultRow label={t("radio.terrainDistance")} value={analysis ? `${formatNumber(analysis.terrainDistanceKm, 2)} km` : "-"} />
       <ResultRow label={t("radio.linkDistance")} value={analysis ? `${formatNumber(analysis.linkDistanceKm, 2)} km` : "-"} />
       <ResultRow label={t("radio.freeSpaceLoss")} value={analysis ? `${formatNumber(analysis.freeSpaceLossDb, 2)} dB` : "-"} />
+      <ResultRow
+        label="Estimert margin"
+        value={analysis ? `${formatNumber(analysis.estimatedMarginDb, 1)} dB` : "-"}
+        tone={analysis ? (analysis.estimatedMarginDb >= 0 ? "good" : "bad") : "default"}
+      />
       <ResultRow
         label={t("radio.elevation")}
         value={analysis ? `${formatNumber(analysis.elevationA, 2)}\u00B0 / ${formatNumber(analysis.elevationB, 2)}\u00B0` : "-"}
@@ -712,31 +819,406 @@ export default function RadioLinkPage() {
     </>
   );
 
+  const formatHeightScale = (scale: HeightScale) => (scale === "AGL" ? t("radio.agl") : t("radio.asl"));
+  const formatAntennaHeight = (endpoint: RadioLinkEndpointInput) =>
+    endpoint.antennaHeight === "" ? "-" : `${formatNumber(endpoint.antennaHeight, 0)} m ${formatHeightScale(endpoint.heightScale)}`;
+  const formatCoordinate = (endpoint: RadioLinkEndpointInput, point: RadioLinkPoint | null) =>
+    point ? `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}` : endpoint.coordinate.trim() || "-";
+
+  const profileSummary = (
+    <div className="mt-3 grid overflow-hidden rounded-[8px] border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)] sm:grid-cols-4">
+      {(analysis ? [
+        [t("radio.terrainDistance"), `${formatNumber(analysis.terrainDistanceKm, 2)} km`],
+        [t("radio.linkDistance"), `${formatNumber(analysis.linkDistanceKm, 2)} km`],
+        ["Høydeforskjell A-B", `${analysis.endAltitudeM - analysis.startAltitudeM >= 0 ? "+" : ""}${formatNumber(analysis.endAltitudeM - analysis.startAltitudeM, 0)} m`],
+        ["Maks terrenghøyde", `${formatNumber(Math.max(...analysis.series.terrain), 0)} ${t("radio.masl")}`]
+      ] : [
+        [t("radio.terrainDistance"), "-"],
+        [t("radio.linkDistance"), "-"],
+        ["H\u00f8ydeforskjell A-B", "-"],
+        ["Maks terrengh\u00f8yde", "-"]
+      ]).map(([label, value], index) => (
+        <div key={label} className="border-t border-[var(--hg-hairline)] px-3 py-2 first:border-t-0 sm:border-l sm:border-t-0 sm:first:border-l-0">
+          <p className="text-[10px] font-[var(--hg-type-weight-medium)] leading-tight text-[var(--hg-muted)]">{label}</p>
+          <p className="mt-1 text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-extra)] tabular-nums text-[var(--hg-ink)]">
+            {value === "-" ? <PendingMetric widthClassName={index < 2 ? "w-20" : "w-14"} /> : value}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+
+  const pointTableRows = [
+    {
+      key: "A",
+      tone: "cool" as const,
+      coordinate: formatCoordinate(form.pointA, mapPointA),
+      antenna: formatAntennaHeight(form.pointA),
+      azimuth: analysis ? `${formatNumber(analysis.azimuthA, 1)}\u00B0` : "-",
+      elevation: analysis ? `${formatNumber(analysis.elevationA, 2)}\u00B0` : "-",
+      terrainHeight: analysis ? `${formatNumber(analysis.startAltitudeM, 0)} ${t("radio.masl")}` : "-",
+      los: analysis ? `${analysis.lineClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.lineClearanceM, 1)} m` : "-",
+      fresnel: analysis ? `${analysis.fresnelClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.fresnelClearanceM, 1)} m` : "-"
+    },
+    {
+      key: "B",
+      tone: "warm" as const,
+      coordinate: formatCoordinate(form.pointB, mapPointB),
+      antenna: formatAntennaHeight(form.pointB),
+      azimuth: analysis ? `${formatNumber(analysis.azimuthB, 1)}\u00B0` : "-",
+      elevation: analysis ? `${formatNumber(analysis.elevationB, 2)}\u00B0` : "-",
+      terrainHeight: analysis ? `${formatNumber(analysis.endAltitudeM, 0)} ${t("radio.masl")}` : "-",
+      los: analysis ? `${analysis.lineClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.lineClearanceM, 1)} m` : "-",
+      fresnel: analysis ? `${analysis.fresnelClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.fresnelClearanceM, 1)} m` : "-"
+    }
+  ];
+
+  const pointResultsTable = (
+    <div className="mt-2 overflow-x-auto rounded-[8px] border border-[var(--hg-hairline)] 2xl:mt-3">
+      <table className="w-full min-w-[900px] border-collapse text-[length:var(--hg-type-content-size)]">
+        <thead className="bg-[var(--hg-surface-2)]">
+          <tr className={`text-left ${workspaceMetaClassName}`}>
+            <th className="px-3 py-1.5">Punkt</th>
+            <th className="px-3 py-1.5">Koordinat XY</th>
+            <th className="px-3 py-1.5">Antennehøyde</th>
+            <th className="px-3 py-1.5">Azimut</th>
+            <th className="px-3 py-1.5">Elevasjon</th>
+            <th className="px-3 py-1.5">Terrenghøyde</th>
+            <th className="px-3 py-1.5">Klarering LOS</th>
+            <th className="px-3 py-1.5">Fresnel-klarering</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pointTableRows.map((row) => (
+            <tr key={row.key} className="border-t border-[var(--hg-hairline-2)]">
+              <td className="px-3 py-1.5">
+                <span className={`hg-mono inline-flex h-6 w-6 items-center justify-center rounded-md border text-[10px] font-[var(--hg-type-weight-extra)] ${endpointBadgeClassName(row.tone)}`}>
+                  {row.key}
+                </span>
+              </td>
+              <ResultCell value={row.coordinate} className="text-[var(--hg-ink-2)]" />
+              <ResultCell value={row.antenna} className="text-[var(--hg-ink-2)]" />
+              <ResultCell value={row.azimuth} className="text-[var(--hg-ink-2)]" />
+              <ResultCell value={row.elevation} className="text-[var(--hg-ink-2)]" />
+              <ResultCell value={row.terrainHeight} className="text-[var(--hg-ink-2)]" />
+              <ResultCell
+                value={row.los}
+                className={`font-[var(--hg-type-weight-semibold)] ${analysis && analysis.lineClearanceM >= 0 ? "text-[var(--hg-ok)]" : analysis ? "text-rose-600" : "text-[var(--hg-ink-2)]"}`}
+              />
+              <ResultCell
+                value={row.fresnel}
+                className={`font-[var(--hg-type-weight-semibold)] ${analysis && analysis.fresnelClearanceM >= 0 ? "text-[var(--hg-ok)]" : analysis ? "text-rose-600" : "text-[var(--hg-ink-2)]"}`}
+              />
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const endpointBlueprintPanel = (
+    pointKey: "pointA" | "pointB",
+    label: "A" | "B",
+    tone: "cool" | "warm",
+    point: RadioLinkPoint | null
+  ) => {
+    const endpoint = form[pointKey];
+    return (
+      <BlueprintPanel
+        eyebrow={`Endepunkt ${label}`}
+        className="min-h-0 overflow-hidden"
+        title={
+          <div className="flex min-w-0 items-center gap-3">
+            <span className={`hg-mono inline-flex h-7 w-7 shrink-0 items-center justify-center border text-[11px] font-[var(--hg-type-weight-extra)] ${endpointBadgeClassName(tone)}`}>
+              {label}
+            </span>
+            <h2 className={`${radioBlueprintTitleClassName} min-w-0 truncate`}>{label === "A" ? t("radio.pointA") : t("radio.pointB")}</h2>
+            <StatusPill tone={point ? "ok" : "muted"}>{point ? t("radio.set") : t("radio.notSet")}</StatusPill>
+          </div>
+        }
+      >
+        <div className="grid gap-x-4 gap-y-2 sm:grid-cols-3">
+          <div className="min-w-0 sm:col-span-3">
+            <BlueprintTextInput
+              label="Koordinat"
+              value={endpoint.coordinate}
+              placeholder="60.6293, 6.4131"
+              onChange={(value) => updateRadioLinkEndpoint(pointKey, { coordinate: value })}
+            />
+          </div>
+          <div className="min-w-0">
+            <BlueprintNumberInput
+              label="Mastehøgde"
+              unit={endpoint.heightScale === "AGL" ? "m" : t("radio.masl")}
+              value={endpoint.antennaHeight}
+              min={0}
+              onChange={(value) => updateRadioLinkEndpoint(pointKey, { antennaHeight: value })}
+            />
+          </div>
+          <div className="min-w-0">
+            <BlueprintSelect
+              label="Høgdetype"
+              value={endpoint.heightScale}
+              options={[
+                { value: "AGL", label: t("radio.agl") },
+                { value: "ASL", label: t("radio.asl") }
+              ]}
+              onChange={(value) => updateRadioLinkEndpoint(pointKey, { heightScale: value as HeightScale })}
+            />
+          </div>
+          <div className="min-w-0">
+            <BlueprintNumberInput
+              label="Antennegain"
+              unit="dBi"
+              value={endpoint.antennaGainDbi}
+              onChange={(value) => updateRadioLinkEndpoint(pointKey, { antennaGainDbi: value })}
+            />
+          </div>
+        </div>
+      </BlueprintPanel>
+    );
+  };
+
+  void endpointBlueprintPanel;
+
+  const endpointCompactRow = (
+    pointKey: "pointA" | "pointB",
+    label: "A" | "B",
+    tone: "cool" | "warm",
+    point: RadioLinkPoint | null
+  ) => {
+    const endpoint = form[pointKey];
+    return (
+      <div className="flex min-w-0 flex-col border-t-2 border-[var(--hg-ink)] pt-2 first:border-t-0 first:pt-0">
+        <div className="mb-1 flex min-w-0 items-center gap-2">
+          <span className={`hg-mono inline-flex h-6 w-6 shrink-0 items-center justify-center border text-[10px] font-[var(--hg-type-weight-extra)] ${endpointBadgeClassName(tone)}`}>
+            {label}
+          </span>
+          <h2 className={`${radioBlueprintTitleClassName} min-w-0 truncate`}>{label === "A" ? t("radio.pointA") : t("radio.pointB")}</h2>
+          <StatusPill tone={point ? "ok" : "muted"}>{point ? t("radio.set") : t("radio.notSet")}</StatusPill>
+        </div>
+        <div className="grid min-w-0 gap-x-3 gap-y-1.5 sm:grid-cols-3">
+          <div className="min-w-0 sm:col-span-3">
+            <BlueprintTextInput
+              label="Koordinat"
+              value={endpoint.coordinate}
+              placeholder="60.6293, 6.4131"
+              onChange={(value) => updateRadioLinkEndpoint(pointKey, { coordinate: value })}
+            />
+          </div>
+          <div className="min-w-0">
+            <BlueprintNumberInput
+              label="Mastehøgde"
+              unit={endpoint.heightScale === "AGL" ? "m" : t("radio.masl")}
+              value={endpoint.antennaHeight}
+              min={0}
+              onChange={(value) => updateRadioLinkEndpoint(pointKey, { antennaHeight: value })}
+            />
+          </div>
+          <div className="min-w-0">
+            <BlueprintSelect
+              label="Høgdetype"
+              value={endpoint.heightScale}
+              options={[
+                { value: "AGL", label: t("radio.agl") },
+                { value: "ASL", label: t("radio.asl") }
+              ]}
+              onChange={(value) => updateRadioLinkEndpoint(pointKey, { heightScale: value as HeightScale })}
+            />
+          </div>
+          <div className="min-w-0">
+            <BlueprintNumberInput
+              label="Antennegain"
+              unit="dBi"
+              value={endpoint.antennaGainDbi}
+              onChange={(value) => updateRadioLinkEndpoint(pointKey, { antennaGainDbi: value })}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const desktopEndpointPanel = (
+    <section className={`${radioBlueprintPanelClassName} hg-radio-endpoints h-full min-h-0 overflow-hidden pr-3`}>
+      <div className="grid h-full min-h-0 grid-rows-2 gap-0">
+        {endpointCompactRow("pointA", "A", "cool", mapPointA)}
+        {endpointCompactRow("pointB", "B", "warm", mapPointB)}
+      </div>
+    </section>
+  );
+
+  const desktopLinkParameters = (
+    <BlueprintPanel eyebrow="Linkparameter" title="RF-budsjett" className="min-h-0">
+      <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
+        <BlueprintNumberInput
+          label={t("radio.frequency")}
+          unit="MHz"
+          value={form.frequencyMHz}
+          min={1}
+          onChange={(value) => {
+            if (value !== "") updateConfigSectionField("radioLink", "frequencyMHz", value);
+          }}
+        />
+        <BlueprintNumberInput
+          label="Sendereffekt"
+          unit="dBm"
+          value={form.txPowerDbm}
+          min={0}
+          onChange={(value) => updateConfigSectionField("radioLink", "txPowerDbm", value)}
+        />
+        <BlueprintNumberInput
+          label="RX-sensitivitet"
+          unit="dBm"
+          value={form.rxSensitivityDbm}
+          onChange={(value) => updateConfigSectionField("radioLink", "rxSensitivityDbm", value)}
+        />
+        <BlueprintNumberInput
+          label="Linjetap"
+          unit="dB"
+          value={form.lineLossDb}
+          min={0}
+          onChange={(value) => updateConfigSectionField("radioLink", "lineLossDb", value)}
+        />
+        <BlueprintSelect
+          label={t("radio.kFactor")}
+          value={form.kFactor}
+          options={[
+            { value: "4/3", label: "4/3" },
+            { value: "1", label: "1" },
+            { value: "2/3", label: "2/3" },
+            { value: "-2/3", label: "-2/3" }
+          ]}
+          onChange={(value) => updateConfigSectionField("radioLink", "kFactor", value as KFactorKey)}
+        />
+        <BlueprintSelect
+          label={t("radio.polarization")}
+          value={form.polarization}
+          options={[
+            { value: "horizontal", label: t("radio.horizontal") },
+            { value: "vertical", label: t("radio.vertical") }
+          ]}
+          onChange={(value) => updateConfigSectionField("radioLink", "polarization", value as "horizontal" | "vertical")}
+        />
+        <BlueprintNumberInput
+          label={t("radio.rain")}
+          unit="mm/h"
+          value={form.rainFactor}
+          min={0}
+          onChange={(value) => {
+            if (value !== "") updateConfigSectionField("radioLink", "rainFactor", value);
+          }}
+        />
+        <div className="min-w-0">
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex items-center justify-between gap-3">
+              <span className={radioBlueprintKickerClassName}>{t("radio.fresnel")}</span>
+              <span className="hg-mono text-[16px] font-[var(--hg-type-weight-extra)] tabular-nums text-[var(--hg-ink)]">
+                {formatNumber(form.fresnelFactor, 1)}
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0.6"
+              max="3"
+              step="0.1"
+              value={form.fresnelFactor}
+              onChange={(event) =>
+                updateConfigSectionField("radioLink", "fresnelFactor", clampFresnelFactor(Number(event.target.value)))
+              }
+              className="radiolink-slider w-full"
+            />
+          </div>
+        </div>
+      </div>
+    </BlueprintPanel>
+  );
+  const desktopAnalysisResults = (
+    <BlueprintPanel title={t("radio.resultsSection")} className="hg-radio-results min-h-0">
+      <div className="grid gap-x-3 gap-y-1 sm:grid-cols-2">
+        <BlueprintReadout
+          label={t("radio.losClearance")}
+          value={analysis ? `${analysis.lineClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.lineClearanceM, 1)}` : "-"}
+          unit="m"
+          tone={analysis ? (analysis.lineClearanceM >= 0 ? "accent" : "bad") : "default"}
+        />
+        <BlueprintReadout
+          label={t("radio.rainAttenuation")}
+          value={analysis ? formatNumber(analysis.rainAttenuationDb, 2) : "-"}
+          unit="dB"
+        />
+        <BlueprintReadout
+          label={t("radio.azimuth")}
+          value={analysis ? `${formatNumber(analysis.azimuthA, 1)} / ${formatNumber(analysis.azimuthB, 1)}` : "-"}
+          unit="deg"
+        />
+        <BlueprintReadout
+          label={t("radio.terrainDistance")}
+          value={analysis ? formatNumber(analysis.terrainDistanceKm, 2) : "-"}
+          unit="km"
+        />
+        <BlueprintReadout
+          label={t("radio.linkDistance")}
+          value={analysis ? formatNumber(analysis.linkDistanceKm, 2) : "-"}
+          unit="km"
+        />
+        <BlueprintReadout
+          label={t("radio.freeSpaceLoss")}
+          value={analysis ? formatNumber(analysis.freeSpaceLossDb, 2) : "-"}
+          unit="dB"
+        />
+        <BlueprintReadout
+          label={t("radio.elevation")}
+          value={analysis ? `${formatNumber(analysis.elevationA, 2)} / ${formatNumber(analysis.elevationB, 2)}` : "-"}
+          unit="deg"
+        />
+        <BlueprintReadout
+          label={t("radio.fresnelClearance")}
+          value={analysis ? `${analysis.fresnelClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.fresnelClearanceM, 1)}` : "-"}
+          unit="m"
+          tone={analysis ? (analysis.fresnelClearanceM >= 0 ? "accent" : "bad") : "default"}
+        />
+        <BlueprintReadout
+          label={t("radio.pointA")}
+          value={analysis ? formatNumber(analysis.startAltitudeM, 0) : "-"}
+          unit={t("radio.masl")}
+        />
+        <BlueprintReadout
+          label={t("radio.pointB")}
+          value={analysis ? formatNumber(analysis.endAltitudeM, 0) : "-"}
+          unit={t("radio.masl")}
+        />
+      </div>
+    </BlueprintPanel>
+  );
+
   const submitButton = (
     <button
       type="submit"
       disabled={loading}
-      className="h-10 w-full rounded-lg bg-[var(--hg-accent)] px-4 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-white disabled:cursor-wait disabled:opacity-75 sm:w-auto md:transition md:hover:bg-[var(--hg-accent-2)] xl:min-w-[10rem]"
+      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[var(--hg-accent)] px-4 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-bold)] text-white shadow-[0_6px_16px_rgba(37,99,235,0.18)] disabled:cursor-wait disabled:opacity-75 sm:w-auto md:transition md:hover:bg-[var(--hg-accent-2)] xl:min-w-[12rem]"
     >
+      <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 stroke-current" strokeWidth="1.8" aria-hidden="true">
+        <path d={workspaceHeaderActionIcons.run} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
       {loading ? t("radio.calculating") : t("radio.calculate")}
     </button>
   );
+  const headerActions = (
+    <>
+      <WorkspaceHeaderActionButton
+        icon={workspaceHeaderActionIcons.reset}
+        label="Recalc"
+        onClick={() => void calculate(form)}
+        disabled={loading}
+      />
+      <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.save} label={t("shared.save")} subLabel="Lagre utkast" onClick={saveDraftMetadata} primary />
+    </>
+  );
 
   return (
-    <main className={workspacePageClassName}>
-      <WorkspaceHeader
-        title={t("radio.title")}
-        actions={
-          <>
-            <button type="button" onClick={handleReset} className={workspaceSecondaryButtonClassName}>
-              {t("shared.reset")}
-            </button>
-            <button type="button" onClick={saveDraftMetadata} className={workspacePrimaryButtonClassName}>
-              {t("shared.save")}
-            </button>
-          </>
-        }
-      />
+    <main className={`${workspacePageClassName} hg-radio-page md:flex md:h-full md:min-h-0 md:flex-col md:space-y-3 md:overflow-hidden md:pb-3`}>
+      <WorkspaceHeader title={t("radio.title")} actions={headerActions} />
 
       {/* ==================== MOBILE LAYOUT ==================== */}
       <div className="space-y-5 md:hidden">
@@ -791,33 +1273,63 @@ export default function RadioLinkPage() {
                         {parsed ? t("radio.set") : t("radio.notSet")}
                       </span>
                     </div>
-                    <input
-                      value={ep.coordinate}
-                      onChange={(e) => updateRadioLinkEndpoint(key, { coordinate: e.target.value })}
-                        className={`${fieldClassName} !h-9 !rounded-lg !px-2.5 !text-[length:var(--hg-type-meta-size)]`}
-                      placeholder="Lat, Lng"
-                    />
+                    <label className="flex min-w-0 flex-col gap-1">
+                      <span className={radioBlueprintKickerClassName}>Koordinat</span>
+                      <span className={radioBlueprintControlLineClassName}>
+                        <input
+                          value={ep.coordinate}
+                          onChange={(e) => updateRadioLinkEndpoint(key, { coordinate: e.target.value })}
+                          className={radioBlueprintInputClassName}
+                          placeholder="Lat, Lng"
+                        />
+                      </span>
+                    </label>
                     <div className="flex flex-col gap-2">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={ep.antennaHeight === "" ? "" : String(ep.antennaHeight)}
-                        onChange={(e) => {
-                          const raw = e.target.value.replace(",", ".");
-                          if (/^\d*(?:\.\d*)?$/.test(raw)) {
-                            updateRadioLinkEndpoint(key, { antennaHeight: raw === "" ? "" : Number(raw) });
-                          }
-                        }}
-                        className={`${fieldClassName} w-full !h-9 !rounded-lg !px-2.5 !text-[length:var(--hg-type-meta-size)]`}
-                        placeholder={t("radio.height")}
-                      />
-                      <div className="grid grid-cols-2 rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)] p-0.5">
+                      <label className="flex min-w-0 flex-col gap-1">
+                        <span className={radioBlueprintKickerClassName}>Mastehøgde</span>
+                        <span className={radioBlueprintControlLineClassName}>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={ep.antennaHeight === "" ? "" : String(ep.antennaHeight)}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(",", ".");
+                              if (/^\d*(?:\.\d*)?$/.test(raw)) {
+                                updateRadioLinkEndpoint(key, { antennaHeight: raw === "" ? "" : Number(raw) });
+                              }
+                            }}
+                            className={radioBlueprintInputClassName}
+                            placeholder={t("radio.height")}
+                          />
+                          <span className={radioBlueprintUnitClassName}>{ep.heightScale === "AGL" ? "m" : t("radio.masl")}</span>
+                        </span>
+                      </label>
+                      <label className="flex min-w-0 flex-col gap-1">
+                        <span className={radioBlueprintKickerClassName}>Antennegain</span>
+                        <span className={radioBlueprintControlLineClassName}>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={ep.antennaGainDbi === "" ? "" : String(ep.antennaGainDbi)}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(",", ".");
+                              if (/^-?\d*(?:\.\d*)?$/.test(raw)) {
+                                updateRadioLinkEndpoint(key, { antennaGainDbi: raw === "" || raw === "-" ? "" : Number(raw) });
+                              }
+                            }}
+                            className={radioBlueprintInputClassName}
+                            placeholder="0"
+                          />
+                          <span className={radioBlueprintUnitClassName}>dBi</span>
+                        </span>
+                      </label>
+                      <div className="grid grid-cols-2 rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] p-0.5">
                         {(["AGL", "ASL"] as HeightScale[]).map((hs) => (
                           <button
                             key={hs}
                             type="button"
                             onClick={() => updateRadioLinkEndpoint(key, { heightScale: hs })}
-                            className={`rounded-md px-2 py-1 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] ${
+                            className={`hg-mono rounded-[5px] border px-2 py-1.5 text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.14em] ${
                               ep.heightScale === hs ? activeSegmentClassName : inactiveSegmentClassName
                             }`}
                           >
@@ -854,31 +1366,60 @@ export default function RadioLinkPage() {
                     if (value !== "") updateConfigSectionField("radioLink", "rainFactor", value);
                   }}
                 />
-                <label className={`block ${workspaceFieldStackClassName}`}>
-                  <span className={workspaceFieldLabelClassName}>{t("radio.kFactor")}</span>
+                <InlineUnitInput
+                  label="Sendereffekt"
+                  unit="dBm"
+                  min={0}
+                  step={1}
+                  value={form.txPowerDbm}
+                  onChange={(value) => updateConfigSectionField("radioLink", "txPowerDbm", value)}
+                />
+                <InlineUnitInput
+                  label="RX-sensitivitet"
+                  unit="dBm"
+                  step={1}
+                  value={form.rxSensitivityDbm}
+                  onChange={(value) => updateConfigSectionField("radioLink", "rxSensitivityDbm", value)}
+                />
+                <InlineUnitInput
+                  label="Linjetap"
+                  unit="dB"
+                  min={0}
+                  step={0.1}
+                  value={form.lineLossDb}
+                  onChange={(value) => updateConfigSectionField("radioLink", "lineLossDb", value)}
+                />
+                <label className="flex min-w-0 flex-col gap-1">
+                  <span className={radioBlueprintKickerClassName}>{t("radio.kFactor")}</span>
+                  <span className={`${radioBlueprintControlLineClassName} items-center justify-between`}>
                   <select
                     value={form.kFactor}
                     onChange={(event) => updateConfigSectionField("radioLink", "kFactor", event.target.value as KFactorKey)}
-                    className={fieldClassName}
+                    className={radioBlueprintSelectClassName}
                   >
                     <option value="4/3">4/3</option>
                     <option value="1">1</option>
                     <option value="2/3">2/3</option>
                     <option value="-2/3">-2/3</option>
                   </select>
+                  <span className="text-[var(--hg-ink-2)]">▾</span>
+                  </span>
                 </label>
-                <label className={`block ${workspaceFieldStackClassName}`}>
-                  <span className={workspaceFieldLabelClassName}>{t("radio.polarization")}</span>
+                <label className="flex min-w-0 flex-col gap-1">
+                  <span className={radioBlueprintKickerClassName}>{t("radio.polarization")}</span>
+                  <span className={`${radioBlueprintControlLineClassName} items-center justify-between`}>
                   <select
                     value={form.polarization}
                     onChange={(event) =>
                       updateConfigSectionField("radioLink", "polarization", event.target.value as "horizontal" | "vertical")
                     }
-                    className={fieldClassName}
+                    className={radioBlueprintSelectClassName}
                   >
                     <option value="horizontal">{t("radio.horizontal")}</option>
                     <option value="vertical">{t("radio.vertical")}</option>
                   </select>
+                  <span className="text-[var(--hg-ink-2)]">▾</span>
+                  </span>
                 </label>
               </div>
               <div className={`${workspaceFieldLabelRowClassName} gap-3`}>
@@ -937,7 +1478,7 @@ export default function RadioLinkPage() {
         ) : null}
 
         {/* Mobile profile chart */}
-        <WorkspaceSection title={t("radio.profileChartSection")} description={t("radio.profileChartSectionDesc")}>
+        <WorkspaceSection title={t("radio.profileChartSection")}>
           <div>
             <ProfileChart analysis={analysis} />
           </div>
@@ -952,27 +1493,29 @@ export default function RadioLinkPage() {
       </div>
 
       {/* ==================== DESKTOP LAYOUT ==================== */}
-      <div className="hidden md:grid md:grid-cols-[minmax(0,1.05fr)_minmax(0,1.4fr)] md:gap-4">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <WorkspaceSection title={t("radio.locationsSection")} description={t("radio.locationsSectionDesc")}>
-            <div className="grid gap-4">
-              {stationPanels}
-            </div>
-          </WorkspaceSection>
-
-          <WorkspaceSection title={t("radio.radioParamsSection")} description={t("radio.radioParamsSectionDesc")}>
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {radioParamFields}
+      <form
+        onSubmit={handleSubmit}
+        className="hidden min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(340px,0.54fr)] grid-rows-[280px_minmax(0,1fr)] gap-x-4 gap-y-3 overflow-hidden md:grid"
+      >
+          <BlueprintPanel
+            eyebrow="Topografi"
+            title="Kart"
+            className="flex h-full min-h-0 flex-col"
+            actions={
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="hg-radio-map-action" onClick={() => setNextMapPoint("pointA")}>
+                  Sentrer A
+                </button>
+                <button type="button" className="hg-radio-map-action" onClick={() => setNextMapPoint("pointB")}>
+                  Sentrer B
+                </button>
+                <button type="button" className="hg-radio-map-action" onClick={() => setMapFitVersion((current) => current + 1)}>
+                  Tilpass
+                </button>
               </div>
-              <div className="flex justify-end">
-                <div className="w-full sm:w-auto">{submitButton}</div>
-              </div>
-            </div>
-          </WorkspaceSection>
-
-          <WorkspaceSection title={t("radio.mapSection")} description={t("radio.mapSectionDesc")}>
-            <div className="h-[300px]">
+            }
+          >
+            <div className="min-h-0 flex-1 overflow-hidden rounded-[4px] border border-[var(--hg-hairline)] bg-[var(--hg-surface)]">
               <RadioLinkMap
                 pointA={showMapMarkers ? mapPointA : null}
                 pointB={showMapMarkers ? mapPointB : null}
@@ -982,42 +1525,42 @@ export default function RadioLinkPage() {
                 fitKey={mapFitVersion > 0 ? `${activeDraft.id}:${mapFitVersion}` : undefined}
               />
             </div>
-          </WorkspaceSection>
+          </BlueprintPanel>
 
-          {error ? (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-rose-700">{error}</div>
-          ) : null}
-        </form>
+        {desktopEndpointPanel}
 
-        <div className="space-y-4">
-          <WorkspaceSection title={t("radio.profileChartSection")} description={t("radio.profileChartSectionDesc")}>
-            <ProfileChart analysis={analysis} />
-          </WorkspaceSection>
+          <BlueprintPanel
+            eyebrow="Terreng"
+            title={`LOS-profil A \u2192 B`}
+            className="flex min-h-0 flex-col"
+            actions={
+              <StatusPill tone={analysis && analysis.fresnelClearanceM >= 0 ? "ok" : "muted"}>
+                {analysis
+                  ? analysis.fresnelClearanceM >= 0
+                    ? `LOS klar · ${formatNumber(analysis.terrainDistanceKm, 2)} km`
+                    : "Krev tiltak"
+                  : "Ikke beregnet"}
+              </StatusPill>
+            }
+          >
+          <div className="min-h-0 flex-1 overflow-hidden rounded-[4px] border border-[var(--hg-hairline)] bg-[var(--hg-surface)]">
+            <ProfileChart analysis={analysis} compact />
+          </div>
+          </BlueprintPanel>
+          <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden pr-4 pt-4">
+            {desktopLinkParameters}
+            {desktopAnalysisResults}
+          </div>
+          <div className="sr-only">{submitButton}</div>
+          <div className="hidden" aria-hidden="true">
+            {profileSummary}
+            {pointResultsTable}
+          </div>
+      </form>
 
-          <section className="hg-card grid overflow-hidden sm:grid-cols-2">
-            {[
-              { label: t("radio.terrainDistance"), value: analysis ? `${formatNumber(analysis.terrainDistanceKm, 2)} km` : "-" },
-              { label: t("radio.freeSpaceLoss"), value: analysis ? `${formatNumber(analysis.freeSpaceLossDb, 2)} dB` : "-" },
-              {
-                label: t("radio.fresnelClearance"),
-                value: analysis ? `${analysis.fresnelClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.fresnelClearanceM, 1)} m` : "-"
-              },
-              { label: "Status", value: analysis ? (analysis.fresnelClearanceM >= 0 && analysis.lineClearanceM >= 0 ? "OK" : "Krev tiltak") : "-" }
-            ].map((item, index) => (
-              <div key={item.label} className={`p-4 ${index === 0 ? "" : "border-t border-[var(--hg-hairline-2)] sm:border-l sm:border-t-0"}`}>
-                <p className={workspaceMetaClassName}>{item.label}</p>
-                <p className="hg-mono mt-2 text-[1.35rem] font-[var(--hg-type-weight-bold)] tracking-[var(--hg-type-title-tracking)] text-[var(--hg-ink)]">
-                  {item.value}
-                </p>
-              </div>
-            ))}
-          </section>
-
-          <WorkspaceSection title={t("radio.resultsSection")} description={t("radio.resultsSectionDesc")}>
-            <div>{resultRows}</div>
-          </WorkspaceSection>
-        </div>
-      </div>
+      {error ? (
+        <div className="hidden rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-rose-700 md:block">{error}</div>
+      ) : null}
     </main>
   );
 }

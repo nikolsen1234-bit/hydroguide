@@ -13,14 +13,14 @@
   --hg-type-root-size: 14.5px;
   --hg-type-page-title-size: 1.655rem;
   --hg-type-page-title-leading: 1.08;
-  --hg-type-section-title-size: 0.9rem;
+  --hg-type-section-title-size: 1.034rem;
   --hg-type-section-title-leading: 1.2;
   --hg-type-category-size: 0.9rem;
   --hg-type-category-leading: 1.25;
   --hg-type-content-size: 0.9rem;
   --hg-type-content-leading: 1.55;
-  --hg-type-ui-size: 0.83rem;
-  --hg-type-meta-size: 0.69rem;
+  --hg-type-ui-size: 0.897rem;
+  --hg-type-meta-size: 0.828rem;
   --hg-type-chart-size: 12px;
   --hg-type-weight-medium: 500;
   --hg-type-weight-semibold: 600;
@@ -37,7 +37,7 @@
   --hg-surface-2: #f8fafc;
   --hg-ink: #0b1320;
   --hg-ink-2: #1f2937;
-  --hg-muted: #64748b;
+  --hg-muted: #1f2937;
   --hg-hairline: #e6e9ee;
   --hg-hairline-2: #eef1f4;
   --hg-accent: #1d4ed8;
@@ -59,7 +59,7 @@
   --hg-surface-2: #161c2a;
   --hg-ink: #e6edf7;
   --hg-ink-2: #c4cdde;
-  --hg-muted: #7e8aa3;
+  --hg-muted: #c4cdde;
   --hg-hairline: #1f2738;
   --hg-hairline-2: #1a2030;
   --hg-accent: #7aa2ff;
@@ -108,6 +108,22 @@ textarea {
   border-color: var(--hg-hairline);
 }
 
+.hg-welcome-logo-bg-light {
+  display: block;
+}
+
+.hg-welcome-logo-bg-dark {
+  display: none;
+}
+
+[data-theme="dark"] .hg-welcome-logo-bg-light {
+  display: none;
+}
+
+[data-theme="dark"] .hg-welcome-logo-bg-dark {
+  display: block;
+}
+
 .hg-theme-button {
   border: 1px solid var(--hg-hairline);
   background: var(--hg-surface-2);
@@ -128,6 +144,258 @@ textarea {
 
 .hg-card-header {
   border-bottom: 1px solid var(--hg-hairline-2);
+}
+
+.hg-params-page .hg-card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding-top: 20px;
+  border-top: 2px solid var(--hg-ink);
+  position: relative;
+}
+
+.hg-params-page .hg-card-header {
+  border-bottom: 0;
+  padding: 0 0 10px 0;
+  background: transparent;
+}
+
+.hg-params-page .hg-card > div:last-child {
+  padding: 0 0 4px 0;
+}
+
+.hg-params-page .hg-card + .hg-card {
+  margin-top: 24px;
+  padding-top: 24px;
+}
+
+/* Fit-mode: tre seksjoner får plass uten scroll */
+.hg-params-page--fit {
+  display: flex;
+  flex-direction: column;
+}
+
+.hg-params-page--fit .hg-params-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) and (min-height: 820px) {
+  .hg-params-page--fit {
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .hg-params-page--fit .hg-params-stack {
+    grid-template-rows: minmax(0, 1.35fr) minmax(min-content, 0.9fr) max-content;
+    overflow: hidden;
+  }
+
+  .hg-params-page--fit .hg-params-stack > .hg-card {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hg-params-page--fit .hg-params-stack > .hg-card > div:last-child {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .hg-params-page--fit .hg-params-stack > .hg-card + .hg-card {
+    margin-top: 0;
+    padding-top: 24px;
+  }
+}
+
+/* ============================================================
+   RADIOLINJE-SIDEN — flat layout, ingen hero-bokser
+   ============================================================ */
+.hg-radio-page section[class*="rounded-"] {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.hg-radio-page section[class*="rounded-"] > div:first-child {
+  border-bottom: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 8px !important;
+}
+
+.hg-radio-page section[class*="rounded-"] > div:last-child {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.hg-radio-page--fit {
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* KPI-strip øverst */
+.hg-radio-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border-top: 2px solid var(--hg-ink);
+  border-bottom: 1px solid var(--hg-hairline);
+  padding: 10px 0;
+  margin-bottom: 12px;
+}
+
+.hg-radio-kpi-strip > * + * {
+  border-left: 1px solid var(--hg-hairline);
+  padding-left: 16px;
+}
+
+.hg-radio-kpi-strip > *:not(:last-child) {
+  padding-right: 16px;
+}
+
+.hg-radio-kpi-label {
+  font-family: var(--hg-type-mono-family);
+  font-size: 9px;
+  font-weight: var(--hg-type-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--hg-ink-2);
+  margin-bottom: 4px;
+}
+
+.hg-radio-kpi-value {
+  font-family: var(--hg-type-mono-family);
+  font-size: 22px;
+  font-weight: var(--hg-type-weight-extra);
+  letter-spacing: 0;
+  color: var(--hg-ink);
+  line-height: 1;
+}
+
+.hg-radio-kpi-unit {
+  font-family: var(--hg-type-mono-family);
+  font-size: 10px;
+  font-weight: var(--hg-type-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--hg-ink-2);
+  margin-left: 4px;
+}
+
+.hg-radio-kpi-context {
+  font-family: var(--hg-type-mono-family);
+  font-size: 10px;
+  font-weight: var(--hg-type-weight-medium);
+  color: var(--hg-ink-2);
+  margin-top: 2px;
+}
+
+.hg-radio-kpi-context--accent {
+  color: var(--hg-accent);
+  font-weight: 600;
+}
+
+/* Section title på radiolinjesiden */
+.hg-radio-page section[class*="rounded-"] h2 {
+  font-size: 15px !important;
+  font-weight: var(--hg-type-weight-extra) !important;
+  letter-spacing: 0 !important;
+  line-height: 1.25 !important;
+  color: var(--hg-ink) !important;
+}
+
+.hg-radio-page section + section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 2px solid var(--hg-ink);
+}
+
+.hg-radio-page .hg-radio-endpoints {
+  margin-top: 0 !important;
+  padding-top: 0.375rem !important;
+  border-top: 2px solid var(--hg-ink) !important;
+}
+
+.hg-radio-page .hg-radio-endpoints label > div {
+  border-bottom: 2px solid var(--hg-hairline) !important;
+}
+
+.hg-radio-page .hg-radio-results {
+  padding-top: 0.125rem !important;
+}
+
+.hg-radio-page .hg-radio-results > div:first-child {
+  margin-bottom: 0.125rem !important;
+}
+
+.hg-radio-map-action {
+  min-height: 26px;
+  border: 1px solid var(--hg-hairline);
+  background: var(--hg-surface);
+  color: var(--hg-ink);
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hg-radio-map-action:hover {
+  border-color: var(--hg-accent-2);
+  color: var(--hg-accent);
+}
+
+.hg-radio-page .radiolink-map {
+  border-radius: 4px;
+  border: 0;
+}
+
+/* Section-tittel — STOR. Det er det eneste markøren vi trenger. */
+.hg-params-page .hg-card-header h2 {
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
+  line-height: 1.1 !important;
+  text-transform: none !important;
+  color: var(--hg-ink) !important;
+}
+
+/* Kicker — liten merkelapp over tittelen */
+/* Inputs på parametre-siden bruker default workspaceInputClassName.
+   Ingen globale overstyringer her — det skapte konflikter. */
+
+/* Verdi-row layout: label tight over input */
+.hg-params-page .hg-card > div:last-child label,
+.hg-params-page .hg-card > div:last-child fieldset {
+  margin-bottom: 4px;
+}
+
+/* Section title — distinct fra felt-label */
+.hg-params-page .hg-card-header h2 {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.15 !important;
+}
+
+.hg-app-shell input,
+.hg-app-shell select,
+.hg-app-shell .hg-mono,
+.hg-app-shell table {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 .hg-muted {

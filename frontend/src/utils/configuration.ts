@@ -22,6 +22,7 @@ import {
   KFactorKey,
   MonthlySolarRadiation,
   NullableBoolean,
+  NvePlantDetails,
   OtherParameters,
   PlantConfiguration,
   Polarization,
@@ -164,17 +165,33 @@ function normalizePolarization(value: unknown): Polarization {
   return value === "vertical" ? "vertical" : "horizontal";
 }
 
+function normalizeNumberWithDefault(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function numericDefault(value: EditableNumber, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
 function normalizeRadioLink(value: Partial<RadioLinkConfiguration> | undefined): RadioLinkConfiguration {
   return {
     pointA: {
       coordinate: typeof value?.pointA?.coordinate === "string" ? value.pointA.coordinate : "",
       antennaHeight: normalizeNumber(value?.pointA?.antennaHeight),
-      heightScale: normalizeHeightScale(value?.pointA?.heightScale)
+      heightScale: normalizeHeightScale(value?.pointA?.heightScale),
+      antennaGainDbi:
+        typeof value?.pointA?.antennaGainDbi === "number" && Number.isFinite(value.pointA.antennaGainDbi)
+          ? value.pointA.antennaGainDbi
+          : EMPTY_RADIO_LINK_CONFIGURATION.pointA.antennaGainDbi
     },
     pointB: {
       coordinate: typeof value?.pointB?.coordinate === "string" ? value.pointB.coordinate : "",
       antennaHeight: normalizeNumber(value?.pointB?.antennaHeight),
-      heightScale: normalizeHeightScale(value?.pointB?.heightScale)
+      heightScale: normalizeHeightScale(value?.pointB?.heightScale),
+      antennaGainDbi:
+        typeof value?.pointB?.antennaGainDbi === "number" && Number.isFinite(value.pointB.antennaGainDbi)
+          ? value.pointB.antennaGainDbi
+          : EMPTY_RADIO_LINK_CONFIGURATION.pointB.antennaGainDbi
     },
     frequencyMHz:
       typeof value?.frequencyMHz === "number" && Number.isFinite(value.frequencyMHz)
@@ -189,7 +206,10 @@ function normalizeRadioLink(value: Partial<RadioLinkConfiguration> | undefined):
     rainFactor:
       typeof value?.rainFactor === "number" && Number.isFinite(value.rainFactor)
         ? value.rainFactor
-        : EMPTY_RADIO_LINK_CONFIGURATION.rainFactor
+        : EMPTY_RADIO_LINK_CONFIGURATION.rainFactor,
+    txPowerDbm: normalizeNumberWithDefault(value?.txPowerDbm, numericDefault(EMPTY_RADIO_LINK_CONFIGURATION.txPowerDbm, 27)),
+    rxSensitivityDbm: normalizeNumberWithDefault(value?.rxSensitivityDbm, numericDefault(EMPTY_RADIO_LINK_CONFIGURATION.rxSensitivityDbm, -110)),
+    lineLossDb: normalizeNumberWithDefault(value?.lineLossDb, numericDefault(EMPTY_RADIO_LINK_CONFIGURATION.lineLossDb, 3.5))
   };
 }
 
@@ -200,14 +220,68 @@ function normalizeEquipmentRows(rows: unknown): EquipmentRow[] {
 
   return rows.slice(0, MAX_CONFIGURATION_EQUIPMENT_ROWS).map((row) => {
     const maybeRow = row as Partial<EquipmentRow>;
-    return {
-      id: typeof maybeRow.id === "string" && maybeRow.id.trim() ? maybeRow.id : makeId("eq"),
-      active: typeof maybeRow.active === "boolean" ? maybeRow.active : true,
-      name: typeof maybeRow.name === "string" ? maybeRow.name : "",
-      powerW: normalizeNumber(maybeRow.powerW),
-      runtimeHoursPerDay: normalizeNumber(maybeRow.runtimeHoursPerDay)
-    };
-  });
+      return {
+        id: typeof maybeRow.id === "string" && maybeRow.id.trim() ? maybeRow.id : makeId("eq"),
+        active: typeof maybeRow.active === "boolean" ? maybeRow.active : true,
+        name: typeof maybeRow.name === "string" ? maybeRow.name : "",
+        powerW: normalizeNumber(maybeRow.powerW),
+        runtimeHoursPerDay: normalizeNumber(maybeRow.runtimeHoursPerDay),
+        purchaseCost: normalizeNumber(maybeRow.purchaseCost),
+        lifetimeYears: normalizeNumber(maybeRow.lifetimeYears),
+        annualMaintenance: normalizeNumber(maybeRow.annualMaintenance),
+        supplier: typeof maybeRow.supplier === "string" ? maybeRow.supplier : "",
+        comment: typeof maybeRow.comment === "string" ? maybeRow.comment : ""
+      };
+    });
+  }
+
+function normalizeString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function normalizeNullableNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim())
+    : [];
+}
+
+function normalizeNvePlantDetails(value: unknown): NvePlantDetails | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const details = value as Partial<NvePlantDetails>;
+  const name = normalizeString(details.name);
+  if (!name) {
+    return null;
+  }
+
+  return {
+    name,
+    stationId: normalizeString(details.stationId),
+    owner: normalizeString(details.owner),
+    municipality: normalizeString(details.municipality),
+    county: normalizeString(details.county),
+    maxOutputMW: normalizeNullableNumber(details.maxOutputMW),
+    productionGWh: normalizeNullableNumber(details.productionGWh),
+    grossHeadM: normalizeNullableNumber(details.grossHeadM),
+    commissionedYear: normalizeString(details.commissionedYear),
+    plantType: normalizeString(details.plantType),
+    kdbNr: normalizeString(details.kdbNr),
+    concessionUrl: normalizeString(details.concessionUrl),
+    wikiUrl: normalizeString(details.wikiUrl),
+    imageUrl: normalizeString(details.imageUrl),
+    minFlowText: normalizeString(details.minFlowText),
+    minFlowItems: normalizeStringArray(details.minFlowItems),
+    intakeCount: normalizeNullableNumber(details.intakeCount),
+    intakeItems: normalizeStringArray(details.intakeItems),
+    reservoirCount: normalizeNullableNumber(details.reservoirCount),
+    reservoirItems: normalizeStringArray(details.reservoirItems)
+  };
 }
 
 function emptyAnnualTotals(whPerDay: number, ahPerDay: number) {
@@ -262,6 +336,7 @@ function baseConfiguration(_index: number): Omit<PlantConfiguration, "lastRecomm
     locationPlaceId: null,
     locationLat: null,
     locationLng: null,
+    nvePlantDetails: null,
     createdAt: timestamp,
     updatedAt: timestamp,
     answers: { ...EMPTY_ANSWERS },
@@ -320,6 +395,7 @@ export function normalizeConfiguration(
     locationPlaceId: typeof value.locationPlaceId === "string" ? value.locationPlaceId : null,
     locationLat: typeof value.locationLat === "number" ? value.locationLat : null,
     locationLng: typeof value.locationLng === "number" ? value.locationLng : null,
+    nvePlantDetails: normalizeNvePlantDetails(value.nvePlantDetails),
     createdAt: typeof value.createdAt === "string" ? value.createdAt : nowIso(),
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : nowIso(),
     answers: { ...EMPTY_ANSWERS, ...(value.answers ?? {}) },

@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { BooleanChoiceField, NumberField } from "../components/FormFields";
-import WorkspaceHeader from "../components/WorkspaceHeader";
+import NveStandaloneMap from "../components/NveStandaloneMap";
+import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
 import WorkspaceSection from "../components/WorkspaceSection";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
@@ -13,7 +14,6 @@ import {
   workspaceInputClassName,
   workspaceMetaClassName,
   workspacePageClassName,
-  workspacePrimaryButtonClassName,
   workspaceSecondaryButtonClassName,
   workspaceSubsectionTitleClassName
 } from "../styles/workspace";
@@ -27,7 +27,7 @@ function isAnswered(value: unknown) {
 }
 
 export default function MainPage() {
-  const { activeDraft, resetDraft, updateAnswer, updateConfigSectionField, saveDraftMetadata } =
+  const { activeDraft, resetDraft, updateAnswer, updateConfigSectionField, updateConfigurationLocation, saveDraftMetadata } =
     useConfigurationContext();
   const { t, language } = useLanguage();
   const [showValidationErrors, setShowValidationErrors] = useState(false);
@@ -143,12 +143,8 @@ export default function MainPage() {
         title={t("main.title")}
         actions={
           <>
-            <button type="button" onClick={handleReset} className={workspaceSecondaryButtonClassName}>
-              {t("shared.reset")}
-            </button>
-            <button type="button" onClick={handleSave} className={workspacePrimaryButtonClassName}>
-              {t("shared.save")}
-            </button>
+            <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.reset} label={t("shared.reset")} subLabel="Tilbakestill" onClick={handleReset} />
+            <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.save} label={t("shared.save")} subLabel="Lagre utkast" onClick={handleSave} primary />
           </>
         }
       />
@@ -175,8 +171,18 @@ export default function MainPage() {
               ))}
             </div>
             <Link to="/oversikt" className={workspaceSecondaryButtonClassName}>
-              Åpne stasjonskart
+              Åpne oversikt
             </Link>
+          </div>
+          <div className="mt-5 overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)]">
+            <NveStandaloneMap
+              value={activeDraft.location}
+              lat={activeDraft.locationLat}
+              lng={activeDraft.locationLng}
+              nveId={activeDraft.locationPlaceId}
+              onChange={updateConfigurationLocation}
+              showPlantDetails={false}
+            />
           </div>
         </WorkspaceSection>
 

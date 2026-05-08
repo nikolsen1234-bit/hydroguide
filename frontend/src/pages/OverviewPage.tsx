@@ -1,20 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { BalanceBarChart } from "../components/SystemCharts";
-import NveStandaloneMap from "../components/NveStandaloneMap";
-import WorkspaceHeader from "../components/WorkspaceHeader";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
 import WorkspaceSection from "../components/WorkspaceSection";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import {
-  workspaceBodyClassName,
   workspaceContentValueClassName,
-  workspaceInputClassName,
-  workspacePageClassName,
-  workspacePrimaryButtonClassName,
-  workspaceSecondaryButtonClassName,
-  workspaceSectionTitleClassName
+  workspacePageClassName
 } from "../styles/workspace";
+import type { MonthlyEnergyBalanceRow, NvePlantDetails } from "../types";
 import { formatNumber } from "../utils/format";
+import { fetchNvePlantDetails } from "../utils/nvePlantDetails";
 import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
 
@@ -31,11 +26,11 @@ function KpiTile({
 }) {
   return (
     <div className="border-b border-r border-[var(--hg-hairline-2)] p-4 last:border-r-0 md:border-b-0">
-      <p className="hg-mono text-[10px] font-[var(--hg-type-weight-semibold)] uppercase tracking-[0.16em] text-[var(--hg-muted)]">
+      <p className="text-[10px] font-[var(--hg-type-weight-semibold)] uppercase tracking-[0.16em] text-[var(--hg-muted)]">
         {label}
       </p>
       <div className="mt-2 flex items-baseline gap-1">
-        <span className="hg-mono text-[1.55rem] font-[var(--hg-type-weight-bold)] tracking-[-0.03em] text-[var(--hg-ink)]">
+        <span className="text-[1.55rem] font-[var(--hg-type-weight-bold)] tracking-[-0.03em] text-[var(--hg-ink)]">
           {value}
         </span>
         <span className="text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]">
@@ -47,13 +42,20 @@ function KpiTile({
   );
 }
 
-function KeyValueGrid({ rows }: { rows: Array<[string, string]> }) {
+function KeyValueGrid({ rows }: { rows: Array<[string, ReactNode, boolean?]> }) {
   return (
     <div className="grid gap-x-6 md:grid-cols-2">
-      {rows.map(([label, value]) => (
-        <div key={label} className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-[var(--hg-hairline-2)] py-3">
-          <span className="text-[length:var(--hg-type-content-size)] text-[var(--hg-muted)]">{label}</span>
-          <span className="hg-mono max-w-[15rem] truncate text-right text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)]">
+      {rows.map(([label, value, wide]) => (
+        <div
+          key={label}
+          className={`grid min-w-0 gap-4 border-b border-[var(--hg-hairline-2)] py-3 ${
+            wide
+              ? "grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] md:col-span-2 md:grid-cols-[minmax(0,10rem)_minmax(0,1fr)]"
+              : "grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]"
+          }`}
+        >
+          <span className="min-w-0 text-[length:var(--hg-type-content-size)] text-[var(--hg-muted)]">{label}</span>
+          <span className="min-w-0 text-right text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)] [overflow-wrap:anywhere]">
             {value}
           </span>
         </div>
@@ -62,89 +64,172 @@ function KeyValueGrid({ rows }: { rows: Array<[string, string]> }) {
   );
 }
 
-function EditableProjectName({
-  value,
-  onCommit
-}: {
-  value: string;
-  onCommit: (value: string) => void;
-}) {
-  const { t } = useLanguage();
-  const [isEditing, setIsEditing] = useState(false);
-  const [draftValue, setDraftValue] = useState(value);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const displayValue = value.trim() || t("overview.unnamed");
+function formatPlantTitle(name: string) {
+  return /kraftverk/i.test(name) ? name : `${name} kraftverk`;
+}
 
-  useEffect(() => {
-    if (!isEditing) {
-      setDraftValue(value);
-    }
-  }, [isEditing, value]);
-
-  useEffect(() => {
-    if (!isEditing) {
-      return;
-    }
-
-    window.setTimeout(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }, 0);
-  }, [isEditing]);
-
-  const commitChanges = () => {
-    onCommit(draftValue);
-    setIsEditing(false);
-  };
-
-  const cancelChanges = () => {
-    setDraftValue(value);
-    setIsEditing(false);
-  };
-
-  if (isEditing) {
-    return (
-      <input
-        ref={inputRef}
-        value={draftValue}
-        onChange={(event) => setDraftValue(event.target.value)}
-        onBlur={commitChanges}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            commitChanges();
-          }
-
-          if (event.key === "Escape") {
-            event.preventDefault();
-            cancelChanges();
-          }
-        }}
-        aria-label={t("overview.projectName")}
-        className={`max-w-xl ${workspaceInputClassName}`}
-      />
-    );
+function DetailList({ items }: { items: string[] }) {
+  if (!items.length) {
+    return <span>-</span>;
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => setIsEditing(true)}
-      className="group inline-flex min-w-0 items-center gap-2 text-left"
-      aria-label={t("overview.editProjectName")}
-      title={t("overview.editProjectName")}
-    >
-      <span className={`${workspaceSectionTitleClassName} break-words`}>{displayValue}</span>
-      <span
-        aria-hidden="true"
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)] text-[var(--hg-muted)] transition group-hover:border-[var(--hg-accent-2)] group-hover:text-[var(--hg-accent)]"
-      >
-        <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M12 20h9" />
-          <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+    <span className="flex flex-col gap-1">
+      {items.map((item) => (
+        <span key={item}>{item}</span>
+      ))}
+    </span>
+  );
+}
+
+function StationImage({ details }: { details: NvePlantDetails }) {
+  const title = formatPlantTitle(details.name);
+
+  return (
+    <figure className="overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)]">
+      {details.imageUrl ? (
+        <img src={details.imageUrl} alt={title} loading="lazy" className="aspect-[16/10] w-full object-cover" />
+      ) : (
+        <div className="flex aspect-[16/10] items-center justify-center px-4 text-center text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">
+          Stasjonsbilde er ikke tilgjengelig.
+        </div>
+      )}
+      <figcaption className="border-t border-[var(--hg-hairline)] px-3 py-2 text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">
+        {title}
+      </figcaption>
+    </figure>
+  );
+}
+
+function StationVisual({
+  details,
+  loading
+}: {
+  details: NvePlantDetails | null;
+  loading: boolean;
+}) {
+  if (details) {
+    return <StationImage details={details} />;
+  }
+
+  return (
+    <figure className="overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)]">
+      <div className="flex aspect-[16/10] items-center justify-center px-4 text-center text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">
+        {loading ? "Henter stasjonsbilde." : "Velg stasjon i prosjektgrunnlag."}
+      </div>
+      <figcaption className="border-t border-[var(--hg-hairline)] px-3 py-2 text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">
+        Stasjonsbilde
+      </figcaption>
+    </figure>
+  );
+}
+
+function StationActions({ details }: { details: NvePlantDetails | null }) {
+  if (!details) {
+    return null;
+  }
+
+  if (!details.wikiUrl && !details.concessionUrl) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {details.wikiUrl ? (
+        <a className="inline-flex h-8 items-center rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-accent)] transition hover:bg-[var(--hg-accent-soft)]" href={details.wikiUrl} target="_blank" rel="noreferrer">
+          Wikipedia
+        </a>
+      ) : null}
+      {details.concessionUrl ? (
+        <a className="inline-flex h-8 items-center rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-accent)] transition hover:bg-[var(--hg-accent-soft)]" href={details.concessionUrl} target="_blank" rel="noreferrer">
+          Konsesjonssak
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
+function StationOverviewPanel({
+  siteRows,
+  details,
+  loading
+}: {
+  siteRows: Array<[string, ReactNode, boolean?]>;
+  details: NvePlantDetails | null;
+  loading: boolean;
+}) {
+  return (
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="min-w-0">
+        <KeyValueGrid rows={siteRows} />
+      </div>
+      <aside className="min-w-0">
+        <StationVisual details={details} loading={loading} />
+      </aside>
+    </div>
+  );
+}
+
+function MonthlyOverviewChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
+  if (!rows.length) {
+    return <p className={workspaceContentValueClassName}>Månedsgraf vises når prosjektdataene er komplette.</p>;
+  }
+
+  const width = 520;
+  const chartHeight = 160;
+  const labelHeight = 18;
+  const maxValue = Math.max(...rows.map((row) => Math.max(row.solarProductionKWh, row.loadDemandKWh)), 1);
+  const bandWidth = width / rows.length;
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)]">
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-sm bg-[var(--hg-accent-2)]" />
+          Solproduksjon
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-sm bg-[#94a3b8]" />
+          Forbruk
+        </span>
+      </div>
+      <div className="-mx-1 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
+        <svg viewBox={`0 0 ${width} ${chartHeight + labelHeight}`} className="block h-auto w-full min-w-[520px] overflow-visible" role="img" aria-label="Månedlig solproduksjon og forbruk">
+          {rows.map((row, index) => {
+            const x = index * bandWidth + bandWidth * 0.18;
+            const barWidth = bandWidth * 0.32;
+            const solarHeight = (row.solarProductionKWh / maxValue) * chartHeight;
+            const loadHeight = (row.loadDemandKWh / maxValue) * chartHeight;
+            const label = row.label.toUpperCase();
+
+            return (
+              <g key={row.month}>
+                <rect
+                  x={x}
+                  y={chartHeight - solarHeight}
+                  width={barWidth}
+                  height={Math.max(solarHeight, 2)}
+                  rx="1"
+                  fill="var(--hg-accent-2)"
+                />
+                <rect
+                  x={x + barWidth + 2}
+                  y={chartHeight - loadHeight}
+                  width={barWidth}
+                  height={Math.max(loadHeight, 2)}
+                  rx="1"
+                  fill="#94a3b8"
+                />
+                <text x={index * bandWidth + bandWidth / 2} y={chartHeight + 12} textAnchor="middle" className="fill-[var(--hg-muted)] text-[9px]">
+                  {label}
+                </text>
+              </g>
+            );
+          })}
         </svg>
-      </span>
-    </button>
+      </div>
+      <p className="mt-2 text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">kWh per måned</p>
+    </div>
   );
 }
 
@@ -153,10 +238,10 @@ export default function OverviewPage() {
   const {
     activeDraft,
     resetDraft,
-    saveDraftMetadata,
-    updateConfigurationName,
-    updateConfigurationLocation
+    saveDraftMetadata
   } = useConfigurationContext();
+  const [loadedPlantDetails, setLoadedPlantDetails] = useState<NvePlantDetails | null>(null);
+  const [plantDetailsLoading, setPlantDetailsLoading] = useState(false);
   const validationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
   const hasCompleteConfiguration = Object.keys(validationErrors).length === 0;
   const outputs = useMemo(
@@ -177,6 +262,42 @@ export default function OverviewPage() {
     typeof activeDraft.locationLat === "number" && typeof activeDraft.locationLng === "number"
       ? `${formatNumber(activeDraft.locationLat, 5)}, ${formatNumber(activeDraft.locationLng, 5)}`
       : "Ikke valgt";
+  const plantDetails = loadedPlantDetails ?? activeDraft.nvePlantDetails;
+  const nveId = plantDetails?.stationId ?? activeDraft.locationPlaceId;
+  const stationMeta = nveId ? `NVEID ${nveId}` : undefined;
+
+  useEffect(() => {
+    const nveId = activeDraft.locationPlaceId;
+    setLoadedPlantDetails(null);
+    if (!nveId) {
+      setPlantDetailsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setPlantDetailsLoading(true);
+    fetchNvePlantDetails(nveId)
+      .then((details) => {
+        if (!cancelled) {
+          setLoadedPlantDetails(details);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoadedPlantDetails(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setPlantDetailsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeDraft.locationPlaceId]);
+
   const handleReset = () => {
     const configurationName = activeDraft.name.trim() || t("shared.thisConfiguration");
     if (window.confirm(t("shared.resetConfirm").replace("{name}", configurationName))) {
@@ -185,24 +306,36 @@ export default function OverviewPage() {
   };
   const headerActions = (
     <>
-      <button type="button" onClick={handleReset} className={workspaceSecondaryButtonClassName}>
-        {t("shared.reset")}
-      </button>
-      <button type="button" onClick={saveDraftMetadata} className={workspacePrimaryButtonClassName}>
-        {t("shared.save")}
-      </button>
+      <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.reset} label={t("shared.reset")} subLabel="Tilbakestill" onClick={handleReset} />
+      <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.save} label={t("shared.save")} subLabel="Lagre utkast" onClick={saveDraftMetadata} primary />
     </>
   );
 
-  const siteRows: Array<[string, string]> = [
+  const siteRows: Array<[string, ReactNode, boolean?]> = [
     ["Stasjon", locationText],
-    ["NVE-id", activeDraft.locationPlaceId ?? "Ikke valgt"],
     ["Koordinater", coordinates],
     ["Daglig energibehov", outputs ? `${formatNumber(outputs.derivedResults.totalWhPerDay)} Wh` : "Ikke beregnet"],
     ["Solcellepanel", `${formatNumber(totalPanelPowerWp, 0)} Wp`],
     ["Batteribank", outputs ? `${formatNumber(outputs.derivedResults.systemRecommendation.batteryCapacityAh)} Ah` : "Ikke beregnet"],
     ["Reservekilde", outputs ? `${formatNumber(secondaryPowerW, 0)} W` : "Ikke beregnet"],
-    ["Modus", activeDraft.engineMode === "combined" ? "HydroGuide" : "Kalkulator"]
+    ["Modus", activeDraft.engineMode === "combined" ? "HydroGuide" : "Kalkulator"],
+    ["Datagrunnlag", nveId ? "NVE kraftverkregister" : "Ikke valgt"],
+    ...(plantDetails
+      ? [
+          ["Eier", plantDetails.owner ?? "-"],
+          ["Maks ytelse", plantDetails.maxOutputMW !== null ? `${formatNumber(plantDetails.maxOutputMW)} MW` : "-"],
+          ["Produksjon", plantDetails.productionGWh !== null ? `${formatNumber(plantDetails.productionGWh)} GWh/år` : "-"],
+          [
+            "Minstevannføring",
+            plantDetails.minFlowItems.length ? <DetailList items={plantDetails.minFlowItems} /> : plantDetails.minFlowText ?? "-"
+          ],
+          [`Magasin${plantDetails.reservoirCount !== null ? ` (${plantDetails.reservoirCount})` : ""}`, <DetailList items={plantDetails.reservoirItems} />],
+          ["Sted", `${plantDetails.municipality ?? "-"}${plantDetails.county ? `, ${plantDetails.county}` : ""}`],
+          ["Bruttofallhøyde", plantDetails.grossHeadM !== null ? `${formatNumber(plantDetails.grossHeadM, 0)} m` : "-"],
+          ["Idriftsatt", plantDetails.commissionedYear ?? "-"],
+          [`Inntak${plantDetails.intakeCount !== null ? ` (${plantDetails.intakeCount})` : ""}`, <DetailList items={plantDetails.intakeItems} />, true]
+        ] satisfies Array<[string, ReactNode, boolean?]>
+      : [])
   ];
 
   return (
@@ -233,36 +366,21 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      <WorkspaceSection title={<EditableProjectName value={activeDraft.name} onCommit={updateConfigurationName} />} description="Stasjon, nøkkeltall og kartgrunnlag for valgt prosjekt.">
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.85fr)]">
-          <div>
-            <KeyValueGrid rows={siteRows} />
-            <p className={`mt-4 max-w-3xl ${workspaceBodyClassName} text-[var(--hg-muted)]`}>
-              Kartet bruker dagens NVE-stasjonsvelger og oppdaterer prosjektets lokasjon, koordinater og NVE-id direkte.
-            </p>
-          </div>
-
-          <div className="min-h-[22rem] overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)]">
-            <NveStandaloneMap
-              key={`${activeDraft.id}-${activeDraft.location || "empty"}`}
-              value={activeDraft.location}
-              lat={activeDraft.locationLat}
-              lng={activeDraft.locationLng}
-              nveId={activeDraft.locationPlaceId}
-              onChange={updateConfigurationLocation}
-              startCollapsed={false}
-            />
-          </div>
-        </div>
+      <WorkspaceSection title="Stasjon" description={stationMeta} actions={<StationActions details={plantDetails} />}>
+        <StationOverviewPanel
+          siteRows={siteRows}
+          details={plantDetails}
+          loading={plantDetailsLoading}
+        />
       </WorkspaceSection>
 
       {outputs ? (
-        <WorkspaceSection title="Månedlig energibalanse" description="Beregnet produksjon, forbruk og reservebehov per måned.">
-          <BalanceBarChart rows={outputs.derivedResults.monthlyEnergyBalance} />
+        <WorkspaceSection title="Månedlig energigraf" description="Solproduksjon og forbruk per måned.">
+          <MonthlyOverviewChart rows={outputs.derivedResults.monthlyEnergyBalance} />
         </WorkspaceSection>
       ) : (
         <div className="hg-card p-4">
-          <p className={workspaceContentValueClassName}>Energibalanse vises når prosjektdataene er komplette.</p>
+          <p className={workspaceContentValueClassName}>Energigraf vises når prosjektdataene er komplette.</p>
         </div>
       )}
     </main>

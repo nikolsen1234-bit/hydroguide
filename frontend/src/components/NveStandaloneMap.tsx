@@ -1,20 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "../i18n";
+import type { NvePlantDetails } from "../types";
 
 interface NveStandaloneMapProps {
   value: string;
   lat: number | null;
   lng: number | null;
   nveId: string | null;
-  onChange: (location: string, metadata?: { placeId?: string | null; lat?: number | null; lng?: number | null }) => void;
+  onChange: (
+    location: string,
+    metadata?: { placeId?: string | null; lat?: number | null; lng?: number | null; plantDetails?: NvePlantDetails | null }
+  ) => void;
   startCollapsed?: boolean;
+  showPlantDetails?: boolean;
 }
 
 interface NveLocationMessage {
   name?: unknown;
   lat?: unknown;
   lng?: unknown;
-  hydroPlant?: { vannkraftverkNr?: unknown } | null;
+  hydroPlant?: { vannkraftverkNr?: unknown; [key: string]: unknown } | null;
+  plantDetails?: unknown;
 }
 
 const SET_LOCATION_MESSAGE = "hydroguide:set-location";
@@ -26,7 +32,56 @@ function clampHeight(nextHeight: number) {
   return Math.min(MAX_IFRAME_HEIGHT, nextHeight);
 }
 
-export default function NveStandaloneMap({ value, lat, lng, nveId, onChange, startCollapsed = false }: NveStandaloneMapProps) {
+function stringOrNull(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function numberOrNull(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function stringArray(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim())
+    : [];
+}
+
+function normalizePlantDetails(value: unknown): NvePlantDetails | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const detail = value as Record<string, unknown>;
+  const name = stringOrNull(detail.name);
+  if (!name) {
+    return null;
+  }
+
+  return {
+    name,
+    stationId: stringOrNull(detail.stationId),
+    owner: stringOrNull(detail.owner),
+    municipality: stringOrNull(detail.municipality),
+    county: stringOrNull(detail.county),
+    maxOutputMW: numberOrNull(detail.maxOutputMW),
+    productionGWh: numberOrNull(detail.productionGWh),
+    grossHeadM: numberOrNull(detail.grossHeadM),
+    commissionedYear: stringOrNull(detail.commissionedYear),
+    plantType: stringOrNull(detail.plantType),
+    kdbNr: stringOrNull(detail.kdbNr),
+    concessionUrl: stringOrNull(detail.concessionUrl),
+    wikiUrl: stringOrNull(detail.wikiUrl),
+    imageUrl: stringOrNull(detail.imageUrl),
+    minFlowText: stringOrNull(detail.minFlowText),
+    minFlowItems: stringArray(detail.minFlowItems),
+    intakeCount: numberOrNull(detail.intakeCount),
+    intakeItems: stringArray(detail.intakeItems),
+    reservoirCount: numberOrNull(detail.reservoirCount),
+    reservoirItems: stringArray(detail.reservoirItems)
+  };
+}
+
+export default function NveStandaloneMap({ value, lat, lng, nveId, onChange, startCollapsed = false, showPlantDetails = true }: NveStandaloneMapProps) {
   const { language } = useLanguage();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [frameReady, setFrameReady] = useState(false);
@@ -34,10 +89,11 @@ export default function NveStandaloneMap({ value, lat, lng, nveId, onChange, sta
   const iframeSrc = useMemo(() => {
     const params = new URLSearchParams({
       lang: language,
-      collapsed: startCollapsed ? "1" : "0"
+      collapsed: startCollapsed ? "1" : "0",
+      plantDetails: showPlantDetails ? "1" : "0"
     });
     return `/nve-kart-standalone.html?${params.toString()}`;
-  }, [language, startCollapsed]);
+  }, [language, showPlantDetails, startCollapsed]);
 
   useEffect(() => {
     setFrameReady(false);
@@ -67,6 +123,7 @@ export default function NveStandaloneMap({ value, lat, lng, nveId, onChange, sta
       const detail = data.detail ?? {};
       const nextLat = typeof detail.lat === "number" && Number.isFinite(detail.lat) ? detail.lat : null;
       const nextLng = typeof detail.lng === "number" && Number.isFinite(detail.lng) ? detail.lng : null;
+      const plantDetails = normalizePlantDetails(detail.plantDetails);
       const nextName =
         typeof detail.name === "string" && detail.name.trim()
           ? detail.name.trim()
@@ -75,12 +132,14 @@ export default function NveStandaloneMap({ value, lat, lng, nveId, onChange, sta
             : value;
 
       if (nextLat === lat && nextLng === lng && nextName === value) {
-        return;
+        if (!plantDetails) {
+          return;
+        }
       }
 
       const hydroPlant = detail.hydroPlant;
       const nextNveId = hydroPlant && typeof hydroPlant.vannkraftverkNr === "number" ? String(hydroPlant.vannkraftverkNr) : null;
-      onChange(nextName, { placeId: nextNveId, lat: nextLat, lng: nextLng });
+      onChange(nextName, { placeId: nextNveId, lat: nextLat, lng: nextLng, plantDetails });
     }
 
     window.addEventListener("message", handleMessage);

@@ -15,6 +15,7 @@ interface BaseProps {
   helper?: string;
   error?: string;
   ariaLabel?: string;
+  reserveErrorSpace?: boolean;
 }
 
 interface ChoiceOption<T extends string | boolean> {
@@ -43,10 +44,16 @@ function FieldLabel({
 
 function FieldError({
   error,
-  id
+  id,
+  reserveSpace = true
 }: Pick<BaseProps, "error"> & {
   id?: string;
+  reserveSpace?: boolean;
 }) {
+  if (!error && !reserveSpace) {
+    return null;
+  }
+
   return (
     <p
       id={id}
@@ -62,6 +69,7 @@ function FieldWrapper({
   label,
   helper,
   error,
+  reserveErrorSpace = true,
   fieldId,
   errorId,
   children
@@ -76,7 +84,7 @@ function FieldWrapper({
     <div className={`block ${hasLabelRow ? workspaceFieldStackClassName : "space-y-0"}`}>
       <FieldLabel label={label} helper={helper} htmlFor={fieldId} />
       {children}
-      <FieldError error={error} id={errorId} />
+      <FieldError error={error} id={errorId} reserveSpace={reserveErrorSpace} />
     </div>
   );
 }
@@ -99,7 +107,7 @@ function ChoiceField<T extends string | boolean>({
         <span>{label}</span>
         {helper ? <HelpTip text={helper} /> : null}
       </legend>
-      <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2" role="radiogroup" aria-label={label}>
         {options.map((option) => {
           const selected = value === option.value;
 
@@ -107,8 +115,10 @@ function ChoiceField<T extends string | boolean>({
             <button
               key={String(option.value)}
               type="button"
+              role="radio"
+              aria-checked={selected}
               onClick={() => onChange(option.value)}
-              className={`rounded-xl border px-3 py-2 ${workspaceFieldLabelClassName} transition ${
+              className={`h-9 rounded-md border px-3 py-1.5 ${workspaceFieldLabelClassName} transition ${
                 selected
                   ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
                   : "border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[var(--hg-ink)] hover:border-[var(--hg-accent-2)]"
@@ -175,6 +185,7 @@ export function NumberField({
   helper,
   error,
   ariaLabel,
+  reserveErrorSpace,
   value,
   onChange,
   min = 0,
@@ -196,7 +207,7 @@ export function NumberField({
   }, [value]);
 
   return (
-    <FieldWrapper label={label} helper={helper} error={error} fieldId={fieldId} errorId={errorId}>
+    <FieldWrapper label={label} helper={helper} error={error} reserveErrorSpace={reserveErrorSpace} fieldId={fieldId} errorId={errorId}>
       <div className="relative">
         <input
           id={fieldId}
@@ -255,13 +266,13 @@ export function NumberField({
 
             onChange(numericValue);
           }}
-          className={`${workspaceInputClassName} ${unit ? "pr-24" : ""}`}
+          className={`${workspaceInputClassName} ${unit ? "pr-20" : ""}`}
           aria-label={ariaLabel}
           aria-describedby={errorId}
           aria-invalid={error ? true : undefined}
         />
         {unit ? (
-          <span className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${workspaceFieldLabelClassName}`}>
+          <span className="hg-mono pointer-events-none absolute inset-y-0 right-3 flex items-center text-[11px] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)]">
             {unit}
           </span>
         ) : null}

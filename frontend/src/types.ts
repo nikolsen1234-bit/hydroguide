@@ -117,6 +117,7 @@ export interface RadioLinkEndpointConfiguration {
   coordinate: string;
   antennaHeight: EditableNumber;
   heightScale: HeightScale;
+  antennaGainDbi: EditableNumber;
 }
 
 export interface RadioLinkConfiguration {
@@ -127,6 +128,9 @@ export interface RadioLinkConfiguration {
   kFactor: KFactorKey;
   polarization: Polarization;
   rainFactor: number;
+  txPowerDbm: EditableNumber;
+  rxSensitivityDbm: EditableNumber;
+  lineLossDb: EditableNumber;
 }
 
 export interface EquipmentRow {
@@ -135,6 +139,11 @@ export interface EquipmentRow {
   name: string;
   powerW: EditableNumber;
   runtimeHoursPerDay: EditableNumber;
+  purchaseCost: EditableNumber;
+  lifetimeYears: EditableNumber;
+  annualMaintenance: EditableNumber;
+  supplier: string;
+  comment: string;
 }
 
 export interface EquipmentBudgetRow {
@@ -284,6 +293,29 @@ export interface ReliabilityMetrics {
   socHistogram: number[];
 }
 
+export interface NvePlantDetails {
+  name: string;
+  stationId: string | null;
+  owner: string | null;
+  municipality: string | null;
+  county: string | null;
+  maxOutputMW: number | null;
+  productionGWh: number | null;
+  grossHeadM: number | null;
+  commissionedYear: string | null;
+  plantType: string | null;
+  kdbNr: string | null;
+  concessionUrl: string | null;
+  wikiUrl: string | null;
+  imageUrl: string | null;
+  minFlowText: string | null;
+  minFlowItems: string[];
+  intakeCount: number | null;
+  intakeItems: string[];
+  reservoirCount: number | null;
+  reservoirItems: string[];
+}
+
 export interface PlantConfiguration {
   id: string;
   engineMode: EngineMode;
@@ -292,6 +324,7 @@ export interface PlantConfiguration {
   locationPlaceId: string | null;
   locationLat: number | null;
   locationLng: number | null;
+  nvePlantDetails: NvePlantDetails | null;
   createdAt: string;
   updatedAt: string;
   answers: Answers;

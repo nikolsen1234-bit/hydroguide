@@ -20,6 +20,7 @@ import {
   EquipmentBudgetSettings,
   EquipmentRow,
   MonthlySolarRadiation,
+  NvePlantDetails,
   OtherParameters,
   PlantConfiguration,
   RadioLinkConfiguration,
@@ -62,7 +63,7 @@ interface ConfigurationContextValue {
   updateConfigurationName: (name: string) => void;
   updateConfigurationLocation: (
     location: string,
-    metadata?: { placeId?: string | null; lat?: number | null; lng?: number | null }
+    metadata?: { placeId?: string | null; lat?: number | null; lng?: number | null; plantDetails?: NvePlantDetails | null }
   ) => void;
   updateAnswer: (key: keyof Answers, value: Answers[keyof Answers]) => void;
   updateConfigSectionField: <
@@ -139,6 +140,7 @@ function createExportPayload(configuration: PlantConfiguration) {
     name: configuration.name,
     location: configuration.location,
     ...(configuration.locationPlaceId ? { nveId: Number(configuration.locationPlaceId) } : {}),
+    ...(configuration.nvePlantDetails ? { nvePlantDetails: configuration.nvePlantDetails } : {}),
     ...(!calculatorMode ? { sporsmal: stripEmptyValues(configuration.answers) } : {}),
     systemparametere: stripEmptyValues(configuration.systemParameters),
     sol: stripEmptyValues(configuration.solar),
@@ -156,16 +158,24 @@ function createExportPayload(configuration: PlantConfiguration) {
       fresnelFactor: configuration.radioLink.fresnelFactor,
       kFactor: configuration.radioLink.kFactor,
       polarization: configuration.radioLink.polarization,
-      rainFactor: configuration.radioLink.rainFactor
+      rainFactor: configuration.radioLink.rainFactor,
+      txPowerDbm: configuration.radioLink.txPowerDbm,
+      rxSensitivityDbm: configuration.radioLink.rxSensitivityDbm,
+      lineLossDb: configuration.radioLink.lineLossDb
     },
     utstyr: configuration.equipmentRows
-      .filter((row) => row.name.trim() || row.powerW !== "" || row.runtimeHoursPerDay !== "")
-      .map((row) => ({
-        aktiv: row.active,
-        namn: row.name,
-        effektW: row.powerW,
-        timerPerDag: row.runtimeHoursPerDay
-      }))
+        .filter((row) => row.name.trim() || row.powerW !== "" || row.runtimeHoursPerDay !== "" || row.purchaseCost !== "" || row.lifetimeYears !== "" || row.annualMaintenance !== "" || row.supplier.trim() || row.comment.trim())
+        .map((row) => ({
+          aktiv: row.active,
+          namn: row.name,
+          effektW: row.powerW,
+          timerPerDag: row.runtimeHoursPerDay,
+          innkjop: row.purchaseCost,
+          levetidAr: row.lifetimeYears,
+          vedlikeholdPerAr: row.annualMaintenance,
+          leverandor: row.supplier,
+          kommentar: row.comment
+        }))
   };
 }
 
@@ -185,18 +195,28 @@ function downloadExport(name: string, content: string) {
 
 function toImportedPartialConfiguration(raw: Record<string, unknown>): Partial<PlantConfiguration> {
   const equipmentRows = Array.isArray(raw.utstyr)
-    ? (raw.utstyr as Array<{
-        aktiv?: boolean;
-        namn?: string;
-        effektW?: unknown;
-        timerPerDag?: unknown;
-      }>).map((row) => ({
-        id: makeId("eq"),
-        active: row.aktiv !== false,
-        name: row.namn ?? "",
-        powerW: row.effektW,
-        runtimeHoursPerDay: row.timerPerDag
-      }))
+      ? (raw.utstyr as Array<{
+          aktiv?: boolean;
+          namn?: string;
+          effektW?: unknown;
+          timerPerDag?: unknown;
+          innkjop?: unknown;
+          levetidAr?: unknown;
+          vedlikeholdPerAr?: unknown;
+          leverandor?: string;
+          kommentar?: string;
+        }>).map((row) => ({
+          id: makeId("eq"),
+          active: row.aktiv !== false,
+          name: row.namn ?? "",
+          powerW: row.effektW,
+          runtimeHoursPerDay: row.timerPerDag,
+          purchaseCost: row.innkjop,
+          lifetimeYears: row.levetidAr,
+          annualMaintenance: row.vedlikeholdPerAr,
+          supplier: row.leverandor ?? "",
+          comment: row.kommentar ?? ""
+        }))
     : raw.equipmentRows as PlantConfiguration["equipmentRows"] | undefined;
 
   const coords = raw.koordinater as { lat?: number; lng?: number } | undefined;
@@ -219,6 +239,7 @@ function toImportedPartialConfiguration(raw: Record<string, unknown>): Partial<P
     locationPlaceId: nveId,
     locationLat: typeof raw.locationLat === "number" ? raw.locationLat : coords?.lat ?? null,
     locationLng: typeof raw.locationLng === "number" ? raw.locationLng : coords?.lng ?? null,
+    nvePlantDetails: raw.nvePlantDetails as PlantConfiguration["nvePlantDetails"] | undefined,
     answers: (raw.sporsmal ?? raw.answers) as Partial<PlantConfiguration["answers"]> | undefined,
     systemParameters: (raw.systemparametere ?? raw.systemParameters) as Partial<PlantConfiguration["systemParameters"]> | undefined,
     solar: (raw.sol ?? raw.solar) as Partial<PlantConfiguration["solar"]> | undefined,
@@ -284,14 +305,15 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateConfigurationLocation = useCallback(
-    (location: string, metadata?: { placeId?: string | null; lat?: number | null; lng?: number | null }) => {
+    (location: string, metadata?: { placeId?: string | null; lat?: number | null; lng?: number | null; plantDetails?: NvePlantDetails | null }) => {
       const formattedLocation = formatLocationLabel(location);
       setActiveDraft((prev) => ({
         ...prev,
         location: formattedLocation,
         locationPlaceId: metadata?.placeId ?? null,
         locationLat: metadata?.lat ?? null,
-        locationLng: metadata?.lng ?? null
+        locationLng: metadata?.lng ?? null,
+        nvePlantDetails: metadata && "plantDetails" in metadata ? metadata.plantDetails ?? null : prev.nvePlantDetails
       }));
     },
     []
@@ -369,9 +391,20 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
       ...prev,
       equipmentRows: [
         ...prev.equipmentRows,
-        { id: makeId("eq"), active: true, name: "", powerW: "", runtimeHoursPerDay: "" }
-      ]
-    }));
+          {
+            id: makeId("eq"),
+            active: true,
+            name: "",
+            powerW: "",
+            runtimeHoursPerDay: "",
+            purchaseCost: "",
+            lifetimeYears: "",
+            annualMaintenance: "",
+            supplier: "",
+            comment: ""
+          }
+        ]
+      }));
   }, []);
 
   const removeEquipmentRow = useCallback((id: string) => {

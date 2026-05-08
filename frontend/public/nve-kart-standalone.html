@@ -93,8 +93,13 @@
     const params = new URLSearchParams(window.location.search);
     const lang = params.get("lang") === "en" ? "en" : "nn";
     const collapsed = params.get("collapsed");
+    const plantDetails = params.get("plantDetails");
     window.__i18n = I18N[lang];
     window.__startCollapsed = collapsed === "1" || collapsed === "true";
+    window.__showPlantDetails = plantDetails !== "0" && plantDetails !== "false";
+    if (!window.__showPlantDetails) {
+      document.documentElement.classList.add("hide-plant-details");
+    }
   })();
 </script>
 
@@ -138,6 +143,7 @@
     color: var(--hg-text-strong);
   }
   input, button, select, textarea { font: inherit; }
+  .hide-plant-details #plant-card { display: none; }
   .leaflet-container,
   .leaflet-control,
   .leaflet-control-attribution,
@@ -980,6 +986,7 @@ function renderSuggestions(list) {
 }
 
 let addressMarker = null;
+let selectedLocationState = null;
 function clearAddressMarker() {
   if (addressMarker) {
     map.removeLayer(addressMarker);
@@ -1004,8 +1011,9 @@ function selectSuggestion(s) {
   if (s.kind === "adresse") {
     addressMarker = L.marker([lat, lng]).addTo(map).bindPopup(escapeHtml(name)).openPopup();
   }
+  selectedLocationState = { name, lat, lng };
   showPlant(s.plant ?? null);
-  onLocationChange({ name, lat, lng, hydroPlant: s.plant ?? null });
+  onLocationChange({ ...selectedLocationState, hydroPlant: s.plant ?? null, plantDetails: makePlantDetails(s.plant ?? null) });
 }
 
 /* ---- Valt kraftverk ---- */
@@ -1134,6 +1142,45 @@ const PLANT_ROWS = [
   { label: p => `Magasin${p.extras?.magasinCount != null ? ` (${p.extras.magasinCount})` : ""}`,
     get: p => p.extras?.magasinItems ?? (p.extras ? [{ name: "\u2014" }] : [{ name: "..." }]), items: true },
 ];
+
+function itemNames(items) {
+  return (items ?? [])
+    .map(item => item?.name)
+    .filter(name => typeof name === "string" && name.trim())
+    .map(name => name.trim());
+}
+
+function makePlantDetails(plant) {
+  if (!plant) return null;
+  const minFlowText = plant.minFlowText && plant.minFlowText !== "..." ? plant.minFlowText : null;
+  return {
+    name: plant.navn ?? "",
+    stationId: plant.vannkraftverkNr != null ? String(plant.vannkraftverkNr) : null,
+    owner: plant.eigar ?? null,
+    municipality: plant.kommune ?? null,
+    county: plant.fylke ?? null,
+    maxOutputMW: typeof plant.maksYtelseMW === "number" ? plant.maksYtelseMW : null,
+    productionGWh: typeof plant.produksjonGWh === "number" ? plant.produksjonGWh : null,
+    grossHeadM: typeof plant.bruttoFallhoydeM === "number" ? plant.bruttoFallhoydeM : null,
+    commissionedYear: plant.idriftsattAar != null ? String(plant.idriftsattAar) : null,
+    plantType: plant.type ?? null,
+    kdbNr: plant.kdbNr != null ? String(plant.kdbNr) : null,
+    concessionUrl: plant.kdbNr ? KONSESJON_URL(plant.kdbNr) : null,
+    wikiUrl: plant.wikiUrl ?? null,
+    imageUrl: plant.imageUrl ?? null,
+    minFlowText,
+    minFlowItems: itemNames(plant.minFlowItems),
+    intakeCount: plant.extras?.inntakCount ?? null,
+    intakeItems: itemNames(plant.extras?.inntakItems),
+    reservoirCount: plant.extras?.magasinCount ?? null,
+    reservoirItems: itemNames(plant.extras?.magasinItems),
+  };
+}
+
+function postSelectedPlantDetails(plant) {
+  if (!selectedLocationState || !plant) return;
+  onLocationChange({ ...selectedLocationState, hydroPlant: plant, plantDetails: makePlantDetails(plant) });
+}
 
 function geometryBoundsCenter(pointsGroups) {
   if (!pointsGroups?.length) return null;
@@ -1488,6 +1535,7 @@ function showPlant(plant) {
     if (extrasReq !== extrasReqId) return;
     plant.extras = extras ?? { inntakSummary: "\u2014", hovedInntak: "\u2014", magasinSummary: "\u2014" };
     renderPlantRows(plant);
+    postSelectedPlantDetails(plant);
   });
 
   const minFlowReq = ++minFlowReqId;
@@ -1503,6 +1551,7 @@ function showPlant(plant) {
     plant.minFlowText = text ?? "Ikke indeksert";
     plant.minFlowItems = items ?? null;
     renderPlantRows(plant);
+    postSelectedPlantDetails(plant);
     if (window.__postHeight) window.__postHeight();
   })();
 
@@ -1521,9 +1570,14 @@ function showPlant(plant) {
       plantImgEl.appendChild(img);
       wikiLinkEl.href = wiki.url && wiki.url.startsWith("https://") ? wiki.url : "#";
       wikiLinkEl.style.display = "inline-flex";
+      plant.wikiUrl = wikiLinkEl.href;
+      plant.imageUrl = wiki.thumbnail;
     } else {
       plantImgEl.innerHTML = `<div class="empty">&#9889;<br/>${T.noWikiImage || "Ingen Wikipedia-bilde funnet"}</div>`;
+      plant.wikiUrl = null;
+      plant.imageUrl = null;
     }
+    postSelectedPlantDetails(plant);
   });
 }
 

@@ -92,6 +92,71 @@ textarea {
   font: inherit;
 }
 
+.border.border-\[var\(--hg-hairline\)\],
+.border.border-\[var\(--hg-hairline-2\)\] {
+  border-width: 1.5px;
+}
+
+.border-t.border-\[var\(--hg-hairline\)\],
+.border-t.border-\[var\(--hg-hairline-2\)\],
+.border-t-2.border-\[var\(--hg-hairline\)\],
+.border-t-2.border-\[var\(--hg-hairline-2\)\],
+.border-y.border-\[var\(--hg-hairline\)\],
+.border-y.border-\[var\(--hg-hairline-2\)\] {
+  border-top-width: 1.5px;
+}
+
+.border-b.border-\[var\(--hg-hairline\)\],
+.border-b.border-\[var\(--hg-hairline-2\)\],
+.border-b-2.border-\[var\(--hg-hairline\)\],
+.border-b-2.border-\[var\(--hg-hairline-2\)\],
+.border-y.border-\[var\(--hg-hairline\)\],
+.border-y.border-\[var\(--hg-hairline-2\)\] {
+  border-bottom-width: 1.5px;
+}
+
+.border-l.border-\[var\(--hg-hairline\)\],
+.border-l.border-\[var\(--hg-hairline-2\)\],
+.border-l-2.border-\[var\(--hg-hairline\)\],
+.border-l-2.border-\[var\(--hg-hairline-2\)\],
+.border-x.border-\[var\(--hg-hairline\)\],
+.border-x.border-\[var\(--hg-hairline-2\)\] {
+  border-left-width: 1.5px;
+}
+
+.border-r.border-\[var\(--hg-hairline\)\],
+.border-r.border-\[var\(--hg-hairline-2\)\],
+.border-r-2.border-\[var\(--hg-hairline\)\],
+.border-r-2.border-\[var\(--hg-hairline-2\)\],
+.border-x.border-\[var\(--hg-hairline\)\],
+.border-x.border-\[var\(--hg-hairline-2\)\] {
+  border-right-width: 1.5px;
+}
+
+@media (min-width: 640px) {
+  .sm\:border-l.border-\[var\(--hg-hairline\)\],
+  .sm\:border-l.border-\[var\(--hg-hairline-2\)\] {
+    border-left-width: 1.5px;
+  }
+
+  .sm\:border-t.border-\[var\(--hg-hairline\)\],
+  .sm\:border-t.border-\[var\(--hg-hairline-2\)\] {
+    border-top-width: 1.5px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .max-md\:border-t.max-md\:border-\[var\(--hg-hairline\)\],
+  .max-md\:border-t.max-md\:border-\[var\(--hg-hairline-2\)\] {
+    border-top-width: 1.5px;
+  }
+}
+
+svg line[stroke="var(--hg-hairline)"],
+svg line[stroke="var(--hg-hairline-2)"] {
+  stroke-width: 1.5px;
+}
+
 .hg-app-shell {
   min-height: 100vh;
   background: var(--hg-bg);
@@ -125,7 +190,7 @@ textarea {
 }
 
 .hg-theme-button {
-  border: 1px solid var(--hg-hairline);
+  border: 1.5px solid var(--hg-hairline);
   background: var(--hg-surface-2);
   color: var(--hg-ink-2);
 }
@@ -138,12 +203,12 @@ textarea {
 
 .hg-card {
   background: var(--hg-surface);
-  border: 1px solid var(--hg-hairline);
+  border: 1.5px solid var(--hg-hairline);
   border-radius: 10px;
 }
 
 .hg-card-header {
-  border-bottom: 1px solid var(--hg-hairline-2);
+  border-bottom: 1.5px solid var(--hg-hairline-2);
 }
 
 .hg-params-page .hg-card {
@@ -252,13 +317,13 @@ textarea {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
   border-top: 2px solid var(--hg-ink);
-  border-bottom: 1px solid var(--hg-hairline);
+  border-bottom: 1.5px solid var(--hg-hairline);
   padding: 10px 0;
   margin-bottom: 12px;
 }
 
 .hg-radio-kpi-strip > * + * {
-  border-left: 1px solid var(--hg-hairline);
+  border-left: 1.5px solid var(--hg-hairline);
   padding-left: 16px;
 }
 
@@ -330,7 +395,7 @@ textarea {
 }
 
 .hg-radio-page .hg-radio-endpoints label > div {
-  border-bottom: 2px solid var(--hg-hairline) !important;
+  border-bottom: 1.5px solid var(--hg-hairline) !important;
 }
 
 .hg-radio-page .hg-radio-results {
@@ -343,7 +408,7 @@ textarea {
 
 .hg-radio-map-action {
   min-height: 26px;
-  border: 1px solid var(--hg-hairline);
+  border: 1.5px solid var(--hg-hairline);
   background: var(--hg-surface);
   color: var(--hg-ink);
   padding: 0 12px;

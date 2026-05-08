@@ -202,22 +202,18 @@ function EnergiSeksjon() {
       <div className="grid gap-x-8 gap-y-3 lg:grid-cols-2">
         {/* Solcellesystem felter — sentrert vertikalt for å spegle batteri-blokka */}
         <div className="flex flex-col">
-          <SectionHeader
-            title="SOLCELLESYSTEM"
-            actions={
+          <SectionHeader title="SOLCELLESYSTEM" />
+          <div className="flex flex-1 items-center">
+            <div className="grid w-full gap-x-6 gap-y-3 sm:grid-cols-2">
+              <FlatField label="PANELEFFEKT" value="420" unit="Wp" />
+              <FlatField label="ANTALL" value="12" unit="stk" />
               <button
                 type="button"
                 onClick={() => setPanelOpen(true)}
-                className="hg-mono px-2 py-1.5 text-[11px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.12em] text-[var(--hg-accent)]"
+                className="hg-mono flex h-full min-h-8 items-end justify-start pb-1 text-[11px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.12em] text-[var(--hg-accent)]"
               >
                 Rediger månadsverdiar
               </button>
-            }
-          />
-          <div className="flex flex-1 items-center">
-            <div className="grid w-full gap-x-6 gap-y-3 sm:grid-cols-3">
-              <FlatField label="PANELEFFEKT" value="420" unit="Wp" />
-              <FlatField label="ANTALL" value="12" unit="stk" />
               <FlatField label="VIRK.GRAD" value="0.85" unit="0-1" />
             </div>
           </div>

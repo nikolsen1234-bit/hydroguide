@@ -47,7 +47,7 @@ export function WorkspaceHeaderActionButton({
         padding: "4px 10px",
         borderRadius: 0,
         border: 0,
-        borderLeft: primary ? "2px solid var(--hg-accent)" : "1px solid var(--hg-hairline)",
+        borderLeft: primary ? "2px solid var(--hg-accent)" : "1.5px solid var(--hg-hairline)",
         background: "transparent",
         color: "var(--hg-ink)",
         cursor: disabled ? "not-allowed" : "pointer",

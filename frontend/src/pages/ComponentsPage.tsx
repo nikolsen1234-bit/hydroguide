@@ -14,6 +14,7 @@ import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
 
 type ComponentUnit = "wh" | "ah";
+const componentRowSeparatorClassName = "border-b border-[var(--hg-hairline)]";
 
 function toNumber(value: EditableNumber): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
@@ -32,13 +33,13 @@ function StatusPill({
     <button
       type="button"
       onClick={onClick}
-      className={`hg-mono inline-flex h-[22px] min-w-[46px] items-center justify-center gap-1.5 rounded-full border px-2 text-[10px] font-[var(--hg-type-weight-bold)] transition ${
+      className={`hg-mono inline-flex h-7 min-w-[58px] items-center justify-center gap-2 rounded-full border px-3 text-[11px] font-[var(--hg-type-weight-bold)] transition ${
         active
           ? "border-emerald-700 bg-emerald-50 text-emerald-700"
           : "border-[var(--hg-hairline)] bg-[var(--hg-surface-2)] text-[var(--hg-ink-2)]"
       }`}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      <span className="h-2 w-2 rounded-full bg-current" />
       {label}
     </button>
   );
@@ -227,9 +228,9 @@ function DetailRow({
 
 function SummaryItem({ label, value, unit }: { label: string; value: string; unit?: string }) {
   return (
-    <div className="border-l border-[var(--hg-hairline)] px-4 first:border-l-0 first:pl-0">
+    <div className="flex flex-col gap-1 border-r border-[var(--hg-hairline)] px-4 py-2 last:border-r-0">
       <p className={workspaceMetaClassName}>{label}</p>
-      <p className="mt-1 text-[23px] font-[var(--hg-type-weight-extra)] leading-none tracking-[var(--hg-type-tight-tracking)] text-[var(--hg-ink)]">
+      <p className="text-[22px] font-[var(--hg-type-weight-extra)] leading-none tracking-[var(--hg-type-tight-tracking)] text-[var(--hg-ink)]">
         {value}
         {unit ? <span className="hg-mono ml-1 text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-normal">{unit}</span> : null}
       </p>
@@ -281,11 +282,12 @@ export default function ComponentsPage() {
   }, [editingRowId]);
 
   const formatConsumption = (row: (typeof rows)[number]) => {
+    const unit = displayUnit === "ah" ? "Ah" : "Wh";
     if (!canShowDailyConsumption) {
-      return "-";
+      return `- ${unit}`;
     }
 
-    return formatNumber(displayUnit === "ah" ? row.ahPerDay : row.whPerDay);
+    return `${formatNumber(displayUnit === "ah" ? row.ahPerDay : row.whPerDay)} ${unit}`;
   };
 
   const handleAddRow = () => {
@@ -317,14 +319,21 @@ export default function ComponentsPage() {
   );
 
   return (
-    <main className={`${workspacePageClassName} flex min-h-full flex-col bg-[var(--hg-surface)]`}>
+    <main className={`${workspacePageClassName} flex min-h-full flex-col`}>
       <WorkspaceHeader title={t("components.title")} actions={headerActions} />
 
-      <section className="flex flex-1 flex-col border-t-2 border-[var(--hg-ink)] pt-3">
+      <section className="grid grid-cols-2 gap-0 border-y border-[var(--hg-hairline)] md:grid-cols-5">
+        <SummaryItem label="Aktive einingar" value={`${activeCount}`} unit={`/ ${rows.length}`} />
+        <SummaryItem label="Toppeffekt" value={formatNumber(peakPower)} unit="W" />
+        <SummaryItem label="Total - Wh/døgn" value={formatNumber(totalWhPerDay)} unit="Wh" />
+        <SummaryItem label="Total - Ah/døgn" value={canShowAh ? formatNumber(totalAhPerDay) : "-"} unit="Ah" />
+        <SummaryItem label="Innkjøp - sum" value={formatNumber(purchaseSum)} unit="kr" />
+      </section>
+
+      <section className="flex flex-1 flex-col border-t-[3px] border-[var(--hg-ink)] pt-3">
         <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className={workspaceMetaClassName}>Effektbudsjett</p>
-            <h2 className={`${workspaceSectionTitleClassName} uppercase`}>Utstyr og forbruk</h2>
+          <div className="pt-4">
+            <h2 className={`${workspaceSectionTitleClassName} uppercase`}>Effektbudsjett</h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-2" role="radiogroup" aria-label="Vis forbruk som">
@@ -363,15 +372,15 @@ export default function ComponentsPage() {
         ) : (
           <>
             <div className="hidden flex-1 overflow-x-auto md:block">
-              <table className="w-full min-w-[880px] border-separate border-spacing-0 text-[13px]">
+              <table className="w-full min-w-[880px] table-fixed border-separate border-spacing-0 text-[13px]">
                 <thead>
                   <tr className={`text-left ${workspaceMetaClassName}`}>
-                    <th className="w-20 border-b border-[var(--hg-hairline)] px-0 py-2">Aktiv</th>
-                    <th className="border-b border-[var(--hg-hairline)] px-0 py-2">Utstyr</th>
-                    <th className="w-32 border-b border-[var(--hg-hairline)] px-0 py-2 text-right">Effekt</th>
-                    <th className="w-32 border-b border-[var(--hg-hairline)] px-0 py-2 text-right">Drift</th>
-                    <th className="w-36 border-b border-[var(--hg-hairline)] px-0 py-2 text-right">{dailyUnitLabel}</th>
-                    <th className="w-20 border-b border-[var(--hg-hairline)] px-0 py-2 text-right" />
+                    <th className={`w-20 ${componentRowSeparatorClassName} px-0 py-2`}>Aktiv</th>
+                    <th className={`w-[38%] ${componentRowSeparatorClassName} px-0 py-2`}>Utstyr</th>
+                    <th className={`w-28 ${componentRowSeparatorClassName} px-0 py-2 text-right`}>Effekt</th>
+                    <th className={`w-28 ${componentRowSeparatorClassName} px-0 py-2 text-right`}>Drift</th>
+                    <th className={`w-32 ${componentRowSeparatorClassName} px-0 py-2 text-right`}>{dailyUnitLabel}</th>
+                    <th className={`w-24 ${componentRowSeparatorClassName} px-0 py-2 text-right`} />
                   </tr>
                 </thead>
                 <tbody>
@@ -388,34 +397,34 @@ export default function ComponentsPage() {
                         <tr
                           data-component-edit-row
                           onClick={() => setEditingRowId((current) => (current === row.id ? null : row.id))}
-                          className={`cursor-pointer align-top transition ${editing ? "bg-[var(--hg-surface-2)]" : "hover:bg-[var(--hg-surface-2)]"}`}
+                          className={`cursor-pointer align-middle transition ${editing ? "bg-[var(--hg-surface-2)]" : "hover:bg-[var(--hg-surface-2)]"}`}
                         >
-                          <td className="border-b border-[var(--hg-hairline-2)] px-0 py-2.5" onClick={(event) => event.stopPropagation()}>
+                          <td className={`${componentRowSeparatorClassName} px-0 py-3 align-middle`} onClick={(event) => event.stopPropagation()}>
                             <StatusPill
                               active={row.active}
                               label={row.active ? t("components.on") : t("components.off")}
                               onClick={() => updateEquipmentRow(row.id, "active", !row.active)}
                             />
                           </td>
-                          <td className="border-b border-[var(--hg-hairline-2)] px-0 py-3 pr-4 font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]">
+                          <td className={`${componentRowSeparatorClassName} px-0 py-3 pr-4 align-middle font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]`}>
                             {displayName}
                           </td>
-                          <td className="hg-mono border-b border-[var(--hg-hairline-2)] px-0 py-3 text-right font-[var(--hg-type-weight-bold)]">
+                          <td className={`hg-mono ${componentRowSeparatorClassName} px-0 py-3 text-right align-middle font-[var(--hg-type-weight-bold)]`}>
                             {formatNumber(row.powerW)} W
                           </td>
-                          <td className="hg-mono border-b border-[var(--hg-hairline-2)] px-0 py-3 text-right font-[var(--hg-type-weight-bold)]">
+                          <td className={`hg-mono ${componentRowSeparatorClassName} px-0 py-3 text-right align-middle font-[var(--hg-type-weight-bold)]`}>
                             {formatNumber(row.runtimeHoursPerDay)} t
                           </td>
-                          <td className="hg-mono border-b border-[var(--hg-hairline-2)] px-0 py-3 text-right font-[var(--hg-type-weight-bold)]">
+                          <td className={`hg-mono ${componentRowSeparatorClassName} px-0 py-3 text-right align-middle font-[var(--hg-type-weight-bold)]`}>
                             {formatConsumption(row)}
                           </td>
-                          <td className="border-b border-[var(--hg-hairline-2)] px-0 py-3 text-right" onClick={(event) => event.stopPropagation()}>
+                          <td className={`${componentRowSeparatorClassName} px-0 py-3 text-right align-middle`} onClick={(event) => event.stopPropagation()}>
                             <button
                               type="button"
                               onClick={() => handleRemoveRow(row.id)}
-                              className="text-[12px] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)] transition hover:text-rose-600"
+                              className="inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-rose-50 px-3 text-[11px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.08em] text-rose-700 transition hover:bg-rose-100"
                             >
-                              Fjern
+                              Slett
                             </button>
                           </td>
                         </tr>
@@ -436,7 +445,7 @@ export default function ComponentsPage() {
                 const editing = editingRowId === row.id;
 
                 return (
-                  <article key={row.id} data-component-edit-row className="border-b border-[var(--hg-hairline-2)] pb-3">
+                  <article key={row.id} data-component-edit-row className={`${componentRowSeparatorClassName} pb-3`}>
                     <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 py-3">
                       <StatusPill
                         active={row.active}
@@ -473,9 +482,9 @@ export default function ComponentsPage() {
                           <button
                             type="button"
                             onClick={() => handleRemoveRow(row.id)}
-                            className="justify-self-start text-[13px] font-[var(--hg-type-weight-semibold)] text-rose-600"
+                            className="inline-flex h-8 items-center justify-center justify-self-start rounded-md border border-rose-200 bg-rose-50 px-3 text-[11px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.08em] text-rose-700"
                           >
-                            Fjern
+                            Slett
                           </button>
                         </div>
                       </div>
@@ -487,7 +496,7 @@ export default function ComponentsPage() {
           </>
         )}
 
-        <div className="mt-auto grid border-t-2 border-[var(--hg-ink)] pt-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="hidden">
           <SummaryItem label="Aktive einingar" value={`${activeCount}`} unit={`/ ${rows.length}`} />
           <SummaryItem label="Toppeffekt" value={formatNumber(peakPower)} unit="W" />
           <SummaryItem label="Total - Wh/døgn" value={formatNumber(totalWhPerDay)} unit="Wh" />

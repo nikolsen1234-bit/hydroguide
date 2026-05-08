@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "generatedKnowledgePath": "tools/agent-bridge/knowledge/report-knowledge.jsonl",
+  "sourceCacheDir": ".ai/agent-rag/sources",
+  "chunking": {
+    "maxWords": 220,
+    "overlapWords": 35,
+    "minWords": 45
+  },
+  "sources": [
+    {
+      "id": "nve-minstevann-veileder-2020",
+      "title": "Slipp, måling og dokumentasjon av minstevannføring",
+      "authority": "NVE",
+      "year": 2020,
+      "type": "NVE veileder",
+      "format": "pdf",
+      "category": "veileder",
+      "url": "https://publikasjoner.nve.no/veileder/2020/veileder2020_03.pdf",
+      "tags": ["minstevannføring", "slipp", "måling", "dokumentasjon", "småkraft", "drift"]
+    },
+    {
+      "id": "nve-minstevann-registrering-2024",
+      "title": "Retningslinje for registrering av konsesjonspålagte minstevannføringer",
+      "authority": "NVE",
+      "year": 2024,
+      "type": "NVE retningslinje",
+      "format": "pdf",
+      "category": "retningslinje",
+      "url": "https://www.nve.no/media/16799/retninglinjer-for-registrering-av-konsesjonspaalagte-minstevannfoeringer.pdf",
+      "tags": ["minstevannføring", "registrering", "målefrekvens", "nøyaktighet", "kalibrering", "rapportering"]
+    },
+    {
+      "id": "nve-ik-vassdrag-veileder-2018",
+      "title": "Rettleiar til forskrift om internkontroll etter vassdragslovgjevinga",
+      "authority": "NVE",
+      "year": 2018,
+      "type": "NVE veileder",
+      "format": "pdf",
+      "category": "internkontroll",
+      "url": "https://publikasjoner.nve.no/veileder/2018/veileder2018_04.pdf",
+      "tags": ["IK-vassdrag", "internkontroll", "vassdragsanlegg", "avvik", "konsesjon", "dokumentasjon"]
+    },
+    {
+      "id": "nve-vannressursloven-vannuttak-2026",
+      "title": "Veileder til vannressursloven: Vannuttak fra vassdrag",
+      "authority": "NVE",
+      "year": 2026,
+      "type": "NVE digital veileder",
+      "format": "html",
+      "category": "lovveileder",
+      "url": "https://veiledere.nve.no/veileder-til-vannressursloven-og-nves-behandling-av-vassdrags-og-grunnvannstiltak/de-enkelte-tiltak/vannuttak-fra-vassdrag/",
+      "tags": ["vannressursloven", "vannuttak", "alminnelig lavvannføring", "minstevannføring", "konsesjon"]
+    },
+    {
+      "id": "nve-vannressursloven-konsesjon-2026",
+      "title": "Veileder til vannressursloven: Søknad om konsesjon",
+      "authority": "NVE",
+      "year": 2026,
+      "type": "NVE digital veileder",
+      "format": "html",
+      "category": "lovveileder",
+      "url": "https://veiledere.nve.no/veileder-til-vannressursloven-og-nves-behandling-av-vassdrags-og-grunnvannstiltak/soknad-om-tiltak/soknad-om-konsesjon/",
+      "tags": ["vannressursloven", "konsesjon", "minstevannføring", "vannstand", "vilkår"]
+    },
+    {
+      "id": "lovdata-vannressursloven-10",
+      "title": "Vannressursloven § 10: vannuttak og minstevannføring",
+      "authority": "Lovdata",
+      "year": 2000,
+      "type": "Lovdata lovtekst",
+      "format": "html",
+      "category": "lovverk",
+      "url": "https://lovdata.no/nav/lov/2000-11-24-82/%C2%A710",
+      "tags": ["vannressursloven", "§ 10", "vannuttak", "minstevannføring", "alminnelig lavvannføring"]
+    },
+    {
+      "id": "lovdata-ik-vassdrag",
+      "title": "Forskrift om internkontroll etter vassdragslovgivningen (IK-vassdrag)",
+      "authority": "Lovdata",
+      "year": 2011,
+      "type": "Lovdata forskrift",
+      "format": "html",
+      "category": "lovverk",
+      "url": "https://lovdata.no/dokument/SF/forskrift/2011-10-28-1058",
+      "tags": ["IK-vassdrag", "internkontroll", "vassdragsanlegg", "konsesjon", "dokumentasjon"],
+      "mustContainAny": ["internkontroll", "vassdragsanlegg", "konsesjon", "registrering", "avvik", "dokumentasjon"]
+    }
+  ]
+}

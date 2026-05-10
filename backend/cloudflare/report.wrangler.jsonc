@@ -8,12 +8,9 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
-  "services": [
-    {
-      "binding": "REPORT_AI_WORKER",
-      "service": "hydroguide-ai"
-    }
-  ],
+  "vars": {
+    "REPORT_BRIDGE_URL": "https://agent-bridge.hydroguide.no"
+  },
   "routes": [
     {
       "pattern": "hydroguide.no/api/report*",

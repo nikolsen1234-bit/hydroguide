@@ -2,7 +2,7 @@
 
 Oppdatert: 2026-05-03
 
-Dette dokumentet forklarer hvor HydroGuide bruker KI, hva KI-en gjør, og hvilke begrensninger som gjelder. Det tekniske oppsettet finnes i [ai-rapport.md](ai-rapport.md).
+Dette dokumentet forklarer hvor HydroGuide bruker KI, hva KI-en gjør, og hvilke begrensninger som gjelder. Det tekniske oppsettet for rapportagenten finnes i [../tools/agent-bridge/README.md](../tools/agent-bridge/README.md).
 
 ## Prinsipp for KI i HydroGuide
 
@@ -18,7 +18,7 @@ Valgene i HydroGuide behandles som boolske valg, altså ja/nei-valg. Det betyr a
 
 HydroGuide bruker KI to steder:
 
-1. **Rapport-KI.** Rapport-KI skriver tekst til rapporten basert på systemvalget fra HydroGuide. Teksten forklarer og underbygger systemvalget med henvisning til retningslinjer, veiledere og relevant fagstoff fra NVE.
+1. **Rapportagent.** Rapportagenten skriver tekst til rapporten basert på systemvalget fra HydroGuide. Qwen embeddings henter relevante kunnskapschunker fra lokal JSONL, og Codex via CLIProxyAPI skriver et kort, validert rapporttillegg.
 
 2. **Minstevannføring-KI.** Dette er en lokal KI-modell som leser konsesjonsdokumenter fra NVEs nettsider og finner relevante dokumenter til databasen. Informasjonen lagres i en egen database, og denne prosessen kjøres én gang i måneden.
 

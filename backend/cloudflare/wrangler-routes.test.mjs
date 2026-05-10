@@ -65,11 +65,11 @@ test("source Wrangler configs do not contain custom secret metadata", async () =
   }
 });
 
-test("report Worker calls the AI Worker through a service binding", async () => {
+test("report Worker calls the local report-agent bridge through a configured URL", async () => {
   const config = await readConfig("./report.wrangler.jsonc");
-  const binding = config.services.find((service) => service.binding === "REPORT_AI_WORKER");
 
-  assert.equal(binding?.service, "hydroguide-ai");
+  assert.equal(config.services, undefined);
+  assert.equal(config.vars?.REPORT_BRIDGE_URL, "https://agent-bridge.hydroguide.no");
 });
 
 test("admin routes are not mounted on the public API Worker", async () => {

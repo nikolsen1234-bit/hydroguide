@@ -8,10 +8,10 @@ import {
   EMPTY_OTHER,
   EMPTY_RADIO_LINK_CONFIGURATION,
   EMPTY_SOLAR,
-  EMPTY_SOLAR_RADIATION_SETTINGS,
   EMPTY_SYSTEM_PARAMETERS
 } from "../constants";
 import {
+  Answers,
   BackupSourceConfiguration,
   BatteryConfiguration,
   EquipmentBudgetSettings,
@@ -28,14 +28,11 @@ import {
   Polarization,
   RadioLinkConfiguration,
   SolarConfiguration,
-  SolarRadiationSettings,
   SystemParameters
 } from "../types";
 import { formatLocationLabel } from "./format";
 import { calculateConfigurationOutputs, calculateEquipmentBudgetRows } from "./systemResults";
 import { validateConfiguration } from "./validation";
-
-const PVGIS_DETAILED_MODE_ENABLED = false;
 
 export function nowIso(): string {
   return new Date().toISOString();
@@ -59,6 +56,52 @@ function normalizeNumber(value: unknown): EditableNumber {
 
 function normalizeBoolean(value: unknown): NullableBoolean {
   return typeof value === "boolean" ? value : null;
+}
+
+const FACILITY_TYPE_MIGRATION: Record<string, Answers["q1FacilityType"]> = {
+  nytt: "new", eksisterande: "existing", ombygging: "conversion",
+  new: "new", existing: "existing", conversion: "conversion"
+};
+const VARIATION_MIGRATION: Record<string, Answers["q3ReleaseRequirementVariation"]> = {
+  fast: "fixed", sesongkrav: "seasonal", tilsigsstyrt: "inflowControlled",
+  fixed: "fixed", seasonal: "seasonal", inflowControlled: "inflowControlled"
+};
+const RELEASE_METHOD_MIGRATION: Record<string, Answers["q4ReleaseMethod"]> = {
+  royr_frostfritt: "pipeFrostFree", royr_utan_frostfritt: "pipeNoFrostFree",
+  luke_utsparing_overloep: "gateWeirOverflow", direkte_elveleie: "directRiverbed",
+  pipeFrostFree: "pipeFrostFree", pipeNoFrostFree: "pipeNoFrostFree",
+  gateWeirOverflow: "gateWeirOverflow", directRiverbed: "directRiverbed"
+};
+const PROFILE_MIGRATION: Record<string, Answers["q8MeasurementProfile"]> = {
+  naturleg_stabilt: "naturalStable", kan_byggjast_kunstig: "canBuildArtificial",
+  ingen_eigna_profil: "noSuitableProfile",
+  naturalStable: "naturalStable", canBuildArtificial: "canBuildArtificial",
+  noSuitableProfile: "noSuitableProfile"
+};
+
+function migrateYesNo(value: unknown): Answers["q5IsSedimentClogging"] {
+  if (value === "ja" || value === "yes") return "yes";
+  if (value === "nei" || value === "no") return "no";
+  return "";
+}
+
+function migrateAnswers(value: unknown): Answers {
+  const v = (value ?? {}) as Record<string, unknown>;
+  const facilityType = (v.q1FacilityType ?? v.q1Anleggstype) as string | undefined;
+  const variation = (v.q3ReleaseRequirementVariation ?? v.q3Slippkravvariasjon) as string | undefined;
+  const releaseMethod = (v.q4ReleaseMethod ?? v.q4Slippmetode) as string | undefined;
+  const profile = (v.q8MeasurementProfile ?? v.q8Maleprofil) as string | undefined;
+  return {
+    q1FacilityType: (facilityType && FACILITY_TYPE_MIGRATION[facilityType]) || "",
+    q2HighestRequiredMinFlow: normalizeNumber(v.q2HighestRequiredMinFlow ?? v.q2HogasteMinstevassforing),
+    q3ReleaseRequirementVariation: (variation && VARIATION_MIGRATION[variation]) || "",
+    q4ReleaseMethod: (releaseMethod && RELEASE_METHOD_MIGRATION[releaseMethod]) || "",
+    q5IsSedimentClogging: migrateYesNo(v.q5IsSedimentClogging ?? v.q5IsSedimentTilstopping),
+    q6FishPassage: migrateYesNo(v.q6FishPassage ?? v.q6Fiskepassasje),
+    q7BypassOnOutage: migrateYesNo(v.q7BypassOnOutage ?? v.q7BypassVedDriftsstans),
+    q8MeasurementProfile: (profile && PROFILE_MIGRATION[profile]) || "",
+    q9PublicControl: migrateYesNo(v.q9PublicControl ?? v.q9AllmentaKontroll)
+  };
 }
 
 function normalizeSystemParameters(value: Partial<SystemParameters> | undefined): SystemParameters {
@@ -107,38 +150,21 @@ function normalizeOther(value: Partial<OtherParameters> | undefined): OtherParam
   };
 }
 
-function normalizeSolarRadiationSettings(value: Partial<SolarRadiationSettings> | undefined): SolarRadiationSettings {
-  const normalizedMapZoom =
-    typeof value?.mapZoom === "number" && Number.isFinite(value.mapZoom)
-      ? (value.mapZoom === 5 ? 13 : value.mapZoom)
-      : 13;
-
+function normalizeMonthlySolarRadiation(value: unknown): MonthlySolarRadiation {
+  const v = (value ?? {}) as Record<string, unknown>;
   return {
-    mode: "manual",
-    lat: normalizeNumber(value?.lat),
-    lon: normalizeNumber(value?.lon),
-    tilt: normalizeNumber(value?.tilt),
-    azimuth: normalizeNumber(value?.azimuth),
-    heightOffset: normalizeNumber(value?.heightOffset),
-    locationName: typeof value?.locationName === "string" ? value.locationName : "",
-    mapZoom: normalizedMapZoom,
-  };
-}
-
-function normalizeMonthlySolarRadiation(value: Partial<MonthlySolarRadiation> | undefined): MonthlySolarRadiation {
-  return {
-    jan: normalizeNumber(value?.jan),
-    feb: normalizeNumber(value?.feb),
-    mar: normalizeNumber(value?.mar),
-    apr: normalizeNumber(value?.apr),
-    mai: normalizeNumber(value?.mai),
-    jun: normalizeNumber(value?.jun),
-    jul: normalizeNumber(value?.jul),
-    aug: normalizeNumber(value?.aug),
-    sep: normalizeNumber(value?.sep),
-    okt: normalizeNumber(value?.okt),
-    nov: normalizeNumber(value?.nov),
-    des: normalizeNumber(value?.des)
+    jan: normalizeNumber(v.jan),
+    feb: normalizeNumber(v.feb),
+    mar: normalizeNumber(v.mar),
+    apr: normalizeNumber(v.apr),
+    may: normalizeNumber(v.may ?? v.mai),
+    jun: normalizeNumber(v.jun),
+    jul: normalizeNumber(v.jul),
+    aug: normalizeNumber(v.aug),
+    sep: normalizeNumber(v.sep),
+    oct: normalizeNumber(v.oct ?? v.okt),
+    nov: normalizeNumber(v.nov),
+    dec: normalizeNumber(v.dec ?? v.des)
   };
 }
 
@@ -271,7 +297,7 @@ function normalizeNvePlantDetails(value: unknown): NvePlantDetails | null {
     grossHeadM: normalizeNullableNumber(details.grossHeadM),
     commissionedYear: normalizeString(details.commissionedYear),
     plantType: normalizeString(details.plantType),
-    kdbNr: normalizeString(details.kdbNr),
+    kdbNumber: normalizeString(details.kdbNumber ?? (details as { kdbNr?: unknown }).kdbNr),
     concessionUrl: normalizeString(details.concessionUrl),
     wikiUrl: normalizeString(details.wikiUrl),
     imageUrl: normalizeString(details.imageUrl),
@@ -313,14 +339,14 @@ function createEmptyDerivedResults(
       releaseArrangement: "Ikke beregnet", primaryMeasurement: "Ikke beregnet",
       controlMeasurement: "Ikke beregnet", measurementEquipment: "Ikke beregnet",
       communication: "Ikke beregnet", loggerSetup: "Ikke beregnet",
-      energyMonitoring: "Ikke beregnet", secondarySource: "Ikke beregnet",
+      energyMonitoring: "Ikke beregnet", secondarySource: "NotComputed",
       secondarySourcePowerW: 0, batteryCapacityAh: 0, batteryAutonomyDays: 0,
       icingAdaptation: "Ikke beregnet", operationsRequirements: []
     },
     costComparison: { annualEnergyDeficitKWh: 0, alternatives: [] },
     reserveScenarios: {
-      fuelCell: emptyReserveScenario("Brenselcelle", totalWhPerDay, totalAhPerDay),
-      diesel: emptyReserveScenario("Dieselaggregat", totalWhPerDay, totalAhPerDay)
+      fuelCell: emptyReserveScenario("FuelCell", totalWhPerDay, totalAhPerDay),
+      diesel: emptyReserveScenario("DieselGenerator", totalWhPerDay, totalAhPerDay)
     }
   };
 }
@@ -330,7 +356,7 @@ function baseConfiguration(_index: number): Omit<PlantConfiguration, "lastRecomm
 
   return {
     id: makeId(),
-    engineMode: "standard",
+    engineMode: "calculator",
     name: "",
     location: "",
     locationPlaceId: null,
@@ -347,7 +373,6 @@ function baseConfiguration(_index: number): Omit<PlantConfiguration, "lastRecomm
     diesel: { ...EMPTY_BACKUP_SOURCE },
     other: { ...EMPTY_OTHER },
     monthlySolarRadiation: { ...EMPTY_MONTHLY_SOLAR_RADIATION },
-    solarRadiationSettings: { ...EMPTY_SOLAR_RADIATION_SETTINGS },
     equipmentBudgetSettings: { ...EMPTY_EQUIPMENT_BUDGET_SETTINGS },
     equipmentRows: [],
     radioLink: {
@@ -384,12 +409,7 @@ export function normalizeConfiguration(
 ): PlantConfiguration {
   const normalizedBase: PlantConfiguration = {
     id: typeof value.id === "string" && value.id.trim() ? value.id : makeId(),
-    engineMode:
-      value.engineMode === "combined" || (!PVGIS_DETAILED_MODE_ENABLED && value.engineMode === "detailed")
-        ? "combined"
-        : PVGIS_DETAILED_MODE_ENABLED && value.engineMode === "detailed"
-          ? "detailed"
-          : "standard",
+    engineMode: value.engineMode === "hydroguide" ? "hydroguide" : "calculator",
     name: typeof value.name === "string" ? value.name : "",
     location: typeof value.location === "string" ? formatLocationLabel(value.location) : "",
     locationPlaceId: typeof value.locationPlaceId === "string" ? value.locationPlaceId : null,
@@ -398,7 +418,7 @@ export function normalizeConfiguration(
     nvePlantDetails: normalizeNvePlantDetails(value.nvePlantDetails),
     createdAt: typeof value.createdAt === "string" ? value.createdAt : nowIso(),
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : nowIso(),
-    answers: { ...EMPTY_ANSWERS, ...(value.answers ?? {}) },
+    answers: migrateAnswers(value.answers),
     systemParameters: normalizeSystemParameters(value.systemParameters),
     solar: normalizeSolar(value.solar),
     battery: normalizeBattery(value.battery),
@@ -406,7 +426,6 @@ export function normalizeConfiguration(
     diesel: normalizeBackupSource(value.diesel),
     other: normalizeOther(value.other),
     monthlySolarRadiation: normalizeMonthlySolarRadiation(value.monthlySolarRadiation),
-    solarRadiationSettings: normalizeSolarRadiationSettings(value.solarRadiationSettings),
     equipmentBudgetSettings: normalizeEquipmentBudgetSettings(value.equipmentBudgetSettings),
     equipmentRows: normalizeEquipmentRows(value.equipmentRows),
     radioLink: normalizeRadioLink(value.radioLink),

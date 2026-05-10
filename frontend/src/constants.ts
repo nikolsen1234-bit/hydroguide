@@ -10,17 +10,15 @@ import {
   Polarization,
   RadioLinkConfiguration,
   SolarConfiguration,
-  SolarRadiationSettings,
   SystemParameters,
   BackupSourceConfiguration
 } from "./types";
 
 export const STORAGE_KEYS = {
-  CONFIGS: "energi-konfig:konfigurasjonar:v2",
-  ACTIVE_ID: "energi-konfig:aktiv-id:v2",
-  LANGUAGE: "energi-konfig:language",
-  CALCULATOR_MODE: "energi-konfig:calculator-mode",
-  AI_EXPORT_HASH: "energi-konfig:ai-export-hash",
+  CONFIGS: "hydroguide:configurations:v2",
+  ACTIVE_ID: "hydroguide:active-id:v1",
+  LANGUAGE: "hydroguide:language",
+  AI_EXPORT_HASH: "hydroguide:ai-export-hash",
 } as const;
 
 export const API_ENDPOINTS = {
@@ -39,27 +37,27 @@ export const FLOW_THRESHOLDS = {
 };
 
 export const EMPTY_ANSWERS: Answers = {
-  q1Anleggstype: "",
-  q2HogasteMinstevassforing: "",
-  q3Slippkravvariasjon: "",
-  q4Slippmetode: "",
-  q5IsSedimentTilstopping: "",
-  q6Fiskepassasje: "",
-  q7BypassVedDriftsstans: "",
-  q8Maleprofil: "",
-  q9AllmentaKontroll: ""
+  q1FacilityType: "",
+  q2HighestRequiredMinFlow: "",
+  q3ReleaseRequirementVariation: "",
+  q4ReleaseMethod: "",
+  q5IsSedimentClogging: "",
+  q6FishPassage: "",
+  q7BypassOnOutage: "",
+  q8MeasurementProfile: "",
+  q9PublicControl: ""
 };
 
 export const ANSWER_KEYS: (keyof Answers)[] = [
-  "q1Anleggstype",
-  "q2HogasteMinstevassforing",
-  "q3Slippkravvariasjon",
-  "q4Slippmetode",
-  "q5IsSedimentTilstopping",
-  "q6Fiskepassasje",
-  "q7BypassVedDriftsstans",
-  "q8Maleprofil",
-  "q9AllmentaKontroll"
+  "q1FacilityType",
+  "q2HighestRequiredMinFlow",
+  "q3ReleaseRequirementVariation",
+  "q4ReleaseMethod",
+  "q5IsSedimentClogging",
+  "q6FishPassage",
+  "q7BypassOnOutage",
+  "q8MeasurementProfile",
+  "q9PublicControl"
 ];
 
 export const EMPTY_SYSTEM_PARAMETERS: SystemParameters = {
@@ -98,21 +96,21 @@ export const EMPTY_OTHER: OtherParameters = {
   evaluationHorizonYears: ""
 };
 
-export const MONTH_KEYS: MonthKey[] = ["jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des"];
+export const MONTH_KEYS: MonthKey[] = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
 export const MONTH_LABELS: Record<MonthKey, string> = {
   jan: "Jan",
   feb: "Feb",
   mar: "Mar",
   apr: "Apr",
-  mai: "Mai",
+  may: "Mai",
   jun: "Jun",
   jul: "Jul",
   aug: "Aug",
   sep: "Sep",
-  okt: "Okt",
+  oct: "Okt",
   nov: "Nov",
-  des: "Des"
+  dec: "Des"
 };
 
 export const DAYS_IN_MONTH: Record<MonthKey, number> = {
@@ -120,25 +118,14 @@ export const DAYS_IN_MONTH: Record<MonthKey, number> = {
   feb: 28,
   mar: 31,
   apr: 30,
-  mai: 31,
+  may: 31,
   jun: 30,
   jul: 31,
   aug: 31,
   sep: 30,
-  okt: 31,
+  oct: 31,
   nov: 30,
-  des: 31
-};
-
-export const EMPTY_SOLAR_RADIATION_SETTINGS: SolarRadiationSettings = {
-  mode: "manual",
-  lat: "",
-  lon: "",
-  tilt: "",
-  azimuth: "",
-  heightOffset: "",
-  locationName: "",
-  mapZoom: 13,
+  dec: 31
 };
 
 export const EMPTY_MONTHLY_SOLAR_RADIATION: MonthlySolarRadiation = {
@@ -146,14 +133,14 @@ export const EMPTY_MONTHLY_SOLAR_RADIATION: MonthlySolarRadiation = {
   feb: "",
   mar: "",
   apr: "",
-  mai: "",
+  may: "",
   jun: "",
   jul: "",
   aug: "",
   sep: "",
-  okt: "",
+  oct: "",
   nov: "",
-  des: ""
+  dec: ""
 };
 
 export const EMPTY_EQUIPMENT_BUDGET_SETTINGS: EquipmentBudgetSettings = {

@@ -362,8 +362,8 @@ export default {
         return jsonResponse({ error: "Ugyldig JSON-body." }, 400, corsHeaders);
       }
 
-      if (!body.rapportutdrag) {
-        return jsonResponse({ error: "rapportutdrag manglar." }, 400, corsHeaders);
+      if (!body.reportExtract) {
+        return jsonResponse({ error: "reportExtract manglar." }, 400, corsHeaders);
       }
 
       const documentedProjectDataText = buildDocumentedProjectDataText(body);
@@ -380,11 +380,11 @@ export default {
       );
 
       const userPrompt = fillTemplate(activeUserTemplate, {
-        prosjekt: body.prosjekt || "Uoppgitt",
-        prosjektbeskrivelse: clamped.prosjektbeskrivelse,
+        project: body.project || "Uoppgitt",
+        projectDescription: clamped.projectDescription,
         documented_project_data: clamped.documented_project_data,
         supplementary_project_data: clamped.supplementary_project_data,
-        rapportutdrag: clamped.rapportutdrag,
+        reportExtract: clamped.reportExtract,
         nve_snippets: clamped.nve_snippets,
       });
 
@@ -423,10 +423,9 @@ export default {
           gateway_used: result.gatewayUsed,
           fallback_step: result.fallbackStep,
           narrative_mode: narrativeMode,
-          retrieval_backend: retrieval.strategy,
+          retrieval_backend: retrieval.backend,
           topics_used: retrieval.topicsUsed,
           evidence_used: retrieval.evidenceUsed,
-          retrieval_sources: retrieval.sources,
           ...(selfFeedback ? { self_feedback: selfFeedback } : {}),
           ...(feedbackToken ? { feedback_token: feedbackToken, feedback_enabled: true } : {}),
         },

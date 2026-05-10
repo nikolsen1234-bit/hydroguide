@@ -4,6 +4,24 @@
 # Records the commit in the per-machine agent-sync log IF the private toolkit
 # is present (git-crypt unlocked). Fresh clones without the key skip silently.
 
-if command -v node >/dev/null 2>&1 && [ -f private/scripts/record-commit.mjs ]; then
-  node private/scripts/record-commit.mjs
+find_node () {
+  if command -v node >/dev/null 2>&1; then
+    command -v node
+    return 0
+  fi
+  for candidate in \
+    "/c/Program Files/nodejs/node.exe" \
+    "/c/Program Files (x86)/nodejs/node.exe"
+  do
+    if [ -x "$candidate" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+NODE_BIN="$(find_node || true)"
+if [ -n "$NODE_BIN" ] && [ -f private/scripts/record-commit.mjs ]; then
+  "$NODE_BIN" private/scripts/record-commit.mjs
 fi

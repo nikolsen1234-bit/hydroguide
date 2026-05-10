@@ -81,7 +81,9 @@ export default function ApiPage() {
         <div className="border-b border-[var(--hg-hairline-2)] px-4 py-3">
           <p className={workspaceBodyMutedClassName}>OpenAPI-spesifikasjon for HydroGuide-endepunkter.</p>
         </div>
-        <div ref={containerRef} className="api-docs min-h-full bg-[var(--hg-surface)] px-3 py-2 md:px-6 md:py-4" />
+        <div className="api-light-island overflow-x-auto">
+          <div ref={containerRef} className="api-docs min-h-full min-w-0 px-3 py-2 md:min-w-[760px] md:px-6 md:py-4" />
+        </div>
       </section>
     </main>
   );

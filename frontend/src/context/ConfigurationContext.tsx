@@ -26,7 +26,6 @@ import {
   RadioLinkConfiguration,
   RadioLinkEndpointConfiguration,
   SolarConfiguration,
-  SolarRadiationSettings,
   SystemParameters
 } from "../types";
 import {
@@ -48,7 +47,6 @@ type ConfigSectionFieldMap = {
   diesel: BackupSourceConfiguration;
   other: OtherParameters;
   monthlySolarRadiation: MonthlySolarRadiation;
-  solarRadiationSettings: SolarRadiationSettings;
   equipmentBudgetSettings: EquipmentBudgetSettings;
   radioLink: RadioLinkConfiguration;
 };
@@ -133,25 +131,26 @@ function upsertConfigurationList(configurations: PlantConfiguration[], configura
 }
 
 function createExportPayload(configuration: PlantConfiguration) {
-  const calculatorMode = (configuration.engineMode ?? "standard") === "standard";
+  const includeAnswers = (configuration.engineMode ?? "calculator") !== "calculator";
 
   return {
     engineMode: configuration.engineMode,
     name: configuration.name,
     location: configuration.location,
-    ...(configuration.locationPlaceId ? { nveId: Number(configuration.locationPlaceId) } : {}),
+    ...(configuration.locationPlaceId ? { locationPlaceId: configuration.locationPlaceId } : {}),
+    ...(configuration.locationLat !== null ? { locationLat: configuration.locationLat } : {}),
+    ...(configuration.locationLng !== null ? { locationLng: configuration.locationLng } : {}),
     ...(configuration.nvePlantDetails ? { nvePlantDetails: configuration.nvePlantDetails } : {}),
-    ...(!calculatorMode ? { sporsmal: stripEmptyValues(configuration.answers) } : {}),
-    systemparametere: stripEmptyValues(configuration.systemParameters),
-    sol: stripEmptyValues(configuration.solar),
-    batteri: stripEmptyValues(configuration.battery),
-    brenselcelle: stripEmptyValues(configuration.fuelCell),
+    ...(includeAnswers ? { answers: stripEmptyValues(configuration.answers) } : {}),
+    systemParameters: stripEmptyValues(configuration.systemParameters),
+    solar: stripEmptyValues(configuration.solar),
+    battery: stripEmptyValues(configuration.battery),
+    fuelCell: stripEmptyValues(configuration.fuelCell),
     diesel: stripEmptyValues(configuration.diesel),
-    andre: stripEmptyValues(configuration.other),
-    solinnstraling: stripEmptyValues(configuration.monthlySolarRadiation),
-    solinnstralingInnstillingar: stripEmptyValues(configuration.solarRadiationSettings),
-    komponenter: configuration.equipmentBudgetSettings,
-    radiolinje: {
+    other: stripEmptyValues(configuration.other),
+    monthlySolarRadiation: stripEmptyValues(configuration.monthlySolarRadiation),
+    equipmentBudgetSettings: configuration.equipmentBudgetSettings,
+    radioLink: {
       pointA: stripEmptyValues(configuration.radioLink.pointA),
       pointB: stripEmptyValues(configuration.radioLink.pointB),
       frequencyMHz: configuration.radioLink.frequencyMHz,
@@ -163,18 +162,19 @@ function createExportPayload(configuration: PlantConfiguration) {
       rxSensitivityDbm: configuration.radioLink.rxSensitivityDbm,
       lineLossDb: configuration.radioLink.lineLossDb
     },
-    utstyr: configuration.equipmentRows
+    equipmentRows: configuration.equipmentRows
         .filter((row) => row.name.trim() || row.powerW !== "" || row.runtimeHoursPerDay !== "" || row.purchaseCost !== "" || row.lifetimeYears !== "" || row.annualMaintenance !== "" || row.supplier.trim() || row.comment.trim())
         .map((row) => ({
-          aktiv: row.active,
-          namn: row.name,
-          effektW: row.powerW,
-          timerPerDag: row.runtimeHoursPerDay,
-          innkjop: row.purchaseCost,
-          levetidAr: row.lifetimeYears,
-          vedlikeholdPerAr: row.annualMaintenance,
-          leverandor: row.supplier,
-          kommentar: row.comment
+          id: row.id,
+          active: row.active,
+          name: row.name,
+          powerW: row.powerW,
+          runtimeHoursPerDay: row.runtimeHoursPerDay,
+          purchaseCost: row.purchaseCost,
+          lifetimeYears: row.lifetimeYears,
+          annualMaintenance: row.annualMaintenance,
+          supplier: row.supplier,
+          comment: row.comment
         }))
   };
 }
@@ -194,64 +194,30 @@ function downloadExport(name: string, content: string) {
 }
 
 function toImportedPartialConfiguration(raw: Record<string, unknown>): Partial<PlantConfiguration> {
-  const equipmentRows = Array.isArray(raw.utstyr)
-      ? (raw.utstyr as Array<{
-          aktiv?: boolean;
-          namn?: string;
-          effektW?: unknown;
-          timerPerDag?: unknown;
-          innkjop?: unknown;
-          levetidAr?: unknown;
-          vedlikeholdPerAr?: unknown;
-          leverandor?: string;
-          kommentar?: string;
-        }>).map((row) => ({
-          id: makeId("eq"),
-          active: row.aktiv !== false,
-          name: row.namn ?? "",
-          powerW: row.effektW,
-          runtimeHoursPerDay: row.timerPerDag,
-          purchaseCost: row.innkjop,
-          lifetimeYears: row.levetidAr,
-          annualMaintenance: row.vedlikeholdPerAr,
-          supplier: row.leverandor ?? "",
-          comment: row.kommentar ?? ""
-        }))
-    : raw.equipmentRows as PlantConfiguration["equipmentRows"] | undefined;
-
-  const coords = raw.koordinater as { lat?: number; lng?: number } | undefined;
-  const nveId =
-    typeof raw.nveId === "number"
-      ? String(raw.nveId)
-      : typeof raw.nveId === "string"
-        ? raw.nveId
-        : typeof raw.locationPlaceId === "string"
-          ? raw.locationPlaceId
-          : null;
-
   return {
     engineMode:
-      raw.engineMode === "detailed" || raw.engineMode === "combined" || raw.engineMode === "standard"
-        ? raw.engineMode
-        : undefined,
+      raw.engineMode === "hydroguide"
+        ? "hydroguide"
+        : raw.engineMode === "calculator"
+          ? "calculator"
+          : undefined,
     name: raw.name as string | undefined,
     location: raw.location as string | undefined,
-    locationPlaceId: nveId,
-    locationLat: typeof raw.locationLat === "number" ? raw.locationLat : coords?.lat ?? null,
-    locationLng: typeof raw.locationLng === "number" ? raw.locationLng : coords?.lng ?? null,
+    locationPlaceId: typeof raw.locationPlaceId === "string" ? raw.locationPlaceId : null,
+    locationLat: typeof raw.locationLat === "number" ? raw.locationLat : null,
+    locationLng: typeof raw.locationLng === "number" ? raw.locationLng : null,
     nvePlantDetails: raw.nvePlantDetails as PlantConfiguration["nvePlantDetails"] | undefined,
-    answers: (raw.sporsmal ?? raw.answers) as Partial<PlantConfiguration["answers"]> | undefined,
-    systemParameters: (raw.systemparametere ?? raw.systemParameters) as Partial<PlantConfiguration["systemParameters"]> | undefined,
-    solar: (raw.sol ?? raw.solar) as Partial<PlantConfiguration["solar"]> | undefined,
-    battery: (raw.batteri ?? raw.battery) as Partial<PlantConfiguration["battery"]> | undefined,
-    fuelCell: (raw.brenselcelle ?? raw.fuelCell) as Partial<PlantConfiguration["fuelCell"]> | undefined,
+    answers: raw.answers as Partial<PlantConfiguration["answers"]> | undefined,
+    systemParameters: raw.systemParameters as Partial<PlantConfiguration["systemParameters"]> | undefined,
+    solar: raw.solar as Partial<PlantConfiguration["solar"]> | undefined,
+    battery: raw.battery as Partial<PlantConfiguration["battery"]> | undefined,
+    fuelCell: raw.fuelCell as Partial<PlantConfiguration["fuelCell"]> | undefined,
     diesel: raw.diesel as Partial<PlantConfiguration["diesel"]> | undefined,
-    other: (raw.andre ?? raw.other) as Partial<PlantConfiguration["other"]> | undefined,
-    monthlySolarRadiation: (raw.solinnstraling ?? raw.monthlySolarRadiation) as Partial<PlantConfiguration["monthlySolarRadiation"]> | undefined,
-    solarRadiationSettings: (raw.solinnstralingInnstillingar ?? raw.solarRadiationSettings) as Partial<PlantConfiguration["solarRadiationSettings"]> | undefined,
-    equipmentBudgetSettings: (raw.komponenter ?? raw.equipmentBudgetSettings) as Partial<PlantConfiguration["equipmentBudgetSettings"]> | undefined,
-    radioLink: (raw.radiolinje ?? raw.radioLink) as Partial<PlantConfiguration["radioLink"]> | undefined,
-    equipmentRows
+    other: raw.other as Partial<PlantConfiguration["other"]> | undefined,
+    monthlySolarRadiation: raw.monthlySolarRadiation as Partial<PlantConfiguration["monthlySolarRadiation"]> | undefined,
+    equipmentBudgetSettings: raw.equipmentBudgetSettings as Partial<PlantConfiguration["equipmentBudgetSettings"]> | undefined,
+    radioLink: raw.radioLink as Partial<PlantConfiguration["radioLink"]> | undefined,
+    equipmentRows: raw.equipmentRows as PlantConfiguration["equipmentRows"] | undefined
   } as Partial<PlantConfiguration>;
 }
 
@@ -455,7 +421,7 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
       }
 
       const raw = parsed as Record<string, unknown>;
-      const importedEquipmentRows = Array.isArray(raw.utstyr) ? raw.utstyr : null;
+      const importedEquipmentRows = Array.isArray(raw.equipmentRows) ? raw.equipmentRows : null;
 
       if (importedEquipmentRows && importedEquipmentRows.length > MAX_CONFIGURATION_EQUIPMENT_ROWS) {
         throw new Error(`Importfilen inneholder for mange utstyrsrader. Maks er ${MAX_CONFIGURATION_EQUIPMENT_ROWS}.`);

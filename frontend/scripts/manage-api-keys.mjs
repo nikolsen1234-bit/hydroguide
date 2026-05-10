@@ -16,7 +16,7 @@
  *   1. Create a KV namespace:
  *        npx wrangler kv namespace create API_KEYS
  *
- *   2. Add the binding to wrangler.toml (or Cloudflare Pages settings):
+ *   2. Add the binding to the relevant Worker Wrangler config:
  *        [[kv_namespaces]]
  *        binding = "API_KEYS"
  *        id = "<namespace-id>"

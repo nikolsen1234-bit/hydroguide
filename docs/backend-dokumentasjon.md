@@ -7,8 +7,8 @@ Oppdatert: 2026-05-03
 Backend er fire Cloudflare Workers som tar imot HTTP-kall og svarer med JSON eller tekst:
 
 - **`hydroguide-api`** svarer på det offentlige API-et (`/api/*`).
-- **`hydroguide-report`** mottar rapport-forespørsler fra nettsiden og kaller AI-en internt.
-- **`hydroguide-ai`** lager rapporttekst med en LLM. Har ingen offentlig URL.
+- **`hydroguide-report`** mottar rapport-forespørsler fra nettsiden og videresender til lokal rapportagent via Cloudflare Tunnel.
+- **`hydroguide-ai`** ligger i repoet som intern rapport-AI. Har ingen offentleg URL.
 - **`hydroguide-admin`** håndterer API-nøkler. Skilt ut for å holde admin-overflaten unna det offentlige API-et.
 
 Tre ressurser deles mellom dem: en KV-namespace for nøkler og rate-limiting (`API_KEYS`), en KV-namespace for rapport-regler (`REPORT_RULES`), og to R2-buckets (`hydroguide-minimum-flow` for NVEID-data, `hydroguide-ai-reference` for AI-referanser).
@@ -124,16 +124,16 @@ Det betyr at beregninger som "hvor mye sol treffer panelet i juni" gir samme sva
 ```text
 Nettsiden                  POST /api/report (access code)
   -> hydroguide-report     validerer access code, sjekker rate limit
-       service binding     REPORT_AI_WORKER (intern bearer-token)
-  -> hydroguide-ai         henter retrieval-grunnlag fra REPORT_RULES + AI_REFERENCE_BUCKET,
-                           bygger prompt, kaller modell via AI Gateway,
+       Cloudflare Tunnel   REPORT_BRIDGE_URL + REPORT_BRIDGE_TOKEN
+  -> lokal agent-bridge    henter lokal JSONL-kunnskap, bruker Qwen embeddings,
+                           kaller Codex via CLIProxyAPI,
                            returnerer rapporttekst med metadata
   -> Nettsiden             rendrer HTML-rapport med AI-tekst + diagrammer
 ```
 
-`hydroguide-ai` har `workers_dev: false` og ingen route — den er kun nåbar via service binding fra rapport-Worker. Ingen kan kalle AI-en direkte utenfra.
+Den lokale bridgen binder til `127.0.0.1:8788` og eksponeres gjennom en stabil Cloudflare Tunnel. `POST /report` på bridgen krever bearer-token fra `hydroguide-report`. `GET /health` er en minimal helsesjekk.
 
-For prompt, retrieval og modellvalg: se [ai-rapport.md](ai-rapport.md) og [ai-strategi.md](ai-strategi.md).
+Report-agentkoden ligger i `tools/agent-bridge/`. Tracked rapportkunnskap ligger i `tools/agent-bridge/knowledge/report-knowledge.jsonl`; genererte vektorer ligger lokalt under `.ai/agent-rag/`.
 
 ## Hvordan API-nøkler verifiseres
 
@@ -184,6 +184,6 @@ Kjør med `node --test backend/api/<navn>.test.mjs`.
 
 - Worker-konfig, deploy, secrets: [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md)
 - Trusselbilde og auth-design: [sikkerheit.md](sikkerheit.md)
-- Rapport-AI (runtime): [ai-rapport.md](ai-rapport.md)
-- Rapport-AI (strategi): [ai-strategi.md](ai-strategi.md)
+- Lokal rapportagent: [../tools/agent-bridge/README.md](../tools/agent-bridge/README.md)
+- KI-strategi: [ai-strategi.md](ai-strategi.md)
 - Lokal utvikling: [utvikling.md](utvikling.md)

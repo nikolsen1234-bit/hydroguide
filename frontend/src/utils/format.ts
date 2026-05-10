@@ -9,6 +9,10 @@ export function formatNumber(value: number, digits = 2): string {
   }).format(value);
 }
 
+export function formatNumberDraft(value: number | ""): string {
+  return value === "" ? "" : String(value);
+}
+
 function normalizeLocationPart(value: string): string {
   return value
     .toLowerCase()

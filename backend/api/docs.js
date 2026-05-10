@@ -54,9 +54,9 @@ const otherSchema = {
 };
 
 const monthlySchema = {
-  type: "object", required: ["jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des"],
-  description: "Monthly solar radiation (kWh/m2/day).",
-  properties: { jan: n, feb: n, mar: n, apr: n, mai: n, jun: n, jul: n, aug: n, sep: n, okt: n, nov: n, des: n }
+  type: "object", required: ["jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "nov"],
+  description: "Monthly solar radiation (kWh/m2/day). May/October/December may be sent as mai/okt/des or may/oct/dec.",
+  properties: { jan: n, feb: n, mar: n, apr: n, mai: n, may: n, jun: n, jul: n, aug: n, sep: n, okt: n, oct: n, nov: n, des: n, dec: n }
 };
 
 const equipmentRowSchema = {
@@ -81,7 +81,7 @@ const monthlyBalanceSchema = {
 
 const costItemSchema = {
   type: "object",
-  properties: { source: s, purchaseCost: n, operatingCostPerYear: n, annualMaintenance: n, evaluationHorizonYears: n, technicalLifetimeHours: n, totalRuntimeHours: n, annualFuelConsumption: n, annualCo2: n, toc: { ...n, description: "Total cost of ownership over evaluation period (NOK)" } }
+  properties: { source: s, purchaseCost: n, operatingCostPerYear: n, annualMaintenance: n, evaluationHorizonYears: n, technicalLifetimeHours: n, totalRuntimeHours: n, replacementCount: n, annualFuelConsumption: n, annualCo2: n, toc: { ...n, description: "Total cost of ownership over evaluation period (NOK)" } }
 };
 
 const scenarioSchema = {
@@ -98,7 +98,8 @@ const calculationsResponseSchema = {
     annualEnergyDeficitKWh: { ...n, description: "Annual energy deficit (kWh)" },
     monthlyEnergyBalance: { type: "array", items: monthlyBalanceSchema, description: "Energy balance per month" },
     annualTotals: { type: "object", description: "Annual totals for solar production, load, balance, fuel and CO2" },
-    costComparison: { type: "object", properties: { annualEnergyDeficitKWh: n, items: { type: "array", items: costItemSchema } }, description: "Cost comparison fuel cell vs diesel" },
+    selectedSource: { ...s, description: "Selected reserve source for monthlyEnergyBalance and annualTotals" },
+    costComparison: { type: "object", properties: { annualEnergyDeficitKWh: n, alternatives: { type: "array", items: costItemSchema } }, description: "Cost comparison fuel cell vs diesel" },
     scenarios: { type: "object", properties: { fuelCell: scenarioSchema, diesel: scenarioSchema }, description: "Full scenario for each backup source" }
   }
 };
@@ -197,7 +198,7 @@ const SPEC = {
       post: {
         tags: ["Calculations"],
         summary: "Run calculations",
-        description: "Send the same payload as the website export file. All fields in solar, battery and monthlySolarRadiation are required. Backup source fields (fuelCell, diesel, other) are required when hasBackupSource=true.",
+        description: "Send the same payload as the website export file. systemParameters/systemparametere and may/oct/dec or mai/okt/des month keys are accepted. Backup source fields (fuelCell, diesel, other) are required when hasBackupSource=true.",
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,

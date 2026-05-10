@@ -192,7 +192,7 @@
     {
       "key": "report_worker",
       "name": "hydroguide-report",
-      "description": "hydroguide-report receives /api/report requests and calls hydroguide-ai through a service binding.",
+      "description": "hydroguide-report receives /api/report requests and forwards them to the local report-agent bridge.",
       "source_config": "backend/cloudflare/report.wrangler.jsonc",
       "generated_deploy_config": "backend/cloudflare/report.generated.wrangler.jsonc",
       "main": "../workers/report/index.js",
@@ -213,16 +213,13 @@
         }
       ],
       "bindings": {
-        "services": [
-          {
-            "binding": "REPORT_AI_WORKER",
-            "service": "hydroguide-ai"
-          }
-        ]
+        "vars": {
+          "REPORT_BRIDGE_URL": "https://agent-bridge.hydroguide.no"
+        }
       },
       "required_secrets": [
         "REPORT_ACCESS_CODE_HASH",
-        "REPORT_WORKER_TOKEN"
+        "REPORT_BRIDGE_TOKEN"
       ]
     },
     {

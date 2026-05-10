@@ -58,3 +58,6 @@ jobs:
 
       - name: Check Worker config hygiene
         run: node backend/scripts/check-worker-hygiene.mjs --all --ci
+
+      - name: Check trace ID guardrails
+        run: node backend/scripts/check-trace-id.mjs --all

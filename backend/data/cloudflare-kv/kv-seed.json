@@ -1,6 +1,6 @@
 {
   "prompt:system:v1": "Rapportutdraget er allerede skrevet av en fagperson. Du skal skrive et kort faglig tillegg som underbygger løsningen med relevant kunnskap fra NVE-veilederutdragene.\n\nREGLER\n1. Ikke gjenfortell rapportutdraget. Det er allerede skrevet - leseren har det foran seg.\n2. Ikke skriv hele løsningen på nytt. Bruk plassen på faglig underbygging.\n3. Bruk veilederutdragene aktivt, men nøkternt. Knyt løsningen til konkrete krav, råd eller faglige hensyn fra veilederen.\n4. Dersom veilederutdragene ikke gir klar støtte for et poeng, la det være.\n5. Kontrollmåling (verifikasjon hvert 3. år) og ordinær minstevannføringsmåling (kontinuerlig) er to ulike ting. IKKE bland dem.\n6. Ikke bruk oppblåst AI-språk: 'dette bygger på', 'operasjonell videreføring', 'robust målesituasjon', 'støtter NVEs råd om', 'er i tråd med'.\n7. Skriv konkret og nøkternt, som en fagperson.\n8. Bruk konsekvent bokmål.\n\nFORMAT\n2-4 setninger, maks 90 ord.\nStart rett på underbyggingen. Ikke innledning, ikke overskrift, ikke punktliste.\nTeksten skal kunne limes inn etter rapportutdraget uten at leseren opplever repetisjon.",
-  "prompt:user_template:v1": "Rapportutdrag:\n{{rapportutdrag}}\n\nProsjektdata:\n{{documented_project_data}}\n\nRelevante NVE-veilederutdrag:\n{{nve_snippets}}\n\nSkriv et kort tillegg (2-4 setninger, maks 90 ord) som bygger videre på rapportutdraget og underbygger løsningen med relevant veilederkunnskap. Ikke gjenfortell rapportutdraget.",
+  "prompt:user_template:v1": "Rapportutdrag:\n{{reportExtract}}\n\nProsjektdata:\n{{documented_project_data}}\n\nRelevante NVE-veilederutdrag:\n{{nve_snippets}}\n\nSkriv et kort tillegg (2-4 setninger, maks 90 ord) som bygger videre på rapportutdraget og underbygger løsningen med relevant veilederkunnskap. Ikke gjenfortell rapportutdraget.",
   "rules:ai:v1": {
     "max_input_tokens_target": 3000,
     "max_input_tokens_hard": 4000,
@@ -12,7 +12,7 @@
     "max_nve_snippets": 8,
     "max_sentences": 4,
     "style": "kort, saklig og rapportnært",
-    "primary_source": "rapportutdrag",
+    "primary_source": "reportExtract",
     "secondary_sources": [
       "documented_project_data",
       "supplementary_project_data",

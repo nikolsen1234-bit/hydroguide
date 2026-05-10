@@ -39,20 +39,6 @@ const BUCKET_LABELS: Record<string, string> = {
   drift: "Drift (NVE)",
 };
 
-export type RetrievalStrategy = "hybrid" | "vectorize-only" | "autorag-only" | "kv-only" | "auto";
-
-export type HybridRetrievalResult = {
-  strategy: RetrievalStrategy;
-  snippetsText: string;
-  topicsUsed: string[];
-  evidenceUsed: EvidenceUsed[];
-  sources: {
-    vectorize: number;
-    autorag: number;
-    kv: number;
-  };
-};
-
 // ─── Pure helpers ───
 
 export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
@@ -241,22 +227,22 @@ export function formatEvidenceBlock(item: EvidenceCandidate, index: number): str
 
 function normalizeSearchText(body: NormalizedBody): string {
   return [
-    body.rapportutdrag,
-    body.prosjektbeskrivelse,
-    body.hovudloysing,
-    body.slippmetode,
-    body.primaermaaling,
-    body.kontrollmaaling,
-    body.maleprinsipp,
-    body.maleutstyr,
-    body.loggeroppsett,
-    body.kommunikasjon,
-    body.alarmVarsling,
-    body.frostsikring,
+    body.reportExtract,
+    body.projectDescription,
+    body.mainSolution,
+    body.releaseMethod,
+    body.primaryMeasurement,
+    body.controlMeasurement,
+    body.measurementPrinciple,
+    body.measurementEquipment,
+    body.loggerSetup,
+    body.communication,
+    body.alarmNotification,
+    body.frostProtection,
     body.bypass,
-    ...body.grunngiving,
-    ...body.tilleggskrav,
-    ...body.driftskrav,
+    ...body.justification,
+    ...body.additionalRequirements,
+    ...body.operationalRequirements,
   ]
     .filter(Boolean)
     .join(" ")
@@ -336,13 +322,66 @@ export async function getSelectedSnippetsFromKv(
 
 // ─── AI Search retrieval ───
 
+function getConfiguredRetrievalBackend(env: Env): RetrievalBackend | "auto" {
+  const raw = String(env.RETRIEVAL_BACKEND ?? "auto").trim().toLowerCase();
+  if (raw === "kv" || raw === "ai-search" || raw === "vectorize" || raw === "hybrid") {
+    return raw;
+  }
+  // "auto" or unknown → prefer AI Search if configured, else fall back to KV.
+  if (env.AI_SEARCH_INSTANCE) {
+    return "ai-search";
+  }
+  return "kv";
+}
+
+function buildAiSearchRestUrl(env: Env): string {
+  const accountId = env.AI_SEARCH_ACCOUNT_ID ?? "";
+  const instance = env.AI_SEARCH_INSTANCE ?? "";
+  return `https://api.cloudflare.com/client/v4/accounts/${accountId}/autorag/rags/${instance}/search`;
+}
+
+function buildAiSearchRestPayload(
+  query: string,
+  maxResults: number,
+  threshold: number,
+  rerankingEnabled: boolean
+): Record<string, unknown> {
+  return {
+    query,
+    rewrite_query: false,
+    max_num_results: maxResults,
+    ranking_options: {
+      score_threshold: threshold,
+    },
+    reranking: {
+      enabled: rerankingEnabled,
+      model: "@cf/baai/bge-reranker-base",
+    },
+  };
+}
+
+function assertAiSearchRestSuccess(payload: unknown): void {
+  if (payload && typeof payload === "object") {
+    const obj = payload as Record<string, unknown>;
+    if (obj.success === false) {
+      const errors = Array.isArray(obj.errors) ? obj.errors : [];
+      const firstError = errors[0];
+      const message =
+        firstError && typeof firstError === "object" && "message" in firstError
+          ? String((firstError as Record<string, unknown>).message)
+          : "AI Search REST returnerte success=false.";
+      throw new Error(message);
+    }
+  }
+}
+
 export function buildRetrievalQuery(body: NormalizedBody): string {
   // Primary: focused query from key structured fields (short, high-signal).
   // Fallback: full rapportutdrag if structured fields are empty.
-  const queryParts = [body.hovudloysing, body.slippmetode, body.primaermaaling].filter(Boolean);
+  const queryParts = [body.mainSolution, body.releaseMethod, body.primaryMeasurement].filter(Boolean);
   const query = queryParts.length > 0
     ? queryParts.join(". ")
-    : body.rapportutdrag ?? "";
+    : body.reportExtract ?? "";
 
   return query;
 }
@@ -513,30 +552,30 @@ export async function retrieveEvidence(
 // ─── v2 Pipeline: 4-bucket KV + AI Search hybrid ───
 
 export function mapAnswersToBucketKeywords(body: NormalizedBody): Record<BucketPrefix, string[]> {
-  const slipp = (body.slippmetodeVal || body.slippmetode || "").toLowerCase();
-  const profil = (body.maleprofil || body.kontrollmaaling || "").toLowerCase();
-  const is = (body.isSedimentTilstopping || "").toLowerCase();
+  const releaseLower = (body.releaseMethodSelected || body.releaseMethod || "").toLowerCase();
+  const profileLower = (body.measurementProfile || body.controlMeasurement || "").toLowerCase();
+  const sedimentClogged = (body.isSedimentClogging || "").toLowerCase();
 
   return {
     krav: ["oppetid", "97", "timefrekvens", "noyaktigheit", "kontrollintervall", "dokumentasjon", "sensorredundans", "rapportering"],
     metode: [
-      slipp.includes("royr") || slipp.includes("ror") ? "rormaaling" : "",
-      slipp.includes("luke") || slipp.includes("overloep") ? "luke_tapperoyr" : "",
-      slipp.includes("elve") ? "elvemaaling" : "",
-      profil.includes("vasstand") || profil.includes("naturleg") ? "vasstand_kurve" : "",
+      releaseLower.includes("royr") || releaseLower.includes("ror") ? "rormaaling" : "",
+      releaseLower.includes("luke") || releaseLower.includes("overloep") ? "luke_tapperoyr" : "",
+      releaseLower.includes("elve") ? "elvemaaling" : "",
+      profileLower.includes("vasstand") || profileLower.includes("naturleg") ? "vasstand_kurve" : "",
       "mengdemalar",
     ].filter(Boolean),
     valgkrit: [
-      slipp.includes("royr") || slipp.includes("ror") ? "ror_vs_utvendig" : "",
+      releaseLower.includes("royr") || releaseLower.includes("ror") ? "ror_vs_utvendig" : "",
       "volumtid_grense",
-      profil.includes("naturleg") || profil.includes("kunstig") ? "profil" : "",
-      body.slippkravvariasjon === "sesongkrav" || body.slippkravvariasjon === "tilsigsstyrt" ? "aktiv_vs_passiv" : "",
+      profileLower.includes("naturleg") || profileLower.includes("kunstig") ? "profil" : "",
+      body.releaseRequirementVariation === "seasonal" || body.releaseRequirementVariation === "inflowControlled" ? "aktiv_vs_passiv" : "",
     ].filter(Boolean),
     risiko: [
-      is === "ja" ? "is_frost" : "",
-      is === "ja" ? "sediment_tilstopping" : "",
+      sedimentClogged === "yes" ? "is_frost" : "",
+      sedimentClogged === "yes" ? "sediment_tilstopping" : "",
       "kontroll_vs_ordinaer",
-      profil.includes("ingen") ? "ikke_stabilt_profil" : "",
+      profileLower.includes("ingen") ? "ikke_stabilt_profil" : "",
     ].filter(Boolean),
     drift: ["tilsyn", "vedlikehald", "kalibrering"],
   };
@@ -810,164 +849,4 @@ export async function searchVectorize(env: Env, queryText: string, rules: Rules)
   );
 
   return candidates.filter((c): c is EvidenceCandidate => c !== null && c.text.length > 0);
-}
-
-// ─── Hybrid retrieval orchestrator ───
-
-function resolveRetrievalStrategy(env: Env): RetrievalStrategy {
-  const configured = String(env.RETRIEVAL_STRATEGY ?? "auto").trim().toLowerCase();
-
-  if (configured === "hybrid") return "hybrid";
-  if (configured === "vectorize-only" || configured === "vectorize") return "vectorize-only";
-  if (configured === "autorag-only" || configured === "autorag" || configured === "ai-search") return "autorag-only";
-  if (configured === "kv-only" || configured === "kv") return "kv-only";
-
-  // "auto" — pick the best available strategy based on configured bindings
-  const hasVectorize = parseBooleanFlag(env.VECTORIZE_ENABLED, false) && Boolean(env.VECTORIZE_INDEX) && Boolean(env.AI);
-  const hasAutoRAG = Boolean(env.AI) && Boolean(env.AI_SEARCH_INSTANCE);
-
-  if (hasVectorize && hasAutoRAG) return "hybrid";
-  if (hasVectorize) return "vectorize-only";
-  if (hasAutoRAG) return "autorag-only";
-  return "kv-only";
-}
-
-export async function retrieveHybridEvidence(
-  env: Env,
-  body: NormalizedBody,
-  rules: Rules,
-  keywordMap: KeywordMap | null
-): Promise<HybridRetrievalResult> {
-  const strategy = resolveRetrievalStrategy(env);
-  const query = buildRetrievalQuery(body);
-  const maxSnippets = clampMaxSnippets(rules.max_nve_snippets);
-
-  const allCandidates: EvidenceCandidate[] = [];
-  const sourceCounts = { vectorize: 0, autorag: 0, kv: 0 };
-
-  // Determine which backends to run
-  const runVectorize = strategy === "hybrid" || strategy === "vectorize-only";
-  const runAutoRAG = strategy === "hybrid" || strategy === "autorag-only";
-  const runKV = strategy === "kv-only";
-
-  // Launch Vectorize and AutoRAG in parallel when both are needed
-  const [vectorizeResult, autoragResult] = await Promise.all([
-    runVectorize
-      ? searchVectorize(env, query, rules).catch((error) => {
-          console.error("Vectorize feilet:", error instanceof Error ? error.message : error);
-          return [] as EvidenceCandidate[];
-        })
-      : Promise.resolve([] as EvidenceCandidate[]),
-    runAutoRAG
-      ? runAiSearch(env, body, rules).catch((error) => {
-          console.error("AutoRAG feilet i hybrid:", error instanceof Error ? error.message : error);
-          return null;
-        })
-      : Promise.resolve(null),
-  ]);
-
-  // Collect Vectorize candidates
-  for (const candidate of vectorizeResult) {
-    allCandidates.push(candidate);
-    sourceCounts.vectorize++;
-  }
-
-  // Collect AutoRAG candidates
-  if (autoragResult) {
-    for (const evidence of autoragResult.evidenceUsed) {
-      // AutoRAG evidence is already formatted — find original text from snippetsText
-      // We store a simplified candidate so downstream dedup works
-      allCandidates.push({
-        id: evidence.id,
-        source: evidence.source,
-        text: "", // Will be filled from snippetsText block below
-        score: evidence.score,
-      });
-      sourceCounts.autorag++;
-    }
-  }
-
-  // KV fallback: if we have no candidates from vector backends, or strategy is kv-only
-  if (runKV || (allCandidates.filter((c) => c.text.length > 0).length === 0 && keywordMap)) {
-    const topics = keywordMap ? pickTopics(body, keywordMap, rules) : [];
-    if (topics.length > 0) {
-      const kvResult = await getSelectedSnippetsFromKv(env, topics, rules);
-      for (const evidence of kvResult.evidenceUsed) {
-        allCandidates.push({
-          id: evidence.id,
-          source: evidence.source,
-          text: "", // KV snippets go into snippetsText block
-          score: evidence.score,
-        });
-        sourceCounts.kv++;
-      }
-
-      // If KV is our primary/only source, use its formatted text directly
-      if (runKV || allCandidates.filter((c) => c.text.length > 0).length === 0) {
-        return {
-          strategy,
-          snippetsText: kvResult.snippetsText,
-          topicsUsed: kvResult.topicsUsed,
-          evidenceUsed: kvResult.evidenceUsed,
-          sources: sourceCounts,
-        };
-      }
-    }
-  }
-
-  // Deduplicate candidates by source, preferring higher scores
-  const seen = new Map<string, EvidenceCandidate>();
-  for (const candidate of allCandidates) {
-    if (candidate.text.length === 0) continue; // Skip empty-text placeholders
-
-    const key = candidate.source.toLowerCase();
-    const existing = seen.get(key);
-    if (!existing || (candidate.score ?? 0) > (existing.score ?? 0)) {
-      seen.set(key, candidate);
-    }
-  }
-
-  // Sort by score descending, then pick top N
-  const deduped = Array.from(seen.values())
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-    .slice(0, maxSnippets);
-
-  // If hybrid produced real Vectorize candidates with text, format them
-  if (deduped.length > 0) {
-    const snippetsText = deduped
-      .map((item, index) => formatEvidenceBlock(item, index))
-      .join("\n\n");
-
-    return {
-      strategy,
-      snippetsText,
-      topicsUsed: Array.from(new Set(deduped.map((c) => c.source))),
-      evidenceUsed: deduped.map((c) => ({
-        id: c.id,
-        source: c.source,
-        score: c.score,
-      })),
-      sources: sourceCounts,
-    };
-  }
-
-  // Fallback: if AutoRAG returned results but Vectorize didn't, use AutoRAG text
-  if (autoragResult && autoragResult.evidenceUsed.length > 0) {
-    return {
-      strategy,
-      snippetsText: autoragResult.snippetsText,
-      topicsUsed: autoragResult.topicsUsed,
-      evidenceUsed: autoragResult.evidenceUsed,
-      sources: sourceCounts,
-    };
-  }
-
-  // Nothing found anywhere
-  return {
-    strategy,
-    snippetsText: "- Ingen relevante NVE-utdrag funne.",
-    topicsUsed: [],
-    evidenceUsed: [],
-    sources: sourceCounts,
-  };
 }

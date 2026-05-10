@@ -120,7 +120,7 @@ function SideTab({ to, labelKey, icon, onClick }: { to: string; labelKey: Transl
       end={to === "/"}
       onClick={onClick}
       className={({ isActive }) =>
-        `flex h-9 items-center gap-2.5 rounded-lg border-l-2 px-3 text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-semibold)] transition ${
+        `flex min-h-[44px] items-center gap-2.5 rounded-lg border-l-2 px-3 text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-semibold)] transition md:min-h-9 ${
           isActive
             ? "border-[var(--hg-accent-2)] bg-white/[0.08] text-[var(--hg-rail-ink-active)]"
             : "border-transparent text-[var(--hg-rail-ink)] hover:bg-white/5 hover:text-[var(--hg-rail-ink-active)]"
@@ -146,15 +146,15 @@ function RouteFallback() {
 
 function ThemeToggle({ theme, setTheme }: { theme: ThemeMode; setTheme: (theme: ThemeMode) => void }) {
   return (
-    <div className="grid h-8 grid-cols-2 gap-1 rounded-lg border border-[#233152] p-1">
+    <div className="hg-theme-toggle grid min-h-[44px] grid-cols-2 gap-1 rounded-lg border border-[var(--hg-hairline)] p-1">
       {(["light", "dark"] as const).map((mode) => (
         <button
           key={mode}
           type="button"
           aria-pressed={theme === mode}
           onClick={() => setTheme(mode)}
-          className={`rounded-md px-2 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.14em] transition ${
-            theme === mode ? "bg-[#172044] text-white" : "text-[#7e8ca6] hover:text-white"
+          className={`rounded-md px-2 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-overline-tracking)] transition ${
+            theme === mode ? "bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]" : "text-[var(--hg-rail-ink)] hover:text-[var(--hg-rail-ink-active)]"
           }`}
         >
           {mode === "light" ? "Lys" : "Mørk"}
@@ -177,13 +177,13 @@ function SidebarContent({
 }) {
   const { t } = useLanguage();
   const { activeDraft } = useConfigurationContext();
-  const isCalculatorMode = (activeDraft.engineMode ?? "standard") === "standard";
+  const isCalculatorMode = (activeDraft.engineMode ?? "calculator") === "calculator";
 
   return (
     <>
       <div className="shrink-0">
         <div className="relative flex h-7 items-center">
-          <Link to="/" aria-label={t("app.goToWelcome")} className="block h-7 min-w-0 flex-1 px-1">
+          <Link to="/" aria-label={t("app.goToWelcome")} className="block min-h-[44px] min-w-0 flex-1 px-1 md:h-7 md:min-h-0">
             <HydroGuideLogo
               variant="white"
               className="absolute left-1 top-1/2 h-14 w-auto max-w-none -translate-y-1/2 origin-[left_center] object-contain object-left"
@@ -207,7 +207,7 @@ function SidebarContent({
         <nav className="space-y-4">
           {navGroups.map((group) => (
             <div key={group.label}>
-              <p className="hg-mono px-1 pb-2 text-[10px] font-[var(--hg-type-weight-semibold)] uppercase tracking-[0.18em] text-[#7d8aa3]">
+              <p className="hg-mono px-1 pb-2 text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-semibold)] uppercase tracking-[var(--hg-type-panel-label-tracking)] text-[#7d8aa3]">
                 {group.label}
               </p>
               <div className="space-y-1">
@@ -237,9 +237,9 @@ export default function App() {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
   const appShellRef = useRef<HTMLDivElement>(null);
-  const { t, language, setLanguage } = useLanguage();
+  const { t } = useLanguage();
   const { activeDraft } = useConfigurationContext();
-  const isCalculatorMode = (activeDraft.engineMode ?? "standard") === "standard";
+  const isCalculatorMode = (activeDraft.engineMode ?? "calculator") === "calculator";
 
   const setTheme = (nextTheme: ThemeMode) => {
     setThemeState(nextTheme);
@@ -247,12 +247,6 @@ export default function App() {
       localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
     } catch {}
   };
-
-  useEffect(() => {
-    if (language !== "nn") {
-      setLanguage("nn");
-    }
-  }, [language, setLanguage]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -356,7 +350,7 @@ export default function App() {
           </svg>
         </button>
 
-        <Link to="/" aria-label={t("app.goToWelcome")} className="mx-auto block h-8 w-32">
+        <Link to="/" aria-label={t("app.goToWelcome")} className="mx-auto flex h-14 w-32 items-center justify-center">
           <HydroGuideLogo variant={theme === "dark" ? "white" : "black"} className="max-h-8 object-contain object-center" />
         </Link>
 
@@ -387,7 +381,7 @@ export default function App() {
           ref={closeButtonRef}
           type="button"
           onClick={() => setMenuOpen(false)}
-          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-white hover:bg-white/10"
+          className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full text-white hover:bg-white/10 md:h-9 md:w-9"
           aria-label={t("app.closeMenu")}
         >
           <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-current" strokeWidth="2" aria-hidden="true">
@@ -409,14 +403,10 @@ export default function App() {
                 <Route path="/" element={<WelcomePage />} />
                 <Route path="/oversikt" element={<OverviewPage />} />
                 <Route path="/prosjektgrunnlag" element={isCalculatorMode ? <Navigate to="/oversikt" replace /> : <MainPage />} />
-                <Route path="/projectbasis" element={isCalculatorMode ? <Navigate to="/oversikt" replace /> : <MainPage />} />
                 <Route path="/parametere" element={<SystemPage />} />
-                <Route path="/systems" element={<SystemPage />} />
                 <Route path="/komponenter" element={<ComponentsPage />} />
-                <Route path="/components" element={<ComponentsPage />} />
                 <Route path="/analyse" element={<AnalysisPage />} />
                 <Route path="/radiolinje" element={<RadioLinkPage />} />
-                <Route path="/radiolink" element={<RadioLinkPage />} />
                 <Route path="/dokumentasjon" element={<DocumentationPage />} />
                 <Route path="/kontakt" element={<ContactPage />} />
                 <Route path="/api" element={<ApiPage />} />

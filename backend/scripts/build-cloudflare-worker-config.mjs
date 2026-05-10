@@ -50,11 +50,11 @@ const workers = [
   },
   {
     key: "report_worker",
-    description: "hydroguide-report receives /api/report requests and calls hydroguide-ai through a service binding.",
+    description: "hydroguide-report receives /api/report requests and forwards them to the local report-agent bridge.",
     sourcePath: "backend/cloudflare/report.wrangler.jsonc",
     generatedPath: "backend/cloudflare/report.generated.wrangler.jsonc",
     placeholders: {},
-    requiredSecrets: ["REPORT_ACCESS_CODE_HASH", "REPORT_WORKER_TOKEN"],
+    requiredSecrets: ["REPORT_ACCESS_CODE_HASH", "REPORT_BRIDGE_TOKEN"],
   },
   {
     key: "admin_worker",

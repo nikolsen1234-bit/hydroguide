@@ -2,10 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
 import { useConfigurationContext } from "../context/ConfigurationContext";
-import {
-  workspaceMetaClassName,
-  workspaceTitleClassName
-} from "../styles/workspace";
+import { workspaceTitleClassName } from "../styles/workspace";
 import type { EngineMode } from "../types";
 
 const team = [
@@ -15,17 +12,16 @@ const team = [
   ["Espen Espenland", "Kommunikasjon"]
 ];
 
-const welcomeMetaClassName =
-  "hg-mono text-[length:calc(var(--hg-type-meta-size)_+_1px)] font-[var(--hg-type-weight-medium)] uppercase tracking-[0.14em] text-[var(--hg-muted)]";
-
 function TeamList() {
   return (
     <div className="mt-6 max-w-[43.5rem] pb-5">
-      <p className={welcomeMetaClassName}>Prosjektgruppe</p>
-      <div className="mt-3 grid max-w-[42rem] gap-x-16 gap-y-3 sm:grid-cols-2">
+      <h3 className="text-[length:calc(var(--hg-type-content-size)_+_1px)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]">
+        Prosjektgruppe
+      </h3>
+      <div className="mt-3 grid max-w-[42rem] gap-x-16 gap-y-4 sm:grid-cols-2">
         {team.map(([name, role]) => (
           <div key={name} className="flex min-w-0 items-center gap-3">
-            <div className="hg-mono flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[9px] font-[var(--hg-type-weight-bold)] text-[var(--hg-accent)]">
+            <div className="hg-mono flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-accent)]">
               {name
                 .split(" ")
                 .map((part) => part[0])
@@ -33,10 +29,10 @@ function TeamList() {
                 .join("")}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[length:calc(0.92rem_+_1px)] font-[var(--hg-type-weight-bold)] leading-tight text-[var(--hg-ink)]">
+              <p className="truncate text-[length:calc(0.98rem_+_1px)] font-[var(--hg-type-weight-bold)] leading-tight text-[var(--hg-ink)]">
                 {name}
               </p>
-              <p className="hg-mono mt-1 truncate text-[11px] uppercase tracking-[0.14em] text-[var(--hg-muted)]">
+              <p className="hg-mono mt-1 truncate text-[length:var(--hg-type-meta-size)] uppercase tracking-[var(--hg-type-overline-tracking)] text-[var(--hg-muted)]">
                 {role}
               </p>
             </div>
@@ -55,13 +51,15 @@ function EngineModeButtons({
   onChange: (mode: EngineMode) => void;
 }) {
   const modes: Array<{ value: EngineMode; title: string; text: string }> = [
-    { value: "standard", title: "Kalkulator", text: "Rask dimensjonering uten prosjektgrunnlag." },
-    { value: "combined", title: "HydroGuide", text: "Full arbeidsflyt med prosjektgrunnlag og NVE-data." }
+    { value: "calculator", title: "Kalkulator", text: "Rask dimensjonering uten prosjektgrunnlag." },
+    { value: "hydroguide", title: "HydroGuide", text: "Full arbeidsflyt med prosjektgrunnlag og NVE-data." }
   ];
 
   return (
     <div className="max-w-[43.5rem] border-t border-[var(--hg-hairline)] pt-5">
-      <p className={workspaceMetaClassName}>Modus</p>
+      <h3 className="text-[length:calc(var(--hg-type-content-size)_+_1px)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]">
+        Modus
+      </h3>
       <div className="mt-3 grid max-w-[42rem] gap-3 sm:grid-cols-2">
         {modes.map((item) => {
           const selected = mode === item.value;
@@ -104,7 +102,7 @@ export default function WelcomePage() {
   const [importError, setImportError] = useState<string | null>(null);
 
   const handleStartBlank = () => {
-    const selectedEngineMode = activeDraft.engineMode ?? "standard";
+    const selectedEngineMode = activeDraft.engineMode ?? "calculator";
     createNewConfiguration();
     updateConfigField("engineMode", selectedEngineMode);
     navigate("/oversikt");
@@ -131,7 +129,7 @@ export default function WelcomePage() {
   };
 
   return (
-    <main className="relative isolate flex min-h-full flex-col bg-[var(--hg-bg)] px-4 pb-0 pt-0 text-[var(--hg-ink)] sm:px-6 lg:px-7 md:h-full md:overflow-hidden">
+    <main className="relative isolate flex min-h-full flex-col bg-[var(--hg-bg)] px-4 pb-0 pt-0 text-[var(--hg-ink)] sm:px-6 lg:min-h-screen lg:px-7 md:h-full md:overflow-hidden">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 z-0 hidden lg:block"
@@ -143,7 +141,7 @@ export default function WelcomePage() {
           <img
             src="/hydroguide-wave-black.svg"
             alt=""
-            className="hg-welcome-logo-bg-light absolute inset-y-0 right-0 h-full w-full max-w-none translate-x-0 object-cover"
+            className="hg-welcome-logo-bg-light absolute inset-y-0 right-0 h-full w-full max-w-none translate-x-0 object-fill"
             style={{
               left: "-6%",
               width: "112%",
@@ -153,7 +151,7 @@ export default function WelcomePage() {
           <img
             src="/hydroguide-wave-white.svg"
             alt=""
-            className="hg-welcome-logo-bg-dark absolute inset-y-0 right-0 h-full w-full max-w-none translate-x-0 object-cover"
+            className="hg-welcome-logo-bg-dark absolute inset-y-0 right-0 h-full w-full max-w-none translate-x-0 object-fill"
             style={{
               left: "-6%",
               width: "112%",
@@ -164,20 +162,20 @@ export default function WelcomePage() {
       <div className="relative z-10">
         <WorkspaceHeader
           title="Velkommen til HydroGuide"
-          breadcrumb="Home"
+          breadcrumb="Hjem"
           actions={
             <>
               <WorkspaceHeaderActionButton
                 icon={workspaceHeaderActionIcons.plus}
-                label="Start new project"
-                subLabel="Start blank"
+                label="Start nytt prosjekt"
+                subLabel="Tomt utkast"
                 onClick={handleStartBlank}
                 primary
               />
               <WorkspaceHeaderActionButton
                 icon={workspaceHeaderActionIcons.upload}
-                label="Import file"
-                subLabel="Project file"
+                label="Importer fil"
+                subLabel="Prosjektfil"
                 onClick={() => fileInputRef.current?.click()}
               />
             </>
@@ -187,10 +185,10 @@ export default function WelcomePage() {
 
       <section className="relative z-10 min-h-0 flex-1 overflow-hidden py-7">
         <div className="relative z-10 max-w-[43.5rem]">
-          <h1 className={`${workspaceTitleClassName} text-[2.55rem] leading-[1.05] lg:text-[3.05rem]`}>
+          <h1 className={`${workspaceTitleClassName} text-[length:var(--hg-type-hero-title-size)] leading-[1.05] lg:text-[length:var(--hg-type-hero-title-size-lg)]`}>
             HydroGuide
           </h1>
-          <p className="mt-3 max-w-[43.5rem] text-[1.55rem] font-[var(--hg-type-weight-bold)] leading-[1.18] tracking-[var(--hg-type-tight-tracking)] text-[var(--hg-accent)]">
+          <p className="mt-3 max-w-[43.5rem] text-[length:var(--hg-type-hero-lead-size)] font-[var(--hg-type-weight-bold)] leading-[1.18] tracking-[var(--hg-type-tight-tracking)] text-[var(--hg-accent)]">
             Prosjektering av utstyrspakker for{" "}
             <span className="whitespace-nowrap">avsidesliggende småkraftinntak</span>
           </p>
@@ -228,7 +226,7 @@ export default function WelcomePage() {
 
           <TeamList />
           <EngineModeButtons
-            mode={activeDraft.engineMode ?? "standard"}
+            mode={activeDraft.engineMode ?? "calculator"}
             onChange={(nextMode) => updateConfigField("engineMode", nextMode)}
           />
         </div>

@@ -26,13 +26,6 @@ export interface Translations {
   "welcome.developedBySchool": string;
   "welcome.copyright": string;
   "welcome.and": string;
-  "welcome.modeTitle": string;
-  "welcome.modeStandardTitle": string;
-  "welcome.modeStandardDesc": string;
-  "welcome.modeDetailedTitle": string;
-  "welcome.modeDetailedDesc": string;
-  "welcome.modeCombinedTitle": string;
-  "welcome.modeCombinedDesc": string;
 
   // Overview Page
   "overview.title": string;
@@ -106,20 +99,6 @@ export interface Translations {
   "system.efficiencyHelper": string;
   "system.monthlySolarRadiation": string;
   "system.solarTableHelper": string;
-  "system.solarRadiationAria": string;
-  "system.solarRadiationMode": string;
-  "system.solarRadiationManual": string;
-  "system.solarRadiationAutomatic": string;
-  "system.solarRadiationFetch": string;
-  "system.solarRadiationFetching": string;
-  "system.solarRadiationTilt": string;
-  "system.solarRadiationAzimuth": string;
-  "system.solarRadiationTiltHelper": string;
-  "system.solarHeightOffset": string;
-  "system.solarRadiationNoLocation": string;
-  "system.solarRadiationSource": string;
-  "system.solarRadiationFetchError": string;
-  "system.solarPanelPlacement": string;
   "system.panelPowerHelper": string;
   "system.panelCountHelper": string;
   "system.batteryTitle": string;
@@ -198,12 +177,14 @@ export interface Translations {
   "analysis.energyAndConsumption": string;
   "analysis.energyAndConsumptionDesc": string;
   "analysis.solarPerYear": string;
+  "analysis.reserveProductionPerYear": string;
   "analysis.loadPerYear": string;
   "analysis.energyBalancePerYear": string;
   "analysis.reserveRunPerYear": string;
   "analysis.fuelPerYear": string;
   "analysis.fuelCostPerYear": string;
   "analysis.solarPerYearShort": string;
+  "analysis.reserveProductionPerYearShort": string;
   "analysis.loadPerYearShort": string;
   "analysis.balancePerYearShort": string;
   "analysis.reservePerYearShort": string;
@@ -473,34 +454,15 @@ export interface Translations {
   "month.feb": string;
   "month.mar": string;
   "month.apr": string;
-  "month.mai": string;
+  "month.may": string;
   "month.jun": string;
   "month.jul": string;
   "month.aug": string;
   "month.sep": string;
-  "month.okt": string;
+  "month.oct": string;
   "month.nov": string;
-  "month.des": string;
+  "month.dec": string;
 
-  // Reliability analysis
-  "reliability.title": string;
-  "reliability.description": string;
-  "reliability.runSimulation": string;
-  "reliability.running": string;
-  "reliability.lolh": string;
-  "reliability.totalDeficit": string;
-  "reliability.longestLowSoc": string;
-  "reliability.worstMonth": string;
-  "reliability.worst7Day": string;
-  "reliability.worst30Day": string;
-  "reliability.batteryFull": string;
-  "reliability.batteryEmpty": string;
-  "reliability.socDistribution": string;
-  "reliability.hours": string;
-  "reliability.days": string;
-  "reliability.monthlyFrequency": string;
-  "reliability.monthlyFrequencyDesc": string;
-  "reliability.socDistributionDesc": string;
 }
 
 export type TranslationKey = keyof Translations;

@@ -3,8 +3,8 @@ import type { NvePlantDetails } from "../types";
 const NVE_MAPSERVER = "https://gis3.nve.no/map/rest/services/Mapservices/VassdragsreguleringVannkraft/MapServer";
 const NVE_CONCESSION_URL = "https://www.nve.no/konsesjon/konsesjonssaker/konsesjonssak";
 
-function createConcessionUrl(kdbNr: unknown) {
-  const id = Number.parseInt(String(kdbNr ?? ""), 10);
+function createConcessionUrl(kdbNumber: unknown) {
+  const id = Number.parseInt(String(kdbNumber ?? ""), 10);
   if (!Number.isFinite(id) || id <= 0) return null;
 
   const url = new URL(NVE_CONCESSION_URL);
@@ -325,7 +325,7 @@ export async function fetchNvePlantDetails(nveIdValue: string | number): Promise
   if (!plantAttributes) return null;
 
   const name = readString(plantAttributes.vannkraftStasjonNavn) || readString(plantAttributes.vannkraftverkNavn) || `NVE ${nveId}`;
-  const kdbNr = readString(plantAttributes.kdbNr) ?? (plantAttributes.kdbNr != null ? String(plantAttributes.kdbNr) : null);
+  const kdbNumber = readString(plantAttributes.kdbNr) ?? (plantAttributes.kdbNr != null ? String(plantAttributes.kdbNr) : null);
   const [extras, minimumFlow, wikipedia] = await Promise.all([
     loadPlantExtras(nveId),
     loadMinimumFlow(nveId),
@@ -343,8 +343,8 @@ export async function fetchNvePlantDetails(nveIdValue: string | number): Promise
     grossHeadM: readNumber(plantAttributes.bruttoFallhoyde_m),
     commissionedYear: plantAttributes.idriftsattAar != null ? String(plantAttributes.idriftsattAar) : null,
     plantType: readString(plantAttributes.vannkraftverkType),
-    kdbNr,
-    concessionUrl: createConcessionUrl(kdbNr),
+    kdbNumber,
+    concessionUrl: createConcessionUrl(kdbNumber),
     wikiUrl: wikipedia.url,
     imageUrl: wikipedia.imageUrl,
     minFlowText: minimumFlow.text,

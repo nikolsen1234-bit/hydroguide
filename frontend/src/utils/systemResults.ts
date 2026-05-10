@@ -1,4 +1,8 @@
-import { DAYS_IN_MONTH, MONTH_KEYS, MONTH_LABELS } from "../constants";
+import {
+  calculateEquipmentBudgetRows as calculateCoreEquipmentBudgetRows,
+  calculateNumericResults,
+  normalizeCalculationRequest
+} from "../../../backend/services/calculations/_calculationCore.js";
 import {
   BackupSourceConfiguration,
   BackupSourceName,
@@ -9,20 +13,15 @@ import {
   EquipmentRow,
   MonthlyEnergyBalanceRow,
   AnnualTotals,
+  MonthKey,
   PlantConfiguration,
   Recommendation
 } from "../types";
 import { dedupe } from "./format";
 import { calculateRecommendation } from "./recommendation";
 
-const BUDGET_MONTH_DAYS = 30;
-
 function toNumber(value: EditableNumber): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function normalizeRuntimeHoursPerDay(value: EditableNumber): number {
-  return Math.max(0, toNumber(value));
 }
 
 function round(value: number, digits = 2): number {
@@ -34,56 +33,15 @@ function inspectionsForLogic(value: EditableNumber): number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : Number.POSITIVE_INFINITY;
 }
 
-function calculateAnnualEnergyDeficitKWh(configuration: PlantConfiguration, totalWhPerDay: number): number {
-  const panelCount = toNumber(configuration.solar.panelCount);
-  const panelPowerWp = toNumber(configuration.solar.panelPowerWp);
-  const systemEfficiency = toNumber(configuration.solar.systemEfficiency);
-
-  return round(
-    MONTH_KEYS.reduce((sum, month) => {
-      const daysInMonth = DAYS_IN_MONTH[month];
-      const solarProductionKWh =
-        toNumber(configuration.monthlySolarRadiation[month]) * panelCount * (panelPowerWp / 1000) * systemEfficiency;
-      const loadDemandKWh = (totalWhPerDay * daysInMonth) / 1000;
-
-      return sum + Math.max(0, loadDemandKWh - solarProductionKWh);
-    }, 0),
-    2
-  );
-}
-
-function selectRecommendedBackupSource(
-  configuration: PlantConfiguration,
-  alternatives: CostComparisonItem[]
-): BackupSourceName | "Ikke beregnet" {
-  if (configuration.systemParameters.hasBackupSource !== true) {
-    return "Ikke beregnet";
-  }
-
-  const bestItem = alternatives.reduce<CostComparisonItem | null>((best, item) => {
-    if (best === null || item.toc < best.toc) {
-      return item;
-    }
-
-    if (item.toc === best.toc && item.source === "Brenselcelle" && best.source !== "Brenselcelle") {
-      return item;
-    }
-
-    return best;
-  }, null);
-
-  return bestItem?.source ?? "Brenselcelle";
-}
-
 function selectedSourceConfig(
   configuration: PlantConfiguration,
-  source: BackupSourceName | "Ikke beregnet"
+  source: BackupSourceName | "NotComputed"
 ): BackupSourceConfiguration {
-  if (source === "Brenselcelle") {
+  if (source === "FuelCell") {
     return configuration.fuelCell;
   }
 
-  if (source === "Dieselaggregat") {
+  if (source === "DieselGenerator") {
     return configuration.diesel;
   }
 
@@ -101,84 +59,11 @@ export function calculateEquipmentBudgetRows(
   equipmentRows: EquipmentRow[],
   nominalVoltageValue: EditableNumber
 ): EquipmentBudgetRow[] {
-  const nominalVoltage = toNumber(nominalVoltageValue);
-
-  return equipmentRows.map((row) => {
-    const powerW = toNumber(row.powerW);
-    const currentA = nominalVoltage > 0 ? powerW / nominalVoltage : 0;
-    const runtimeHoursPerDay = row.active ? normalizeRuntimeHoursPerDay(row.runtimeHoursPerDay) : 0;
-    const whPerDay = row.active ? powerW * runtimeHoursPerDay : 0;
-    const ahPerDay = row.active ? currentA * runtimeHoursPerDay : 0;
-
-    return {
-      id: row.id,
-      active: row.active,
-      name: row.name,
-      powerW: round(powerW, 2),
-      currentA: round(currentA, 3),
-      runtimeHoursPerDay: round(runtimeHoursPerDay, 2),
-      whPerDay: round(whPerDay, 2),
-      ahPerDay: round(ahPerDay, 2),
-      whPerMonth: round(whPerDay * BUDGET_MONTH_DAYS, 2),
-      ahPerMonth: round(ahPerDay * BUDGET_MONTH_DAYS, 2),
-      whPerWeek: round(whPerDay * 7, 2),
-      ahPerWeek: round(ahPerDay * 7, 2)
-    };
-  });
+  return calculateCoreEquipmentBudgetRows(equipmentRows, nominalVoltageValue) as EquipmentBudgetRow[];
 }
 
-function calculateBatteryCapacityAh(configuration: PlantConfiguration, totalWhPerDay: number): number {
-  const { batteryMode, batteryValue } = configuration.systemParameters;
-  const nominalVoltage = toNumber(configuration.battery.nominalVoltage);
-  const maxDepthOfDischarge = toNumber(configuration.battery.maxDepthOfDischarge);
-
-  if (batteryMode === "ah") {
-    return round(toNumber(batteryValue), 2);
-  }
-
-  if (batteryMode === "autonomyDays" && nominalVoltage > 0 && maxDepthOfDischarge > 0) {
-    return round((totalWhPerDay * toNumber(batteryValue)) / (nominalVoltage * maxDepthOfDischarge), 0);
-  }
-
-  return 0;
-}
-
-function calculateBatteryAutonomyDays(configuration: PlantConfiguration, totalWhPerDay: number, batteryCapacityAh: number): number {
-  const nominalVoltage = toNumber(configuration.battery.nominalVoltage);
-  const maxDepthOfDischarge = toNumber(configuration.battery.maxDepthOfDischarge);
-
-  if (totalWhPerDay <= 0 || nominalVoltage <= 0 || maxDepthOfDischarge <= 0 || batteryCapacityAh <= 0) {
-    return 0;
-  }
-
-  return round((batteryCapacityAh * nominalVoltage * maxDepthOfDischarge) / totalWhPerDay, 2);
-}
-
-function createAnnualTotals(
-  monthlyEnergyBalance: MonthlyEnergyBalanceRow[],
-  totalWhPerDay: number,
-  totalAhPerDay: number
-): AnnualTotals {
-  return {
-    totalWhPerDay,
-    totalAhPerDay,
-    totalWhPerWeek: round(totalWhPerDay * 7, 2),
-    totalAhPerWeek: round(totalAhPerDay * 7, 2),
-    annualSolarProductionKWh: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.solarProductionKWh, 0), 2),
-    annualLoadDemandKWh: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.loadDemandKWh, 0), 2),
-    annualEnergyBalanceKWh: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.energyBalanceKWh, 0), 2),
-    annualSecondaryRuntimeHours: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.secondaryRuntimeHours, 0), 2),
-    annualFuelConsumption: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.fuelLiters, 0), 2),
-    annualFuelCost: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.fuelCost, 0), 2)
-  };
-}
-
-function createEmptyAnnualTotals(totalWhPerDay: number, totalAhPerDay: number): AnnualTotals {
-  return createAnnualTotals([], totalWhPerDay, totalAhPerDay);
-}
-
-function simplifyReleaseArrangement(hovudloysing: string): string {
-  const h = hovudloysing.toLowerCase();
+function simplifyReleaseArrangement(mainSolution: string): string {
+  const h = mainSolution.toLowerCase();
   if (h.includes("rørslipp") && h.includes("aktiv reguleringsventil"))
     return "Rørslipp i frostfritt rom med aktiv reguleringsventil";
   if (h.includes("rørslipp") && h.includes("fast struping"))
@@ -189,12 +74,12 @@ function simplifyReleaseArrangement(hovudloysing: string): string {
     return "Passiv slippseksjon med vern mot is og drivgods";
   if (h.includes("standard slipp"))
     return "Fast slippordning med definert målepunkt";
-  return hovudloysing;
+  return mainSolution;
 }
 
 function derivePrimaryMeasurement(recommendation: Recommendation): string {
-  const h = recommendation.hovudloysing.toLowerCase();
-  const k = recommendation.kontrollmalemetode;
+  const h = recommendation.mainSolution.toLowerCase();
+  const k = recommendation.controlMeasurementMethod;
   if (h.includes("mengdemåler")) return "Mengdemåling i rør";
   if (k === "Volum/tid-måling i beholder") return "Volum/tid-måling i beholder";
   if (k === "Kontroll i naturlig måleprofil nedstrøms") return "Vannstand i naturlig måleprofil";
@@ -205,9 +90,9 @@ function derivePrimaryMeasurement(recommendation: Recommendation): string {
 }
 
 function deriveControlMeasurement(recommendation: Recommendation): string {
-  if (recommendation.kontrollmalemetode === "Trenger nærmere prosjektering")
+  if (recommendation.controlMeasurementMethod === "Trenger nærmere prosjektering")
     return "Må avklares i detaljprosjektering";
-  return recommendation.kontrollmalemetode;
+  return recommendation.controlMeasurementMethod;
 }
 
 function deriveMeasurementEquipment(primaryMeasurement: string, controlMeasurement: string): string {
@@ -231,11 +116,12 @@ function deriveMeasurementEquipment(primaryMeasurement: string, controlMeasureme
 function calculateSystemRecommendation(
   configuration: PlantConfiguration,
   recommendation: Recommendation,
-  totalWhPerDay: number,
-  sourceName: BackupSourceName | "Ikke beregnet"
+  sourceName: BackupSourceName | "NotComputed",
+  batteryCapacityAh: number,
+  batteryAutonomyDays: number
 ) {
   const { answers, systemParameters } = configuration;
-  const calculatorMode = (configuration.engineMode ?? "standard") === "standard";
+  const calculatorMode = (configuration.engineMode ?? "calculator") === "calculator";
   const inspectionsPerYear = inspectionsForLogic(systemParameters.inspectionsPerYear);
   const sourceConfig = selectedSourceConfig(configuration, sourceName);
 
@@ -258,7 +144,7 @@ function calculateSystemRecommendation(
 
   const energyMonitoring = calculatorMode ? "Ikke beregnet" : has4gCoverage ? "Ja" : "Nei";
 
-  const releaseArrangement = calculatorMode ? "Ikke beregnet" : simplifyReleaseArrangement(recommendation.hovudloysing);
+  const releaseArrangement = calculatorMode ? "Ikke beregnet" : simplifyReleaseArrangement(recommendation.mainSolution);
   const primaryMeasurement = calculatorMode ? "Ikke beregnet" : derivePrimaryMeasurement(recommendation);
   const controlMeasurement = calculatorMode ? "Ikke beregnet" : deriveControlMeasurement(recommendation);
   const measurementEquipment = calculatorMode
@@ -268,9 +154,9 @@ function calculateSystemRecommendation(
   const icingAdaptation = calculatorMode
     ? "Ikke beregnet"
     :
-    answers.q5IsSedimentTilstopping === "ja" && answers.q4Slippmetode === "royr_frostfritt"
+    answers.q5IsSedimentClogging === "yes" && answers.q4ReleaseMethod === "pipeFrostFree"
       ? "Frostsikret sensorhus / varmekabel"
-      : answers.q5IsSedimentTilstopping === "ja"
+      : answers.q5IsSedimentClogging === "yes"
         ? "Isreduksjon i måleprofil"
         : "Standard";
 
@@ -296,15 +182,13 @@ function calculateSystemRecommendation(
     controlMeasurement === "Volum/tid-måling i beholder"
       ? "Samlet beholder med kjent volum og repeterbar tømmetid"
       : "",
-    answers.q3Slippkravvariasjon === "sesongkrav" || answers.q3Slippkravvariasjon === "tilsigsstyrt"
+    answers.q3ReleaseRequirementVariation === "seasonal" || answers.q3ReleaseRequirementVariation === "inflowControlled"
       ? "Regulering må kunne spores og styres trygt ved hyppige endringer"
       : "",
-    recommendation.status === "Krev avklaring"
-      ? `Avklar prosjekteringsgrunnlaget for ${recommendation.kontrollmalemetode.toLowerCase()}`
+    recommendation.status === "NeedsClarification"
+      ? `Avklar prosjekteringsgrunnlaget for ${recommendation.controlMeasurementMethod.toLowerCase()}`
       : ""
   ]);
-
-  const batteryCapacityAh = calculateBatteryCapacityAh(configuration, totalWhPerDay);
 
   return {
     releaseArrangement,
@@ -317,117 +201,97 @@ function calculateSystemRecommendation(
     secondarySource: sourceName,
     secondarySourcePowerW: round(toNumber(sourceConfig.powerW), 2),
     batteryCapacityAh,
-    batteryAutonomyDays: calculateBatteryAutonomyDays(configuration, totalWhPerDay, batteryCapacityAh),
+    batteryAutonomyDays,
     icingAdaptation,
     operationsRequirements
   } as const;
 }
 
-function calculateMonthlyEnergyBalance(
-  configuration: PlantConfiguration,
-  totalWhPerDay: number,
-  sourceName: BackupSourceName | "Ikke beregnet"
+type ApiSourceName = "Brenselcelle" | "Dieselaggregat" | "Ikkje berekna";
+
+const API_TO_FRONTEND_MONTH: Record<string, MonthKey> = {
+  jan: "jan",
+  feb: "feb",
+  mar: "mar",
+  apr: "apr",
+  mai: "may",
+  may: "may",
+  jun: "jun",
+  jul: "jul",
+  aug: "aug",
+  sep: "sep",
+  okt: "oct",
+  oct: "oct",
+  nov: "nov",
+  des: "dec",
+  dec: "dec"
+};
+
+function mapApiSource(source: ApiSourceName): BackupSourceName | "NotComputed" {
+  if (source === "Brenselcelle") return "FuelCell";
+  if (source === "Dieselaggregat") return "DieselGenerator";
+  return "NotComputed";
+}
+
+function mapMonthlyEnergyBalance(
+  rows: Array<Omit<MonthlyEnergyBalanceRow, "month"> & { month: string }>
 ): MonthlyEnergyBalanceRow[] {
-  const sourceConfig = selectedSourceConfig(configuration, sourceName);
-  const secondarySourcePowerKw = toNumber(sourceConfig.powerW) / 1000;
-  const fuelConsumptionPerKWh = toNumber(sourceConfig.fuelConsumptionPerKWh);
-  const fuelPrice = toNumber(sourceConfig.fuelPrice);
-  const panelCount = toNumber(configuration.solar.panelCount);
-  const panelPowerWp = toNumber(configuration.solar.panelPowerWp);
-  const systemEfficiency = toNumber(configuration.solar.systemEfficiency);
-
-  return MONTH_KEYS.map((month) => {
-    const daysInMonth = DAYS_IN_MONTH[month];
-    const solarProductionKWh =
-      toNumber(configuration.monthlySolarRadiation[month]) * panelCount * (panelPowerWp / 1000) * systemEfficiency;
-    const loadDemandKWh = (totalWhPerDay * daysInMonth) / 1000;
-    const energyBalanceKWh = solarProductionKWh - loadDemandKWh;
-    const deficitKWh = Math.max(0, Math.abs(Math.min(0, energyBalanceKWh)));
-    const secondaryRuntimeHours = secondarySourcePowerKw > 0 ? deficitKWh / secondarySourcePowerKw : 0;
-    const fuelLiters = deficitKWh * fuelConsumptionPerKWh;
-    const fuelCost = fuelLiters * fuelPrice;
-
-    return {
-      month,
-      label: MONTH_LABELS[month],
-      daysInMonth,
-      solarProductionKWh,
-      loadDemandKWh,
-      energyBalanceKWh,
-      secondaryRuntimeHours,
-      fuelLiters,
-      fuelCost
-    };
-  });
+  return rows.map((row) => ({
+    ...row,
+    month: API_TO_FRONTEND_MONTH[row.month] ?? "jan"
+  }));
 }
 
-function calculateCostComparison(configuration: PlantConfiguration, annualEnergyDeficitKWh: number) {
-  if (configuration.systemParameters.hasBackupSource !== true) {
-    return {
-      annualEnergyDeficitKWh: round(annualEnergyDeficitKWh, 2),
-      alternatives: []
-    };
-  }
+function mapAnnualTotals(totals: AnnualTotals): AnnualTotals {
+  return { ...totals };
+}
 
-  const evaluationHorizonYears = toNumber(configuration.other.evaluationHorizonYears);
-  const buildItem = (source: BackupSourceName): CostComparisonItem => {
-    const config = selectedSourceConfig(configuration, source);
-    const annualFuelConsumption = annualEnergyDeficitKWh * toNumber(config.fuelConsumptionPerKWh);
-    const operatingCostPerYear = annualFuelConsumption * toNumber(config.fuelPrice);
-    const annualMaintenance = toNumber(config.annualMaintenance);
-    const purchaseCost = toNumber(config.purchaseCost);
-    const technicalLifetimeHours = toNumber(config.lifetime);
-    const totalRuntimeHours =
-      annualEnergyDeficitKWh <= 0 || toNumber(config.powerW) <= 0
-        ? 0
-        : (annualEnergyDeficitKWh / (toNumber(config.powerW) / 1000)) * evaluationHorizonYears;
-    const annualCo2 = annualFuelConsumption * (source === "Brenselcelle" ? toNumber(configuration.other.co2Methanol) : toNumber(configuration.other.co2Diesel));
-
-    return {
-      source,
-      purchaseCost: round(purchaseCost, 2),
-      operatingCostPerYear: round(operatingCostPerYear, 2),
-      annualMaintenance: round(annualMaintenance, 2),
-      evaluationHorizonYears: round(evaluationHorizonYears, 2),
-      technicalLifetimeHours: round(technicalLifetimeHours, 2),
-      totalRuntimeHours: round(totalRuntimeHours, 2),
-      annualFuelConsumption: round(annualFuelConsumption, 2),
-      annualCo2: round(annualCo2, 2),
-      toc: round(purchaseCost + (operatingCostPerYear + annualMaintenance) * evaluationHorizonYears, 2)
-    };
-  };
-
+function mapCostItem(item: {
+  source: ApiSourceName;
+  purchaseCost: number;
+  operatingCostPerYear: number;
+  annualMaintenance: number;
+  evaluationHorizonYears: number;
+  technicalLifetimeHours: number;
+  totalRuntimeHours: number;
+  replacementCount: number;
+  annualFuelConsumption: number;
+  annualCo2: number;
+  toc: number;
+}): CostComparisonItem {
   return {
-    annualEnergyDeficitKWh: round(annualEnergyDeficitKWh, 2),
-    alternatives: [buildItem("Brenselcelle"), buildItem("Dieselaggregat")]
+    source: mapApiSource(item.source) === "DieselGenerator" ? "DieselGenerator" : "FuelCell",
+    purchaseCost: item.purchaseCost,
+    operatingCostPerYear: item.operatingCostPerYear,
+    annualMaintenance: item.annualMaintenance,
+    evaluationHorizonYears: item.evaluationHorizonYears,
+    technicalLifetimeHours: item.technicalLifetimeHours,
+    totalRuntimeHours: item.totalRuntimeHours,
+    replacementCount: item.replacementCount,
+    annualFuelConsumption: item.annualFuelConsumption,
+    annualCo2: item.annualCo2,
+    totalOwnershipCost: item.toc
   };
 }
 
-function createEmptyReserveScenario(source: BackupSourceName, totalWhPerDay: number, totalAhPerDay: number) {
+function toCalculationPayload(configuration: PlantConfiguration) {
   return {
-    source,
-    monthlyEnergyBalance: [],
-    annualTotals: createEmptyAnnualTotals(totalWhPerDay, totalAhPerDay),
-    secondarySourcePowerW: 0,
-    costItem: null
-  };
-}
-
-function createReserveScenario(
-  configuration: PlantConfiguration,
-  source: BackupSourceName,
-  totalWhPerDay: number,
-  totalAhPerDay: number,
-  costItem: CostComparisonItem | null
-) {
-  const monthlyEnergyBalance = calculateMonthlyEnergyBalance(configuration, totalWhPerDay, source);
-
-  return {
-    source,
-    monthlyEnergyBalance,
-    annualTotals: createAnnualTotals(monthlyEnergyBalance, totalWhPerDay, totalAhPerDay),
-    secondarySourcePowerW: round(toNumber(selectedSourceConfig(configuration, source).powerW), 2),
-    costItem
+    systemParameters: configuration.systemParameters,
+    solar: configuration.solar,
+    battery: {
+      ...configuration.battery,
+      batteryMode: configuration.systemParameters.batteryMode,
+      batteryValue: configuration.systemParameters.batteryValue
+    },
+    backupSource: {
+      hasBackupSource: configuration.systemParameters.hasBackupSource
+    },
+    fuelCell: configuration.fuelCell,
+    diesel: configuration.diesel,
+    other: configuration.other,
+    monthlySolarRadiation: configuration.monthlySolarRadiation,
+    equipmentBudgetSettings: configuration.equipmentBudgetSettings,
+    equipmentRows: configuration.equipmentRows
   };
 }
 
@@ -435,54 +299,48 @@ function calculateDerivedResults(
   configuration: PlantConfiguration,
   recommendation: Recommendation
 ): DerivedResults {
-  const equipmentBudgetRows = calculateEquipmentBudgetRows(
-    configuration.equipmentRows,
-    configuration.battery.nominalVoltage
-  );
-  const totalWhPerDay = round(equipmentBudgetRows.reduce((sum, row) => sum + row.whPerDay, 0), 2);
-  const totalAhPerDay = round(equipmentBudgetRows.reduce((sum, row) => sum + row.ahPerDay, 0), 2);
-  const annualEnergyDeficitKWh = calculateAnnualEnergyDeficitKWh(configuration, totalWhPerDay);
-  const costComparison = calculateCostComparison(configuration, annualEnergyDeficitKWh);
-  const recommendedSource = selectRecommendedBackupSource(configuration, costComparison.alternatives);
+  const numericResults = calculateNumericResults(normalizeCalculationRequest(toCalculationPayload(configuration)));
+  const equipmentBudgetRows = numericResults.equipmentBudgetRows as EquipmentBudgetRow[];
+  const totalWhPerDay = numericResults.totals.totalWhPerDay;
+  const totalAhPerDay = numericResults.totals.totalAhPerDay;
+  const recommendedSource = mapApiSource(numericResults.selectedSource);
   const systemRecommendation = calculateSystemRecommendation(
     configuration,
     recommendation,
-    totalWhPerDay,
-    recommendedSource
+    recommendedSource,
+    numericResults.battery.capacityAh,
+    numericResults.battery.autonomyDays
   );
-  const monthlyEnergyBalance = calculateMonthlyEnergyBalance(configuration, totalWhPerDay, recommendedSource);
-  const costItemsBySource = new Map(costComparison.alternatives.map((item) => [item.source, item] as const));
-  const reserveScenarios =
-    configuration.systemParameters.hasBackupSource === true
-      ? {
-          fuelCell: createReserveScenario(
-            configuration,
-            "Brenselcelle",
-            totalWhPerDay,
-            totalAhPerDay,
-            costItemsBySource.get("Brenselcelle") ?? null
-          ),
-          diesel: createReserveScenario(
-            configuration,
-            "Dieselaggregat",
-            totalWhPerDay,
-            totalAhPerDay,
-            costItemsBySource.get("Dieselaggregat") ?? null
-          )
-        }
-      : {
-          fuelCell: createEmptyReserveScenario("Brenselcelle", totalWhPerDay, totalAhPerDay),
-          diesel: createEmptyReserveScenario("Dieselaggregat", totalWhPerDay, totalAhPerDay)
-        };
+  const monthlyEnergyBalance = mapMonthlyEnergyBalance(numericResults.monthlyEnergyBalance);
+  const costComparison = {
+    annualEnergyDeficitKWh: numericResults.costComparison.annualEnergyDeficitKWh,
+    alternatives: numericResults.costComparison.alternatives.map(mapCostItem)
+  };
+  const reserveScenarios = {
+    fuelCell: {
+      source: "FuelCell" as const,
+      monthlyEnergyBalance: mapMonthlyEnergyBalance(numericResults.scenarios.fuelCell.monthlyEnergyBalance),
+      annualTotals: mapAnnualTotals(numericResults.scenarios.fuelCell.annualTotals),
+      secondarySourcePowerW: numericResults.scenarios.fuelCell.secondarySourcePowerW,
+      costItem: numericResults.scenarios.fuelCell.costItem ? mapCostItem(numericResults.scenarios.fuelCell.costItem) : null
+    },
+    diesel: {
+      source: "DieselGenerator" as const,
+      monthlyEnergyBalance: mapMonthlyEnergyBalance(numericResults.scenarios.diesel.monthlyEnergyBalance),
+      annualTotals: mapAnnualTotals(numericResults.scenarios.diesel.annualTotals),
+      secondarySourcePowerW: numericResults.scenarios.diesel.secondarySourcePowerW,
+      costItem: numericResults.scenarios.diesel.costItem ? mapCostItem(numericResults.scenarios.diesel.costItem) : null
+    }
+  };
 
   return {
     equipmentBudgetRows,
     totalWhPerDay,
     totalAhPerDay,
-    totalWhPerWeek: round(totalWhPerDay * 7, 2),
-    totalAhPerWeek: round(totalAhPerDay * 7, 2),
+    totalWhPerWeek: numericResults.totals.totalWhPerWeek,
+    totalAhPerWeek: numericResults.totals.totalAhPerWeek,
     monthlyEnergyBalance,
-    annualTotals: createAnnualTotals(monthlyEnergyBalance, totalWhPerDay, totalAhPerDay),
+    annualTotals: mapAnnualTotals(numericResults.annualTotals),
     systemRecommendation,
     costComparison,
     reserveScenarios
@@ -493,13 +351,13 @@ export function calculateConfigurationOutputs(
   configuration: PlantConfiguration
 ): { recommendation: Recommendation; derivedResults: DerivedResults } {
   const recommendation =
-    (configuration.engineMode ?? "standard") === "standard"
+    (configuration.engineMode ?? "calculator") === "calculator"
       ? {
-          hovudloysing: "Ikke beregnet",
-          kontrollmalemetode: "Ikke beregnet",
-          grunngiving: [],
-          tilleggskrav: [],
-          status: "Krev avklaring" as const
+          mainSolution: "Ikke beregnet",
+          controlMeasurementMethod: "Ikke beregnet",
+          justification: [],
+          additionalRequirements: [],
+          status: "NeedsClarification" as const
         }
       : calculateRecommendation(configuration.answers, configuration.systemParameters.inspectionsPerYear);
   const derivedResults = calculateDerivedResults(configuration, recommendation);

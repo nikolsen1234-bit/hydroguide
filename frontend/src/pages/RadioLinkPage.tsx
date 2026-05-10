@@ -1554,7 +1554,7 @@ export default function RadioLinkPage() {
             <div className="min-h-0 flex-1">{desktopEndpointPanel}</div>
           </div>
 
-          <div className="hidden">{submitButton}</div>
+          <div className="sr-only">{submitButton}</div>
       </form>
 
     </main>

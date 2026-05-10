@@ -96,13 +96,20 @@ export default function SystemPage() {
     ];
   }, [outputs, isAutonomyMode]);
 
+  const handleReset = () => {
+    const configurationName = activeDraft.name.trim() || t("shared.thisConfiguration");
+    if (window.confirm(t("shared.resetConfirm").replace("{name}", configurationName))) {
+      resetDraft();
+    }
+  };
+
   return (
     <main className={`${workspacePageClassName} hg-tp hg-tp-fullheight flex h-full flex-col !pb-3`}>
       <WorkspaceHeader
         title={t("system.title")}
         actions={
           <>
-            <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.reset} label="Tilbakestill" onClick={resetDraft} />
+            <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.reset} label="Tilbakestill" onClick={handleReset} />
             <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.save} label="Lagre" onClick={() => saveDraftMetadata()} primary />
           </>
         }

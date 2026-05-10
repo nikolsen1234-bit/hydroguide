@@ -169,7 +169,7 @@ Eksempel:
 
 Bridge-en dekker det meste av handler-logikken, men noen ting krever ekte Cloudflare-bindinger:
 
-- Rapport-AI (`/api/report`) — krever AI Gateway, AI Search, R2-referanser.
+- Rapportagent (`/api/report`) — krever lokal `tools/agent-bridge`, CLIProxyAPI, Qwen embeddings og Cloudflare Tunnel.
 - NVEID-data (`/api/NVEID/{id}`) — krever R2-bucket med `api/minimumflow.json`.
 
 For å teste mot de ekte tjenestene:
@@ -235,7 +235,7 @@ npx wrangler r2 object put hydroguide-minimum-flow/api/minimumflow.json \
 | Frontend | [frontend.md](frontend.md) |
 | Cloudflare og deploy | [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md) |
 | Sikkerhet | [sikkerheit.md](sikkerheit.md) |
-| Rapport-AI | [ai-rapport.md](ai-rapport.md) |
+| Rapportagent | [tools/agent-bridge/README.md](../tools/agent-bridge/README.md) |
 | AI-strategi | [ai-strategi.md](ai-strategi.md) |
 | Pipeline | [tools/minstevann/README.md](../tools/minstevann/README.md) |
 

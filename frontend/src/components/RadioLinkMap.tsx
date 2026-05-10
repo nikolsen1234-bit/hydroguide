@@ -23,6 +23,10 @@ function getCalculatedFitOptions() {
   };
 }
 
+function isMobileViewport() {
+  return typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT_PX;
+}
+
 function createMarkerIcon(L: LeafletNamespace, label: string, tone: "warm" | "cool") {
   const palette =
     tone === "cool"
@@ -97,10 +101,14 @@ export default function RadioLinkMap({
 
         leafletRef.current = L;
         if (!mapRef.current) {
+          const mobileMap = isMobileViewport();
           mapRef.current = L.map(containerRef.current, {
             zoomControl: true,
             attributionControl: false,
-            doubleClickZoom: false
+            doubleClickZoom: false,
+            dragging: !mobileMap,
+            touchZoom: !mobileMap,
+            scrollWheelZoom: !mobileMap
           });
 
           L.tileLayer(KARTVERKET_TILE_URL, {
@@ -263,10 +271,10 @@ export default function RadioLinkMap({
   }, []);
 
   return (
-    <div className="radiolink-map isolate relative h-full min-h-[220px] overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)]">
+    <div className="isolate relative h-full min-h-[220px] overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)]">
       <div ref={containerRef} className="h-full w-full" />
 
-      <div className="pointer-events-none absolute right-3 top-3 z-[1000] max-w-[8.75rem] whitespace-normal rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)]/95 px-2 py-0.5 text-center text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-[var(--hg-ink)] [overflow-wrap:anywhere] sm:right-4 sm:top-4 sm:max-w-[calc(100%-5.5rem)] sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-[length:var(--hg-type-ui-size)]">
+      <div className="hg-map-hint pointer-events-none absolute right-3 top-3 z-[1000] max-w-[8.75rem] whitespace-normal rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-2 py-0.5 text-center text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-[var(--hg-ink)] shadow-sm [overflow-wrap:anywhere] sm:right-4 sm:top-4 sm:max-w-[calc(100%-5.5rem)] sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-[length:var(--hg-type-ui-size)]">
         {pointA && pointB
           ? t("radioMap.clickToMove").replace("{point}", nextPoint === "pointA" ? "A" : "B")
           : t("radioMap.nextClick").replace("{point}", nextPoint === "pointA" ? "A" : "B")}
@@ -278,7 +286,7 @@ export default function RadioLinkMap({
         </div>
       ) : null}
 
-      <div className="absolute bottom-1 right-1 z-20 max-w-[calc(100%-0.75rem)] whitespace-normal rounded-sm bg-[var(--hg-surface)]/90 px-1.5 py-0.5 text-right text-[length:var(--hg-type-meta-size)] leading-[var(--hg-type-category-leading)] text-[var(--hg-muted)] [overflow-wrap:anywhere]">
+      <div className="hg-map-attribution absolute bottom-1 right-1 z-20 max-w-[calc(100%-0.75rem)] whitespace-normal rounded-sm bg-[var(--hg-surface)] px-1.5 py-0.5 text-right text-[length:var(--hg-type-meta-size)] leading-[var(--hg-type-category-leading)] text-[var(--hg-ink-2)] shadow-sm [overflow-wrap:anywhere]">
         <a
           href="https://leafletjs.com"
           target="_blank"

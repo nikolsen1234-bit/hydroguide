@@ -5,6 +5,7 @@ import { useLanguage } from "../i18n";
 import {
   workspaceHeaderClassName,
   workspaceInputClassName,
+  workspaceOverlineClassName,
   workspacePrimaryButtonClassName,
   workspaceTitleClassName
 } from "../styles/workspace";
@@ -14,6 +15,7 @@ type WorkspaceHeaderActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> 
   label: string;
   primary?: boolean;
   subLabel?: string;
+  tone?: "accent" | "success" | "warning";
 };
 
 export const workspaceHeaderActionIcons = {
@@ -25,51 +27,46 @@ export const workspaceHeaderActionIcons = {
   report: "M7.5 3.75h6l3 3v13.5h-9A2.25 2.25 0 0 1 5.25 18V6A2.25 2.25 0 0 1 7.5 3.75ZM13.5 3.75v3h3M8.25 11.25h7.5M8.25 14.25h7.5M8.25 17.25h4.5"
 } as const;
 
+const hydroGuideBreadcrumbPaths = new Set(["/kontakt", "/api", "/dokumentasjon"]);
+
 export function WorkspaceHeaderActionButton({
   icon,
   label,
   primary = false,
   subLabel,
+  tone = "accent",
+  className,
   style,
-  disabled,
   ...buttonProps
 }: WorkspaceHeaderActionButtonProps) {
+  const buttonClassName = [
+    "hg-header-action-button",
+    primary ? "hg-header-action-button--primary" : "",
+    subLabel ? "hg-header-action-button--wide" : "",
+    className ?? ""
+  ].filter(Boolean).join(" ");
+
   return (
     <button
       type="button"
-      disabled={disabled}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 10,
-        minWidth: subLabel ? 190 : 118,
-        height: 38,
-        padding: "4px 10px",
-        borderRadius: 0,
-        border: 0,
-        borderLeft: primary ? "2px solid var(--hg-accent)" : "1.5px solid var(--hg-hairline)",
-        background: "transparent",
-        color: "var(--hg-ink)",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.45 : undefined,
-        textAlign: "left",
-        ...style
-      }}
+      className={buttonClassName}
+      data-tone={tone}
+      style={style}
       {...buttonProps}
     >
       {icon ? (
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center text-[var(--hg-accent)]">
+        <span className="hg-header-action-icon flex h-5 w-5 shrink-0 items-center justify-center">
           <svg viewBox="0 0 24 24" fill="none" className="h-[19px] w-[19px] stroke-current" strokeWidth="1.8" aria-hidden="true">
             <path d={icon} strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
       ) : null}
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-[var(--hg-type-weight-bold)] leading-[1.05] text-[var(--hg-ink)]">
+        <span className="block truncate text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-bold)] leading-[1.05] text-[var(--hg-ink)]">
           {label}
         </span>
         {subLabel ? (
-          <span className="mt-px block truncate text-[11px] leading-[1.05] text-[var(--hg-muted)]">
+          <span className="mt-0.5 block truncate text-[length:var(--hg-type-ui-size)] leading-[1.15] text-[var(--hg-muted)]">
             {subLabel}
           </span>
         ) : null}
@@ -101,22 +98,20 @@ export default function WorkspaceHeader({
   const displayName = (name: string) => name.trim() || t("shared.unnamed");
   const configurationSelectId = useId();
   const projectName = displayName(activeDraft.name);
-  const breadcrumbRoot = location.pathname === "/kontakt" || location.pathname === "/api" || location.pathname === "/dokumentasjon"
-    ? "HydroGuide"
-    : "Prosjekt";
+  const breadcrumbRoot = hydroGuideBreadcrumbPaths.has(location.pathname) ? "HydroGuide" : "Prosjekt";
   const breadcrumb = explicitBreadcrumb ?? `${breadcrumbRoot} / ${projectName} / ${title}`;
 
   return (
     <header className={workspaceHeaderClassName}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="hg-mono text-[10px] font-[var(--hg-type-weight-semibold)] uppercase tracking-[0.18em] text-[var(--hg-muted)]">
+          <p className={`${workspaceOverlineClassName} text-[var(--hg-muted)]`}>
             {breadcrumb}
           </p>
           <h1 className={workspaceTitleClassName}>{title}</h1>
         </div>
 
-        {actions ? <div className="flex min-w-0 flex-col gap-2 sm:ml-auto sm:flex-row sm:items-center">{actions}</div> : null}
+        {actions ? <div className="flex min-w-0 flex-col gap-2 sm:ml-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end">{actions}</div> : null}
 
         {showProjectControls ? (
         <div className="flex min-w-0 flex-col gap-2 sm:ml-auto sm:flex-row sm:items-center">

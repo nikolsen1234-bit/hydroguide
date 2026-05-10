@@ -8,6 +8,8 @@ coverage/
 *.tsbuildinfo
 frontend/src/generated/build-info.json
 test-deploy/
+frontend/screenshots-local/
+frontend/test-results/
 
 # Environment & secrets
 .env
@@ -39,6 +41,8 @@ skills-lock.json
 .understand-anything/*
 !.understand-anything/.understandignore
 docs/superpowers/
+CLAUDE.7z
+CODEX.zip
 
 # Editor & OS
 .vscode/
@@ -68,10 +72,12 @@ tools/minstevann/tests.py
 .ai/scripts/agent-track.test.mjs
 !backend/api/_apiUtils.test.mjs
 !backend/api/keys/index.test.mjs
+!backend/api/report.test.mjs
 !backend/services/calculations/_calculationCore.test.mjs
 !backend/api-worker/wrangler-routes.test.mjs
 !backend/cloudflare/wrangler-routes.test.mjs
 !frontend/scripts/manage-api-keys.test.mjs
+!tools/agent-bridge/tests/*.test.mjs
 
 # Python virtual environments
 .venv/

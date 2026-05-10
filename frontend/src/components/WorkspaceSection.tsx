@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import {
   workspaceBodyMutedClassName,
   workspaceMetaClassName,
+  workspaceOverlineClassName,
   workspaceSectionClassName,
   workspaceSectionHeaderClassName,
   workspaceSectionHeadingRowClassName,
@@ -33,7 +34,7 @@ export default function WorkspaceSection({
       <div className={`hg-card-header px-4 py-3 ${workspaceSectionHeaderClassName}`}>
         <div className="min-w-0">
           {kicker ? (
-            <p className="hg-mono mb-1 text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.18em] text-[var(--hg-ink-2)]">
+            <p className={`mb-1 ${workspaceOverlineClassName} text-[var(--hg-ink-2)]`}>
               {kicker}
             </p>
           ) : null}

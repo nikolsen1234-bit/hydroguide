@@ -1,3 +1,5 @@
+import { DEFAULT_JSON_BODY_MAX_BYTES } from "./_constants.js";
+
 const RATE_LIMIT_CACHE_ORIGIN = "https://hydroguide.internal";
 const DEFAULT_RESPONSE_HEADERS = {
   "referrer-policy": "same-origin",
@@ -111,7 +113,7 @@ export function createMethodNotAllowedResponse(allowedMethods) {
 }
 
 export async function readJsonRequest(request, options = {}) {
-  const { maxBytes = 4096 } = options;
+  const { maxBytes = DEFAULT_JSON_BODY_MAX_BYTES } = options;
   const contentType = request.headers.get("content-type") ?? "";
 
   if (!contentType.toLowerCase().includes("application/json")) {

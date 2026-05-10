@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
 import RadioLinkMap from "../components/RadioLinkMap";
 import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
-import WorkspaceSection from "../components/WorkspaceSection";
+import EditorialSection from "../components/EditorialSection";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import {
@@ -12,17 +12,18 @@ import {
   workspaceFieldLabelClassName,
   workspaceFieldLabelRowClassName,
   workspaceMetaClassName,
+  workspaceOverlineClassName,
   workspacePageClassName,
+  workspaceSectionTitleClassName,
   workspaceSubsectionTitleClassName
 } from "../styles/workspace";
 import type { HeightScale, KFactorKey } from "../types";
-import { formatNumber } from "../utils/format";
+import { formatNumber, formatNumberDraft } from "../utils/format";
 import {
   clampFresnelFactor,
   parseCoordinateInput,
   runRadioLinkAnalysis,
   type RadioLinkAnalysis,
-  type RadioLinkEndpointInput,
   type RadioLinkPoint,
   type RadioLinkFormState
 } from "../utils/radioLink";
@@ -35,18 +36,16 @@ const endpointBadgeClassName = (tone: "cool" | "warm") =>
     ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
     : "border-[var(--hg-hairline)] bg-[var(--hg-warn-soft)] text-[var(--hg-warn)]";
 const radioBlueprintPanelClassName = "border-t-2 border-[var(--hg-ink)] pt-1.5";
-const radioBlueprintKickerClassName =
-  "hg-mono text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.14em] text-[var(--hg-ink-2)]";
-const radioBlueprintTitleClassName =
-  "text-[15px] font-[var(--hg-type-weight-extra)] leading-tight tracking-normal text-[var(--hg-ink)]";
+const radioBlueprintKickerClassName = `${workspaceOverlineClassName} tracking-[var(--hg-type-overline-tracking)] text-[var(--hg-ink-2)]`;
+const radioBlueprintTitleClassName = workspaceSectionTitleClassName;
 const radioBlueprintControlLineClassName =
   "mt-0.5 flex items-baseline gap-2 border-b-2 border-[var(--hg-hairline)] pb-0.5 transition-colors focus-within:border-[var(--hg-accent)]";
 const radioBlueprintInputClassName =
-  "hg-mono min-w-0 flex-1 border-0 bg-transparent p-0 text-[15px] font-[var(--hg-type-weight-extra)] text-[var(--hg-ink)] outline-none placeholder:text-[var(--hg-muted)] focus:text-[var(--hg-accent)]";
+  "hg-mono min-w-0 flex-1 border-0 bg-transparent p-0 text-[length:var(--hg-type-control-value-size)] font-[var(--hg-type-weight-extra)] text-[var(--hg-ink)] outline-none placeholder:text-[var(--hg-muted)] focus:text-[var(--hg-accent)]";
 const radioBlueprintSelectClassName =
-  "hg-mono min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[15px] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none focus:text-[var(--hg-accent)]";
+  "hg-mono min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[length:var(--hg-type-control-value-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none focus:text-[var(--hg-accent)]";
 const radioBlueprintUnitClassName =
-  "hg-mono shrink-0 text-[12px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.1em] text-[var(--hg-ink-2)]";
+  "hg-mono shrink-0 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-unit-tracking)] text-[var(--hg-ink-2)]";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -58,10 +57,6 @@ function useIsMobile() {
     return () => mql.removeEventListener("change", handler);
   }, []);
   return isMobile;
-}
-
-function formatNumberDraft(value: number | ""): string {
-  return value === "" ? "" : String(value);
 }
 
 function InlineUnitInput({
@@ -178,103 +173,210 @@ function InlineUnitInput({
   );
 }
 
+function useMeasuredChartViewport(isCompactDesktop: boolean) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [viewport, setViewport] = useState<{ width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    if (!isCompactDesktop) {
+      setViewport(null);
+      return;
+    }
+
+    const node = containerRef.current;
+    if (!node) return;
+
+    const updateViewport = () => {
+      const rect = node.getBoundingClientRect();
+      const nextWidth = Math.round(rect.width);
+      const nextHeight = Math.round(rect.height);
+
+      if (nextWidth <= 0 || nextHeight <= 0) return;
+
+      setViewport((current) =>
+        current?.width === nextWidth && current?.height === nextHeight
+          ? current
+          : { width: nextWidth, height: nextHeight }
+      );
+    };
+
+    updateViewport();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateViewport);
+      return () => window.removeEventListener("resize", updateViewport);
+    }
+
+    const observer = new ResizeObserver(updateViewport);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isCompactDesktop]);
+
+  return { containerRef, viewport };
+}
+
 function EmptyProfilePreview({ compact = false }: { compact?: boolean }) {
-  const heightClassName = compact ? "h-full min-h-0" : "h-64";
+  const isMobile = useIsMobile();
+  const isCompactDesktop = compact && !isMobile;
+  const { containerRef, viewport } = useMeasuredChartViewport(isCompactDesktop);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const width = isMobile ? 430 : isCompactDesktop ? Math.max(320, viewport?.width ?? 640) : 1200;
+  const height = isMobile ? 300 : isCompactDesktop ? Math.max(220, viewport?.height ?? 300) : 360;
+  const padding = isMobile
+    ? { top: 16, right: 8, bottom: 34, left: 36 }
+      : isCompactDesktop
+        ? {
+          top: Math.max(8, Math.round(height * 0.035)),
+          right: 10,
+          bottom: Math.max(30, Math.round(height * 0.12)),
+          left: 50
+        }
+      : { top: 22, right: 12, bottom: 42, left: 56 };
+
+  const yAxisFontSize = isCompactDesktop ? "16px" : isMobile ? "13px" : "var(--hg-type-chart-size)";
+  const distanceTickFontSize = isCompactDesktop ? "16px" : isMobile ? "13px" : "var(--hg-type-chart-size)";
+  const innerLeft = padding.left;
+  const innerRight = width - padding.right;
+  const innerTop = padding.top;
+  const innerBottom = height - padding.bottom;
+  const centerX = (innerLeft + innerRight) / 2;
+  const centerY = (innerTop + innerBottom) / 2;
+  const emptyYTicks = [0, 1, 2, 3, 4].map((step) => ({
+    key: step,
+    y: innerTop + ((innerBottom - innerTop) * (4 - step)) / 4
+  }));
+  const emptyDistanceTicks = [0, 1, 2, 3, 4].map((step) => ({
+    key: step,
+    x: innerLeft + ((innerRight - innerLeft) * step) / 4,
+    isFirst: step === 0,
+    isLast: step === 4
+  }));
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.width = "100%";
+    canvas.style.height = isCompactDesktop ? "100%" : "auto";
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const styles = getComputedStyle(canvas);
+    const css = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = css("--hg-hairline", "rgba(148, 163, 184, 0.4)");
+    ctx.setLineDash([4, 6]);
+    emptyYTicks.forEach(({ y }) => {
+      ctx.beginPath();
+      ctx.moveTo(innerLeft, y);
+      ctx.lineTo(innerRight, y);
+      ctx.stroke();
+    });
+
+    ctx.strokeStyle = css("--hg-hairline-2", "rgba(148, 163, 184, 0.28)");
+    ctx.setLineDash([]);
+    emptyDistanceTicks.forEach(({ x }) => {
+      ctx.beginPath();
+      ctx.moveTo(x, innerTop);
+      ctx.lineTo(x, innerBottom);
+      ctx.stroke();
+    });
+  });
 
   return (
-    <div className={`${heightClassName} overflow-hidden rounded-[8px] border border-[var(--hg-hairline)] bg-[var(--hg-surface)]`}>
-      <svg viewBox="0 0 900 315" preserveAspectRatio={compact ? "none" : "xMidYMid meet"} className="h-full w-full" role="img" aria-label="Forhåndsvisning av terrengprofil">
-        <rect width="900" height="315" fill="var(--hg-surface)" />
-        {[0, 1, 2, 3, 4].map((step) => {
-          const y = 38 + step * 52;
-          return (
-            <g key={step}>
-              <line x1="58" x2="868" y1={y} y2={y} stroke="var(--hg-hairline)" strokeDasharray="4 7" />
-              <text x="42" y={y + 4} textAnchor="end" fontSize="11" fill="var(--hg-muted)">
-                {1200 - step * 300}
-              </text>
-            </g>
-          );
-        })}
-        {[0, 1, 2, 3, 4, 5].map((step) => {
-          const x = 58 + step * 162;
-          return <line key={step} x1={x} x2={x} y1="38" y2="262" stroke="var(--hg-hairline-2)" />;
-        })}
-        <text x="17" y="32" fontSize="11" fontWeight="700" fill="var(--hg-muted)">
-          moh
-        </text>
-        <path
-          d="M58 262 L58 74 L96 132 L138 156 L180 185 L225 170 L272 198 L318 184 L360 215 L404 222 L448 196 L494 228 L536 240 L582 223 L628 238 L674 216 L716 226 L760 203 L806 218 L848 94 L868 262 Z"
-          fill="url(#radio-empty-terrain-fill)"
+    <div className={isCompactDesktop ? "flex h-full min-h-0 flex-col" : "space-y-5"}>
+      <div
+        ref={containerRef}
+        className={`relative ${isCompactDesktop ? "min-h-0 flex-1" : "pt-2"} ${isMobile || isCompactDesktop ? "" : "xl:-mx-4 2xl:-mx-6"}`}
+      >
+        <canvas
+          ref={canvasRef}
+          width={width}
+          height={height}
+          className={`${isCompactDesktop ? "h-full" : "h-auto"} block w-full`}
+          role="img"
+          aria-label="Tom terrengprofil — venter på beregning"
         />
-        <path
-          d="M58 74 L96 132 L138 156 L180 185 L225 170 L272 198 L318 184 L360 215 L404 222 L448 196 L494 228 L536 240 L582 223 L628 238 L674 216 L716 226 L760 203 L806 218 L848 94"
-          fill="none"
-          stroke="#5f9d55"
-          strokeWidth="2"
-        />
-        <path d="M58 104 C255 126 472 155 848 142" fill="none" stroke="var(--hg-accent-2)" strokeWidth="2.3" />
-        <path
-          d="M58 88 C250 103 460 130 848 124M58 120 C260 147 486 175 848 162"
-          fill="none"
-          stroke="#60a5fa"
-          strokeWidth="1.5"
-          strokeDasharray="6 7"
-        />
-        <path d="M58 246 C310 224 570 192 848 232" fill="none" stroke="var(--hg-muted)" strokeWidth="1.5" strokeDasharray="6 7" />
-        <g>
-          <rect x="74" y="55" width="25" height="25" rx="6" fill="var(--hg-accent-soft)" stroke="var(--hg-accent-2)" />
-          <text x="86.5" y="72" textAnchor="middle" fontSize="12" fontWeight="800" fill="var(--hg-accent)">
-            A
-          </text>
-          <rect x="824" y="125" width="25" height="25" rx="6" fill="var(--hg-warn-soft)" stroke="var(--hg-warn)" />
-          <text x="836.5" y="142" textAnchor="middle" fontSize="12" fontWeight="800" fill="var(--hg-warn)">
-            B
-          </text>
-        </g>
-        {[0, 1, 2, 3, 4].map((step) => {
-          const x = 58 + step * 202.5;
-          return (
-            <text key={step} x={x} y="292" textAnchor={step === 0 ? "start" : step === 4 ? "end" : "middle"} fontSize="11" fill="var(--hg-muted)">
-              {step * 40} km
-            </text>
-          );
-        })}
-        <defs>
-          <linearGradient id="radio-empty-terrain-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#dff0d7" />
-            <stop offset="100%" stopColor="#f8fafc" />
-          </linearGradient>
-        </defs>
-      </svg>
+        <div className="pointer-events-none absolute inset-0">
+          <div
+            className="absolute text-center"
+            style={{ left: centerX, top: centerY - 8, transform: "translate(-50%, -50%)" }}
+          >
+            <div className="font-[var(--hg-type-weight-bold)] text-[var(--hg-ink-2)]" style={{ fontSize: "var(--hg-type-content-size)" }}>
+              Ingen LOS-profil enno
+            </div>
+            <div className="text-[var(--hg-muted)]" style={{ fontSize: "var(--hg-type-meta-size)" }}>
+              Set punkt A og B, og trykk Beregn
+            </div>
+          </div>
+          {emptyYTicks.map(({ key, y }) => (
+            <span
+              key={`y-${key}`}
+              className="hg-mono absolute font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]"
+              style={{ left: 4, top: `${(y / height) * 100}%`, transform: "translateY(-60%)", fontSize: yAxisFontSize }}
+            >
+              &mdash;
+            </span>
+          ))}
+          {emptyDistanceTicks.map(({ key, x, isFirst, isLast }) => (
+            <span
+              key={`dist-${key}`}
+              className="hg-mono absolute font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]"
+              style={{
+                left: `${(x / width) * 100}%`,
+                bottom: 2,
+                transform: isFirst ? "none" : isLast ? "translateX(-100%)" : "translateX(-50%)",
+                fontSize: distanceTickFontSize
+              }}
+            >
+              &mdash; KM
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
-
 function ProfileChart({ analysis, compact = false }: { analysis: RadioLinkAnalysis | null; compact?: boolean }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const isMobile = useIsMobile();
   const { t } = useLanguage();
   const isCompactDesktop = compact && !isMobile;
+  const { containerRef, viewport } = useMeasuredChartViewport(isCompactDesktop);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   if (!analysis) {
     return <EmptyProfilePreview compact={isCompactDesktop} />;
   }
 
-  const width = isMobile ? 430 : isCompactDesktop ? 1040 : 1200;
-  const height = isMobile ? 300 : isCompactDesktop ? 285 : 360;
+  const width = isMobile ? 430 : isCompactDesktop ? Math.max(320, viewport?.width ?? 640) : 1200;
+  const height = isMobile ? 300 : isCompactDesktop ? Math.max(220, viewport?.height ?? 300) : 360;
   const padding = isMobile
     ? { top: 16, right: 8, bottom: 34, left: 36 }
-    : isCompactDesktop
-      ? { top: 18, right: 10, bottom: 36, left: 48 }
+      : isCompactDesktop
+        ? {
+          top: Math.max(8, Math.round(height * 0.035)),
+          right: 10,
+          bottom: Math.max(30, Math.round(height * 0.12)),
+          left: 50
+        }
       : { top: 22, right: 12, bottom: 42, left: 56 };
 
-  const yAxisFontSize = "var(--hg-type-chart-size)";
-  const tooltipTitleFontSize = workspaceChartTooltipTitleFontSize;
-  const tooltipBodyFontSize = workspaceChartTooltipTextFontSize;
-  const distanceTickFontSize = "var(--hg-type-chart-size)";
-  const tooltipWidth = isMobile ? 158 : 200;
-  const tooltipHeight = isMobile ? 116 : 126;
+  const compactAxisFontSize = `${Math.max(13, Math.min(16, Math.round(height * 0.06)))}px`;
+  const compactDistanceFontSize = `${Math.max(13, Math.min(16, Math.round(height * 0.055)))}px`;
+  const yAxisFontSize = isCompactDesktop ? compactAxisFontSize : isMobile ? "13px" : "var(--hg-type-chart-size)";
+  const tooltipTitleFontSize = isCompactDesktop || isMobile ? "13px" : workspaceChartTooltipTitleFontSize;
+  const tooltipBodyFontSize = isCompactDesktop || isMobile ? "12px" : workspaceChartTooltipTextFontSize;
+  const distanceTickFontSize = isCompactDesktop ? compactDistanceFontSize : isMobile ? "13px" : "var(--hg-type-chart-size)";
+  const tooltipWidth = isMobile ? 158 : isCompactDesktop ? Math.max(142, Math.min(176, Math.round(width * 0.32))) : 200;
+  const tooltipHeight = isMobile ? 116 : isCompactDesktop ? Math.max(104, Math.min(122, Math.round(height * 0.38))) : 126;
 
   const sampleStep = Math.max(1, Math.ceil(analysis.series.terrain.length / 260));
   const indexes = analysis.series.terrain
@@ -301,20 +403,15 @@ function ProfileChart({ analysis, compact = false }: { analysis: RadioLinkAnalys
   const toY = (value: number) =>
     height - padding.bottom - ((value - chartMin) / chartRange) * (height - padding.top - padding.bottom);
 
-  const buildLine = (values: number[]) =>
-    values.map((value, index) => `${index === 0 ? "M" : "L"} ${toX(index).toFixed(2)} ${toY(value).toFixed(2)}`).join(" ");
-
   const distancesKm = indexes.map((index) =>
     Number(((analysis.terrainDistanceKm * index) / Math.max(analysis.series.terrain.length - 1, 1)).toFixed(2))
   );
+  const valueTicks = [0, 1, 2, 3, 4].map((step) => {
+    const value = chartMin + (chartRange * step) / 4;
+    return { key: step, value, y: toY(value) };
+  });
 
-  const terrainArea =
-    terrain
-      .map((value, index) => `${index === 0 ? "M" : "L"} ${toX(index).toFixed(2)} ${toY(value).toFixed(2)}`)
-      .join(" ") +
-    ` L ${toX(terrain.length - 1).toFixed(2)} ${(height - padding.bottom).toFixed(2)}` +
-    ` L ${toX(0).toFixed(2)} ${(height - padding.bottom).toFixed(2)} Z`;
-
+  const hasHover = activeIndex !== null;
   const hoveredIndex = activeIndex ?? Math.max(0, indexes.length - 1);
   const hoverX = toX(hoveredIndex);
   const hoverTerrainY = toY(terrain[hoveredIndex]);
@@ -322,7 +419,108 @@ function ProfileChart({ analysis, compact = false }: { analysis: RadioLinkAnalys
   const hoverTooltipX = Math.min(Math.max(hoverX + 12, 16), width - tooltipWidth - 8);
   const hoverTooltipY = Math.max(18, Math.min(hoverTerrainY - tooltipHeight - 6, height - tooltipHeight - 38));
 
-  function handlePointerMove(event: ReactPointerEvent<SVGSVGElement>) {
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.width = "100%";
+    canvas.style.height = isCompactDesktop ? "100%" : "auto";
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const styles = getComputedStyle(canvas);
+    const css = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+
+    const drawLine = (values: number[], stroke: string, lineWidth: number, dash: number[] = []) => {
+      ctx.beginPath();
+      values.forEach((value, index) => {
+        const x = toX(index);
+        const y = toY(value);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
+      ctx.setLineDash(dash);
+      ctx.stroke();
+    };
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = css("--hg-hairline", "rgba(148, 163, 184, 0.4)");
+    ctx.setLineDash([4, 6]);
+    valueTicks.forEach(({ y }) => {
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(width - padding.right, y);
+      ctx.stroke();
+    });
+
+    ctx.strokeStyle = css("--hg-hairline-2", "rgba(148, 163, 184, 0.28)");
+    ctx.setLineDash([]);
+    [0, 1, 2, 3, 4].forEach((step) => {
+      const x = padding.left + ((width - padding.left - padding.right) * step) / 4;
+      ctx.beginPath();
+      ctx.moveTo(x, padding.top);
+      ctx.lineTo(x, height - padding.bottom);
+      ctx.stroke();
+    });
+
+    ctx.beginPath();
+    terrain.forEach((value, index) => {
+      const x = toX(index);
+      const y = toY(value);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(toX(terrain.length - 1), height - padding.bottom);
+    ctx.lineTo(toX(0), height - padding.bottom);
+    ctx.closePath();
+    const terrainFill = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
+    terrainFill.addColorStop(0, css("--hg-accent-soft", "rgba(148, 163, 184, 0.28)"));
+    terrainFill.addColorStop(1, css("--hg-surface", "rgba(148, 163, 184, 0.04)"));
+    ctx.fillStyle = terrainFill;
+    ctx.fill();
+
+    drawLine(terrain, css("--hg-ink-2", "#64748b"), 2.6);
+    drawLine(earthCurve, css("--hg-accent-2", "#2563eb"), 2);
+    drawLine(fresnelUpper, css("--hg-warn", "#f59e0b"), 1.8, [5, 7]);
+    drawLine(fresnelLower, css("--hg-warn", "#f59e0b"), 1.8, [5, 7]);
+    drawLine(lineOfSight, css("--hg-ok", "#22c55e"), 2.2);
+
+    const drawCircle = (x: number, y: number, radius: number, fill: string, stroke: string, lineWidth: number) => {
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+    };
+
+    drawCircle(toX(0), toY(lineOfSight[0]), 5.5, css("--hg-accent-soft", "#dbeafe"), css("--hg-accent-2", "#2563eb"), 2);
+    drawCircle(toX(indexes.length - 1), toY(lineOfSight[lineOfSight.length - 1]), 5.5, css("--hg-warn-soft", "#fef3c7"), css("--hg-warn", "#f59e0b"), 2);
+
+    if (hasHover) {
+      ctx.setLineDash([4, 6]);
+      ctx.strokeStyle = css("--hg-muted", "#94a3b8");
+      ctx.beginPath();
+      ctx.moveTo(hoverX, padding.top);
+      ctx.lineTo(hoverX, height - padding.bottom);
+      ctx.stroke();
+      drawCircle(hoverX, hoverTerrainY, 4.5, css("--hg-ink-2", "#64748b"), css("--hg-surface", "#ffffff"), 2);
+      drawCircle(hoverX, hoverLineOfSightY, 4, css("--hg-ok", "#22c55e"), css("--hg-surface", "#ffffff"), 2);
+    }
+  });
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLCanvasElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
     const relativeX = ((event.clientX - bounds.left) / bounds.width) * width;
     const chartWidth = width - padding.left - padding.right;
@@ -334,116 +532,80 @@ function ProfileChart({ analysis, compact = false }: { analysis: RadioLinkAnalys
 
   return (
     <div className={isCompactDesktop ? "flex h-full min-h-0 flex-col" : "space-y-5"}>
-      <div className={`${isCompactDesktop ? "min-h-0 flex-1" : "pt-2"} ${isMobile || isCompactDesktop ? "" : "xl:-mx-4 2xl:-mx-6"}`}>
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
+      <div
+        ref={containerRef}
+        className={`relative ${isCompactDesktop ? "min-h-0 flex-1" : "pt-2"} ${isMobile || isCompactDesktop ? "" : "xl:-mx-4 2xl:-mx-6"}`}
+      >
+        <canvas
+          ref={canvasRef}
+          width={width}
+          height={height}
           className={`${isCompactDesktop ? "h-full" : "h-auto"} block w-full cursor-crosshair`}
           role="img"
           aria-label={t("radio.terrainProfile")}
           onPointerMove={handlePointerMove}
           onPointerLeave={() => setActiveIndex(null)}
-        >
-          {[0, 1, 2, 3, 4].map((step) => {
-            const value = chartMin + (chartRange * step) / 4;
-            const y = toY(value);
-
-            return (
-              <g key={step}>
-                <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="var(--hg-hairline)" strokeDasharray="4 6" />
-                <text x={padding.left - 8} y={y - 6} fontSize={yAxisFontSize} fill="var(--hg-muted)" textAnchor="end">
-                  {formatNumber(value, 0)} m
-                </text>
-              </g>
-            );
-          })}
-
-          {[0, 1, 2, 3, 4].map((step) => {
-            const x = padding.left + ((width - padding.left - padding.right) * step) / 4;
-            return <line key={`tick-${step}`} x1={x} x2={x} y1={padding.top} y2={height - padding.bottom} stroke="var(--hg-hairline-2)" />;
-          })}
-
-          <path d={terrainArea} fill="url(#terrainFill)" />
-          <path d={buildLine(terrain)} fill="none" stroke="var(--hg-ink-2)" strokeWidth="2.6" />
-          <path d={buildLine(earthCurve)} fill="none" stroke="var(--hg-accent-2)" strokeWidth="2" />
-          <path d={buildLine(fresnelUpper)} fill="none" stroke="var(--hg-warn)" strokeWidth="1.8" strokeDasharray="5 7" />
-          <path d={buildLine(fresnelLower)} fill="none" stroke="var(--hg-warn)" strokeWidth="1.8" strokeDasharray="5 7" />
-          <path d={buildLine(lineOfSight)} fill="none" stroke="var(--hg-ok)" strokeWidth="2.2" />
-
-          <line x1={hoverX} x2={hoverX} y1={padding.top} y2={height - padding.bottom} stroke="var(--hg-muted)" strokeDasharray="4 6" />
-          <circle cx={hoverX} cy={hoverTerrainY} r="4.5" fill="var(--hg-ink-2)" stroke="var(--hg-surface)" strokeWidth="2" />
-          <circle cx={hoverX} cy={hoverLineOfSightY} r="4" fill="var(--hg-ok)" stroke="var(--hg-surface)" strokeWidth="2" />
-
-          {[analysis.pointA, analysis.pointB].map((point, index) => (
-            <g key={`${point.lat}-${point.lng}`}>
-              <circle
-                cx={index === 0 ? toX(0) : toX(indexes.length - 1)}
-                cy={index === 0 ? toY(lineOfSight[0]) : toY(lineOfSight[lineOfSight.length - 1])}
-                r="5.5"
-                fill={index === 0 ? "var(--hg-accent-soft)" : "var(--hg-warn-soft)"}
-                stroke={index === 0 ? "var(--hg-accent-2)" : "var(--hg-warn)"}
-                strokeWidth="2"
-              />
-            </g>
+        />
+        <div className="pointer-events-none absolute inset-0">
+          {hasHover ? (
+            <div
+              className="absolute rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 py-2 shadow-sm"
+              style={{
+                left: hoverTooltipX,
+                top: hoverTooltipY,
+                width: tooltipWidth,
+                minHeight: tooltipHeight
+              }}
+            >
+              <div className="font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]" style={{ fontSize: tooltipTitleFontSize }}>
+                {t("radio.distance")} {formatNumber(distancesKm[hoveredIndex], 2)} km
+              </div>
+              <div className="text-[var(--hg-ink-2)]" style={{ fontSize: tooltipBodyFontSize }}>
+                {t("radio.terrain")} {formatNumber(terrain[hoveredIndex], 1)} m
+              </div>
+              <div className="text-[var(--hg-accent-2)]" style={{ fontSize: tooltipBodyFontSize }}>
+                {t("radio.earthCurve")} {formatNumber(earthCurve[hoveredIndex], 2)} m
+              </div>
+              <div className="text-[var(--hg-ok)]" style={{ fontSize: tooltipBodyFontSize }}>
+                {t("radio.lineOfSight")} {formatNumber(lineOfSight[hoveredIndex], 1)} m
+              </div>
+              <div className="text-[var(--hg-warn)]" style={{ fontSize: tooltipBodyFontSize }}>
+                {t("radio.fresnelLower")} {formatNumber(fresnelLower[hoveredIndex], 1)} m
+              </div>
+              <div className="text-[var(--hg-warn)]" style={{ fontSize: tooltipBodyFontSize }}>
+                {t("radio.fresnelUpper")} {formatNumber(fresnelUpper[hoveredIndex], 1)} m
+              </div>
+            </div>
+          ) : null}
+          {valueTicks.map(({ key, value, y }) => (
+            <span
+              key={`y-${key}`}
+              className="hg-mono absolute font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]"
+              style={{ left: 4, top: `${(y / height) * 100}%`, transform: "translateY(-60%)", fontSize: yAxisFontSize }}
+            >
+              {formatNumber(value, 0)} m
+            </span>
           ))}
-
-          <g>
-            <rect
-              x={hoverTooltipX}
-              y={hoverTooltipY}
-              width={tooltipWidth}
-              height={tooltipHeight}
-              rx="12"
-              fill="var(--hg-surface)"
-              stroke="var(--hg-hairline)"
-              strokeWidth="1.2"
-            />
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 20} fontSize={tooltipTitleFontSize} fontWeight="var(--hg-type-weight-bold)" fill="var(--hg-ink)">
-              {t("radio.distance")} {formatNumber(distancesKm[hoveredIndex], 2)} km
-            </text>
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 37} fontSize={tooltipBodyFontSize} fill="var(--hg-ink-2)">
-              {t("radio.terrain")} {formatNumber(terrain[hoveredIndex], 1)} m
-            </text>
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 54} fontSize={tooltipBodyFontSize} fill="var(--hg-accent-2)">
-              {t("radio.earthCurve")} {formatNumber(earthCurve[hoveredIndex], 2)} m
-            </text>
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 71} fontSize={tooltipBodyFontSize} fill="var(--hg-ok)">
-              {t("radio.lineOfSight")} {formatNumber(lineOfSight[hoveredIndex], 1)} m
-            </text>
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 88} fontSize={tooltipBodyFontSize} fill="var(--hg-warn)">
-              {t("radio.fresnelLower")} {formatNumber(fresnelLower[hoveredIndex], 1)} m
-            </text>
-            <text x={hoverTooltipX + 12} y={hoverTooltipY + 105} fontSize={tooltipBodyFontSize} fill="var(--hg-warn)">
-              {t("radio.fresnelUpper")} {formatNumber(fresnelUpper[hoveredIndex], 1)} m
-            </text>
-          </g>
-
           {analysis.distanceTicksKm.map((tick, index) => {
             const isFirst = index === 0;
             const isLast = index === analysis.distanceTicksKm.length - 1;
             const x = padding.left + (index / (analysis.distanceTicksKm.length - 1)) * (width - padding.left - padding.right);
             return (
-              <text
+              <span
                 key={`dist-${tick}-${index}`}
-                x={x}
-                y={height - 6}
-                fontSize={distanceTickFontSize}
-                fontWeight="var(--hg-type-weight-semibold)"
-                fill="var(--hg-muted)"
-                textAnchor={isFirst ? "start" : isLast ? "end" : "middle"}
-                letterSpacing="var(--hg-type-chart-tick-tracking)"
+                className="hg-mono absolute font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]"
+                style={{
+                  left: `${(x / width) * 100}%`,
+                  bottom: 2,
+                  transform: isFirst ? "none" : isLast ? "translateX(-100%)" : "translateX(-50%)",
+                  fontSize: distanceTickFontSize
+                }}
               >
                 {formatNumber(tick, 2)} KM
-              </text>
+              </span>
             );
           })}
-
-          <defs>
-            <linearGradient id="terrainFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--hg-ink-2)" stopOpacity="0.28" />
-              <stop offset="100%" stopColor="var(--hg-ink-2)" stopOpacity="0.04" />
-            </linearGradient>
-          </defs>
-        </svg>
+        </div>
       </div>
 
       <div className={`flex flex-wrap ${isCompactDesktop ? "hidden" : "gap-3"} ${workspaceMetaClassName}`} style={{ paddingLeft: isMobile ? 0 : `${(padding.left / width) * 100}%` }}>
@@ -479,27 +641,12 @@ function ResultRow({ label, value, tone = "default" }: { label: string; value: s
     </div>
   );
 }
-
 function PendingMetric({ widthClassName = "w-16" }: { widthClassName?: string }) {
   return (
     <span
       className={`inline-block h-2 rounded-full bg-[var(--hg-hairline)] align-middle ${widthClassName}`}
       aria-label="Ikke beregnet"
     />
-  );
-}
-
-function ResultCell({
-  value,
-  className = ""
-}: {
-  value: string;
-  className?: string;
-}) {
-  return (
-    <td className={`px-3 py-1.5 tabular-nums ${className}`}>
-      {value === "-" ? <PendingMetric widthClassName="w-12" /> : value}
-    </td>
   );
 }
 
@@ -531,7 +678,7 @@ function BlueprintPanel({
 function StatusPill({ tone, children }: { tone: "ok" | "muted"; children: ReactNode }) {
   return (
     <span
-      className={`hg-mono inline-flex h-6 items-center gap-1.5 rounded-md border px-2 text-[10px] font-[var(--hg-type-weight-bold)] uppercase leading-none tracking-[0.14em] ${
+      className={`hg-mono inline-flex h-6 items-center gap-1.5 rounded-md border px-2 text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-bold)] uppercase leading-none tracking-[var(--hg-type-overline-tracking)] ${
         tone === "ok"
           ? "border-emerald-300 bg-emerald-50 text-emerald-800"
           : "border-[var(--hg-hairline)] bg-[var(--hg-surface-2)] text-[var(--hg-ink-2)]"
@@ -689,7 +836,7 @@ function BlueprintReadout({
   return (
     <div className="min-w-0">
       <p className={radioBlueprintKickerClassName}>{label}</p>
-      <p className={`${radioBlueprintControlLineClassName} font-[var(--hg-type-mono-family)] text-[15px] font-[var(--hg-type-weight-extra)] tabular-nums ${toneClassName}`}>
+      <p className={`${radioBlueprintControlLineClassName} font-[var(--hg-type-mono-family)] text-[length:var(--hg-type-control-value-size)] font-[var(--hg-type-weight-extra)] tabular-nums ${toneClassName}`}>
         <span className="min-w-0 truncate">{value === "-" ? <PendingMetric widthClassName="w-14" /> : value}</span>
         {unit && value !== "-" ? <span className={radioBlueprintUnitClassName}>{unit}</span> : null}
       </p>
@@ -819,168 +966,6 @@ export default function RadioLinkPage() {
     </>
   );
 
-  const formatHeightScale = (scale: HeightScale) => (scale === "AGL" ? t("radio.agl") : t("radio.asl"));
-  const formatAntennaHeight = (endpoint: RadioLinkEndpointInput) =>
-    endpoint.antennaHeight === "" ? "-" : `${formatNumber(endpoint.antennaHeight, 0)} m ${formatHeightScale(endpoint.heightScale)}`;
-  const formatCoordinate = (endpoint: RadioLinkEndpointInput, point: RadioLinkPoint | null) =>
-    point ? `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}` : endpoint.coordinate.trim() || "-";
-
-  const profileSummary = (
-    <div className="mt-3 grid overflow-hidden rounded-[8px] border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)] sm:grid-cols-4">
-      {(analysis ? [
-        [t("radio.terrainDistance"), `${formatNumber(analysis.terrainDistanceKm, 2)} km`],
-        [t("radio.linkDistance"), `${formatNumber(analysis.linkDistanceKm, 2)} km`],
-        ["Høydeforskjell A-B", `${analysis.endAltitudeM - analysis.startAltitudeM >= 0 ? "+" : ""}${formatNumber(analysis.endAltitudeM - analysis.startAltitudeM, 0)} m`],
-        ["Maks terrenghøyde", `${formatNumber(Math.max(...analysis.series.terrain), 0)} ${t("radio.masl")}`]
-      ] : [
-        [t("radio.terrainDistance"), "-"],
-        [t("radio.linkDistance"), "-"],
-        ["H\u00f8ydeforskjell A-B", "-"],
-        ["Maks terrengh\u00f8yde", "-"]
-      ]).map(([label, value], index) => (
-        <div key={label} className="border-t border-[var(--hg-hairline)] px-3 py-2 first:border-t-0 sm:border-l sm:border-t-0 sm:first:border-l-0">
-          <p className="text-[10px] font-[var(--hg-type-weight-medium)] leading-tight text-[var(--hg-muted)]">{label}</p>
-          <p className="mt-1 text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-extra)] tabular-nums text-[var(--hg-ink)]">
-            {value === "-" ? <PendingMetric widthClassName={index < 2 ? "w-20" : "w-14"} /> : value}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-
-  const pointTableRows = [
-    {
-      key: "A",
-      tone: "cool" as const,
-      coordinate: formatCoordinate(form.pointA, mapPointA),
-      antenna: formatAntennaHeight(form.pointA),
-      azimuth: analysis ? `${formatNumber(analysis.azimuthA, 1)}\u00B0` : "-",
-      elevation: analysis ? `${formatNumber(analysis.elevationA, 2)}\u00B0` : "-",
-      terrainHeight: analysis ? `${formatNumber(analysis.startAltitudeM, 0)} ${t("radio.masl")}` : "-",
-      los: analysis ? `${analysis.lineClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.lineClearanceM, 1)} m` : "-",
-      fresnel: analysis ? `${analysis.fresnelClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.fresnelClearanceM, 1)} m` : "-"
-    },
-    {
-      key: "B",
-      tone: "warm" as const,
-      coordinate: formatCoordinate(form.pointB, mapPointB),
-      antenna: formatAntennaHeight(form.pointB),
-      azimuth: analysis ? `${formatNumber(analysis.azimuthB, 1)}\u00B0` : "-",
-      elevation: analysis ? `${formatNumber(analysis.elevationB, 2)}\u00B0` : "-",
-      terrainHeight: analysis ? `${formatNumber(analysis.endAltitudeM, 0)} ${t("radio.masl")}` : "-",
-      los: analysis ? `${analysis.lineClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.lineClearanceM, 1)} m` : "-",
-      fresnel: analysis ? `${analysis.fresnelClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.fresnelClearanceM, 1)} m` : "-"
-    }
-  ];
-
-  const pointResultsTable = (
-    <div className="mt-2 overflow-x-auto rounded-[8px] border border-[var(--hg-hairline)] 2xl:mt-3">
-      <table className="w-full min-w-[900px] border-collapse text-[length:var(--hg-type-content-size)]">
-        <thead className="bg-[var(--hg-surface-2)]">
-          <tr className={`text-left ${workspaceMetaClassName}`}>
-            <th className="px-3 py-1.5">Punkt</th>
-            <th className="px-3 py-1.5">Koordinat XY</th>
-            <th className="px-3 py-1.5">Antennehøyde</th>
-            <th className="px-3 py-1.5">Azimut</th>
-            <th className="px-3 py-1.5">Elevasjon</th>
-            <th className="px-3 py-1.5">Terrenghøyde</th>
-            <th className="px-3 py-1.5">Klarering LOS</th>
-            <th className="px-3 py-1.5">Fresnel-klarering</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pointTableRows.map((row) => (
-            <tr key={row.key} className="border-t border-[var(--hg-hairline-2)]">
-              <td className="px-3 py-1.5">
-                <span className={`hg-mono inline-flex h-6 w-6 items-center justify-center rounded-md border text-[10px] font-[var(--hg-type-weight-extra)] ${endpointBadgeClassName(row.tone)}`}>
-                  {row.key}
-                </span>
-              </td>
-              <ResultCell value={row.coordinate} className="text-[var(--hg-ink-2)]" />
-              <ResultCell value={row.antenna} className="text-[var(--hg-ink-2)]" />
-              <ResultCell value={row.azimuth} className="text-[var(--hg-ink-2)]" />
-              <ResultCell value={row.elevation} className="text-[var(--hg-ink-2)]" />
-              <ResultCell value={row.terrainHeight} className="text-[var(--hg-ink-2)]" />
-              <ResultCell
-                value={row.los}
-                className={`font-[var(--hg-type-weight-semibold)] ${analysis && analysis.lineClearanceM >= 0 ? "text-[var(--hg-ok)]" : analysis ? "text-rose-600" : "text-[var(--hg-ink-2)]"}`}
-              />
-              <ResultCell
-                value={row.fresnel}
-                className={`font-[var(--hg-type-weight-semibold)] ${analysis && analysis.fresnelClearanceM >= 0 ? "text-[var(--hg-ok)]" : analysis ? "text-rose-600" : "text-[var(--hg-ink-2)]"}`}
-              />
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-
-  const endpointBlueprintPanel = (
-    pointKey: "pointA" | "pointB",
-    label: "A" | "B",
-    tone: "cool" | "warm",
-    point: RadioLinkPoint | null
-  ) => {
-    const endpoint = form[pointKey];
-    return (
-      <BlueprintPanel
-        eyebrow={`Endepunkt ${label}`}
-        className="min-h-0 overflow-hidden"
-        title={
-          <div className="flex min-w-0 items-center gap-3">
-            <span className={`hg-mono inline-flex h-7 w-7 shrink-0 items-center justify-center border text-[11px] font-[var(--hg-type-weight-extra)] ${endpointBadgeClassName(tone)}`}>
-              {label}
-            </span>
-            <h2 className={`${radioBlueprintTitleClassName} min-w-0 truncate`}>{label === "A" ? t("radio.pointA") : t("radio.pointB")}</h2>
-            <StatusPill tone={point ? "ok" : "muted"}>{point ? t("radio.set") : t("radio.notSet")}</StatusPill>
-          </div>
-        }
-      >
-        <div className="grid gap-x-4 gap-y-2 sm:grid-cols-3">
-          <div className="min-w-0 sm:col-span-3">
-            <BlueprintTextInput
-              label="Koordinat"
-              value={endpoint.coordinate}
-              placeholder="60.6293, 6.4131"
-              onChange={(value) => updateRadioLinkEndpoint(pointKey, { coordinate: value })}
-            />
-          </div>
-          <div className="min-w-0">
-            <BlueprintNumberInput
-              label="Mastehøgde"
-              unit={endpoint.heightScale === "AGL" ? "m" : t("radio.masl")}
-              value={endpoint.antennaHeight}
-              min={0}
-              onChange={(value) => updateRadioLinkEndpoint(pointKey, { antennaHeight: value })}
-            />
-          </div>
-          <div className="min-w-0">
-            <BlueprintSelect
-              label="Høgdetype"
-              value={endpoint.heightScale}
-              options={[
-                { value: "AGL", label: t("radio.agl") },
-                { value: "ASL", label: t("radio.asl") }
-              ]}
-              onChange={(value) => updateRadioLinkEndpoint(pointKey, { heightScale: value as HeightScale })}
-            />
-          </div>
-          <div className="min-w-0">
-            <BlueprintNumberInput
-              label="Antennegain"
-              unit="dBi"
-              value={endpoint.antennaGainDbi}
-              onChange={(value) => updateRadioLinkEndpoint(pointKey, { antennaGainDbi: value })}
-            />
-          </div>
-        </div>
-      </BlueprintPanel>
-    );
-  };
-
-  void endpointBlueprintPanel;
-
   const endpointCompactRow = (
     pointKey: "pointA" | "pointB",
     label: "A" | "B",
@@ -991,7 +976,7 @@ export default function RadioLinkPage() {
     return (
       <div className="flex min-w-0 flex-col border-t-2 border-[var(--hg-ink)] pt-2 first:border-t-0 first:pt-0">
         <div className="mb-1 flex min-w-0 items-center gap-2">
-          <span className={`hg-mono inline-flex h-6 w-6 shrink-0 items-center justify-center border text-[10px] font-[var(--hg-type-weight-extra)] ${endpointBadgeClassName(tone)}`}>
+          <span className={`hg-mono inline-flex h-6 w-6 shrink-0 items-center justify-center border text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-extra)] ${endpointBadgeClassName(tone)}`}>
             {label}
           </span>
           <h2 className={`${radioBlueprintTitleClassName} min-w-0 truncate`}>{label === "A" ? t("radio.pointA") : t("radio.pointB")}</h2>
@@ -1008,8 +993,8 @@ export default function RadioLinkPage() {
           </div>
           <div className="min-w-0">
             <BlueprintNumberInput
-              label="Mastehøgde"
-              unit={endpoint.heightScale === "AGL" ? "m" : t("radio.masl")}
+              label="Antennehøgde"
+              unit={endpoint.heightScale === "AGL" ? t("radio.agl") : t("radio.masl")}
               value={endpoint.antennaHeight}
               min={0}
               onChange={(value) => updateRadioLinkEndpoint(pointKey, { antennaHeight: value })}
@@ -1040,7 +1025,7 @@ export default function RadioLinkPage() {
   };
 
   const desktopEndpointPanel = (
-    <section className={`${radioBlueprintPanelClassName} hg-radio-endpoints h-full min-h-0 overflow-hidden pr-3`}>
+    <section className={`${radioBlueprintPanelClassName} h-full min-h-0 overflow-hidden pr-3`}>
       <div className="grid h-full min-h-0 grid-rows-2 gap-0">
         {endpointCompactRow("pointA", "A", "cool", mapPointA)}
         {endpointCompactRow("pointB", "B", "warm", mapPointB)}
@@ -1113,7 +1098,7 @@ export default function RadioLinkPage() {
           <div className="flex min-w-0 flex-col gap-1">
             <div className="flex items-center justify-between gap-3">
               <span className={radioBlueprintKickerClassName}>{t("radio.fresnel")}</span>
-              <span className="hg-mono text-[16px] font-[var(--hg-type-weight-extra)] tabular-nums text-[var(--hg-ink)]">
+              <span className="hg-mono text-[length:var(--hg-type-empty-title-size)] font-[var(--hg-type-weight-extra)] tabular-nums text-[var(--hg-ink)]">
                 {formatNumber(form.fresnelFactor, 1)}
               </span>
             </div>
@@ -1134,50 +1119,8 @@ export default function RadioLinkPage() {
     </BlueprintPanel>
   );
   const desktopAnalysisResults = (
-    <BlueprintPanel title={t("radio.resultsSection")} className="hg-radio-results min-h-0">
+    <BlueprintPanel title={t("radio.resultsSection")} className="min-h-0">
       <div className="grid gap-x-3 gap-y-1 sm:grid-cols-2">
-        <BlueprintReadout
-          label={t("radio.losClearance")}
-          value={analysis ? `${analysis.lineClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.lineClearanceM, 1)}` : "-"}
-          unit="m"
-          tone={analysis ? (analysis.lineClearanceM >= 0 ? "accent" : "bad") : "default"}
-        />
-        <BlueprintReadout
-          label={t("radio.rainAttenuation")}
-          value={analysis ? formatNumber(analysis.rainAttenuationDb, 2) : "-"}
-          unit="dB"
-        />
-        <BlueprintReadout
-          label={t("radio.azimuth")}
-          value={analysis ? `${formatNumber(analysis.azimuthA, 1)} / ${formatNumber(analysis.azimuthB, 1)}` : "-"}
-          unit="deg"
-        />
-        <BlueprintReadout
-          label={t("radio.terrainDistance")}
-          value={analysis ? formatNumber(analysis.terrainDistanceKm, 2) : "-"}
-          unit="km"
-        />
-        <BlueprintReadout
-          label={t("radio.linkDistance")}
-          value={analysis ? formatNumber(analysis.linkDistanceKm, 2) : "-"}
-          unit="km"
-        />
-        <BlueprintReadout
-          label={t("radio.freeSpaceLoss")}
-          value={analysis ? formatNumber(analysis.freeSpaceLossDb, 2) : "-"}
-          unit="dB"
-        />
-        <BlueprintReadout
-          label={t("radio.elevation")}
-          value={analysis ? `${formatNumber(analysis.elevationA, 2)} / ${formatNumber(analysis.elevationB, 2)}` : "-"}
-          unit="deg"
-        />
-        <BlueprintReadout
-          label={t("radio.fresnelClearance")}
-          value={analysis ? `${analysis.fresnelClearanceM >= 0 ? "+" : ""}${formatNumber(analysis.fresnelClearanceM, 1)}` : "-"}
-          unit="m"
-          tone={analysis ? (analysis.fresnelClearanceM >= 0 ? "accent" : "bad") : "default"}
-        />
         <BlueprintReadout
           label={t("radio.pointA")}
           value={analysis ? formatNumber(analysis.startAltitudeM, 0) : "-"}
@@ -1187,6 +1130,36 @@ export default function RadioLinkPage() {
           label={t("radio.pointB")}
           value={analysis ? formatNumber(analysis.endAltitudeM, 0) : "-"}
           unit={t("radio.masl")}
+        />
+        <BlueprintReadout
+          label={t("radio.linkDistance")}
+          value={analysis ? formatNumber(analysis.linkDistanceKm, 2) : "-"}
+          unit="km"
+        />
+        <BlueprintReadout
+          label={t("radio.terrainDistance")}
+          value={analysis ? formatNumber(analysis.terrainDistanceKm, 2) : "-"}
+          unit="km"
+        />
+        <BlueprintReadout
+          label={t("radio.elevation")}
+          value={analysis ? `${formatNumber(analysis.elevationA, 2)} / ${formatNumber(analysis.elevationB, 2)}` : "-"}
+          unit="°"
+        />
+        <BlueprintReadout
+          label={t("radio.azimuth")}
+          value={analysis ? `${formatNumber(analysis.azimuthA, 1)} / ${formatNumber(analysis.azimuthB, 1)}` : "-"}
+          unit="°"
+        />
+        <BlueprintReadout
+          label={t("radio.freeSpaceLoss")}
+          value={analysis ? formatNumber(analysis.freeSpaceLossDb, 2) : "-"}
+          unit="dB"
+        />
+        <BlueprintReadout
+          label={t("radio.rainAttenuation")}
+          value={analysis ? formatNumber(analysis.rainAttenuationDb, 2) : "-"}
+          unit="dB"
         />
       </div>
     </BlueprintPanel>
@@ -1208,7 +1181,8 @@ export default function RadioLinkPage() {
     <>
       <WorkspaceHeaderActionButton
         icon={workspaceHeaderActionIcons.reset}
-        label="Recalc"
+        label="Beregn"
+        subLabel="Beregn på nytt"
         onClick={() => void calculate(form)}
         disabled={loading}
       />
@@ -1217,7 +1191,7 @@ export default function RadioLinkPage() {
   );
 
   return (
-    <main className={`${workspacePageClassName} hg-radio-page md:flex md:h-full md:min-h-0 md:flex-col md:space-y-3 md:overflow-hidden md:pb-3`}>
+    <main className={`${workspacePageClassName} md:flex md:h-full md:max-h-full md:min-h-0 md:flex-col md:space-y-3 md:overflow-hidden md:pb-3`}>
       <WorkspaceHeader title={t("radio.title")} actions={headerActions} />
 
       {/* ==================== MOBILE LAYOUT ==================== */}
@@ -1226,7 +1200,7 @@ export default function RadioLinkPage() {
           <div className="space-y-5">
             {/* Compact map */}
             <div className="-mt-2 mb-5">
-              <div className="h-[42vh] min-h-[300px] max-h-[430px]">
+              <div className="h-[34vh] min-h-[240px] max-h-[320px]">
                 <RadioLinkMap
                   pointA={showMapMarkers ? mapPointA : null}
                   pointB={showMapMarkers ? mapPointB : null}
@@ -1249,18 +1223,9 @@ export default function RadioLinkPage() {
                 return (
                   <div
                     key={lbl}
-                    role="button"
-                    tabIndex={0}
                     aria-pressed={isSelectedForMap}
                     aria-label={`${t("radio.location")} ${lbl}`}
-                    className={`${endpointPanelClassName} space-y-2 focus:outline-none focus:ring-2 focus:ring-[var(--hg-accent-2)]`}
-                    onClick={() => setNextMapPoint(key)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setNextMapPoint(key);
-                      }
-                    }}
+                    className={`${endpointPanelClassName} space-y-2`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -1269,9 +1234,20 @@ export default function RadioLinkPage() {
                         </span>
                         <span className={workspaceSubsectionTitleClassName}>{t("radio.location")} {lbl}</span>
                       </div>
-                      <span className={`text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] ${parsed ? "text-[var(--hg-ok)]" : "text-[var(--hg-muted)]"}`}>
+                      <button
+                        type="button"
+                        aria-pressed={isSelectedForMap}
+                        onClick={() => setNextMapPoint(key)}
+                        className={`rounded-md border px-2 py-1 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] transition ${
+                          isSelectedForMap
+                            ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
+                            : parsed
+                              ? "border-[var(--hg-ok)] text-[var(--hg-ok)]"
+                              : "border-[var(--hg-hairline)] text-[var(--hg-muted)]"
+                        }`}
+                      >
                         {parsed ? t("radio.set") : t("radio.notSet")}
-                      </span>
+                      </button>
                     </div>
                     <label className="flex min-w-0 flex-col gap-1">
                       <span className={radioBlueprintKickerClassName}>Koordinat</span>
@@ -1286,7 +1262,7 @@ export default function RadioLinkPage() {
                     </label>
                     <div className="flex flex-col gap-2">
                       <label className="flex min-w-0 flex-col gap-1">
-                        <span className={radioBlueprintKickerClassName}>Mastehøgde</span>
+                        <span className={radioBlueprintKickerClassName}>Antennehøgde</span>
                         <span className={radioBlueprintControlLineClassName}>
                           <input
                             type="text"
@@ -1301,7 +1277,7 @@ export default function RadioLinkPage() {
                             className={radioBlueprintInputClassName}
                             placeholder={t("radio.height")}
                           />
-                          <span className={radioBlueprintUnitClassName}>{ep.heightScale === "AGL" ? "m" : t("radio.masl")}</span>
+                          <span className={radioBlueprintUnitClassName}>{ep.heightScale === "AGL" ? t("radio.agl") : t("radio.masl")}</span>
                         </span>
                       </label>
                       <label className="flex min-w-0 flex-col gap-1">
@@ -1329,7 +1305,7 @@ export default function RadioLinkPage() {
                             key={hs}
                             type="button"
                             onClick={() => updateRadioLinkEndpoint(key, { heightScale: hs })}
-                            className={`hg-mono rounded-[5px] border px-2 py-1.5 text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.14em] ${
+                            className={`hg-mono min-h-8 rounded-[5px] border px-2 py-1.5 text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-overline-tracking)] ${
                               ep.heightScale === hs ? activeSegmentClassName : inactiveSegmentClassName
                             }`}
                           >
@@ -1478,38 +1454,61 @@ export default function RadioLinkPage() {
         ) : null}
 
         {/* Mobile profile chart */}
-        <WorkspaceSection title={t("radio.profileChartSection")}>
+        <EditorialSection title={t("radio.profileChartSection")}>
           <div>
             <ProfileChart analysis={analysis} />
           </div>
-        </WorkspaceSection>
+        </EditorialSection>
 
         {/* Mobile full results (shown only after calculation) */}
         {analysis ? (
-          <WorkspaceSection title={t("radio.allResultsSection")}>
+          <EditorialSection title={t("radio.allResultsSection")}>
             <div>{resultRows}</div>
-          </WorkspaceSection>
+          </EditorialSection>
         ) : null}
       </div>
 
       {/* ==================== DESKTOP LAYOUT ==================== */}
       <form
         onSubmit={handleSubmit}
-        className="hidden min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(340px,0.54fr)] grid-rows-[280px_minmax(0,1fr)] gap-x-4 gap-y-3 overflow-hidden md:grid"
+        className="hidden min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(340px,0.54fr)] grid-rows-[247px_minmax(0,1fr)] gap-x-4 gap-y-3 overflow-hidden md:grid"
       >
+          <BlueprintPanel
+            eyebrow="Terreng"
+            title={`LOS-profil A → B`}
+            className="flex min-h-0 flex-col"
+            actions={
+              <StatusPill tone={analysis && analysis.fresnelClearanceM >= 0 ? "ok" : "muted"}>
+                {analysis
+                  ? analysis.fresnelClearanceM >= 0
+                    ? `LOS klar · ${formatNumber(analysis.terrainDistanceKm, 2)} km`
+                    : "Krev tiltak"
+                  : "Ikke beregnet"}
+              </StatusPill>
+            }
+          >
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <ProfileChart analysis={analysis} compact />
+            </div>
+          </BlueprintPanel>
+
+          <div className="min-h-0 overflow-hidden pr-4">
+            {desktopAnalysisResults}
+          </div>
+
           <BlueprintPanel
             eyebrow="Topografi"
             title="Kart"
-            className="flex h-full min-h-0 flex-col"
+            className="flex min-h-0 flex-col"
             actions={
               <div className="flex flex-wrap gap-2">
-                <button type="button" className="hg-radio-map-action" onClick={() => setNextMapPoint("pointA")}>
+                <button type="button" className="hg-mono inline-flex min-h-[26px] items-center border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] leading-none text-[var(--hg-ink)] transition hover:border-[var(--hg-accent-2)] hover:text-[var(--hg-accent)]" onClick={() => setNextMapPoint("pointA")}>
                   Sentrer A
                 </button>
-                <button type="button" className="hg-radio-map-action" onClick={() => setNextMapPoint("pointB")}>
+                <button type="button" className="hg-mono inline-flex min-h-[26px] items-center border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] leading-none text-[var(--hg-ink)] transition hover:border-[var(--hg-accent-2)] hover:text-[var(--hg-accent)]" onClick={() => setNextMapPoint("pointB")}>
                   Sentrer B
                 </button>
-                <button type="button" className="hg-radio-map-action" onClick={() => setMapFitVersion((current) => current + 1)}>
+                <button type="button" className="hg-mono inline-flex min-h-[26px] items-center border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] leading-none text-[var(--hg-ink)] transition hover:border-[var(--hg-accent-2)] hover:text-[var(--hg-accent)]" onClick={() => setMapFitVersion((current) => current + 1)}>
                   Tilpass
                 </button>
               </div>
@@ -1527,40 +1526,14 @@ export default function RadioLinkPage() {
             </div>
           </BlueprintPanel>
 
-        {desktopEndpointPanel}
+          <div className="flex min-h-0 flex-col gap-3 overflow-hidden pr-4">
+            <div className="shrink-0">{desktopLinkParameters}</div>
+            <div className="min-h-0 flex-1">{desktopEndpointPanel}</div>
+          </div>
 
-          <BlueprintPanel
-            eyebrow="Terreng"
-            title={`LOS-profil A \u2192 B`}
-            className="flex min-h-0 flex-col"
-            actions={
-              <StatusPill tone={analysis && analysis.fresnelClearanceM >= 0 ? "ok" : "muted"}>
-                {analysis
-                  ? analysis.fresnelClearanceM >= 0
-                    ? `LOS klar · ${formatNumber(analysis.terrainDistanceKm, 2)} km`
-                    : "Krev tiltak"
-                  : "Ikke beregnet"}
-              </StatusPill>
-            }
-          >
-          <div className="min-h-0 flex-1 overflow-hidden rounded-[4px] border border-[var(--hg-hairline)] bg-[var(--hg-surface)]">
-            <ProfileChart analysis={analysis} compact />
-          </div>
-          </BlueprintPanel>
-          <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden pr-4 pt-4">
-            {desktopLinkParameters}
-            {desktopAnalysisResults}
-          </div>
           <div className="sr-only">{submitButton}</div>
-          <div className="hidden" aria-hidden="true">
-            {profileSummary}
-            {pointResultsTable}
-          </div>
       </form>
 
-      {error ? (
-        <div className="hidden rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-rose-700 md:block">{error}</div>
-      ) : null}
     </main>
   );
 }

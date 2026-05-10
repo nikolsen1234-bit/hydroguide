@@ -8,6 +8,8 @@
  *  - Request parsing / validation
  */
 
+import { API_JSON_BODY_MAX_BYTES, RATE_LIMIT_WINDOW_MS_1MIN } from "./_constants.js";
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -257,7 +259,7 @@ export async function authenticateRequest(request, env) {
     keyHash,
     keyName: record.name ?? "unknown",
     tier: record.tier ?? "free",
-    rateLimit: record.rateLimit ?? { max: 100, windowMs: 60_000 }
+    rateLimit: record.rateLimit ?? { max: 100, windowMs: RATE_LIMIT_WINDOW_MS_1MIN }
   };
 }
 
@@ -304,7 +306,7 @@ function checkMemoryRateLimit(key, limit, windowMs, now) {
  *
  * Stores a counter in KV under `ratelimit:<keyHash>` with a TTL matching the
  * rate window. This survives cold starts and works across isolates — unlike
- * the Cache API which is unreliable on Pages Functions, or pure in-memory
+ * the Cache API which is unreliable for this Worker rate-limit use case, or pure in-memory
  * which resets on every cold start.
  *
  * Falls back to in-memory if KV is unavailable.
@@ -410,7 +412,7 @@ export function checkAdminRateLimit(request, { limit = 10, windowMs = 300_000 } 
 // Request parsing
 // ---------------------------------------------------------------------------
 
-const API_REQUEST_MAX_BYTES = 32_768;
+const API_REQUEST_MAX_BYTES = API_JSON_BODY_MAX_BYTES;
 
 export async function readApiJsonBody(request) {
   const contentType = request.headers.get("content-type") ?? "";

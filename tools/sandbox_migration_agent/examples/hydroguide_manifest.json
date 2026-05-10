@@ -1,0 +1,86 @@
+{
+  "name": "hydroguide-example-campaign",
+  "tasks": [
+    {
+      "name": "backend-api-doc-shard",
+      "repo_path": "../../..",
+      "migration_brief": "briefs/noop_migration.md",
+      "include_paths": [
+        "README.md",
+        "backend/api",
+        "backend/cloudflare"
+      ],
+      "exclude_paths": [
+        "node_modules",
+        ".git",
+        ".ai",
+        ".agents",
+        ".codex",
+        "frontend/node_modules"
+      ],
+      "baseline_commands": [
+        "python --version"
+      ],
+      "check_commands": [
+        "node --version"
+      ],
+      "final_commands": [
+        "python --version"
+      ]
+    },
+    {
+      "name": "frontend-doc-shard",
+      "repo_path": "../../..",
+      "migration_brief": "briefs/noop_migration.md",
+      "include_paths": [
+        "docs",
+        "frontend/src/utils",
+        "frontend/src/types.ts"
+      ],
+      "exclude_paths": [
+        "node_modules",
+        ".git",
+        ".ai",
+        ".agents",
+        ".codex",
+        "frontend/node_modules"
+      ],
+      "baseline_commands": [
+        "python --version"
+      ],
+      "check_commands": [
+        "node --version"
+      ],
+      "final_commands": [
+        "python --version"
+      ]
+    },
+    {
+      "name": "tools-shard",
+      "repo_path": "../../..",
+      "migration_brief": "briefs/noop_migration.md",
+      "include_paths": [
+        "tools",
+        "private/protocol.md"
+      ],
+      "exclude_paths": [
+        "node_modules",
+        ".git",
+        ".ai",
+        ".agents",
+        ".codex",
+        "tools/sandbox_migration_agent/outputs",
+        "tools/sandbox_migration_agent/workspaces"
+      ],
+      "baseline_commands": [
+        "python --version"
+      ],
+      "check_commands": [
+        "node --version"
+      ],
+      "final_commands": [
+        "python --version"
+      ]
+    }
+  ]
+}

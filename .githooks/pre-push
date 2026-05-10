@@ -9,6 +9,26 @@
 
 remote="$1"
 url="$2"
+refs_file="$(git rev-parse --git-path hydroguide-pre-push-refs.$$)"
+cat > "$refs_file"
+trap 'rm -f "$refs_file"' EXIT
+
+find_node () {
+  if command -v node >/dev/null 2>&1; then
+    command -v node
+    return 0
+  fi
+  for candidate in \
+    "/c/Program Files/nodejs/node.exe" \
+    "/c/Program Files (x86)/nodejs/node.exe"
+  do
+    if [ -x "$candidate" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
 
 # Detect force flags by inspecting parent process command line.
 # Robust across Windows/Linux: read GIT_PUSH_OPTION and check arguments.
@@ -41,6 +61,11 @@ while read -r local_ref local_sha remote_ref remote_sha; do
       fi
       ;;
   esac
-done
+done < "$refs_file"
+
+NODE_BIN="$(find_node || true)"
+if [ -n "$NODE_BIN" ] && [ -f private/scripts/check-agent-guardrails.mjs ]; then
+  "$NODE_BIN" private/scripts/check-agent-guardrails.mjs --pre-push < "$refs_file"
+fi
 
 exit 0

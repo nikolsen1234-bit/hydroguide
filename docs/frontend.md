@@ -42,7 +42,7 @@ Hovedflyten er "5-trinns konfigurasjon": Velkomst → Oversikt → Prosjektgrunn
 | `MainPage` | `/prosjektgrunnlag`, `/projectbasis` | `MainPage.tsx` | Spørsmål Q1-Q9 om inntaket |
 | `SystemPage` | `/parametere`, `/systems` | `SystemPage.tsx` | Sol, batteri, reservekraft |
 | `ComponentsPage` | `/komponenter`, `/components` | `ComponentsPage.tsx` | Komponenter, effekt og forbruk |
-| `AnalysisPage` | `/analyse` | `AnalysisPage.tsx` | Energianalyse time for time, tilråding |
+| `AnalysisPage` | `/analyse` | `AnalysisPage.tsx` | Energibalanse, kostnad og tilråding |
 | `RadioLinkPage` | `/radiolinje`, `/radiolink` | `RadioLinkPage.tsx` | Siktlinje og Fresnel-sone for radiolink |
 | `DocumentationPage` | `/dokumentasjon` | `DocumentationPage.tsx` | Teknisk bakgrunn med formler |
 | `ContactPage` | `/kontakt` | `ContactPage.tsx` | Prosjektgruppe og kontakt |
@@ -82,8 +82,8 @@ Felles komponenter i `frontend/src/components/` (gjenbrukt på flere sider):
 |-----------|------|
 | `FormFields.tsx` | `SelectField`, `NumberField`, `JaNeiField` osv. — felles input-stil |
 | `WorkspaceHeader.tsx`, `WorkspaceSection.tsx`, `WorkspaceActions.tsx` | Standard sidelayout |
-| `SystemCharts.tsx`, `ReliabilityCharts.tsx`, `HorizonChart.tsx`, `SolarPositionChart.tsx` | Egenutviklede SVG-diagrammer (ingen chart-bibliotek) |
-| `RadioLinkMap.tsx`, `NveStandaloneMap.tsx`, `PanoramicHorizon.tsx` | Kartvisninger |
+| `SystemCharts.tsx` | Egenutviklede SVG-diagrammer (ingen chart-bibliotek) |
+| `RadioLinkMap.tsx`, `NveStandaloneMap.tsx` | Kartvisninger |
 | `ImportDropZone.tsx` | Import av lagret konfigurasjon |
 | `BuildInfoBadge.tsx` | Synlig build-versjon (genereres av `prebuild`-script) |
 | `HydroGuideLogo.tsx` | Logo |
@@ -108,27 +108,20 @@ Beregningene er delt opp etter ansvar. Samme modulnavn er brukt konsekvent i `fr
 
 | Modus | Beskrivelse |
 |-------|-------------|
-| Rask | Forenklet månedsmodell med lokale standardverdier |
-| Detaljert | Timesvis simulering med soldata, batteri og pålitelighetsanalyse |
-| Kombinert | Forenklet oversikt + detaljert pålitelighetsanalyse |
+| Kalkulator | Rask dimensjonering uten prosjektgrunnlag |
+| HydroGuide | Full arbeidsflyt med prosjektgrunnlag og NVE-data |
 
 ### Solstråling
 
-Regner ut hvor mye sol som treffer panelet hver time gjennom året. Modellen tar hensyn til solposisjon, horisontskygge, panelvinkel, modultemperatur og virkningsgrad. Klimadata kommer fra EU sitt PVGIS-arkiv via proxyen `/api/pvgis-tmy`.
-
-Implementert i `solarEngine.ts` med data fra `metClient.ts`.
+Bruker månedlige solinnstrålingsverdier som prosjektdata. Verdiene kan justeres i systembildet og inngår i energibalansen sammen med panelstørrelse, panelantall og virkningsgrad.
 
 ### Horisontprofil
 
-Henter høydedata for terrenget rundt stedet fra Kartverket og bruker dem til å regne ut når sola står bak en åskam.
-
-Implementert i `horizonProfile.ts`. Den sampler 360 retninger og 40 avstander fra Kartverkets terrengmodell.
+Horisont-PDF-verktøyene i `tools/` er separate analysehjelpere. React-appen bruker ikke lenger en egen horisontprofilmodul i hovedflyten.
 
 ### Batterisimulering
 
-Simulerer batteriet time for time gjennom et helt år. Resultatet viser lagret energi, brukt energi, tomt batteri, behov for reservekraft og drivstoffkostnad.
-
-Implementert i `batterySimulator.ts`.
+Dimensjonerer batteribank fra månedlig energibalanse, nominell spenning, maksimal utladingsgrad og valgt reservekilde.
 
 ### Energibalanse
 
@@ -147,7 +140,6 @@ Implementert i `radioLink.ts`.
 Det finnes to statiske HTML-kart utenfor React-treet:
 
 - `frontend/public/nve-kart-standalone.html` — NVE-kart over vannkraftverk med minstevannføring, Wikipedia-bilder og lenker til konsesjonsdokument.
-- `frontend/public/solar-location-map.html` — Lokasjonskart for solanalyse. Sender koordinater tilbake til React med `postMessage`.
 
 **Standalone-kart:** kartene bruker Leaflet med tunge plugins som lastes isolert fra resten av React-bundlen. `postMessage` gir API mellom iframe og React uten delt tilstand.
 
@@ -167,7 +159,7 @@ UI-språk er nynorsk. Engelsk er valgbart for sensor eller eksterne lesere.
 
 Frontend genererer en HTML-rapport med diagrammer, kostnadssammenligning, tilrådinger og AI-tekst som forklarer valget i klart språk.
 
-Implementert i `report.ts`. AI-teksten kommer fra `POST /api/report` (se [ai-rapport.md](ai-rapport.md)).
+Implementert i `report.ts`. AI-teksten kommer fra `POST /api/report`, som går via `hydroguide-report` og lokal report-agent bridge (se [arkitektur.md](arkitektur.md)).
 
 ## Bygg og deploy
 
@@ -192,5 +184,5 @@ For lokalt oppsett, krav og fellesfeil: se [utvikling.md](utvikling.md).
 ## Se også
 
 - Endepunkter frontend kaller: [backend-dokumentasjon.md](backend-dokumentasjon.md)
-- Rapport-AI: [ai-rapport.md](ai-rapport.md)
+- Lokal rapportagent: [../tools/agent-bridge/README.md](../tools/agent-bridge/README.md)
 - Lokal utvikling: [utvikling.md](utvikling.md)

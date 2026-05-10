@@ -34,7 +34,7 @@ flowchart TB
     end
 
     subgraph lag3[Lag 3 — applikasjon]
-        auth[HMAC API-keys<br/>ADMIN_TOKEN<br/>service binding]
+        auth[HMAC API-keys<br/>ADMIN_TOKEN<br/>bridge bearer-token]
     end
 
     subgraph lag4[Lag 4 — data]
@@ -83,20 +83,20 @@ Motvirker: T3, T4, T6.
 |--------|-----|
 | HMAC-hash av API-nøkler i KV (SHA-256, konstanttid-sammenligning) | `hydroguide-api` |
 | `x-admin-token` med `ADMIN_TOKEN` for admin-operasjoner | `hydroguide-admin` |
-| Service binding `REPORT_AI_WORKER` (ingen offentlig AI-route) | `hydroguide-report` -> `hydroguide-ai` |
-| `REPORT_WORKER_TOKEN` som intern bearer mellom report og AI | begge Workerne |
+| Cloudflare Tunnel med `REPORT_BRIDGE_TOKEN` | `hydroguide-report` -> lokal report-agent bridge |
+| Lokal bridge binder til `127.0.0.1` | `tools/agent-bridge` |
 | `REPORT_ACCESS_CODE_HASH` validerer at rapportkall kommer fra nettsiden | `hydroguide-report` |
 | Skjemavalidering av request-body | `/api/calculations` |
 | `workers_dev: false` på alle Workers | hindrer `*.workers.dev`-omgåing |
-| `ALLOWED_ORIGINS` på rapport-AI | bare `hydroguide.no` og lokal dev |
+| Restriktiv CORS på rapportinngangen | bare `hydroguide.no` og lokal dev |
 
 Motvirker: T1, T4, T5, T7 (delvis — se Lag 4).
 
 ### Lag 4 — data og lagring
 
 - API-nøkler: bare hash-form i KV, aldri klartekst.
-- R2-isolasjon: `hydroguide-minimum-flow` (offentlig lesbar via API) er skilt fra `hydroguide-ai-reference` (intern retrieval). Kompromittering av én bucket gir ikke tilgang til den andre.
-- `REPORT_RULES` KV inneholder faste regler og utdrag som legges inn i rapport-AI-prompten.
+- R2-isolasjon: `hydroguide-minimum-flow` (offentleg lesbar via API) er skilt frå `hydroguide-ai-reference` (intern retrieval for rapportflyten). Kompromittering av éin bucket gir ikkje tilgang til den andre.
+- `tools/agent-bridge/knowledge/report-knowledge.jsonl` inneholder faste regler og utdrag som legges inn i rapportagentens prompt etter lokal retrieval.
 - Tracked Wrangler-config har placeholders, ikke ekte IDer eller namespace-IDer.
 - Sensitive lokale filer (`.secrets`, `backend/config/cloudflare.private.json`) er kryptert med git-crypt.
 
@@ -124,9 +124,9 @@ Motvirker: T2, T8.
 | T2 lekket deploy-token | Smal Workers Builds-token (Lag 5) | Cloudflare Secrets Store, lokal git-crypt (Lag 4+5) |
 | T3 rute-skanning | WAF custom rules (Lag 2) | TLS-strict, DNSSEC (Lag 1) |
 | T4 admin fra utsiden | Skilt Worker + WAF-blokk (Lag 2+3) | `ADMIN_TOKEN` (Lag 3) |
-| T5 direkte AI-kall | `workers_dev: false` + ingen route (Lag 3) | `REPORT_WORKER_TOKEN` (Lag 3) |
+| T5 direkte AI-kall | `workers_dev: false` + ingen direkte report-route på lokal bridge (Lag 3) | `REPORT_BRIDGE_TOKEN` (Lag 3) |
 | T6 rate-misbruk | Cloudflare rate limit (Lag 2) | Per-API-nøkkel rate limit i KV (Lag 3) |
-| T7 prompt-injection | Faste utdrag i `REPORT_RULES` (Lag 4) | `NARRATIVE_MODE: supplement`, `NARRATIVE_MAX_WORDS: 250` (Lag 3) |
+| T7 prompt-injection | Faste utdrag i lokal report-knowledge JSONL (Lag 4) | Prosjektfelt behandles som data, JSON-output og validator (Lag 3) |
 | T8 secrets i Git | git-crypt + placeholders (Lag 4+5) | `check-secrets.mjs` (Lag 5) |
 
 ## Kjente begrensninger
@@ -137,12 +137,12 @@ Kjente begrensninger:
 - **Ingen automatisk secrets-rotasjon.** Token-rotasjon skjer manuelt ved mistanke.
 - **Cloudflare Free-rate-limit er per datasenter, ikke globalt.** Distribuerte angrep fra mange Cloudflare-PoP-er kan komme over grensen lokalt uten å trigge global blokk.
 - **Pipeline-LLM bruker JSON schema i LM Studio-kallet.** Output fra `tools/minstevann/` bør fortsatt manuelt spot-sjekkes ved upload til R2.
-- **Rapport-AI har ikke rate limit per API-nøkkel ennå.** Cloudflare Worker-rate-limit dekker per IP. Per-nøkkel rate limit står på listen.
-- **Prompt-injection-mottiltak er konservativ tekstgrense, ikke reell deteksjon.** `NARRATIVE_MAX_WORDS: 250` reduserer skade om modellen blir ledet på avveie, men oppdager det ikke.
+- **Rapportagenten har ikke rate limit per API-nøkkel ennå.** Cloudflare Worker-rate-limit dekker per IP, og lokal bridge kjører én generering om gangen.
+- **Prompt-injection-mottiltak er instruksjonsisolasjon og validator, ikke full deteksjon.** Prosjektfelt behandles som data, men det finnes ikke en formell prompt-injection-detektor.
 - **Ingen sikkerhetsbevis utover designet.** Vi har ikke kjørt formell pentest.
 
 ## Se også
 
 - Detaljert WAF, secrets, deploy-flyt: [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md)
-- Hvordan service binding-flyten er bygget: [arkitektur.md](arkitektur.md)
+- Hvordan rapportagent-flyten er bygget: [arkitektur.md](arkitektur.md)
 - Rapport-AI og prompt-strategi: [ai-strategi.md](ai-strategi.md)

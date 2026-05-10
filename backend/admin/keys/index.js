@@ -22,6 +22,7 @@ import {
   handleRestrictedCorsOptions,
   readApiJsonBody
 } from "../../api/_apiUtils.js";
+import { RATE_LIMIT_WINDOW_MS_1MIN, RATE_LIMIT_WINDOW_MS_1HOUR } from "../../api/_constants.js";
 
 const KEY_HASH_RE = /^[a-f0-9]{64}$/;
 const BASE64_PLUS_RE = /\+/g;
@@ -33,7 +34,7 @@ const BASE64_PADDING_RE = /=+$/;
 // cap by rotating in a chain — each chained rotation still consumes from the
 // originally-stolen key's bucket through carry-over (see ROTATE_RATE_LIMIT_KEY
 // derivation in handleRotate).
-const ROTATE_RATE_LIMIT = { max: 5, windowMs: 60 * 60 * 1000 };
+const ROTATE_RATE_LIMIT = { max: 5, windowMs: RATE_LIMIT_WINDOW_MS_1HOUR };
 
 // Hash-then-XOR variant: hashes both inputs to fixed-length 32-byte digests
 // before constant-time compare. Hides input length from timing analysis on
@@ -170,7 +171,7 @@ function validateCreateInput(body) {
     max = n;
   }
 
-  let windowMs = 60_000;
+  let windowMs = RATE_LIMIT_WINDOW_MS_1MIN;
   if (body?.rate_window_ms !== undefined) {
     const n = Number(body.rate_window_ms);
     if (!Number.isFinite(n) || n < RATE_WINDOW_MIN_MS || n > RATE_WINDOW_MAX_MS) {
@@ -227,15 +228,17 @@ async function handleList(request, env) {
   if (!kv) return createErrorResponse("KV unavailable.", 503);
 
   const list = await kv.list({ prefix: "key:", limit: 100 });
-  const keys = [];
-  for (const entry of list?.keys ?? []) {
+  const entries = list?.keys ?? [];
+  const records = await Promise.all(entries.map((entry) => kv.get(entry.name)));
+  const keys = entries.map((entry, i) => {
+    const keyHash = entry.name.replace("key:", "");
     try {
-      const record = JSON.parse(await kv.get(entry.name));
-      keys.push({ key_hash: entry.name.replace("key:", ""), name: record.name ?? "unknown", tier: record.tier ?? "free", active: record.active !== false, createdAt: record.createdAt ?? null });
+      const record = JSON.parse(records[i]);
+      return { key_hash: keyHash, name: record.name ?? "unknown", tier: record.tier ?? "free", active: record.active !== false, createdAt: record.createdAt ?? null };
     } catch {
-      keys.push({ key_hash: entry.name.replace("key:", ""), error: "invalid record" });
+      return { key_hash: keyHash, error: "invalid record" };
     }
-  }
+  });
 
   return createRestrictedApiResponse(request, { count: keys.length, keys });
 }

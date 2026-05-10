@@ -1,10 +1,15 @@
-import { GEONORGE_COORD_SYSTEM, CORS_OPTIONS_HEADERS } from "./_constants.js";
+import {
+  GEONORGE_COORD_SYSTEM,
+  CORS_OPTIONS_HEADERS,
+  SMALL_JSON_BODY_MAX_BYTES,
+  RATE_LIMIT_WINDOW_MS_1MIN
+} from "./_constants.js";
 import { checkRateLimit, createJsonResponse, readJsonRequest } from "./_edgeUtils.js";
 
 const KARTVERKET_URL = "https://ws.geonorge.no/hoydedata/v1/punkt";
 const MAX_POINTS_PER_REQUEST = 50;
 const MAX_SAMPLES = 200;
-const RATE_LIMIT = { limit: 30, windowMs: 60_000 };
+const RATE_LIMIT = { limit: 30, windowMs: RATE_LIMIT_WINDOW_MS_1MIN };
 
 export async function onRequestPost(context) {
   const rl = await checkRateLimit({ request: context.request, keyPrefix: "terrain", ...RATE_LIMIT });
@@ -17,7 +22,7 @@ export async function onRequestPost(context) {
 
   let body;
   try {
-    body = await readJsonRequest(context.request, { maxBytes: 1024 });
+    body = await readJsonRequest(context.request, { maxBytes: SMALL_JSON_BODY_MAX_BYTES });
   } catch (error) {
     return createJsonResponse({ error: error instanceof Error ? error.message : "Invalid request." }, { status: 400 });
   }

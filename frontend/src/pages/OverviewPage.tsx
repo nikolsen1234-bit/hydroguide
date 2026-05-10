@@ -1,9 +1,11 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
-import WorkspaceSection from "../components/WorkspaceSection";
+import EditorialSection from "../components/EditorialSection";
+import KpiStrip, { type KpiStripItem } from "../components/KpiStrip";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import {
+  workspaceBodyMutedClassName,
   workspaceContentValueClassName,
   workspacePageClassName
 } from "../styles/workspace";
@@ -12,35 +14,6 @@ import { formatNumber } from "../utils/format";
 import { fetchNvePlantDetails } from "../utils/nvePlantDetails";
 import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
-
-function KpiTile({
-  label,
-  value,
-  unit,
-  note
-}: {
-  label: string;
-  value: string;
-  unit: string;
-  note: string;
-}) {
-  return (
-    <div className="border-b border-r border-[var(--hg-hairline-2)] p-4 last:border-r-0 md:border-b-0">
-      <p className="text-[10px] font-[var(--hg-type-weight-semibold)] uppercase tracking-[0.16em] text-[var(--hg-muted)]">
-        {label}
-      </p>
-      <div className="mt-2 flex items-baseline gap-1">
-        <span className="text-[1.55rem] font-[var(--hg-type-weight-bold)] tracking-[-0.03em] text-[var(--hg-ink)]">
-          {value}
-        </span>
-        <span className="text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]">
-          {unit}
-        </span>
-      </div>
-      <p className="mt-1 text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">{note}</p>
-    </div>
-  );
-}
 
 function KeyValueGrid({ rows }: { rows: Array<[string, ReactNode, boolean?]> }) {
   return (
@@ -90,12 +63,22 @@ function StationImage({ details }: { details: NvePlantDetails }) {
       {details.imageUrl ? (
         <img src={details.imageUrl} alt={title} loading="lazy" className="aspect-[16/10] w-full object-cover" />
       ) : (
-        <div className="flex aspect-[16/10] items-center justify-center px-4 text-center text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">
+        <div className="flex aspect-[16/10] items-center justify-center px-4 text-center text-[length:var(--hg-type-content-size)] text-[var(--hg-ink-2)]">
           Stasjonsbilde er ikke tilgjengelig.
         </div>
       )}
-      <figcaption className="border-t border-[var(--hg-hairline)] px-3 py-2 text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">
-        {title}
+      <figcaption className="flex items-center justify-between gap-3 border-t border-[var(--hg-hairline)] px-3 py-2 text-[length:var(--hg-type-content-size)] text-[var(--hg-ink-2)]">
+        <span className="min-w-0 truncate">{title}</span>
+        {details.concessionUrl ? (
+          <a
+            href={details.concessionUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] uppercase tracking-[var(--hg-type-unit-tracking)] text-[var(--hg-accent)] hover:underline"
+          >
+            Konsesjonssak
+          </a>
+        ) : null}
       </figcaption>
     </figure>
   );
@@ -114,38 +97,13 @@ function StationVisual({
 
   return (
     <figure className="overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)]">
-      <div className="flex aspect-[16/10] items-center justify-center px-4 text-center text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">
+      <div className="flex aspect-[16/10] items-center justify-center px-4 text-center text-[length:var(--hg-type-content-size)] text-[var(--hg-ink-2)]">
         {loading ? "Henter stasjonsbilde." : "Velg stasjon i prosjektgrunnlag."}
       </div>
-      <figcaption className="border-t border-[var(--hg-hairline)] px-3 py-2 text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">
+      <figcaption className="border-t border-[var(--hg-hairline)] px-3 py-2 text-[length:var(--hg-type-content-size)] text-[var(--hg-ink-2)]">
         Stasjonsbilde
       </figcaption>
     </figure>
-  );
-}
-
-function StationActions({ details }: { details: NvePlantDetails | null }) {
-  if (!details) {
-    return null;
-  }
-
-  if (!details.wikiUrl && !details.concessionUrl) {
-    return null;
-  }
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {details.wikiUrl ? (
-        <a className="inline-flex h-8 items-center rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-accent)] transition hover:bg-[var(--hg-accent-soft)]" href={details.wikiUrl} target="_blank" rel="noreferrer">
-          Wikipedia
-        </a>
-      ) : null}
-      {details.concessionUrl ? (
-        <a className="inline-flex h-8 items-center rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-accent)] transition hover:bg-[var(--hg-accent-soft)]" href={details.concessionUrl} target="_blank" rel="noreferrer">
-          Konsesjonssak
-        </a>
-      ) : null}
-    </div>
   );
 }
 
@@ -170,65 +128,69 @@ function StationOverviewPanel({
   );
 }
 
+const OVERVIEW_GRID_LINES = [0.25, 0.5, 0.75, 1];
+
 function MonthlyOverviewChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
   if (!rows.length) {
     return <p className={workspaceContentValueClassName}>Månedsgraf vises når prosjektdataene er komplette.</p>;
   }
 
-  const width = 520;
-  const chartHeight = 160;
-  const labelHeight = 18;
   const maxValue = Math.max(...rows.map((row) => Math.max(row.solarProductionKWh, row.loadDemandKWh)), 1);
-  const bandWidth = width / rows.length;
+  const niceMax = Math.ceil(maxValue);
 
   return (
-    <div>
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)]">
         <span className="inline-flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-sm bg-[var(--hg-accent-2)]" />
-          Solproduksjon
+          Energiproduksjon
         </span>
         <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-sm bg-[#94a3b8]" />
+          <span className="h-2.5 w-2.5 rounded-sm bg-[var(--hg-muted)]" />
           Forbruk
         </span>
       </div>
-      <div className="-mx-1 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
-        <svg viewBox={`0 0 ${width} ${chartHeight + labelHeight}`} className="block h-auto w-full min-w-[520px] overflow-visible" role="img" aria-label="Månedlig solproduksjon og forbruk">
-          {rows.map((row, index) => {
-            const x = index * bandWidth + bandWidth * 0.18;
-            const barWidth = bandWidth * 0.32;
-            const solarHeight = (row.solarProductionKWh / maxValue) * chartHeight;
-            const loadHeight = (row.loadDemandKWh / maxValue) * chartHeight;
-            const label = row.label.toUpperCase();
-
+      <div className="relative h-[320px] flex-1 pl-8 md:h-auto">
+        <div className="pointer-events-none absolute inset-x-0 left-8 top-[18px] bottom-[19px]">
+          {OVERVIEW_GRID_LINES.map((g) => (
+            <div
+              key={g}
+              className="absolute inset-x-0 border-t-2 border-[var(--hg-hairline-2)]"
+              style={{ bottom: `${g * 100}%` }}
+            >
+              <span className="hg-mono absolute -left-8 -top-[7px] bg-[var(--hg-bg)] pr-1 text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]">
+                {(niceMax * g).toFixed(0)}
+              </span>
+            </div>
+          ))}
+          <div className="absolute inset-x-0 bottom-0 border-t-2 border-[var(--hg-ink)]" />
+        </div>
+        <div className="relative grid h-full items-end gap-2" style={{ gridTemplateColumns: `repeat(${rows.length}, minmax(0, 1fr))` }}>
+          {rows.map((row) => {
+            const solarRatio = row.solarProductionKWh / niceMax;
+            const loadRatio = row.loadDemandKWh / niceMax;
             return (
-              <g key={row.month}>
-                <rect
-                  x={x}
-                  y={chartHeight - solarHeight}
-                  width={barWidth}
-                  height={Math.max(solarHeight, 2)}
-                  rx="1"
-                  fill="var(--hg-accent-2)"
-                />
-                <rect
-                  x={x + barWidth + 2}
-                  y={chartHeight - loadHeight}
-                  width={barWidth}
-                  height={Math.max(loadHeight, 2)}
-                  rx="1"
-                  fill="#94a3b8"
-                />
-                <text x={index * bandWidth + bandWidth / 2} y={chartHeight + 12} textAnchor="middle" className="fill-[var(--hg-muted)] text-[9px]">
-                  {label}
-                </text>
-              </g>
+              <div key={row.month} className="flex h-full min-w-0 flex-col items-stretch justify-end gap-0">
+                <div className="flex flex-1 items-end justify-center gap-1">
+                  <div
+                    className="w-[42%] rounded-t-[2px]"
+                    style={{ height: `${Math.max(solarRatio * 100, row.solarProductionKWh > 0 ? 2 : 0)}%`, background: "var(--hg-accent-2)" }}
+                    aria-label={`${row.label} energiproduksjon: ${formatNumber(row.solarProductionKWh)} kWh`}
+                  />
+                  <div
+                    className="w-[42%] rounded-t-[2px]"
+                    style={{ height: `${Math.max(loadRatio * 100, row.loadDemandKWh > 0 ? 2 : 0)}%`, background: "var(--hg-muted)" }}
+                    aria-label={`${row.label} forbruk: ${formatNumber(row.loadDemandKWh)} kWh`}
+                  />
+                </div>
+                <span className="hg-mono mt-1 text-center text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-bold)] uppercase text-[var(--hg-ink)]">
+                  {row.label.toUpperCase()}
+                </span>
+              </div>
             );
           })}
-        </svg>
+        </div>
       </div>
-      <p className="mt-2 text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)]">kWh per måned</p>
     </div>
   );
 }
@@ -249,14 +211,6 @@ export default function OverviewPage() {
     [activeDraft, hasCompleteConfiguration]
   );
 
-  const totalPanelPowerWp =
-    (typeof activeDraft.solar.panelCount === "number" && Number.isFinite(activeDraft.solar.panelCount)
-      ? activeDraft.solar.panelCount
-      : 0) *
-    (typeof activeDraft.solar.panelPowerWp === "number" && Number.isFinite(activeDraft.solar.panelPowerWp)
-      ? activeDraft.solar.panelPowerWp
-      : 0);
-  const secondaryPowerW = outputs?.derivedResults.systemRecommendation.secondarySourcePowerW ?? 0;
   const locationText = activeDraft.location.trim() || "Ingen stasjon valgt";
   const coordinates =
     typeof activeDraft.locationLat === "number" && typeof activeDraft.locationLng === "number"
@@ -311,15 +265,47 @@ export default function OverviewPage() {
     </>
   );
 
+  const isAutonomyMode = activeDraft.systemParameters.batteryMode === "autonomyDays";
+  const reservePct = outputs
+    ? (outputs.derivedResults.annualTotals.annualSecondaryRuntimeHours / (365 * 24)) * 100
+    : null;
+  const overviewKpiItems: KpiStripItem[] = [
+    {
+      kicker: "SOLPRODUKSJON · ÅR",
+      value: outputs ? formatNumber(outputs.derivedResults.annualTotals.annualSolarProductionKWh, 0) : "-",
+      unit: "kWh",
+      trend: "Beregnet årlig"
+    },
+    {
+      kicker: "LAST · ÅR",
+      value: outputs ? formatNumber(outputs.derivedResults.annualTotals.annualLoadDemandKWh, 0) : "-",
+      unit: "kWh",
+      trend: "Samlet forbruk"
+    },
+    {
+      kicker: "RESERVEKJØRING · ÅR",
+      value: reservePct !== null ? formatNumber(reservePct, 1) : "-",
+      unit: "%",
+      trend: "Andel av året"
+    },
+    isAutonomyMode
+      ? {
+          kicker: "BANKSTØRRELSE",
+          value: outputs ? formatNumber(outputs.derivedResults.systemRecommendation.batteryCapacityAh) : "-",
+          unit: "Ah",
+          trend: "Beregnet for oppgitt autonomi"
+        }
+      : {
+          kicker: "AUTONOMI",
+          value: outputs ? formatNumber(outputs.derivedResults.systemRecommendation.batteryAutonomyDays, 1) : "-",
+          unit: "dager",
+          trend: "Beregnet for oppgitt bankstørrelse"
+        }
+  ];
+
   const siteRows: Array<[string, ReactNode, boolean?]> = [
     ["Stasjon", locationText],
     ["Koordinater", coordinates],
-    ["Daglig energibehov", outputs ? `${formatNumber(outputs.derivedResults.totalWhPerDay)} Wh` : "Ikke beregnet"],
-    ["Solcellepanel", `${formatNumber(totalPanelPowerWp, 0)} Wp`],
-    ["Batteribank", outputs ? `${formatNumber(outputs.derivedResults.systemRecommendation.batteryCapacityAh)} Ah` : "Ikke beregnet"],
-    ["Reservekilde", outputs ? `${formatNumber(secondaryPowerW, 0)} W` : "Ikke beregnet"],
-    ["Modus", activeDraft.engineMode === "combined" ? "HydroGuide" : "Kalkulator"],
-    ["Datagrunnlag", nveId ? "NVE kraftverkregister" : "Ikke valgt"],
     ...(plantDetails
       ? [
           ["Eier", plantDetails.owner ?? "-"],
@@ -339,49 +325,27 @@ export default function OverviewPage() {
   ];
 
   return (
-    <main className={workspacePageClassName}>
+    <main className={`${workspacePageClassName} md:flex md:h-full md:max-h-full md:min-h-0 md:flex-col md:overflow-hidden md:pb-0`}>
       <WorkspaceHeader title={t("overview.title")} actions={headerActions} />
 
-      <div className="hg-card overflow-hidden">
-        <div className="grid md:grid-cols-4">
-          <KpiTile
-            label={t("overview.whPerDay")}
-            value={outputs ? formatNumber(outputs.derivedResults.totalWhPerDay) : "-"}
-            unit={t("overview.whPerDayUnit")}
-            note="Samlet for aktivt utstyr"
-          />
-          <KpiTile label={t("overview.solarPanel")} value={formatNumber(totalPanelPowerWp, 0)} unit="Wp" note="Paneloppsett" />
-          <KpiTile
-            label={t("overview.battery")}
-            value={outputs ? formatNumber(outputs.derivedResults.systemRecommendation.batteryCapacityAh) : "-"}
-            unit="Ah"
-            note="Anbefalt kapasitet"
-          />
-          <KpiTile
-            label={t("overview.reserveSource")}
-            value={outputs ? formatNumber(secondaryPowerW, 0) : "-"}
-            unit="W"
-            note="Beregnet reserveeffekt"
-          />
-        </div>
-      </div>
+      <KpiStrip items={overviewKpiItems} />
 
-      <WorkspaceSection title="Stasjon" description={stationMeta} actions={<StationActions details={plantDetails} />}>
+      <EditorialSection title="Stasjon" description={stationMeta}>
         <StationOverviewPanel
           siteRows={siteRows}
           details={plantDetails}
           loading={plantDetailsLoading}
         />
-      </WorkspaceSection>
+      </EditorialSection>
 
       {outputs ? (
-        <WorkspaceSection title="Månedlig energigraf" description="Solproduksjon og forbruk per måned.">
+        <EditorialSection title="Energibalanse" className="md:flex md:flex-1 md:min-h-0 md:flex-col">
           <MonthlyOverviewChart rows={outputs.derivedResults.monthlyEnergyBalance} />
-        </WorkspaceSection>
+        </EditorialSection>
       ) : (
-        <div className="hg-card p-4">
-          <p className={workspaceContentValueClassName}>Energigraf vises når prosjektdataene er komplette.</p>
-        </div>
+        <EditorialSection title="Energibalanse" className="md:flex md:flex-1 md:min-h-0 md:flex-col">
+          <p className={workspaceBodyMutedClassName}>Energigraf vises når prosjektdataene er komplette.</p>
+        </EditorialSection>
       )}
     </main>
   );

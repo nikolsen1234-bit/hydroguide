@@ -149,24 +149,6 @@ function s(): ValidationStrings {
   return strings[activeLanguage];
 }
 
-function solarAutoLabel(kind: "lat" | "lon" | "tilt" | "azimuth"): string {
-  if (activeLanguage === "nn") {
-    return {
-      lat: "Breiddegrad",
-      lon: "Lengdegrad",
-      tilt: "Panelhelling",
-      azimuth: "Azimut"
-    }[kind];
-  }
-
-  return {
-    lat: "Latitude",
-    lon: "Longitude",
-    tilt: "Panel tilt",
-    azimuth: "Azimuth"
-  }[kind];
-}
-
 function isEmptyNumber(value: EditableNumber): boolean {
   return value === "" || value === null || value === undefined;
 }
@@ -211,8 +193,8 @@ function validateAnswers(answers: Answers): ValidationErrors {
     }
   });
 
-  if (answers.q2HogasteMinstevassforing !== "" && Number(answers.q2HogasteMinstevassforing) <= 0) {
-    errors.q2HogasteMinstevassforing = s().valueMustBePositive;
+  if (answers.q2HighestRequiredMinFlow !== "" && Number(answers.q2HighestRequiredMinFlow) <= 0) {
+    errors.q2HighestRequiredMinFlow = s().valueMustBePositive;
   }
 
   return errors;
@@ -224,8 +206,7 @@ function validateRecommendationAccess(configuration: Pick<PlantConfiguration, "n
 
 export function validateConfiguration(configuration: PlantConfiguration): ValidationErrors {
   const errors: ValidationErrors = {};
-  const calculatorMode = (configuration.engineMode ?? "standard") === "standard";
-  const usesSolarAuto = false;
+  const calculatorMode = (configuration.engineMode ?? "calculator") === "calculator";
 
   if (!calculatorMode) {
     Object.assign(errors, validateRecommendationAccess(configuration));
@@ -345,46 +326,15 @@ export function validateConfiguration(configuration: PlantConfiguration): Valida
     );
   }
 
-  if (usesSolarAuto) {
+  MONTH_KEYS.forEach((month) => {
     validateRequiredNumber(
       errors,
-      "solarRadiationSettings.lat",
-      configuration.solarRadiationSettings.lat,
-      solarAutoLabel("lat"),
-      { min: -90, max: 90, allowZero: true }
+      `monthlySolarRadiation.${month}`,
+      configuration.monthlySolarRadiation[month],
+      s().solarRadiationLabel(month),
+      { min: 0, allowZero: true }
     );
-    validateRequiredNumber(
-      errors,
-      "solarRadiationSettings.lon",
-      configuration.solarRadiationSettings.lon,
-      solarAutoLabel("lon"),
-      { min: -180, max: 180, allowZero: true }
-    );
-    validateRequiredNumber(
-      errors,
-      "solarRadiationSettings.tilt",
-      configuration.solarRadiationSettings.tilt,
-      solarAutoLabel("tilt"),
-      { min: 0, max: 90, allowZero: true }
-    );
-    validateRequiredNumber(
-      errors,
-      "solarRadiationSettings.azimuth",
-      configuration.solarRadiationSettings.azimuth,
-      solarAutoLabel("azimuth"),
-      { min: 0, max: 360, allowZero: true }
-    );
-  } else {
-    MONTH_KEYS.forEach((month) => {
-      validateRequiredNumber(
-        errors,
-        `monthlySolarRadiation.${month}`,
-        configuration.monthlySolarRadiation[month],
-        s().solarRadiationLabel(month),
-        { min: 0, allowZero: true }
-      );
-    });
-  }
+  });
 
   configuration.equipmentRows.forEach((row) => {
     if ((row.active || row.powerW !== "") && !row.name.trim()) {

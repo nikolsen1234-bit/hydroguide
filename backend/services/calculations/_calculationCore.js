@@ -129,14 +129,14 @@ function normalizeMonthlySolarRadiation(value = {}) {
     feb: normalizeNumber(value.feb),
     mar: normalizeNumber(value.mar),
     apr: normalizeNumber(value.apr),
-    mai: normalizeNumber(value.mai),
+    mai: normalizeNumber(value.mai ?? value.may),
     jun: normalizeNumber(value.jun),
     jul: normalizeNumber(value.jul),
     aug: normalizeNumber(value.aug),
     sep: normalizeNumber(value.sep),
-    okt: normalizeNumber(value.okt),
+    okt: normalizeNumber(value.okt ?? value.oct),
     nov: normalizeNumber(value.nov),
-    des: normalizeNumber(value.des)
+    des: normalizeNumber(value.des ?? value.dec)
   };
 }
 
@@ -168,7 +168,7 @@ function mapImportedPayload(raw) {
     return {};
   }
 
-  const sourceSystemParameters = raw.systemparametere ?? {};
+  const sourceSystemParameters = raw.systemparametere ?? raw.systemParameters ?? {};
   const sourceBattery = raw.batteri ?? raw.battery ?? {};
   const sourceBackupSource = raw.backupSource ?? {};
   const importedEquipmentRows = Array.isArray(raw.utstyr)
@@ -363,7 +363,7 @@ export function validateCalculationRequest(configuration) {
   return errors;
 }
 
-function calculateEquipmentBudgetRows(equipmentRows, nominalVoltageValue) {
+export function calculateEquipmentBudgetRows(equipmentRows, nominalVoltageValue) {
   const nominalVoltage = toNumber(nominalVoltageValue);
 
   return equipmentRows.map((row) => {
@@ -519,6 +519,15 @@ function calculateCostComparison(configuration, annualEnergyDeficitKWh) {
     const operatingCostPerYear = annualFuelConsumption * toNumber(config.fuelPrice);
     const annualMaintenance = toNumber(config.annualMaintenance);
     const purchaseCost = toNumber(config.purchaseCost);
+    const technicalLifetimeHours = toNumber(config.lifetime);
+    const totalRuntimeHours =
+      annualEnergyDeficitKWh <= 0 || toNumber(config.powerW) <= 0
+        ? 0
+        : (annualEnergyDeficitKWh / (toNumber(config.powerW) / 1000)) * evaluationHorizonYears;
+    const replacementCount =
+      technicalLifetimeHours > 0 && totalRuntimeHours > technicalLifetimeHours
+        ? round(totalRuntimeHours / technicalLifetimeHours - 1, 1)
+        : 0;
     const annualCo2 = annualFuelConsumption * selectedCo2Factor(configuration, source);
 
     return {
@@ -527,9 +536,17 @@ function calculateCostComparison(configuration, annualEnergyDeficitKWh) {
       operatingCostPerYear: round(operatingCostPerYear, 2),
       annualMaintenance: round(annualMaintenance, 2),
       evaluationHorizonYears: round(evaluationHorizonYears, 2),
+      technicalLifetimeHours: round(technicalLifetimeHours, 2),
+      totalRuntimeHours: round(totalRuntimeHours, 2),
+      replacementCount: round(replacementCount, 2),
       annualFuelConsumption: round(annualFuelConsumption, 2),
       annualCo2: round(annualCo2, 2),
-      toc: round(purchaseCost + (operatingCostPerYear + annualMaintenance) * evaluationHorizonYears, 2)
+      toc: round(
+        purchaseCost +
+          (operatingCostPerYear + annualMaintenance) * evaluationHorizonYears +
+          replacementCount * purchaseCost,
+        2
+      )
     };
   };
 
@@ -537,6 +554,32 @@ function calculateCostComparison(configuration, annualEnergyDeficitKWh) {
     annualEnergyDeficitKWh: round(annualEnergyDeficitKWh, 2),
     alternatives: [buildItem("Brenselcelle"), buildItem("Dieselaggregat")]
   };
+}
+
+function selectRecommendedBackupSource(configuration, alternatives) {
+  if (configuration.backupSource.hasBackupSource !== true) {
+    return "Ikkje berekna";
+  }
+
+  const backupSourceInput = (configuration._backupSource ?? "").toLowerCase();
+  if (backupSourceInput === "diesel") {
+    return "Dieselaggregat";
+  }
+  if (backupSourceInput === "fuelcell" || backupSourceInput === "fuel_cell" || backupSourceInput === "brenselcelle") {
+    return "Brenselcelle";
+  }
+
+  const bestItem = alternatives.reduce((best, item) => {
+    if (best === null || item.toc < best.toc) {
+      return item;
+    }
+    if (item.toc === best.toc && item.source === "Brenselcelle" && best.source !== "Brenselcelle") {
+      return item;
+    }
+    return best;
+  }, null);
+
+  return bestItem?.source ?? "Brenselcelle";
 }
 
 function createScenario(configuration, source, totalWhPerDay, totalAhPerDay, costItem) {
@@ -819,19 +862,17 @@ export function calculateNumericResults(configuration) {
   const batteryCapacityAh = calculateBatteryCapacityAh(configuration, totalWhPerDay);
   const batteryAutonomyDays = calculateBatteryAutonomyDays(configuration, totalWhPerDay, batteryCapacityAh);
 
-  const backupSourceInput = (configuration._backupSource ?? "").toLowerCase();
-  const selectedSource =
-    configuration.backupSource.hasBackupSource !== true
-      ? "Ikkje berekna"
-      : backupSourceInput === "diesel"
-        ? "Dieselaggregat"
-        : "Brenselcelle";
-  const monthlyEnergyBalance = calculateMonthlyEnergyBalance(configuration, totalWhPerDay, selectedSource);
-  const annualEnergyDeficitKWh = monthlyEnergyBalance.reduce(
-    (sum, row) => sum + Math.max(0, row.loadDemandKWh - row.solarProductionKWh),
-    0
+  const baseMonthlyEnergyBalance = calculateMonthlyEnergyBalance(configuration, totalWhPerDay, "Ikkje berekna");
+  const annualEnergyDeficitKWh = round(
+    baseMonthlyEnergyBalance.reduce(
+      (sum, row) => sum + Math.max(0, row.loadDemandKWh - row.solarProductionKWh),
+      0
+    ),
+    2
   );
   const costComparison = calculateCostComparison(configuration, annualEnergyDeficitKWh);
+  const selectedSource = selectRecommendedBackupSource(configuration, costComparison.alternatives);
+  const monthlyEnergyBalance = calculateMonthlyEnergyBalance(configuration, totalWhPerDay, selectedSource);
   const costItemsBySource = new Map(costComparison.alternatives.map((item) => [item.source, item]));
   const scenarios = {
     fuelCell: createScenario(
@@ -864,6 +905,7 @@ export function calculateNumericResults(configuration) {
       capacityAh: batteryCapacityAh,
       autonomyDays: batteryAutonomyDays
     },
+    selectedSource,
     annualEnergyDeficitKWh,
     monthlyEnergyBalance,
     annualTotals: createAnnualTotals(monthlyEnergyBalance, totalWhPerDay, totalAhPerDay),

@@ -1,8 +1,8 @@
-import { CORS_OPTIONS_HEADERS } from "./_constants.js";
+import { CORS_OPTIONS_HEADERS, RATE_LIMIT_WINDOW_MS_1MIN } from "./_constants.js";
 import { checkRateLimit, createJsonResponse } from "./_edgeUtils.js";
 
 const PVGIS_TMY_URL = "https://re.jrc.ec.europa.eu/api/v5_3/tmy";
-const RATE_LIMIT = { limit: 20, windowMs: 60_000 };
+const RATE_LIMIT = { limit: 20, windowMs: RATE_LIMIT_WINDOW_MS_1MIN };
 
 export async function onRequestGet(context) {
   const rl = await checkRateLimit({ request: context.request, keyPrefix: "pvgis", ...RATE_LIMIT });

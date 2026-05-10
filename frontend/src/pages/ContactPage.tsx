@@ -1,9 +1,8 @@
 import WorkspaceHeader from "../components/WorkspaceHeader";
-import WorkspaceSection from "../components/WorkspaceSection";
+import EditorialSection from "../components/EditorialSection";
 import {
   workspaceBodyMutedClassName,
   workspaceContentValueClassName,
-  workspaceMetaClassName,
   workspacePageClassName
 } from "../styles/workspace";
 
@@ -17,8 +16,7 @@ const teamMembers = [
 const resources = [
   { name: "Kalkulator", meta: "Eksempelfil · TXT", href: "/Kalkulator.txt", download: "Kalkulator.txt" },
   { name: "HydroGuide", meta: "Eksempelfil · TXT", href: "/HydroGuide.txt", download: "HydroGuide.txt" },
-  { name: "Metodegrunnlag", meta: "Dokumentasjon", href: "/dokumentasjon" },
-  { name: "NVE Atlas", meta: "Ekstern lenke", href: "https://atlas.nve.no/" }
+  { name: "Hovedprosjektsøknad", meta: "Vedlegg · PDF", href: "/Hovedprosjektsoknad.pdf", download: "Hovedprosjektsoknad.pdf" }
 ];
 
 function initials(name: string) {
@@ -39,40 +37,37 @@ function Icon({ path }: { path: string }) {
 
 const downloadIcon =
   "M12 4.75v9.5m0 0 4-4m-4 4-4-4M5 16.75v1.5A1.75 1.75 0 0 0 6.75 20h10.5A1.75 1.75 0 0 0 19 18.25v-1.5";
-const infoIcon = "M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z";
 
 export default function ContactPage() {
   return (
     <main className={workspacePageClassName}>
-      <WorkspaceHeader title="Info" />
+      <WorkspaceHeader title="Kontakt" />
 
       <div className="flex flex-col gap-4">
-        <WorkspaceSection title="Teamet" description="Fagskulen Vestland · 2026">
+        <EditorialSection title="Teamet" description="Fagskulen Vestland · 2026">
           <div>
             <p className={`max-w-2xl ${workspaceBodyMutedClassName}`}>
               Hovedprosjekt i elektroautomasjon, utviklet av fire studenter med fagbakgrunn i hydraulikk,
               kraftsystem og kommunikasjon.
             </p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-4 grid gap-x-12 gap-y-3 sm:grid-cols-2 xl:grid-cols-4">
               {teamMembers.map((member) => (
-                <article key={member.name} className="flex min-w-0 items-center gap-4 rounded-lg border border-[var(--hg-hairline)] p-4">
-                  <div className="hg-mono flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[0.82rem] font-[var(--hg-type-weight-bold)] text-[var(--hg-accent)]">
+                <div key={member.name} className="flex min-w-0 items-center gap-3">
+                  <div className="hg-mono flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-accent)]">
                     {initials(member.name)}
                   </div>
                   <div className="min-w-0">
-                    <p className={workspaceContentValueClassName}>{member.name}</p>
-                    <p className="hg-mono mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--hg-muted)]">{member.role}</p>
-                    <a href={`mailto:${member.email}`} className="mt-1 block truncate text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-medium)] text-[var(--hg-accent)]">
-                      {member.email}
-                    </a>
+                    <p className="truncate text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-bold)] leading-tight text-[var(--hg-ink)]">{member.name}</p>
+                    <p className="hg-mono mt-1 truncate text-[length:var(--hg-type-overline-size)] uppercase tracking-[var(--hg-type-overline-tracking)] text-[var(--hg-muted)]">{member.role}</p>
+                    <a href={`mailto:${member.email}`} className="mt-0.5 block truncate text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-medium)] text-[var(--hg-accent)]">{member.email}</a>
                   </div>
-                </article>
+                </div>
               ))}
             </div>
           </div>
-        </WorkspaceSection>
+        </EditorialSection>
 
-        <WorkspaceSection title="Ressurser" description="Nedlastinger og referanser">
+        <EditorialSection title="Ressurser" description="Nedlastinger og referanser">
           <div>
             {resources.map((resource, index) => (
               <a
@@ -95,20 +90,14 @@ export default function ContactPage() {
               </a>
             ))}
           </div>
-        </WorkspaceSection>
+        </EditorialSection>
 
-        <section className="flex gap-3 rounded-lg border border-[var(--hg-hairline-2)] bg-[var(--hg-surface-2)] p-4">
-          <span className="mt-0.5 text-[var(--hg-muted)]">
-            <Icon path={infoIcon} />
-          </span>
-          <div>
-            <p className={workspaceMetaClassName}>Ansvar</p>
-            <p className={`mt-1 ${workspaceBodyMutedClassName}`}>
-              HydroGuide er veiledende og erstatter ikke faglig skjønn. Resultater, anbefalinger og eksportert
-              materiale må kontrolleres før de brukes i prosjektering eller myndighetsdialog.
-            </p>
-          </div>
-        </section>
+        <EditorialSection title="Ansvar">
+          <p className={`max-w-2xl ${workspaceBodyMutedClassName}`}>
+            HydroGuide er veiledende og erstatter ikke faglig skjønn. Resultater, anbefalinger og eksportert
+            materiale må kontrolleres før de brukes i prosjektering eller myndighetsdialog.
+          </p>
+        </EditorialSection>
       </div>
     </main>
   );

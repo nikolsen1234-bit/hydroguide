@@ -105,17 +105,13 @@ function getNiceAxisLimit(value: number) {
   return niceNormalized * magnitude;
 }
 
-function getAxisTicks(limit: number) {
-  if (limit <= 0) return [];
-  return [limit / 2, limit];
-}
 
 export function EnergyOverviewChart({
   rows,
   backupSource
 }: {
   rows: MonthlyEnergyBalanceRow[];
-  backupSource?: "Brenselcelle" | "Dieselaggregat" | "Ikke beregnet";
+  backupSource?: "FuelCell" | "DieselGenerator" | "NotComputed";
 }) {
   const { t } = useLanguage();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -134,12 +130,12 @@ export function EnergyOverviewChart({
   const width = isMobile ? 760 : 1040;
   const height = isMobile ? 340 : 380;
   const left = isMobile ? 44 : 52;
-  const right = isMobile ? (backupSource && backupSource !== "Ikke beregnet" ? 48 : 30) : 52;
+  const right = isMobile ? (backupSource && backupSource !== "NotComputed" ? 48 : 30) : 52;
   const top = isMobile ? 18 : 22;
   const bottom = isMobile ? 40 : 44;
   const innerWidth = width - left - right;
   const innerHeight = height - top - bottom;
-  const hasReserveCoverage = Boolean(backupSource && backupSource !== "Ikke beregnet");
+  const hasReserveCoverage = Boolean(backupSource && backupSource !== "NotComputed");
   const maxPositiveEnergy = getNiceAxisLimit(Math.max(
     ...rows.map((row) => Math.max(row.loadDemandKWh, row.solarProductionKWh, 1))
   ));
@@ -160,12 +156,12 @@ export function EnergyOverviewChart({
   const toFuelY = (value: number) =>
     maxFuelValue > 0 ? zeroY - (value / maxFuelValue) * positiveHeight : zeroY;
   const fuelColor =
-    backupSource === "Brenselcelle"
+    backupSource === "FuelCell"
       ? CHART_COLORS.methanol
-      : backupSource === "Dieselaggregat"
+      : backupSource === "DieselGenerator"
         ? CHART_COLORS.diesel
         : CHART_COLORS.reserve;
-  const fuelLabel = backupSource === "Brenselcelle" ? t("charts.fuelCell") : t("charts.dieselGenerator");
+  const fuelLabel = backupSource === "FuelCell" ? t("charts.fuelCell") : t("charts.dieselGenerator");
   const chartHelper = hasReserveCoverage
     ? t("charts.energyOverviewHelper").replace("{fuel}", fuelLabel.toLowerCase())
     : t("charts.energyOverviewHelperNoReserve");
@@ -429,161 +425,6 @@ export function EnergyOverviewChart({
   );
 }
 
-export function BalanceBarChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
-  const { t } = useLanguage();
-  if (rows.length === 0) {
-    return (
-      <ChartCard title={t("charts.energyBalance")}>
-        <EmptyChart text={t("charts.fillSystemDataMonthly")} />
-      </ChartCard>
-    );
-  }
-
-  const maxAbsValue = Math.max(...rows.map((row) => Math.abs(row.energyBalanceKWh)), 1);
-  const width = 1040;
-  const left = 52;
-  const right = 52;
-  const innerWidth = width - left - right;
-  const rawMaxPositive = Math.max(...rows.map((row) => Math.max(row.energyBalanceKWh, 0)), 0);
-  const rawMaxNegative = Math.max(...rows.map((row) => Math.max(-row.energyBalanceKWh, 0)), 0);
-  const maxPositive = getNiceAxisLimit(rawMaxPositive);
-  const maxNegative = getNiceAxisLimit(rawMaxNegative);
-  const hasPositive = rawMaxPositive > 0;
-  const hasNegative = rawMaxNegative > 0;
-  const zeroY =
-    hasPositive && hasNegative
-      ? 26 + (maxPositive / (maxPositive + maxNegative)) * 192
-      : hasPositive
-        ? 218
-        : 26;
-  const positiveHeight = Math.max(0, zeroY - 26);
-  const negativeHeight = Math.max(0, 218 - zeroY);
-  const stepX = innerWidth / rows.length;
-  const barWidth = Math.min(44, Math.max(18, stepX * 0.72));
-  const positiveTickValues = hasPositive ? getAxisTicks(maxPositive) : [];
-  const negativeTickValues = hasNegative ? getAxisTicks(maxNegative) : [];
-
-  function renderAxisTick(y: number, value: number, key: string) {
-    return (
-      <g key={key}>
-        <line
-          x1={left}
-          x2={width - right}
-          y1={y}
-          y2={y}
-          stroke="#e2e8f0"
-          strokeWidth="1"
-          strokeDasharray="3 5"
-        />
-        <text x={left - 8} y={y + 4} textAnchor="end" className={workspaceChartAxisClassName}>
-          {formatNumber(value, 0)}
-        </text>
-      </g>
-    );
-  }
-
-  return (
-    <ChartCard
-      title={t("charts.energyBalance")}
-      helper={t("charts.energyBalanceHelper")}
-    >
-      <div className="space-y-1.5 md:hidden">
-        {rows.map((row) => {
-          const isPositive = row.energyBalanceKWh >= 0;
-          const barPercent = (Math.abs(row.energyBalanceKWh) / maxAbsValue) * 50;
-          return (
-            <div key={row.month} className="flex items-center gap-0">
-              <span className={`w-9 shrink-0 text-right ${workspaceChartLegendClassName} text-slate-500`}>
-                {t(`month.${row.month}`)}
-              </span>
-              <div className="relative mx-2 flex h-6 flex-1 items-center">
-                <div className="absolute inset-y-0 left-1/2 w-px bg-slate-300" />
-                {isPositive ? (
-                  <div
-                    className="absolute left-1/2 h-full rounded-r-md"
-                    style={{
-                      width: `${Math.max(barPercent, 1)}%`,
-                      backgroundColor: CHART_COLORS.positiveBalance
-                    }}
-                  />
-                ) : (
-                  <div
-                    className="absolute right-1/2 h-full rounded-l-md"
-                    style={{
-                      width: `${Math.max(barPercent, 1)}%`,
-                      backgroundColor: CHART_COLORS.negativeBalance
-                    }}
-                  />
-                )}
-              </div>
-              <span className={`w-16 shrink-0 text-right ${workspaceChartLegendClassName} ${isPositive ? "text-brand-700" : "text-rose-600"}`}>
-                {formatNumber(row.energyBalanceKWh)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="hidden md:block">
-        <svg viewBox={`0 0 ${width} 260`} className="block h-auto w-full overflow-visible">
-          <title>Energibalanse per måned</title>
-          <text
-            x={6}
-            y={(26 + 218) / 2}
-            textAnchor="middle"
-            transform={`rotate(-90, 6, ${(26 + 218) / 2})`}
-            className={workspaceChartLabelClassName}
-          >
-            {t("charts.energyAxis")}
-          </text>
-          {positiveTickValues.map((value) => renderAxisTick(zeroY - (value / maxPositive) * positiveHeight, value, `pos-${value}`))}
-          {negativeTickValues.map((value) => renderAxisTick(zeroY + (value / maxNegative) * negativeHeight, -value, `neg-${value}`))}
-          <line x1={left} x2={width - right} y1={zeroY} y2={zeroY} stroke="#94a3b8" strokeWidth="1.5" />
-          <text x={left - 8} y={zeroY + 4} textAnchor="end" className={workspaceChartAxisClassName}>
-            0
-          </text>
-
-          {rows.map((row, index) => {
-            const x = left + index * stepX + (stepX - barWidth) / 2;
-            const isPositive = row.energyBalanceKWh >= 0;
-            const barHeight = isPositive
-              ? maxPositive > 0
-                ? (Math.abs(row.energyBalanceKWh) / maxPositive) * positiveHeight
-                : 0
-              : maxNegative > 0
-                ? (Math.abs(row.energyBalanceKWh) / maxNegative) * negativeHeight
-                : 0;
-
-            return (
-              <g key={row.month}>
-                <rect
-                  x={x}
-                  y={isPositive ? zeroY - barHeight : zeroY}
-                  width={barWidth}
-                  height={Math.max(barHeight, 2)}
-                  rx="6"
-                  fill={isPositive ? CHART_COLORS.positiveBalance : CHART_COLORS.negativeBalance}
-                />
-                <text x={left + index * stepX + stepX / 2} y={250} textAnchor="middle" className={workspaceChartMonthClassName}>
-                  {t(`month.${row.month}`)}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-
-      <div className={`mt-3 flex flex-wrap gap-x-5 gap-y-2 ${workspaceChartLegendClassName}`} style={{ paddingLeft: 0 }}>
-        <span className="inline-flex items-center gap-2">
-          <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: CHART_COLORS.negativeBalance }} /> {t("charts.deficit")}
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: CHART_COLORS.positiveBalance }} /> {t("charts.surplus")}
-        </span>
-      </div>
-    </ChartCard>
-  );
-}
 
 export function CostComparisonChart({
   items
@@ -596,7 +437,7 @@ export function CostComparisonChart({
     return <EmptyChart text={t("charts.fillCostData")} />;
   }
 
-  const maxValue = Math.max(...items.map((item) => item.toc), 1);
+  const maxValue = Math.max(...items.map((item) => item.totalOwnershipCost), 1);
 
   return (
     <>
@@ -605,14 +446,14 @@ export function CostComparisonChart({
           <div key={item.source}>
             <div className={`mb-1 flex items-center justify-between gap-3 ${workspaceChartLegendClassName}`}>
               <span>{item.source}</span>
-              <span className="text-slate-950">{formatNumber(item.toc)} kr</span>
+              <span className="text-slate-950">{formatNumber(item.totalOwnershipCost)} kr</span>
             </div>
             <div className="h-4 rounded-full bg-slate-100">
               <div
                 className="h-4 rounded-full"
                 style={{
-                  backgroundColor: item.source === "Brenselcelle" ? CHART_COLORS.methanol : CHART_COLORS.diesel,
-                  width: `${Math.max(8, (item.toc / maxValue) * 100)}%`
+                  backgroundColor: item.source === "FuelCell" ? CHART_COLORS.methanol : CHART_COLORS.diesel,
+                  width: `${Math.max(8, (item.totalOwnershipCost / maxValue) * 100)}%`
                 }}
               />
             </div>

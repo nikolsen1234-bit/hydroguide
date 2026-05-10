@@ -1,9 +1,15 @@
-import { GEONORGE_COORD_SYSTEM, GEONORGE_RESULTS_PER_PAGE, CORS_OPTIONS_HEADERS } from "./_constants.js";
+import {
+  GEONORGE_COORD_SYSTEM,
+  GEONORGE_RESULTS_PER_PAGE,
+  CORS_OPTIONS_HEADERS,
+  SMALL_JSON_BODY_MAX_BYTES,
+  RATE_LIMIT_WINDOW_MS_1MIN
+} from "./_constants.js";
 import { checkRateLimit, createJsonResponse, readJsonRequest } from "./_edgeUtils.js";
 
 const PLACE_URL = "https://ws.geonorge.no/stedsnavn/v1/sted";
 const ADDRESS_URL = "https://ws.geonorge.no/adresser/v1/sok";
-const RATE_LIMIT = { limit: 60, windowMs: 60_000 };
+const RATE_LIMIT = { limit: 60, windowMs: RATE_LIMIT_WINDOW_MS_1MIN };
 
 function normalizeText(value) {
   return typeof value === "string"
@@ -89,7 +95,7 @@ export async function onRequestPost(context) {
 
   let body;
   try {
-    body = await readJsonRequest(context.request, { maxBytes: 1024 });
+    body = await readJsonRequest(context.request, { maxBytes: SMALL_JSON_BODY_MAX_BYTES });
   } catch (error) {
     return createJsonResponse({ error: error instanceof Error ? error.message : "Invalid request." }, { status: 400 });
   }

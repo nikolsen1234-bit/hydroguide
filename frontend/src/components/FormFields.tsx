@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useLanguage } from "../i18n";
+import { formatNumberDraft } from "../utils/format";
 import {
   workspaceContentValueClassName,
   workspaceFieldLabelClassName,
@@ -7,7 +8,7 @@ import {
   workspaceFieldStackClassName,
   workspaceInputClassName
 } from "../styles/workspace";
-import { JaNei, NullableBoolean } from "../types";
+import { NullableBoolean } from "../types";
 import { HelpTip } from "./WorkspaceActions";
 
 interface BaseProps {
@@ -134,42 +135,6 @@ function ChoiceField<T extends string | boolean>({
   );
 }
 
-function formatNumberDraft(value: number | ""): string {
-  return value === "" ? "" : String(value);
-}
-
-interface SelectFieldProps extends BaseProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-}
-
-export function SelectField({ label, helper, error, ariaLabel, value, onChange, options }: SelectFieldProps) {
-  const { t } = useLanguage();
-  const fieldId = useId();
-  const errorId = error ? `${fieldId}-error` : undefined;
-  return (
-    <FieldWrapper label={label} helper={helper} error={error} fieldId={fieldId} errorId={errorId}>
-      <select
-        id={fieldId}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={workspaceInputClassName}
-        aria-label={ariaLabel}
-        aria-describedby={errorId}
-        aria-invalid={error ? true : undefined}
-      >
-        <option value="">{t("shared.selectOption")}</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </FieldWrapper>
-  );
-}
-
 interface NumberFieldProps extends BaseProps {
   value: number | "";
   onChange: (value: number | "") => void;
@@ -272,37 +237,11 @@ export function NumberField({
           aria-invalid={error ? true : undefined}
         />
         {unit ? (
-          <span className="hg-mono pointer-events-none absolute inset-y-0 right-3 flex items-center text-[11px] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)]">
+          <span className="hg-mono pointer-events-none absolute inset-y-0 right-3 flex items-center text-[length:var(--hg-type-badge-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)]">
             {unit}
           </span>
         ) : null}
       </div>
-    </FieldWrapper>
-  );
-}
-
-interface TextFieldProps extends BaseProps {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}
-
-export function TextField({ label, helper, error, ariaLabel, value, onChange, placeholder }: TextFieldProps) {
-  const fieldId = useId();
-  const errorId = error ? `${fieldId}-error` : undefined;
-  return (
-    <FieldWrapper label={label} helper={helper} error={error} fieldId={fieldId} errorId={errorId}>
-      <input
-        id={fieldId}
-        type="text"
-        value={value}
-        placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value)}
-        className={workspaceInputClassName}
-        aria-label={ariaLabel}
-        aria-describedby={errorId}
-        aria-invalid={error ? true : undefined}
-      />
     </FieldWrapper>
   );
 }
@@ -336,28 +275,6 @@ export function BooleanChoiceField({
       options={[
         { value: true, label: resolvedTrueLabel },
         { value: false, label: resolvedFalseLabel }
-      ]}
-    />
-  );
-}
-
-interface JaNeiFieldProps extends BaseProps {
-  value: JaNei | "";
-  onChange: (value: JaNei) => void;
-}
-
-export function JaNeiField({ label, helper, error, value, onChange }: JaNeiFieldProps) {
-  const { t } = useLanguage();
-  return (
-    <ChoiceField
-      label={label}
-      helper={helper}
-      error={error}
-      value={value}
-      onChange={onChange}
-      options={[
-        { value: "ja", label: t("shared.yes") },
-        { value: "nei", label: t("shared.no") }
       ]}
     />
   );

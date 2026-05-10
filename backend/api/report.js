@@ -1,10 +1,14 @@
 /**
  * POST /api/report
  *
- * Report Worker proxy. Validates report access hash and forwards to the internal AI Worker.
+ * Report Worker proxy. Validates report access hash and forwards to the local
+ * report-agent bridge through Cloudflare Tunnel.
  */
 
-import { CORS_OPTIONS_HEADERS } from "./_constants.js";
+import {
+  REPORT_JSON_BODY_MAX_BYTES,
+  RATE_LIMIT_WINDOW_MS_1MIN
+} from "./_constants.js";
 import {
   checkRateLimit,
   constantTimeEquals,
@@ -18,10 +22,18 @@ const HASH_64_RE = /^[a-f0-9]{64}$/;
 
 const REQUEST_TIMEOUT_MS = 120000;
 const REPORT_RATE_LIMIT_MAX_REQUESTS = 20;
-const REPORT_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const REPORT_RATE_LIMIT_WINDOW_MS = RATE_LIMIT_WINDOW_MS_1MIN;
 const REPORT_AUTH_FAILURE_LIMIT_MAX_ATTEMPTS = 10;
-const REPORT_AUTH_FAILURE_LIMIT_WINDOW_MS = 3 * 60 * 1000;
-const REPORT_REQUEST_BODY_MAX_BYTES = 32768;
+const REPORT_AUTH_FAILURE_LIMIT_WINDOW_MS = 3 * RATE_LIMIT_WINDOW_MS_1MIN;
+const REPORT_REQUEST_BODY_MAX_BYTES = REPORT_JSON_BODY_MAX_BYTES;
+const REPORT_ALLOWED_ORIGINS = new Set([
+  "https://hydroguide.no",
+  "https://www.hydroguide.no",
+  "http://127.0.0.1:5173",
+  "http://localhost:5173",
+  "http://127.0.0.1:4173",
+  "http://localhost:4173"
+]);
 
 function normalizeExpectedHash(rawValue) {
   const normalized = String(rawValue ?? "")
@@ -39,12 +51,12 @@ function validateAiAccess(body, env) {
     return "__CONFIG_MISSING__";
   }
 
-  const providedHash = String(body?.tilgangskodeHash ?? "")
+  const providedHash = String(body?.accessCodeHash ?? body?.tilgangskodeHash ?? "")
     .trim()
     .toLowerCase();
 
   if (!HASH_64_RE.test(providedHash)) {
-    return "Manglar tilgangskode.";
+    return "Mangler tilgangskode.";
   }
 
   if (!constantTimeEquals(providedHash, expectedHash)) {
@@ -52,6 +64,61 @@ function validateAiAccess(body, env) {
   }
 
   return null;
+}
+
+function readReportCorsHeaders(request) {
+  const origin = (request?.headers?.get("origin") ?? "").trim();
+  const headers = {
+    "access-control-allow-methods": "POST, OPTIONS",
+    "access-control-allow-headers": "Content-Type, Accept",
+    "access-control-max-age": "86400",
+    vary: "Origin"
+  };
+
+  if (REPORT_ALLOWED_ORIGINS.has(origin)) {
+    headers["access-control-allow-origin"] = origin;
+  }
+
+  return headers;
+}
+
+function createReportResponse(context, payload, options = {}) {
+  const { headers = {}, ...rest } = options;
+  return createJsonResponse(payload, {
+    ...rest,
+    headers: {
+      ...readReportCorsHeaders(context.request),
+      ...headers
+    }
+  });
+}
+
+function readReportRequestError(error) {
+  const message = error instanceof Error ? error.message : "";
+  if (message.includes("application/json")) {
+    return "Forespørselen må bruke application/json.";
+  }
+  if (message.includes("manglar JSON") || message.includes("empty")) {
+    return "Forespørselen mangler JSON-innhold.";
+  }
+  if (message.includes("for stor") || message.includes("too large")) {
+    return "Forespørselen er for stor.";
+  }
+  if (message.includes("JSON-objekt")) {
+    return "Forespørselen må være et JSON-objekt.";
+  }
+  return "Ugyldig forespørsel.";
+}
+
+function buildBridgeReportUrl(rawUrl) {
+  const url = new URL(String(rawUrl ?? "").trim());
+  if (url.protocol !== "https:") {
+    throw new Error("REPORT_BRIDGE_URL must use HTTPS.");
+  }
+
+  const pathname = url.pathname.replace(/\/+$/, "");
+  url.pathname = pathname.endsWith("/report") ? pathname : `${pathname}/report`;
+  return url.toString();
 }
 
 export async function onRequestPost(context) {
@@ -63,8 +130,9 @@ export async function onRequestPost(context) {
   });
 
   if (!rateLimit.allowed) {
-    return createJsonResponse(
-      { error: "For mange AI-forespurnader akkurat no. Prov igjen om litt." },
+    return createReportResponse(
+      context,
+      { error: "For mange rapportforespørsler akkurat nå. Prøv igjen om litt." },
       {
         status: 429,
         headers: {
@@ -80,16 +148,18 @@ export async function onRequestPost(context) {
       maxBytes: REPORT_REQUEST_BODY_MAX_BYTES
     });
   } catch (error) {
-    return createJsonResponse(
-      { error: error instanceof Error ? error.message : "Ugyldig forespurnad." },
+    return createReportResponse(
+      context,
+      { error: readReportRequestError(error) },
       { status: 400 }
     );
   }
 
   const accessError = validateAiAccess(rawBody, context.env);
   if (accessError === "__CONFIG_MISSING__") {
-    return createJsonResponse(
-      { error: "AI-tenesta er ikkje konfigurert for offentleg publisering: manglar REPORT_ACCESS_CODE_HASH." },
+    return createReportResponse(
+      context,
+      { error: "Rapportagenten er ikke konfigurert: mangler REPORT_ACCESS_CODE_HASH." },
       { status: 503 }
     );
   }
@@ -103,8 +173,9 @@ export async function onRequestPost(context) {
     });
 
     if (!authFailureLimit.allowed) {
-      return createJsonResponse(
-        { error: "For mange mislykka forsok. Rapport-AI er mellombels sperra for denne klienten." },
+      return createReportResponse(
+        context,
+        { error: "For mange mislykkede forsøk. Rapportagenten er midlertidig sperret for denne klienten." },
         {
           status: 429,
           headers: {
@@ -114,87 +185,109 @@ export async function onRequestPost(context) {
       );
     }
 
-    return createJsonResponse({ error: accessError }, { status: 403 });
+    return createReportResponse(context, { error: accessError }, { status: 403 });
   }
 
-  const workerApiKey = String(context.env?.REPORT_WORKER_TOKEN ?? "").trim();
-  if (!workerApiKey) {
-    return createJsonResponse(
-      { error: "AI-tenesta er ikkje konfigurert." },
-      { status: 503 }
-    );
+  const bridgeToken = String(context.env?.REPORT_BRIDGE_TOKEN ?? "").trim();
+  const rawBridgeUrl = String(context.env?.REPORT_BRIDGE_URL ?? "").trim();
+  if (!bridgeToken || !rawBridgeUrl) {
+    return createReportResponse(context, { error: "Rapportagenten er ikke konfigurert." }, { status: 503 });
   }
 
   try {
+    const bridgeUrl = buildBridgeReportUrl(rawBridgeUrl);
+    const requestId = crypto.randomUUID();
     const sanitizedBody = {
-      tilgangskodeHash: rawBody.tilgangskodeHash,
-      prosjekt: rawBody.prosjekt, lokasjon: rawBody.lokasjon, prosjektbeskrivelse: rawBody.prosjektbeskrivelse,
-      anleggstype: rawBody.anleggstype, hydrologi: rawBody.hydrologi,
-      hovudloysing: rawBody.hovudloysing, slippmetode: rawBody.slippmetode,
-      primaermaaling: rawBody.primaermaaling, kontrollmaaling: rawBody.kontrollmaaling,
-      maleprinsipp: rawBody.maleprinsipp, maleutstyr: rawBody.maleutstyr,
-      loggeroppsett: rawBody.loggeroppsett, reserveLogger: rawBody.reserveLogger,
-      kommunikasjon: rawBody.kommunikasjon, alarmVarsling: rawBody.alarmVarsling,
-      reservekjelde: rawBody.reservekjelde, reserveEnergikjelde: rawBody.reserveEnergikjelde,
-      primaerEnergikjelde: rawBody.primaerEnergikjelde,
-      reserveeffektW: rawBody.reserveeffektW, batteribankAh: rawBody.batteribankAh, autonomiDagar: rawBody.autonomiDagar,
-      istilpassing: rawBody.istilpassing, frostsikring: rawBody.frostsikring, bypass: rawBody.bypass,
-      arsproduksjonSolKWh: rawBody.arsproduksjonSolKWh, arslastKWh: rawBody.arslastKWh, arsbalanseKWh: rawBody.arsbalanseKWh,
-      grunngiving: rawBody.grunngiving, tilleggskrav: rawBody.tilleggskrav, driftskrav: rawBody.driftskrav,
-      slippmetodeVal: rawBody.slippmetodeVal, slippkravvariasjon: rawBody.slippkravvariasjon,
-      isSedimentTilstopping: rawBody.isSedimentTilstopping, fiskepassasje: rawBody.fiskepassasje,
-      bypassVedDriftsstans: rawBody.bypassVedDriftsstans, maleprofil: rawBody.maleprofil, allmentaKontroll: rawBody.allmentaKontroll,
-      include_recommendations: rawBody.include_recommendations, ai_on: rawBody.ai_on, rapportutdrag: rawBody.rapportutdrag
+      project: rawBody.project, location: rawBody.location, projectDescription: rawBody.projectDescription,
+      facilityType: rawBody.facilityType, hydrology: rawBody.hydrology,
+      mainSolution: rawBody.mainSolution, releaseMethod: rawBody.releaseMethod,
+      primaryMeasurement: rawBody.primaryMeasurement, controlMeasurement: rawBody.controlMeasurement,
+      measurementPrinciple: rawBody.measurementPrinciple, measurementEquipment: rawBody.measurementEquipment,
+      loggerSetup: rawBody.loggerSetup, backupLogger: rawBody.backupLogger,
+      communication: rawBody.communication, alarmNotification: rawBody.alarmNotification,
+      backupSource: rawBody.backupSource, backupEnergySource: rawBody.backupEnergySource,
+      primaryEnergySource: rawBody.primaryEnergySource,
+      backupPowerW: rawBody.backupPowerW, batteryBankAh: rawBody.batteryBankAh, autonomyDays: rawBody.autonomyDays,
+      iceAdaptation: rawBody.iceAdaptation, frostProtection: rawBody.frostProtection, bypass: rawBody.bypass,
+      annualSolarProductionKWh: rawBody.annualSolarProductionKWh,
+      annualLoadDemandKWh: rawBody.annualLoadDemandKWh,
+      annualEnergyBalanceKWh: rawBody.annualEnergyBalanceKWh,
+      justification: rawBody.justification, additionalRequirements: rawBody.additionalRequirements,
+      operationalRequirements: rawBody.operationalRequirements,
+      releaseMethodSelected: rawBody.releaseMethodSelected,
+      releaseRequirementVariation: rawBody.releaseRequirementVariation,
+      isSedimentClogging: rawBody.isSedimentClogging, fishPassage: rawBody.fishPassage,
+      bypassOnOutage: rawBody.bypassOnOutage, measurementProfile: rawBody.measurementProfile,
+      publicControl: rawBody.publicControl,
+      include_recommendations: rawBody.include_recommendations, ai_on: rawBody.ai_on,
+      reportExtract: rawBody.reportExtract ?? rawBody.rapportutdrag
     };
 
-    const workerRequest = new Request("https://worker.internal/", {
+    const bridgeRequest = new Request(bridgeUrl, {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        authorization: `Bearer ${workerApiKey}`
+        authorization: `Bearer ${bridgeToken}`,
+        "x-hydroguide-request-id": requestId
       },
-      body: JSON.stringify(sanitizedBody),
+      body: JSON.stringify({ requestId, report: sanitizedBody }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
     });
 
-    const response = await context.env.REPORT_AI_WORKER.fetch(workerRequest);
+    const response = await fetch(bridgeRequest);
 
     const responseBody = await response.json().catch(() => null);
 
     if (!response.ok) {
-      return createJsonResponse(
+      return createReportResponse(
+        context,
         {
           error:
             typeof responseBody?.error === "string"
               ? responseBody.error
-              : `AI-Worker svarte med feil (${response.status}).`
+              : `Rapportagenten svarte med feil (${response.status}).`
         },
         { status: response.status }
       );
     }
 
-    if (!responseBody || typeof responseBody !== "object" || typeof responseBody.text !== "string") {
-      return createJsonResponse(
-        { error: "AI-Worker svarte utan gyldig tekst." },
+    const hasText = typeof responseBody?.text === "string" && responseBody.text.trim();
+    const hasFields =
+      responseBody?.fields &&
+      typeof responseBody.fields === "object" &&
+      !Array.isArray(responseBody.fields) &&
+      Object.values(responseBody.fields).some((value) => typeof value === "string" && value.trim());
+
+    if (!responseBody || typeof responseBody !== "object" || (!hasText && !hasFields)) {
+      return createReportResponse(
+        context,
+        { error: "Rapportagenten svarte uten gyldig rapportinnhold." },
         { status: 502 }
       );
     }
 
-    return createJsonResponse(responseBody, { status: 200 });
+    return createReportResponse(context, { requestId, ...responseBody }, { status: 200 });
   } catch (error) {
     const message =
       error instanceof Error && error.name === "TimeoutError"
-        ? "AI-Worker brukte for lang tid."
-        : "Klarte ikkje kontakte AI-Worker.";
+        ? "Rapportagenten brukte for lang tid."
+        : "Klarte ikke kontakte rapportagenten.";
 
-    return createJsonResponse({ error: message }, { status: 502 });
+    return createReportResponse(context, { error: message }, { status: 502 });
   }
 }
 
-export async function onRequestOptions() {
-  return new Response(null, { status: 204, headers: CORS_OPTIONS_HEADERS });
+export async function onRequestOptions(context) {
+  return new Response(null, { status: 204, headers: readReportCorsHeaders(context.request) });
 }
 
-export async function onRequestGet() {
-  return createMethodNotAllowedResponse(["POST"]);
+export async function onRequestMethodNotAllowed(context) {
+  return createReportResponse(context, { error: "Metoden er ikke tillatt." }, {
+    status: 405,
+    headers: { allow: "POST, OPTIONS" }
+  });
+}
+
+export async function onRequestGet(context) {
+  return onRequestMethodNotAllowed(context);
 }

@@ -1,59 +1,40 @@
-export type JaNei = "ja" | "nei";
+export type YesNo = "yes" | "no";
 export type EditableNumber = number | "";
 export type NullableBoolean = boolean | null;
 
-export type Anleggstype = "nytt" | "eksisterande" | "ombygging";
-export type Slippkravvariasjon = "fast" | "sesongkrav" | "tilsigsstyrt";
-export type Slippmetode = "royr_frostfritt" | "royr_utan_frostfritt" | "luke_utsparing_overloep" | "direkte_elveleie";
-export type Maleprofil = "naturleg_stabilt" | "kan_byggjast_kunstig" | "ingen_eigna_profil";
+export type FacilityType = "new" | "existing" | "conversion";
+export type ReleaseRequirementVariation = "fixed" | "seasonal" | "inflowControlled";
+export type ReleaseMethod = "pipeFrostFree" | "pipeNoFrostFree" | "gateWeirOverflow" | "directRiverbed";
+export type MeasurementProfile = "naturalStable" | "canBuildArtificial" | "noSuitableProfile";
 export type BatteryMode = "ah" | "autonomyDays";
-export type MonthKey = "jan" | "feb" | "mar" | "apr" | "mai" | "jun" | "jul" | "aug" | "sep" | "okt" | "nov" | "des";
+export type MonthKey = "jan" | "feb" | "mar" | "apr" | "may" | "jun" | "jul" | "aug" | "sep" | "oct" | "nov" | "dec";
 export type BudgetDisplayUnit = "wh" | "ah";
 export type HeightScale = "AGL" | "ASL";
 export type Polarization = "horizontal" | "vertical";
 export type KFactorKey = "4/3" | "1" | "2/3" | "-2/3";
-export type BackupSourceName = "Brenselcelle" | "Dieselaggregat";
+export type BackupSourceName = "FuelCell" | "DieselGenerator";
 
-export type SolarRadiationMode = "manual" | "auto";
+export type EngineMode = "calculator" | "hydroguide";
 
-/**
- * "standard"  - Calculator mode.
- * "combined"  - HydroGuide mode.
- * "detailed"  - Legacy import value. Runtime normalization maps this to
- *               "combined" because the public UI no longer supports PVGIS.
- */
-export type EngineMode = "standard" | "detailed" | "combined";
-
-export interface SolarRadiationSettings {
-  mode: SolarRadiationMode;
-  lat: EditableNumber;
-  lon: EditableNumber;
-  tilt: EditableNumber;
-  azimuth: EditableNumber;
-  heightOffset: EditableNumber;
-  locationName: string;
-  mapZoom: number;
-}
-
-export type ConfidenceStatus = "Anbefalt" | "Bør vurderes nærmere" | "Krev avklaring";
+export type ConfidenceStatus = "Recommended" | "NeedsReview" | "NeedsClarification";
 
 export interface Answers {
-  q1Anleggstype: Anleggstype | "";
-  q2HogasteMinstevassforing: EditableNumber;
-  q3Slippkravvariasjon: Slippkravvariasjon | "";
-  q4Slippmetode: Slippmetode | "";
-  q5IsSedimentTilstopping: JaNei | "";
-  q6Fiskepassasje: JaNei | "";
-  q7BypassVedDriftsstans: JaNei | "";
-  q8Maleprofil: Maleprofil | "";
-  q9AllmentaKontroll: JaNei | "";
+  q1FacilityType: FacilityType | "";
+  q2HighestRequiredMinFlow: EditableNumber;
+  q3ReleaseRequirementVariation: ReleaseRequirementVariation | "";
+  q4ReleaseMethod: ReleaseMethod | "";
+  q5IsSedimentClogging: YesNo | "";
+  q6FishPassage: YesNo | "";
+  q7BypassOnOutage: YesNo | "";
+  q8MeasurementProfile: MeasurementProfile | "";
+  q9PublicControl: YesNo | "";
 }
 
 export interface Recommendation {
-  hovudloysing: string;
-  kontrollmalemetode: string;
-  grunngiving: string[];
-  tilleggskrav: string[];
+  mainSolution: string;
+  controlMeasurementMethod: string;
+  justification: string[];
+  additionalRequirements: string[];
   status: ConfidenceStatus;
 }
 
@@ -98,14 +79,14 @@ export interface MonthlySolarRadiation {
   feb: EditableNumber;
   mar: EditableNumber;
   apr: EditableNumber;
-  mai: EditableNumber;
+  may: EditableNumber;
   jun: EditableNumber;
   jul: EditableNumber;
   aug: EditableNumber;
   sep: EditableNumber;
-  okt: EditableNumber;
+  oct: EditableNumber;
   nov: EditableNumber;
-  des: EditableNumber;
+  dec: EditableNumber;
 }
 
 export interface EquipmentBudgetSettings {
@@ -194,7 +175,7 @@ export interface SystemRecommendationResult {
   communication: string;
   loggerSetup: string;
   energyMonitoring: string;
-  secondarySource: BackupSourceName | "Ikke beregnet";
+  secondarySource: BackupSourceName | "NotComputed";
   secondarySourcePowerW: number;
   batteryCapacityAh: number;
   batteryAutonomyDays: number;
@@ -210,9 +191,10 @@ export interface CostComparisonItem {
   evaluationHorizonYears: number;
   technicalLifetimeHours: number;
   totalRuntimeHours: number;
+  replacementCount: number;
   annualFuelConsumption: number;
   annualCo2: number;
-  toc: number;
+  totalOwnershipCost: number;
 }
 
 export interface CostComparison {
@@ -244,55 +226,6 @@ export interface DerivedResults {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Hourly battery simulation & reliability metrics
-// ---------------------------------------------------------------------------
-
-export interface MonthlyReliability {
-  month: MonthKey;
-  /** % of days battery reached 100% SOC */
-  batteryFullPct: number;
-  /** % of days battery reached cutoff SOC */
-  batteryEmptyPct: number;
-  /** Hours below 20% SOC this month */
-  hoursBelow20Pct: number;
-  /** Total energy not delivered (Wh) this month */
-  deficitWh: number;
-  /** Hours with non-zero deficit this month */
-  deficitHours: number;
-  /** Solar production this month (Wh) */
-  solarProductionWh: number;
-  /** Load demand this month (Wh) */
-  loadDemandWh: number;
-}
-
-export interface WorstPeriod {
-  /** Start hour index in the 8760-array */
-  startHour: number;
-  /** Total deficit Wh in this period */
-  deficitWh: number;
-  /** Start date label (e.g. "15. jan") */
-  label: string;
-}
-
-export interface ReliabilityMetrics {
-  monthly: MonthlyReliability[];
-  /** Total loss-of-load hours in the year */
-  lolh: number;
-  /** Total energy not delivered (Wh) */
-  totalDeficitWh: number;
-  /** Longest consecutive hours with SOC at cutoff */
-  longestLowSocHours: number;
-  /** Worst 7-day period */
-  worst7Day: WorstPeriod;
-  /** Worst 30-day period */
-  worst30Day: WorstPeriod;
-  /** Worst single month (0-based index) */
-  worstMonthIndex: number;
-  /** SOC histogram: 10 bins (0-10%, 10-20%, ..., 90-100%), each = fraction of hours */
-  socHistogram: number[];
-}
-
 export interface NvePlantDetails {
   name: string;
   stationId: string | null;
@@ -304,7 +237,7 @@ export interface NvePlantDetails {
   grossHeadM: number | null;
   commissionedYear: string | null;
   plantType: string | null;
-  kdbNr: string | null;
+  kdbNumber: string | null;
   concessionUrl: string | null;
   wikiUrl: string | null;
   imageUrl: string | null;
@@ -337,7 +270,6 @@ export interface PlantConfiguration {
   monthlySolarRadiation: MonthlySolarRadiation;
   equipmentBudgetSettings: EquipmentBudgetSettings;
   equipmentRows: EquipmentRow[];
-  solarRadiationSettings: SolarRadiationSettings;
   radioLink: RadioLinkConfiguration;
   cachedRadioAnalysis: unknown | null;
   derivedResults: DerivedResults;

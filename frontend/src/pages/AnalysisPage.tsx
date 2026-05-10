@@ -1,39 +1,29 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { CostComparisonChart, EnergyOverviewChart } from "../components/SystemCharts";
-import { HorizonChart } from "../components/HorizonChart";
-import { PanoramicHorizon } from "../components/PanoramicHorizon";
-import { SolarPositionChart } from "../components/SolarPositionChart";
-import { BatteryFrequencyChart, SocHistogramChart, ReliabilityKPIPanel } from "../components/ReliabilityCharts";
-import { useHorizonProfile } from "../lib/horizonStore";
-import { fetchHourlyClimateYear } from "../lib/metClient";
-import { hourlyIrradianceForYear } from "../lib/solarEngine";
-import { simulateBattery, computeReliabilityMetrics } from "../lib/batterySimulator";
-import type { ReliabilityMetrics } from "../types";
 import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
-import WorkspaceSection from "../components/WorkspaceSection";
+import EditorialSection from "../components/EditorialSection";
+import KpiStrip from "../components/KpiStrip";
 import { API_ENDPOINTS, STORAGE_KEYS } from "../constants";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage, translateDynamic } from "../i18n";
 import {
-  workspaceBodyMutedClassName,
   workspaceContentCategoryClassName,
-  workspaceContentTitleClassName,
   workspaceContentValueBaseClassName,
   workspaceContentValueClassName,
-  workspaceMetaClassName,
+  workspaceOverlineClassName,
   workspacePageClassName,
   workspaceTitleClassName
 } from "../styles/workspace";
 import { BackupSourceName, CostComparisonItem, MonthlyEnergyBalanceRow, ValidationErrors } from "../types";
 import { formatNumber } from "../utils/format";
-import { buildAiReportPayload, openReportWindow } from "../utils/report";
+import { buildAiReportPayload, openReportWindow, type AiReportFields } from "../utils/report";
 import { calculateRecommendation } from "../utils/recommendation";
 import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
 
 const blockerLinkClass =
-  "rounded-lg border border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] px-4 py-2 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-[var(--hg-accent)] transition hover:bg-[var(--hg-surface-2)]";
+  "inline-flex min-h-[44px] items-center rounded-lg border border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] px-4 py-2.5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] text-[var(--hg-accent)] transition hover:bg-[var(--hg-surface-2)]";
 
 const analysisMetricTitleClassName = workspaceContentCategoryClassName;
 const analysisMetricValueBaseClassName = workspaceContentValueBaseClassName;
@@ -46,13 +36,15 @@ const ROBUST_REGULATION_RE = /robust reguleringskum/i;
 const WHITESPACE_RE = /\s+/g;
 const MAIN_SOLUTION_PARTS_RE = /^(.*?)(?: med (.*?))?(?: \((.*)\))?$/;
 const QUESTION_KEY_RE = /^q\d+/i;
-
-const PVGIS_DETAILED_MODE_ENABLED = false;
+const ACCESS_HASH_RE = /^[a-f0-9]{64}$/;
 
 async function getAiExportHash(promptText: string) {
-  const storedHash = window.sessionStorage.getItem(STORAGE_KEYS.AI_EXPORT_HASH);
-  if (storedHash) {
+  const storedHash = window.sessionStorage.getItem(STORAGE_KEYS.AI_EXPORT_HASH)?.trim().toLowerCase() ?? "";
+  if (ACCESS_HASH_RE.test(storedHash)) {
     return storedHash;
+  }
+  if (storedHash) {
+    window.sessionStorage.removeItem(STORAGE_KEYS.AI_EXPORT_HASH);
   }
 
   const accessCode = window.prompt(promptText);
@@ -80,13 +72,12 @@ function InfoRow({
   const valueClassName = `${analysisMetricValueClassName} text-left sm:text-right`;
 
   return (
-    <div className="grid grid-cols-1 items-baseline gap-1 border-t border-slate-200 py-3 first:border-t-0 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-4">
+    <div className="grid grid-cols-1 items-baseline gap-1 border-t border-[var(--hg-hairline-2)] py-3 first:border-t-0 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-4">
       <span className={labelClassName}>{label}</span>
       <span className={valueClassName}>{value}</span>
     </div>
   );
 }
-
 function splitMainSolution(solution: string) {
   const normalized = solution
     .trim()
@@ -130,7 +121,6 @@ function InfoColumn({
     </div>
   );
 }
-
 function DetailGroupsPanel({
   groups
 }: {
@@ -139,7 +129,7 @@ function DetailGroupsPanel({
   return (
     <div className="grid gap-6 md:grid-cols-3 md:gap-8">
       {groups.map((group, index) => (
-        <div key={group.title} className={index === 0 ? "" : "md:border-l md:border-slate-200 md:pl-8"}>
+        <div key={group.title} className={index === 0 ? "" : "md:border-l md:border-[var(--hg-hairline)] md:pl-8"}>
           <h3 className={analysisMetricTitleClassName}>{group.title}</h3>
           <div className="mt-3 space-y-2">
             {group.items.length === 0 ? (
@@ -148,7 +138,7 @@ function DetailGroupsPanel({
               group.items.map((item, itemIndex) => (
                 <div
                   key={`${group.title}-${itemIndex}`}
-                  className="border-t border-slate-200 pt-2 first:border-t-0 first:pt-0"
+                  className="border-t border-[var(--hg-hairline)] pt-2 first:border-t-0 first:pt-0"
                 >
                   <p className={analysisMetricValueClassName}>
                     {item.endsWith(".") ? item : `${item}.`}
@@ -162,16 +152,15 @@ function DetailGroupsPanel({
     </div>
   );
 }
-
 function MonthlyTable({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
   const { t } = useLanguage();
 
   return (
     <>
-      <div className="hidden overflow-hidden rounded-lg border border-slate-200 lg:block">
-        <table className="w-full table-fixed divide-y divide-slate-200">
-          <thead className="bg-slate-50">
-            <tr className={`${analysisMetricTitleClassName} text-left`}>
+      <div className="hidden lg:block">
+        <table className="w-full table-fixed border-collapse">
+          <thead>
+            <tr className={`${analysisMetricTitleClassName} border-y border-[var(--hg-hairline)] text-left bg-[var(--hg-surface-2)]`}>
               <th className="px-4 py-3">{t("analysis.month")}</th>
               <th className="px-4 py-3 text-right">{t("analysis.sun")}</th>
               <th className="px-4 py-3 text-right">{t("analysis.load")}</th>
@@ -180,20 +169,16 @@ function MonthlyTable({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
               <th className="px-4 py-3 text-right">{t("analysis.cost")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 bg-white">
+          <tbody>
             {rows.map((row) => (
-              <tr key={row.month}>
+              <tr key={row.month} className="border-b border-[var(--hg-hairline-2)]">
                 <td className="px-4 py-3">
                   <p className={analysisMetricTitleClassName}>{t(`month.${row.month}`)}</p>
                   <p className={analysisMetricValueClassName}>{row.daysInMonth} {t("analysis.days")}</p>
                 </td>
                 <td className={`px-4 py-3 text-right ${analysisMetricValueClassName}`}>{formatNumber(row.solarProductionKWh)} kWh</td>
                 <td className={`px-4 py-3 text-right ${analysisMetricValueClassName}`}>{formatNumber(row.loadDemandKWh)} kWh</td>
-                <td
-                  className={`px-4 py-3 text-right ${analysisMetricValueBaseClassName} ${
-                    row.energyBalanceKWh >= 0 ? "text-emerald-700" : "text-orange-700"
-                  }`}
-                >
+                <td className={`px-4 py-3 text-right ${analysisMetricValueBaseClassName} ${row.energyBalanceKWh >= 0 ? "text-[var(--hg-ok)]" : "text-[var(--hg-warn)]"}`}>
                   {formatNumber(row.energyBalanceKWh)} kWh
                 </td>
                 <td className={`px-4 py-3 text-right ${analysisMetricValueClassName}`}>{formatNumber(row.fuelLiters)} l</td>
@@ -206,8 +191,8 @@ function MonthlyTable({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
 
       <div className="space-y-3 lg:hidden">
         {rows.map((row) => (
-          <div key={row.month} className="rounded-lg border border-slate-200 p-3">
-            <div className="flex items-baseline justify-between gap-3 border-b border-slate-200 pb-2">
+          <div key={row.month} className="border-t border-[var(--hg-hairline-2)] pt-3 first:border-t-0 first:pt-0">
+            <div className="flex items-baseline justify-between gap-3 border-b border-[var(--hg-hairline)] pb-2">
               <p className={analysisMetricTitleClassName}>{t(`month.${row.month}`)}</p>
               <p className={`${analysisMetricValueClassName} text-right`}>{row.daysInMonth} {t("analysis.days")}</p>
             </div>
@@ -218,7 +203,7 @@ function MonthlyTable({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
                 {
                   label: t("analysis.balance"),
                   value: `${formatNumber(row.energyBalanceKWh)} kWh`,
-                  tone: `${analysisMetricValueBaseClassName} ${row.energyBalanceKWh >= 0 ? "text-brand-700" : "text-rose-700"}`
+                  tone: `${analysisMetricValueBaseClassName} ${row.energyBalanceKWh >= 0 ? "text-[var(--hg-ok)]" : "text-[var(--hg-warn)]"}`
                 },
                 { label: t("analysis.fuel"), value: `${formatNumber(row.fuelLiters)} l`, tone: analysisMetricValueClassName },
                 { label: t("analysis.cost"), value: `${formatNumber(row.fuelCost)} kr`, tone: analysisMetricValueClassName }
@@ -240,10 +225,10 @@ function CostCard({ item }: { item: CostComparisonItem }) {
   const { t, language } = useLanguage();
 
   return (
-    <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+    <div className="border-t border-[var(--hg-hairline)] pt-4 first:border-t-0 first:pt-0">
       <div className="flex items-center justify-between gap-3">
         <h3 className={analysisMetricTitleClassName}>{translateDynamic(item.source, language)}</h3>
-        <p className={`${analysisMetricValueClassName} text-right`}>{formatNumber(item.toc)} kr</p>
+        <p className={`${analysisMetricValueClassName} text-right`}>{formatNumber(item.totalOwnershipCost)} kr</p>
       </div>
 
       <div className="mt-3">
@@ -263,7 +248,7 @@ function LifetimePanel({ items }: { items: CostComparisonItem[] }) {
 
   return (
     <div>
-      <div className="grid gap-0 md:grid-cols-2 md:divide-x md:divide-slate-200">
+      <div className="grid gap-0 md:grid-cols-2 md:divide-x md:divide-[var(--hg-hairline)]">
         {items.map((item) => {
           const runtimeShare =
             item.technicalLifetimeHours > 0 ? (item.totalRuntimeHours / item.technicalLifetimeHours) * 100 : null;
@@ -290,32 +275,29 @@ function LifetimePanel({ items }: { items: CostComparisonItem[] }) {
   );
 }
 
-function ReserveSourceToggle({
-  value,
-  onChange
-}: {
-  value: BackupSourceName;
-  onChange: (value: BackupSourceName) => void;
-}) {
-  const options: BackupSourceName[] = ["Brenselcelle", "Dieselaggregat"];
-
+function ReserveSourceToggle({ value, onChange }: { value: BackupSourceName; onChange: (v: BackupSourceName) => void }) {
+  const options: BackupSourceName[] = ["FuelCell", "DieselGenerator"];
   const { t, language } = useLanguage();
 
   return (
     <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-      <p className={analysisMetricTitleClassName}>{t("analysis.reserveSourceForDisplay")}</p>
-      <div className="inline-flex w-full rounded-xl border border-slate-200 p-0.5 sm:w-auto sm:rounded-full sm:p-1">
+      <p className={`${workspaceOverlineClassName} text-[var(--hg-ink-2)]`}>{t("analysis.reserveSourceForDisplay")}</p>
+      <div
+        className="grid w-full rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] p-0.5 sm:w-auto"
+        style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+      >
         {options.map((option) => {
           const selected = value === option;
-
           return (
             <button
               key={option}
               type="button"
               onClick={() => onChange(option)}
               aria-pressed={selected}
-              className={`flex-1 rounded-lg px-2.5 py-1 transition sm:flex-initial sm:rounded-full sm:px-3.5 sm:py-1.5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] leading-[var(--hg-type-category-leading)] ${
-                selected ? "bg-slate-900 text-white" : "text-slate-950 hover:bg-slate-50 hover:text-slate-950"
+              className={`hg-mono flex items-center justify-center rounded-[5px] border px-2 py-1.5 text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-overline-tracking)] transition ${
+                selected
+                  ? "border-[var(--hg-accent)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
+                  : "border-transparent text-[var(--hg-ink-2)] hover:text-[var(--hg-ink)]"
               }`}
             >
               {translateDynamic(option, language)}
@@ -324,73 +306,6 @@ function ReserveSourceToggle({
         })}
       </div>
     </div>
-  );
-}
-
-function AnalysisRunStrip({
-  hasResults,
-  disabled,
-  onRun
-}: {
-  hasResults: boolean;
-  disabled: boolean;
-  onRun: () => void;
-}) {
-  return (
-    <section className="hg-card flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className={workspaceMetaClassName}>Beregning</p>
-        <p className={workspaceBodyMutedClassName}>
-          {hasResults ? "Resultatene er beregnet fra gjeldende inndata." : "Fyll ut manglende felt for å åpne anbefaling og energibilde."}
-        </p>
-      </div>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={onRun}
-        className="inline-flex items-center justify-center rounded-lg bg-[var(--hg-accent)] px-4 py-2 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-white transition hover:bg-[var(--hg-accent-2)] disabled:cursor-not-allowed disabled:opacity-45"
-      >
-        Oppdater beregning
-      </button>
-    </section>
-  );
-}
-
-function AnalysisKpiStrip({
-  annualEnergyKWh,
-  loadKWh,
-  reserveHours,
-  autonomyDays
-}: {
-  annualEnergyKWh: number | null;
-  loadKWh: number | null;
-  reserveHours: number | null;
-  autonomyDays: number | null;
-}) {
-  const items = [
-    { label: "Solproduksjon", value: annualEnergyKWh, unit: "kWh", sub: "per år" },
-    { label: "Last", value: loadKWh, unit: "kWh", sub: "per år" },
-    { label: "Reserve", value: reserveHours, unit: "t", sub: "per år" },
-    { label: "Autonomi", value: autonomyDays, unit: "dager", sub: "batteribank" }
-  ];
-
-  return (
-    <section className="hg-card grid overflow-hidden sm:grid-cols-2 xl:grid-cols-4">
-      {items.map((item, index) => (
-        <div key={item.label} className={`p-4 ${index === 0 ? "" : "border-t border-[var(--hg-hairline-2)] sm:border-l sm:border-t-0"}`}>
-          <p className={workspaceMetaClassName}>{item.label}</p>
-          <p className="mt-2 flex items-baseline gap-1">
-            <span className="hg-mono text-[1.65rem] font-[var(--hg-type-weight-bold)] tracking-[var(--hg-type-title-tracking)] text-[var(--hg-ink)]">
-              {item.value === null ? "-" : formatNumber(item.value, item.unit === "dager" ? 1 : 0)}
-            </span>
-            <span className="text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]">
-              {item.unit}
-            </span>
-          </p>
-          <p className={workspaceBodyMutedClassName}>{item.sub}</p>
-        </div>
-      ))}
-    </section>
   );
 }
 
@@ -405,19 +320,11 @@ export default function AnalysisPage() {
   const [reserveSourceOverrides, setReserveSourceOverrides] = useState<Partial<Record<string, BackupSourceName>>>({});
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
-  const horizonProfile = useHorizonProfile();
-  const [reliabilityMetrics, setReliabilityMetrics] = useState<ReliabilityMetrics | null>(null);
-  const [reliabilityRunning, setReliabilityRunning] = useState(false);
-  const [reliabilityError, setReliabilityError] = useState<string | null>(null);
-  const lastReliabilityRunKeyRef = useRef<string | null>(null);
   const autonomyResultLabel =
     activeDraft.systemParameters.batteryMode === "ah" ? t("analysis.autonomyFromBattery") : t("analysis.autonomy");
-  const engineMode = activeDraft.engineMode ?? "standard";
-  const isCalculatorMode = engineMode === "standard";
+  const engineMode = activeDraft.engineMode ?? "calculator";
+  const isCalculatorMode = engineMode === "calculator";
   const isGuidedMode = !isCalculatorMode;
-  const showAdvancedSimulation = PVGIS_DETAILED_MODE_ENABLED && engineMode === "detailed";
-  const showReliabilitySimulation = showAdvancedSimulation;
-  const showHorizonProfile = showAdvancedSimulation;
   const usesFoundationQuestions = isGuidedMode;
 
   const allValidationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft]);
@@ -464,7 +371,7 @@ export default function AnalysisPage() {
   const derivedResults = liveOutputs?.derivedResults ?? null;
   const hasBackupSource = activeDraft.systemParameters.hasBackupSource === true;
   const recommendedReserveSource: BackupSourceName =
-    derivedResults?.systemRecommendation.secondarySource === "Brenselcelle" ? "Brenselcelle" : "Dieselaggregat";
+    derivedResults?.systemRecommendation.secondarySource === "FuelCell" ? "FuelCell" : "DieselGenerator";
   const activeReserveSource = reserveSourceOverrides[activeDraft.id] ?? recommendedReserveSource;
   const handleReserveSourceChange = useCallback(
     (value: BackupSourceName) => {
@@ -476,7 +383,7 @@ export default function AnalysisPage() {
   );
 
   const activeReserveScenario = derivedResults
-    ? activeReserveSource === "Brenselcelle"
+    ? activeReserveSource === "FuelCell"
       ? derivedResults.reserveScenarios.fuelCell
       : derivedResults.reserveScenarios.diesel
     : null;
@@ -492,7 +399,7 @@ export default function AnalysisPage() {
       ? activeReserveScenario.secondarySourcePowerW
       : derivedResults?.systemRecommendation.secondarySourcePowerW ?? 0;
   const visibleReserveSourceValue =
-    hasBackupSource ? activeReserveSource : derivedResults?.systemRecommendation.secondarySource ?? "Ikke beregnet";
+    hasBackupSource ? activeReserveSource : derivedResults?.systemRecommendation.secondarySource ?? "NotComputed";
 
   const handleSave = () => {
     if (foundationReady && hasSystemDetails) {
@@ -510,11 +417,11 @@ export default function AnalysisPage() {
 
     setIsGeneratingReport(true);
     setReportError(null);
-    let aiRecommendationText: string | null = null;
+    let aiRecommendationText: string | AiReportFields | null = null;
 
     try {
-      const tilgangskodeHash = await getAiExportHash(t("analysis.aiReportAccessCode"));
-      if (!tilgangskodeHash) {
+      const accessCodeHash = await getAiExportHash(t("analysis.aiReportAccessCode"));
+      if (!accessCodeHash) {
         setIsGeneratingReport(false);
         return;
       }
@@ -535,22 +442,31 @@ export default function AnalysisPage() {
         },
         body: JSON.stringify({
           ...payload,
-          tilgangskodeHash
+          accessCodeHash
         })
       });
-      const responseBody = (await response.json().catch(() => null)) as { error?: string; text?: string } | null;
+      const responseBody = (await response.json().catch(() => null)) as {
+        error?: string;
+        text?: string;
+        fields?: AiReportFields;
+      } | null;
 
       if (response.status === 403) {
         window.sessionStorage.removeItem(STORAGE_KEYS.AI_EXPORT_HASH);
         throw new Error(responseBody?.error || "Ugyldig tilgangskode.");
       }
 
-      if (!response.ok || !responseBody?.text?.trim()) {
+      const hasFieldText =
+        responseBody?.fields &&
+        typeof responseBody.fields === "object" &&
+        !Array.isArray(responseBody.fields) &&
+        Object.values(responseBody.fields).some((value) => typeof value === "string" && value.trim());
+      if (!response.ok || (!responseBody?.text?.trim() && !hasFieldText)) {
         throw new Error(responseBody?.error || "AI-generering feilet.");
       }
 
-      aiRecommendationText = responseBody.text.trim();
-      openReportWindow(
+      aiRecommendationText = hasFieldText ? responseBody.fields ?? null : responseBody.text?.trim() ?? null;
+      await openReportWindow(
         activeDraft,
         recommendation,
         aiRecommendationText,
@@ -571,193 +487,27 @@ export default function AnalysisPage() {
     setIsGeneratingReport(false);
   };
 
-  const reliabilityCanRun =
-    showReliabilitySimulation &&
-    Boolean(derivedResults) &&
-    activeDraft.solarRadiationSettings.mode === "auto" &&
-    activeDraft.solarRadiationSettings.lat !== "" &&
-    activeDraft.solarRadiationSettings.lon !== "" &&
-    activeDraft.solarRadiationSettings.tilt !== "" &&
-    activeDraft.solarRadiationSettings.azimuth !== "" &&
-    activeDraft.solar.panelPowerWp !== "" &&
-    activeDraft.solar.panelCount !== "" &&
-    activeDraft.solar.systemEfficiency !== "" &&
-    activeDraft.battery.nominalVoltage !== "" &&
-    activeDraft.battery.maxDepthOfDischarge !== "" &&
-    !reliabilityRunning;
-
-  const reliabilityRunKey = useMemo(() => {
-    if (!showReliabilitySimulation || !derivedResults) {
-      return null;
-    }
-
-    return JSON.stringify({
-      draftId: activeDraft.id,
-      mode: activeDraft.solarRadiationSettings.mode,
-      lat: activeDraft.solarRadiationSettings.lat,
-      lon: activeDraft.solarRadiationSettings.lon,
-      tilt: activeDraft.solarRadiationSettings.tilt,
-      azimuth: activeDraft.solarRadiationSettings.azimuth,
-      heightOffset: activeDraft.solarRadiationSettings.heightOffset,
-      panelPowerWp: activeDraft.solar.panelPowerWp,
-      panelCount: activeDraft.solar.panelCount,
-      systemEfficiency: activeDraft.solar.systemEfficiency,
-      voltage: activeDraft.battery.nominalVoltage,
-      maxDepthOfDischarge: activeDraft.battery.maxDepthOfDischarge,
-      batteryCapacityAh: derivedResults.systemRecommendation.batteryCapacityAh,
-      totalWhPerDay: derivedResults.totalWhPerDay,
-      hasBackupSource,
-      activeReserveSource,
-    });
-  }, [
-    activeDraft.battery.maxDepthOfDischarge,
-    activeDraft.battery.nominalVoltage,
-    activeDraft.id,
-    activeDraft.solar.panelCount,
-    activeDraft.solar.panelPowerWp,
-    activeDraft.solar.systemEfficiency,
-    activeDraft.solarRadiationSettings.azimuth,
-    activeDraft.solarRadiationSettings.heightOffset,
-    activeDraft.solarRadiationSettings.lat,
-    activeDraft.solarRadiationSettings.lon,
-    activeDraft.solarRadiationSettings.mode,
-    activeDraft.solarRadiationSettings.tilt,
-    derivedResults,
-    showReliabilitySimulation,
-    hasBackupSource,
-    activeReserveSource,
-  ]);
-
-  const runReliabilitySimulation = async () => {
-    if (!showReliabilitySimulation || !derivedResults) {
-      return;
-    }
-
-    setReliabilityRunning(true);
-    setReliabilityError(null);
-    setReliabilityMetrics(null);
-
-    try {
-      const s = activeDraft.solarRadiationSettings;
-      const lat = Number(s.lat);
-      const lon = Number(s.lon);
-      const tilt = Number(s.tilt);
-      const azimuth = Number(s.azimuth);
-      const heightOffset = s.heightOffset !== "" ? Number(s.heightOffset) : 0;
-
-      const panelPowerWp = Number(activeDraft.solar.panelPowerWp);
-      const panelCount = Number(activeDraft.solar.panelCount);
-      const systemEfficiency = Number(activeDraft.solar.systemEfficiency);
-
-      const voltage = Number(activeDraft.battery.nominalVoltage);
-      const maxDoD = Number(activeDraft.battery.maxDepthOfDischarge);
-
-      const batteryCapacityAh = derivedResults.systemRecommendation.batteryCapacityAh;
-      const batteryCapacityWh = batteryCapacityAh * voltage;
-
-      const totalWhPerDay = derivedResults.totalWhPerDay;
-      const loadWhPerHour = totalWhPerDay / 24;
-
-      if (batteryCapacityWh <= 0 || loadWhPerHour <= 0) {
-        setReliabilityError("Batteri- og lastdata mangler. Lagre konfigurasjonen først.");
-        setReliabilityRunning(false);
-        return;
-      }
-
-      const climate = await fetchHourlyClimateYear(lat, lon);
-      const { generateHorizonProfile } = await import("../lib/horizonProfile");
-      const hp = horizonProfile ?? await generateHorizonProfile(lat, lon, heightOffset);
-
-      const irradiance = hourlyIrradianceForYear({
-        latDeg: lat,
-        lonDeg: lon,
-        tiltDeg: tilt,
-        orientDeg: azimuth,
-        hourlyGhi: climate.ghi,
-        hourlyDhi: climate.dhi,
-        hourlyTemp: climate.temperature,
-        hourlyWind: climate.windSpeed,
-        numHours: climate.length,
-        year: climate.year,
-        utcDayOfYear: climate.utcDayOfYear,
-        utcHour: climate.utcHour,
-        horizonProfile: hp
-      });
-
-      // Resolve backup source config for the reliability simulation
-      const backupSourceConfig = hasBackupSource
-        ? activeReserveSource === "Brenselcelle"
-          ? activeDraft.fuelCell
-          : activeDraft.diesel
-        : null;
-
-      const sim = simulateBattery({
-        hourlyGtiWm2: irradiance.gtiWm2,
-        hourlyEfficiency: irradiance.efficiency,
-        panelCount,
-        panelPowerWp,
-        systemEfficiency,
-        batteryCapacityWh,
-        maxDepthOfDischarge: maxDoD,
-        loadWhPerHour,
-        numHours: climate.length,
-        year: climate.year,
-        hasBackupSource,
-        backupPowerW: backupSourceConfig ? Number(backupSourceConfig.powerW) || 0 : 0,
-        backupFuelPerKWh: backupSourceConfig ? Number(backupSourceConfig.fuelConsumptionPerKWh) || 0 : 0,
-      });
-
-      setReliabilityMetrics(computeReliabilityMetrics(sim, batteryCapacityWh, maxDoD, loadWhPerHour));
-    } catch (e) {
-      setReliabilityError(e instanceof Error ? e.message : "Ukjent feil under simulering.");
-    } finally {
-      setReliabilityRunning(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!showReliabilitySimulation) {
-      lastReliabilityRunKeyRef.current = null;
-      setReliabilityMetrics(null);
-      setReliabilityError(null);
-      setReliabilityRunning(false);
-      return;
-    }
-
-    if (!reliabilityCanRun || !reliabilityRunKey) {
-      return;
-    }
-
-    if (lastReliabilityRunKeyRef.current === reliabilityRunKey) {
-      return;
-    }
-
-    lastReliabilityRunKeyRef.current = reliabilityRunKey;
-    void runReliabilitySimulation();
-  }, [reliabilityCanRun, reliabilityRunKey, showReliabilitySimulation]);
-
   const foundationBlockers =
     isGuidedMode && (!foundationReady || !recommendation) && usesFoundationQuestions
       ? [
           {
             label: t("main.title"),
-            path: language === "en" ? "/projectbasis" : "/prosjektgrunnlag",
+            path: "/prosjektgrunnlag",
             count: countMatchingErrors(foundationErrors, foundationErrorPredicate)
           }
         ].filter((item) => item.count > 0)
       : [];
 
-  const solutionLead = recommendation ? splitMainSolution(d(recommendation.hovudloysing)) : null;
+  const solutionLead = recommendation ? splitMainSolution(d(recommendation.mainSolution)) : null;
   const detailBlockers = [
     {
       label: t("analysis.technicalParameters"),
-      path: language === "en" ? "/systems" : "/parametere",
+      path: "/parametere",
       count: countMatchingErrors(
         detailErrors,
         (key) =>
           key.startsWith("systemParameters.") ||
           key.startsWith("solar.") ||
-          key.startsWith("solarRadiationSettings.") ||
           key.startsWith("battery.") ||
           key.startsWith("fuelCell.") ||
           key.startsWith("diesel.") ||
@@ -767,7 +517,7 @@ export default function AnalysisPage() {
     },
     {
       label: t("analysis.powerLabel"),
-      path: language === "en" ? "/components" : "/komponenter",
+      path: "/komponenter",
       count: countMatchingErrors(detailErrors, (key) => key.startsWith("equipmentRows."))
     }
   ].filter((item) => item.count > 0);
@@ -848,44 +598,56 @@ export default function AnalysisPage() {
         }
       />
 
-      <AnalysisRunStrip hasResults={Boolean(derivedResults)} disabled={!foundationReady || !hasSystemDetails} onRun={handleSave} />
-
-      <AnalysisKpiStrip
-        annualEnergyKWh={visibleAnnualTotals ? visibleAnnualTotals.annualSolarProductionKWh : null}
-        loadKWh={visibleAnnualTotals ? visibleAnnualTotals.annualLoadDemandKWh : null}
-        reserveHours={visibleAnnualTotals ? visibleAnnualTotals.annualSecondaryRuntimeHours : null}
-        autonomyDays={derivedResults ? derivedResults.systemRecommendation.batteryAutonomyDays : null}
-      />
+      <KpiStrip items={[
+        {
+          kicker: "ENERGIBALANSE · ÅR",
+          value: visibleAnnualTotals
+            ? formatNumber(visibleAnnualTotals.annualEnergyBalanceKWh, 0)
+            : "-",
+          unit: "kWh",
+        },
+        { kicker: "FORBRUK · ÅR", value: visibleAnnualTotals ? formatNumber(visibleAnnualTotals.annualLoadDemandKWh, 0) : "-", unit: "kWh" },
+        { kicker: "RESERVEDRIFT · ÅR", value: visibleAnnualTotals ? formatNumber(visibleAnnualTotals.annualSecondaryRuntimeHours, 0) : "-", unit: "t" },
+        { kicker: "BATTERIAUTONOMI", value: derivedResults ? formatNumber(derivedResults.systemRecommendation.batteryAutonomyDays, 1) : "-", unit: "dager" },
+      ]} />
 
       {derivedResults ? (
         <>
           {showRecommendationContent ? recommendationSection : null}
 
-          <WorkspaceSection
+          <EditorialSection
             title={t("analysis.systemAndReserve")}
             description={t("analysis.systemAndReserveDesc")}
             actions={hasBackupSource ? <ReserveSourceToggle value={activeReserveSource} onChange={handleReserveSourceChange} /> : undefined}
           >
             {isGuidedMode ? (
-              <div className="grid gap-6 lg:grid-cols-2 lg:gap-0 lg:divide-x lg:divide-slate-200">
+              <div className="grid gap-6 lg:grid-cols-2 lg:gap-0 lg:divide-x lg:divide-[var(--hg-hairline)]">
                 <InfoColumn title={t("analysis.system")} items={systemSummaryItems} className="lg:pr-8" />
                 <InfoColumn title={t("analysis.reserve")} items={reserveSummaryItems} className="lg:pl-8" />
               </div>
             ) : (
               <InfoColumn title={t("analysis.reserve")} items={reserveSummaryItems} />
             )}
-          </WorkspaceSection>
+          </EditorialSection>
 
-          <WorkspaceSection
+          <EditorialSection
             title={t("analysis.energyAndConsumption")}
             description={t("analysis.energyAndConsumptionDesc")}
           >
-            <div className="hidden md:grid md:grid-cols-3 md:divide-x md:divide-slate-200">
-              <div className="divide-y divide-slate-200 md:px-6">
+            <div className="hidden md:grid md:grid-cols-3 md:divide-x md:divide-[var(--hg-hairline)]">
+              <div className="divide-y divide-[var(--hg-hairline)] md:px-6">
                 <div className="py-4 text-center first:pt-0">
                   <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.solarPerYear")}</p>
                   <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
                     {formatNumber(visibleAnnualTotals?.annualSolarProductionKWh ?? 0)} kWh
+                  </p>
+                </div>
+                <div className="py-4 text-center">
+                  <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.reserveProductionPerYear")}</p>
+                  <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
+                    {formatNumber(
+                      ((visibleAnnualTotals?.annualSecondaryRuntimeHours ?? 0) * visibleSecondarySourcePowerW) / 1000
+                    )} kWh
                   </p>
                 </div>
                 <div className="py-4 text-center last:pb-0">
@@ -895,7 +657,7 @@ export default function AnalysisPage() {
                   </p>
                 </div>
               </div>
-              <div className="divide-y divide-slate-200 md:px-6">
+              <div className="divide-y divide-[var(--hg-hairline)] md:px-6">
                 <div className="py-4 text-center first:pt-0">
                   <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.energyBalancePerYear")}</p>
                   <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
@@ -909,7 +671,7 @@ export default function AnalysisPage() {
                   </p>
                 </div>
               </div>
-              <div className="divide-y divide-slate-200 md:px-6">
+              <div className="divide-y divide-[var(--hg-hairline)] md:px-6">
                 <div className="py-4 text-center first:pt-0">
                   <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.fuelPerYear")}</p>
                   <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
@@ -925,9 +687,10 @@ export default function AnalysisPage() {
               </div>
             </div>
 
-            <div className="divide-y divide-slate-200 md:hidden">
+            <div className="divide-y divide-[var(--hg-hairline)] md:hidden">
               {[
                 { label: t("analysis.solarPerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualSolarProductionKWh ?? 0)} kWh` },
+                { label: t("analysis.reserveProductionPerYearShort"), value: `${formatNumber(((visibleAnnualTotals?.annualSecondaryRuntimeHours ?? 0) * visibleSecondarySourcePowerW) / 1000)} kWh` },
                 { label: t("analysis.loadPerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualLoadDemandKWh ?? 0)} kWh` },
                 { label: t("analysis.balancePerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualEnergyBalanceKWh ?? 0)} kWh` },
                 { label: t("analysis.reservePerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualSecondaryRuntimeHours ?? 0)} h` },
@@ -941,112 +704,56 @@ export default function AnalysisPage() {
               ))}
             </div>
 
-            {showReliabilitySimulation ? (
-              <ReliabilitySection
-                metrics={reliabilityMetrics}
-                running={reliabilityRunning}
-                error={reliabilityError}
-                visible
-                embedded
-              />
-            ) : null}
-
-            <div className={showReliabilitySimulation ? "mt-6 border-t border-slate-200 pt-6" : "mt-6"}>
+            <div className="mt-6">
               <EnergyOverviewChart
                 rows={visibleMonthlyEnergyBalance}
                 backupSource={
                   hasBackupSource
                     ? activeReserveSource
-                    : derivedResults.systemRecommendation.secondarySource === "Ikke beregnet"
+                    : derivedResults.systemRecommendation.secondarySource === "NotComputed"
                       ? undefined
                       : derivedResults.systemRecommendation.secondarySource
                 }
               />
             </div>
+          </EditorialSection>
 
-            {showHorizonProfile && horizonProfile && (
-              <div className="mt-6">
-                <div className="mb-0 flex flex-col gap-4 border-b border-slate-200 pb-2 sm:flex-row sm:items-end sm:justify-between">
-                  <div className="min-w-0">
-                    <h2 className={workspaceContentTitleClassName}>Solposisjon</h2>
-                  </div>
-                </div>
-                <PanoramicHorizon
-                  profile={horizonProfile}
-                  latDeg={activeDraft.solarRadiationSettings.lat !== "" ? Number(activeDraft.solarRadiationSettings.lat) : 60}
-                  lonDeg={activeDraft.solarRadiationSettings.lon !== "" ? Number(activeDraft.solarRadiationSettings.lon) : 10}
-                  locationName={activeDraft.solarRadiationSettings.locationName || undefined}
-                />
-              </div>
-            )}
-
-            {showHorizonProfile && horizonProfile && (
-              <div className="mt-6">
-                <div className="mb-0 flex flex-col gap-4 border-b border-slate-200 pb-2 sm:flex-row sm:items-end sm:justify-between">
-                  <div className="min-w-0">
-                    <h2 className={workspaceContentTitleClassName}>
-                      Innfallsvinkel på panelet (tilt {activeDraft.solarRadiationSettings.tilt !== "" ? Number(activeDraft.solarRadiationSettings.tilt) : 30}°, azimut {activeDraft.solarRadiationSettings.azimuth !== "" ? Number(activeDraft.solarRadiationSettings.azimuth) : 180}°)
-                    </h2>
-                  </div>
-                </div>
-                <SolarPositionChart
-                  profile={horizonProfile}
-                  latDeg={activeDraft.solarRadiationSettings.lat !== "" ? Number(activeDraft.solarRadiationSettings.lat) : 60}
-                  lonDeg={activeDraft.solarRadiationSettings.lon !== "" ? Number(activeDraft.solarRadiationSettings.lon) : 10}
-                  tiltDeg={activeDraft.solarRadiationSettings.tilt !== "" ? Number(activeDraft.solarRadiationSettings.tilt) : 30}
-                  azimuthDeg={activeDraft.solarRadiationSettings.azimuth !== "" ? Number(activeDraft.solarRadiationSettings.azimuth) : 180}
-                />
-              </div>
-            )}
-
-            {showHorizonProfile && horizonProfile && (
-              <div className="mt-6">
-                <div className="mb-0 flex flex-col gap-4 border-b border-slate-200 pb-2 sm:flex-row sm:items-end sm:justify-between">
-                  <div className="min-w-0">
-                    <h2 className={workspaceContentTitleClassName}>Horisontprofil</h2>
-                  </div>
-                </div>
-                <HorizonChart profile={horizonProfile} latDeg={activeDraft.solarRadiationSettings.lat !== "" ? Number(activeDraft.solarRadiationSettings.lat) : undefined} />
-              </div>
-            )}
-          </WorkspaceSection>
-
-          <WorkspaceSection
+          <EditorialSection
             title={t("analysis.monthByMonth")}
             description={t("analysis.monthByMonthDesc")}
           >
             <MonthlyTable rows={visibleMonthlyEnergyBalance} />
-          </WorkspaceSection>
+          </EditorialSection>
 
-          <WorkspaceSection
+          <EditorialSection
             title={t("analysis.reserveLifetime")}
             description={t("analysis.reserveLifetimeDesc")}
           >
             <LifetimePanel items={derivedResults.costComparison.alternatives} />
-          </WorkspaceSection>
+          </EditorialSection>
 
-          <WorkspaceSection
+          <EditorialSection
             title={t("analysis.tocComparison")}
             description={t("analysis.tocComparisonDesc")}
           >
             <div className="space-y-6">
               <CostComparisonChart items={derivedResults.costComparison.alternatives} />
 
-              <div className="border-t border-slate-200 pt-5 md:grid md:gap-0 md:grid-cols-2 md:divide-x md:divide-slate-200">
+              <div className="border-t border-[var(--hg-hairline)] pt-5 md:grid md:gap-0 md:grid-cols-2 md:divide-x md:divide-[var(--hg-hairline)]">
                 {derivedResults.costComparison.alternatives.map((item, index) => (
                   <div
                     key={item.source}
-                    className={`${index === 0 ? "pb-5 md:pb-0 md:pr-6" : "border-t border-slate-200 pt-5 md:border-t-0 md:pt-0 md:pl-6"}`}
+                    className={`${index === 0 ? "pb-5 md:pb-0 md:pr-6" : "border-t border-[var(--hg-hairline)] pt-5 md:border-t-0 md:pt-0 md:pl-6"}`}
                   >
                     <CostCard item={item} />
                   </div>
                 ))}
               </div>
             </div>
-          </WorkspaceSection>
+          </EditorialSection>
 
           {showRecommendationContent && recommendation ? (
-            <WorkspaceSection
+            <EditorialSection
               title={t("analysis.reasoningTitle")}
               description={t("analysis.reasoningDesc")}
             >
@@ -1055,12 +762,12 @@ export default function AnalysisPage() {
                   groups={[
                     {
                       title: t("analysis.reasoning"),
-                      items: recommendation.grunngiving.map(d),
+                      items: recommendation.justification.map(d),
                       emptyText: t("analysis.noReasoning")
                     },
                     {
                       title: t("analysis.additionalRequirements"),
-                      items: recommendation.tilleggskrav.map(d),
+                      items: recommendation.additionalRequirements.map(d),
                       emptyText: t("analysis.noAdditionalReq")
                     },
                     {
@@ -1071,17 +778,17 @@ export default function AnalysisPage() {
                   ]}
                 />
               </div>
-            </WorkspaceSection>
+            </EditorialSection>
           ) : null}
 
-          {reportError ? <p className={`${analysisMetricValueClassName} text-red-600`}>{reportError}</p> : null}
+          {reportError ? <p className={`${analysisMetricValueClassName} text-[var(--hg-warn)]`}>{reportError}</p> : null}
         </>
       ) : (
         <>
           {showRecommendationContent ? recommendationSection : null}
 
           {isGuidedMode && missingBlockers.length > 0 ? (
-            <WorkspaceSection
+            <EditorialSection
               title={t("analysis.missingForFull")}
               description={t("analysis.missingForFullDesc")}
             >
@@ -1092,80 +799,24 @@ export default function AnalysisPage() {
                   </NavLink>
                 ))}
               </div>
-            </WorkspaceSection>
-          ) : null}
+            </EditorialSection>
+          ) : (
+            <EditorialSection
+              title="Klar for analyse"
+              description="Kjør berekning når prosjektgrunnlag, tekniske parameterar og komponentar er registrerte."
+            >
+              <div className="flex flex-wrap gap-3">
+                <NavLink to="/parametere" className={blockerLinkClass}>
+                  Tekniske parameterar
+                </NavLink>
+                <NavLink to="/komponenter" className={blockerLinkClass}>
+                  Komponentar
+                </NavLink>
+              </div>
+            </EditorialSection>
+          )}
         </>
       )}
     </main>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Reliability Analysis Section (hourly battery simulation)
-// ---------------------------------------------------------------------------
-
-function ReliabilitySection({
-  metrics,
-  running,
-  error,
-  visible,
-  embedded = false
-}: {
-  metrics: ReliabilityMetrics | null;
-  running: boolean;
-  error: string | null;
-  visible: boolean;
-  embedded?: boolean;
-}) {
-  const { t } = useLanguage();
-  if (!visible) return null;
-
-  const content = (
-    <div className="space-y-6">
-
-      {metrics && (
-        <>
-          <ReliabilityKPIPanel metrics={metrics} />
-          <div className="grid gap-6 lg:grid-cols-2">
-            <BatteryFrequencyChart metrics={metrics} />
-            <SocHistogramChart metrics={metrics} />
-          </div>
-        </>
-      )}
-    </div>
-  );
-
-  if (embedded) {
-    return (
-      <div className="mt-6 border-t border-slate-200 pt-6">
-        <div className="mb-5 flex flex-col gap-4 border-b border-slate-200 pb-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className={workspaceContentTitleClassName}>{t("reliability.title")}</h2>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 text-[length:var(--hg-type-meta-size)]">
-            {running ? <span className="font-[var(--hg-type-weight-semibold)] text-sky-700">{t("reliability.running")}</span> : null}
-            {error && <span className="text-red-600">{error}</span>}
-          </div>
-        </div>
-        {content}
-      </div>
-    );
-  }
-
-  return (
-    <WorkspaceSection
-      title={t("reliability.title")}
-      description={t("reliability.description")}
-      actions={
-        <div className="flex items-center gap-3 text-[length:var(--hg-type-meta-size)]">
-          {running ? <span className="font-[var(--hg-type-weight-semibold)] text-sky-700">{t("reliability.running")}</span> : null}
-          {error && <span className="text-red-600">{error}</span>}
-        </div>
-      }
-    >
-      {content}
-    </WorkspaceSection>
   );
 }

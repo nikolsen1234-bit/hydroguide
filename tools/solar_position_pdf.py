@@ -8,7 +8,7 @@ All three metrics in one chart with dual Y-axes:
   Left  axis: Altitude & Incidence (0-90°)
   Right axis: Azimuth (0-360°)
 
-Uses PVGIS 6.0 / NOAA solar position algorithms (same as solarEngine.ts).
+Uses PVGIS 6.0 / NOAA solar position algorithms.
 
 Usage:
     python solar_position_pdf.py --lat 60.62 --lon 5.80 --tilt 45 --azimuth 180
@@ -61,7 +61,7 @@ COL_GRID = Color(0.88, 0.91, 0.94, 1)
 COL_GRID_MINOR = Color(0.92, 0.94, 0.96, 1)
 
 # ---------------------------------------------------------------------------
-# NOAA Solar Position (same as solarEngine.ts / horizon_pdf.py)
+# NOAA Solar Position (same as horizon_pdf.py)
 # ---------------------------------------------------------------------------
 
 def fractional_year(doy, hour, days_in_year=365):

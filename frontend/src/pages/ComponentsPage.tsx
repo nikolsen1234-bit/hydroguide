@@ -1,5 +1,6 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
-import WorkspaceHeader from "../components/WorkspaceHeader";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
+import KpiStrip, { type KpiStripItem } from "../components/KpiStrip";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import {
@@ -8,17 +9,28 @@ import {
   workspacePageClassName,
   workspaceSectionTitleClassName
 } from "../styles/workspace";
-import type { EditableNumber, EquipmentRow } from "../types";
+import type { BudgetDisplayUnit, EditableNumber, EquipmentRow } from "../types";
+import { openBomReportWindow } from "../utils/bomReport";
 import { formatNumber } from "../utils/format";
 import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
 
-type ComponentUnit = "wh" | "ah";
 const componentRowSeparatorClassName = "border-b border-[var(--hg-hairline)]";
+const componentTableCellClassName = `${componentRowSeparatorClassName} px-0 py-3 align-middle`;
+const componentNumberCellClassName = `hg-mono ${componentTableCellClassName} text-right font-[var(--hg-type-weight-bold)]`;
+const componentTextAreaClassName =
+  "mt-1 w-full resize-y font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none transition focus:border-[var(--hg-accent-2)]";
+const componentDeleteButtonClassName =
+  "inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-rose-50 px-3 text-[length:var(--hg-type-badge-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-button-tracking)] text-rose-700";
+type UpdateEquipmentRow = <K extends keyof EquipmentRow>(id: string, key: K, value: EquipmentRow[K]) => void;
 
-function toNumber(value: EditableNumber): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
+const equipmentNumberFields = [
+  { key: "powerW", label: "Effekt", unit: "W", errorKey: "powerW" },
+  { key: "runtimeHoursPerDay", label: "Drift", unit: "t/d", errorKey: "runtimeHoursPerDay" },
+  { key: "purchaseCost", label: "Innkjøp", unit: "kr" },
+  { key: "lifetimeYears", label: "Levetid", unit: "år" },
+  { key: "annualMaintenance", label: "Vedlikehald", unit: "kr/år" }
+] as const;
 
 function StatusPill({
   active,
@@ -33,7 +45,7 @@ function StatusPill({
     <button
       type="button"
       onClick={onClick}
-      className={`hg-mono inline-flex h-7 min-w-[58px] items-center justify-center gap-2 rounded-full border px-3 text-[11px] font-[var(--hg-type-weight-bold)] transition ${
+      className={`hg-mono inline-flex h-7 min-w-[58px] items-center justify-center gap-2 rounded-full border px-3 text-[length:var(--hg-type-badge-size)] font-[var(--hg-type-weight-bold)] transition ${
         active
           ? "border-emerald-700 bg-emerald-50 text-emerald-700"
           : "border-[var(--hg-hairline)] bg-[var(--hg-surface-2)] text-[var(--hg-ink-2)]"
@@ -45,51 +57,64 @@ function StatusPill({
   );
 }
 
-function UnitToggle({
+function UnitSlideToggle({
   value,
-  selected,
-  onClick
+  onChange
 }: {
-  value: ComponentUnit;
-  selected: boolean;
-  onClick: () => void;
+  value: BudgetDisplayUnit;
+  onChange: (next: BudgetDisplayUnit) => void;
 }) {
+  const options: BudgetDisplayUnit[] = ["wh", "ah"];
+  const activeIndex = options.indexOf(value);
   return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      onClick={onClick}
-      className={`hg-mono h-[30px] min-w-[62px] rounded-md border px-3 text-[11px] font-[var(--hg-type-weight-bold)] uppercase transition ${
-        selected
-          ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
-          : "border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[var(--hg-ink)] hover:border-[var(--hg-accent-2)]"
-      }`}
+    <div
+      role="radiogroup"
+      aria-label="Vis forbruk som"
+      className="relative inline-flex h-8 items-center rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] p-0.5"
     >
-      {value}
-    </button>
+      <span
+        aria-hidden="true"
+        className="absolute top-0.5 bottom-0.5 left-0.5 w-16 rounded-[5px] border border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] transition-transform duration-200 ease-out"
+        style={{ transform: `translateX(${activeIndex * 64}px)` }}
+      />
+      {options.map((option) => {
+        const selected = option === value;
+        return (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(option)}
+              className={`hg-mono relative z-10 h-7 w-16 rounded-[5px] text-[length:var(--hg-type-badge-size)] font-[var(--hg-type-weight-bold)] uppercase transition-colors ${
+              selected ? "text-[var(--hg-accent)]" : "text-[var(--hg-ink)]"
+            }`}
+          >
+            {option}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
 function InlineTextField({
   label,
   value,
-  onChange,
-  className = ""
+  onChange
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  className?: string;
 }) {
   return (
-    <label className={`block min-w-0 ${className}`}>
+    <label className="block min-w-0">
       <span className={workspaceMetaClassName}>{label}</span>
       <input
         type="text"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 h-8 w-full border-0 border-b border-[var(--hg-hairline)] bg-transparent px-1 text-[13px] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none transition focus:border-[var(--hg-accent-2)]"
+        className="mt-1 h-8 w-full border-0 border-b border-[var(--hg-hairline)] bg-transparent px-1 text-[length:var(--hg-type-control-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none transition focus:border-[var(--hg-accent-2)]"
       />
     </label>
   );
@@ -99,23 +124,17 @@ function InlineNumberField({
   label,
   unit,
   value,
-  min = 0,
-  max,
   error,
-  onChange,
-  className = ""
+  onChange
 }: {
   label: string;
   unit: string;
   value: EditableNumber;
-  min?: number;
-  max?: number;
   error?: string;
   onChange: (value: EditableNumber) => void;
-  className?: string;
 }) {
   return (
-    <label className={`block min-w-0 ${className}`}>
+    <label className="block min-w-0">
       <span className={workspaceMetaClassName}>{label}</span>
       <span className="mt-1 grid h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-[var(--hg-hairline)] px-1 transition focus-within:border-[var(--hg-accent-2)]">
         <input
@@ -126,29 +145,21 @@ function InlineNumberField({
           title={error}
           onChange={(event) => {
             const normalized = event.target.value.replace(",", ".");
-            if (!/^\d*(?:\.\d*)?$/.test(normalized)) {
-              return;
-            }
             if (normalized === "") {
               onChange("");
               return;
             }
-            if (normalized === "." || normalized.endsWith(".")) {
+            if (!/^(?:\d+|\d*\.\d+)$/.test(normalized)) {
               return;
             }
             const numericValue = Number(normalized);
-            if (Number.isNaN(numericValue)) {
-              return;
-            }
-            if ((min !== undefined && numericValue < min) || (max !== undefined && numericValue > max)) {
+            if (!Number.isNaN(numericValue)) {
               onChange(numericValue);
-              return;
             }
-            onChange(numericValue);
           }}
-          className="hg-mono min-w-0 border-0 bg-transparent p-0 text-[13px] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none"
+          className="hg-mono min-w-0 border-0 bg-transparent p-0 text-[length:var(--hg-type-control-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none"
         />
-        <span className="hg-mono text-[10px] font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]">{unit}</span>
+        <span className="hg-mono text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]">{unit}</span>
       </span>
     </label>
   );
@@ -160,81 +171,72 @@ function DetailRow({
   errors
 }: {
   sourceRow: EquipmentRow;
-  updateEquipmentRow: <K extends keyof EquipmentRow>(id: string, key: K, value: EquipmentRow[K]) => void;
+  updateEquipmentRow: UpdateEquipmentRow;
   errors: Record<string, string>;
 }) {
   return (
     <tr data-component-edit-row>
       <td className="border-b border-[var(--hg-hairline-2)] py-0" colSpan={6}>
-        <div className="border-l-2 border-[var(--hg-accent-2)] bg-[var(--hg-surface-2)] px-4 py-4">
-          <div className="grid gap-x-4 gap-y-3 lg:grid-cols-[1.45fr_0.72fr_0.72fr_0.72fr_0.72fr_0.9fr_1.45fr]">
-            <InlineTextField
-              label="Namn"
-              value={sourceRow.name}
-              onChange={(next) => updateEquipmentRow(sourceRow.id, "name", next)}
-            />
-            <InlineNumberField
-              label="Effekt"
-              unit="W"
-              value={sourceRow.powerW}
-              error={errors[`equipmentRows.${sourceRow.id}.powerW`]}
-              onChange={(next) => updateEquipmentRow(sourceRow.id, "powerW", next)}
-            />
-            <InlineNumberField
-              label="Drift"
-              unit="t/d"
-              value={sourceRow.runtimeHoursPerDay}
-              max={24}
-              error={errors[`equipmentRows.${sourceRow.id}.runtimeHoursPerDay`]}
-              onChange={(next) => updateEquipmentRow(sourceRow.id, "runtimeHoursPerDay", next)}
-            />
-            <InlineNumberField
-              label="Innkjøp"
-              unit="kr"
-              value={sourceRow.purchaseCost}
-              onChange={(next) => updateEquipmentRow(sourceRow.id, "purchaseCost", next)}
-            />
-            <InlineNumberField
-              label="Levetid"
-              unit="år"
-              value={sourceRow.lifetimeYears}
-              onChange={(next) => updateEquipmentRow(sourceRow.id, "lifetimeYears", next)}
-            />
-            <InlineNumberField
-              label="Vedlikehald"
-              unit="kr/år"
-              value={sourceRow.annualMaintenance}
-              onChange={(next) => updateEquipmentRow(sourceRow.id, "annualMaintenance", next)}
-            />
-            <InlineTextField
-              label="Leverandør"
-              value={sourceRow.supplier}
-              onChange={(next) => updateEquipmentRow(sourceRow.id, "supplier", next)}
-            />
-          </div>
-          <label className="mt-3 block">
-            <span className={workspaceMetaClassName}>Kommentar</span>
-            <textarea
-              value={sourceRow.comment}
-              onChange={(event) => updateEquipmentRow(sourceRow.id, "comment", event.target.value)}
-              className="mt-1 min-h-[54px] w-full resize-y border-0 border-b border-[var(--hg-hairline)] bg-transparent px-1 py-2 text-[13px] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none transition focus:border-[var(--hg-accent-2)]"
-            />
-          </label>
+        <div className="border-l-2 border-[var(--hg-accent-2)] bg-[#dde1e7] px-4 py-4">
+          <EquipmentDetailFields
+            sourceRow={sourceRow}
+            updateEquipmentRow={updateEquipmentRow}
+            errors={errors}
+            layoutClassName="grid gap-x-4 gap-y-3 lg:grid-cols-[1.45fr_0.72fr_0.72fr_0.72fr_0.72fr_0.9fr_1.45fr]"
+            commentClassName={`${componentTextAreaClassName} min-h-[54px] border-0 border-b border-[var(--hg-hairline)] bg-transparent px-1 py-2 text-[length:var(--hg-type-control-size)]`}
+          />
         </div>
       </td>
     </tr>
   );
 }
 
-function SummaryItem({ label, value, unit }: { label: string; value: string; unit?: string }) {
+function EquipmentDetailFields({
+  sourceRow,
+  updateEquipmentRow,
+  errors,
+  layoutClassName,
+  commentClassName,
+  commentLabelClassName = "mt-3 block",
+  footer
+}: {
+  sourceRow: EquipmentRow;
+  updateEquipmentRow: UpdateEquipmentRow;
+  errors: Record<string, string>;
+  layoutClassName: string;
+  commentClassName: string;
+  commentLabelClassName?: string;
+  footer?: ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-1 border-r border-[var(--hg-hairline)] px-4 py-2 last:border-r-0">
-      <p className={workspaceMetaClassName}>{label}</p>
-      <p className="text-[22px] font-[var(--hg-type-weight-extra)] leading-none tracking-[var(--hg-type-tight-tracking)] text-[var(--hg-ink)]">
-        {value}
-        {unit ? <span className="hg-mono ml-1 text-[10px] font-[var(--hg-type-weight-bold)] uppercase tracking-normal">{unit}</span> : null}
-      </p>
-    </div>
+    <>
+      <div className={layoutClassName}>
+        <InlineTextField label="Namn" value={sourceRow.name} onChange={(next) => updateEquipmentRow(sourceRow.id, "name", next)} />
+        {equipmentNumberFields.map((field) => {
+          const errorKey = "errorKey" in field ? field.errorKey : undefined;
+          return (
+          <InlineNumberField
+            key={field.key}
+            label={field.label}
+            unit={field.unit}
+            value={sourceRow[field.key]}
+            error={errorKey ? errors[`equipmentRows.${sourceRow.id}.${errorKey}`] : undefined}
+            onChange={(next) => updateEquipmentRow(sourceRow.id, field.key, next)}
+          />
+          );
+        })}
+        <InlineTextField label="Leverandør" value={sourceRow.supplier} onChange={(next) => updateEquipmentRow(sourceRow.id, "supplier", next)} />
+      </div>
+      <label className={commentLabelClassName}>
+        <span className={workspaceMetaClassName}>Kommentar</span>
+        <textarea
+          value={sourceRow.comment}
+          onChange={(event) => updateEquipmentRow(sourceRow.id, "comment", event.target.value)}
+          className={commentClassName}
+        />
+      </label>
+      {footer}
+    </>
   );
 }
 
@@ -255,12 +257,21 @@ export default function ComponentsPage() {
   const displayUnit = activeDraft.equipmentBudgetSettings.displayUnit;
   const dailyUnitLabel = `${displayUnit === "ah" ? "Ah" : "Wh"} / døgn`;
   const canShowAh = Number(activeDraft.battery.nominalVoltage) > 0;
-  const canShowDailyConsumption = displayUnit !== "ah" || canShowAh;
   const activeCount = rows.filter((row) => row.active).length;
-  const peakPower = rows.reduce((sum, row) => sum + (row.active ? row.powerW : 0), 0);
   const totalWhPerDay = rows.reduce((sum, row) => sum + row.whPerDay, 0);
   const totalAhPerDay = rows.reduce((sum, row) => sum + row.ahPerDay, 0);
-  const purchaseSum = activeDraft.equipmentRows.reduce((sum, row) => sum + toNumber(row.purchaseCost), 0);
+  const totalPurchaseCost = activeDraft.equipmentRows.reduce(
+    (sum, row) => sum + (row.active && typeof row.purchaseCost === "number" ? row.purchaseCost : 0),
+    0
+  );
+  const annualMaintenance = activeDraft.equipmentRows.reduce(
+    (sum, row) => sum + (row.active && typeof row.annualMaintenance === "number" ? row.annualMaintenance : 0),
+    0
+  );
+  const componentRows = rows.flatMap((row) => {
+    const sourceRow = activeDraft.equipmentRows.find((item) => item.id === row.id);
+    return sourceRow ? [{ row, sourceRow, displayName: sourceRow.name.trim() || "Nytt utstyr" }] : [];
+  });
 
   useEffect(() => {
     if (!editingRowId) {
@@ -283,15 +294,11 @@ export default function ComponentsPage() {
 
   const formatConsumption = (row: (typeof rows)[number]) => {
     const unit = displayUnit === "ah" ? "Ah" : "Wh";
-    if (!canShowDailyConsumption) {
+    if (displayUnit === "ah" && !canShowAh) {
       return `- ${unit}`;
     }
 
     return `${formatNumber(displayUnit === "ah" ? row.ahPerDay : row.whPerDay)} ${unit}`;
-  };
-
-  const handleAddRow = () => {
-    addEquipmentRow();
   };
 
   const handleRemoveRow = (rowId: string) => {
@@ -299,36 +306,47 @@ export default function ComponentsPage() {
     setEditingRowId((current) => (current === rowId ? null : current));
   };
 
+  const handleOpenBomReport = () => {
+    saveDraftMetadata();
+    openBomReportWindow(activeDraft, outputs.derivedResults);
+  };
+
   const headerActions = (
     <>
-      <button
-        type="button"
+      <WorkspaceHeaderActionButton
+        icon={workspaceHeaderActionIcons.upload}
+        label="Importer"
+        subLabel="Komponentliste"
+        tone="success"
         onClick={saveDraftMetadata}
-        className="inline-flex h-9 items-center justify-center rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-4 text-[13px] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)] transition hover:border-[var(--hg-accent-2)]"
-      >
-        Importer
-      </button>
-      <button
-        type="button"
-        onClick={saveDraftMetadata}
-        className="inline-flex h-9 items-center justify-center rounded-md bg-[var(--hg-accent)] px-4 text-[13px] font-[var(--hg-type-weight-bold)] text-white transition hover:bg-[var(--hg-accent-2)]"
-      >
-        BOM-rapport
-      </button>
+      />
+      <WorkspaceHeaderActionButton
+        icon={workspaceHeaderActionIcons.report}
+        label="BOM-rapport"
+        subLabel="Eksporter"
+        tone="warning"
+        onClick={handleOpenBomReport}
+        primary
+      />
     </>
   );
+
+  const componentsKpiItems: KpiStripItem[] = [
+    { kicker: "AKTIVE ENHETER", value: `${activeCount}`, unit: `/ ${rows.length}` },
+    {
+      kicker: `FORBRUK · ${displayUnit === "ah" ? "Ah" : "Wh"}`,
+      value: displayUnit === "ah" ? (canShowAh ? formatNumber(totalAhPerDay) : "-") : formatNumber(totalWhPerDay),
+      unit: displayUnit === "ah" ? "Ah" : "Wh"
+    },
+    { kicker: "TOTALPRIS FOR INNKJØP", value: formatNumber(totalPurchaseCost, 0), unit: "kr" },
+    { kicker: "VEDLIKEHOLD · ÅR", value: formatNumber(annualMaintenance, 0), unit: "kr" }
+  ];
 
   return (
     <main className={`${workspacePageClassName} flex min-h-full flex-col`}>
       <WorkspaceHeader title={t("components.title")} actions={headerActions} />
 
-      <section className="grid grid-cols-2 gap-0 border-y border-[var(--hg-hairline)] md:grid-cols-5">
-        <SummaryItem label="Aktive einingar" value={`${activeCount}`} unit={`/ ${rows.length}`} />
-        <SummaryItem label="Toppeffekt" value={formatNumber(peakPower)} unit="W" />
-        <SummaryItem label="Total - Wh/døgn" value={formatNumber(totalWhPerDay)} unit="Wh" />
-        <SummaryItem label="Total - Ah/døgn" value={canShowAh ? formatNumber(totalAhPerDay) : "-"} unit="Ah" />
-        <SummaryItem label="Innkjøp - sum" value={formatNumber(purchaseSum)} unit="kr" />
-      </section>
+      <KpiStrip items={componentsKpiItems} />
 
       <section className="flex flex-1 flex-col border-t-[3px] border-[var(--hg-ink)] pt-3">
         <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -336,20 +354,14 @@ export default function ComponentsPage() {
             <h2 className={`${workspaceSectionTitleClassName} uppercase`}>Effektbudsjett</h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2" role="radiogroup" aria-label="Vis forbruk som">
-              {(["wh", "ah"] as const).map((option) => (
-                <UnitToggle
-                  key={option}
-                  value={option}
-                  selected={displayUnit === option}
-                  onClick={() => updateConfigSectionField("equipmentBudgetSettings", "displayUnit", option)}
-                />
-              ))}
-            </div>
+            <UnitSlideToggle
+              value={displayUnit}
+              onChange={(option) => updateConfigSectionField("equipmentBudgetSettings", "displayUnit", option)}
+            />
             <button
               type="button"
-              onClick={handleAddRow}
-              className="h-[30px] rounded-md bg-[var(--hg-accent)] px-4 text-[12px] font-[var(--hg-type-weight-bold)] text-white transition hover:bg-[var(--hg-accent-2)]"
+              onClick={addEquipmentRow}
+              className="hg-mono inline-flex h-9 items-center justify-center rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-unit-tracking)] text-[var(--hg-accent)] transition hover:border-[var(--hg-accent-2)] hover:bg-[var(--hg-accent-soft)]"
             >
               + Legg til
             </button>
@@ -359,11 +371,11 @@ export default function ComponentsPage() {
         {rows.length === 0 ? (
           <div className="flex flex-1 items-center justify-center border-y border-[var(--hg-hairline)] py-16">
             <div className="max-w-sm text-center">
-              <p className="text-[16px] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]">Ingen komponenter</p>
+              <p className="text-[length:var(--hg-type-empty-title-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]">Ingen komponenter</p>
               <button
                 type="button"
-                onClick={handleAddRow}
-                className="mt-4 h-9 rounded-md bg-[var(--hg-accent)] px-4 text-[13px] font-[var(--hg-type-weight-bold)] text-white"
+                onClick={addEquipmentRow}
+                className="hg-mono mt-4 inline-flex h-9 items-center justify-center rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-4 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-unit-tracking)] text-[var(--hg-accent)] transition hover:border-[var(--hg-accent-2)] hover:bg-[var(--hg-accent-soft)]"
               >
                 + Legg til
               </button>
@@ -372,7 +384,7 @@ export default function ComponentsPage() {
         ) : (
           <>
             <div className="hidden flex-1 overflow-x-auto md:block">
-              <table className="w-full min-w-[880px] table-fixed border-separate border-spacing-0 text-[13px]">
+              <table className="w-full min-w-[880px] table-fixed border-separate border-spacing-0 text-[length:var(--hg-type-table-size)]">
                 <thead>
                   <tr className={`text-left ${workspaceMetaClassName}`}>
                     <th className={`w-20 ${componentRowSeparatorClassName} px-0 py-2`}>Aktiv</th>
@@ -384,45 +396,45 @@ export default function ComponentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => {
-                    const sourceRow = activeDraft.equipmentRows.find((item) => item.id === row.id);
-                    if (!sourceRow) {
-                      return null;
-                    }
+                  {componentRows.map(({ row, sourceRow, displayName }) => {
                     const editing = editingRowId === row.id;
-                    const displayName = sourceRow.name.trim() || "Nytt utstyr";
+                    const inactive = !row.active;
+                    const rowBg = editing
+                      ? "bg-[var(--hg-surface-2)]"
+                      : inactive
+                        ? "bg-[#cdd2db] hover:bg-[#c4cad5]"
+                        : "hover:bg-[var(--hg-surface-2)]";
+                    const dimmedTextCls = inactive ? "opacity-45 [text-decoration:line-through]" : "";
 
                     return (
                       <Fragment key={row.id}>
                         <tr
                           data-component-edit-row
                           onClick={() => setEditingRowId((current) => (current === row.id ? null : row.id))}
-                          className={`cursor-pointer align-middle transition ${editing ? "bg-[var(--hg-surface-2)]" : "hover:bg-[var(--hg-surface-2)]"}`}
+                          className={`cursor-pointer align-middle transition ${rowBg}`}
                         >
-                          <td className={`${componentRowSeparatorClassName} px-0 py-3 align-middle`} onClick={(event) => event.stopPropagation()}>
+                          <td className={componentTableCellClassName} onClick={(event) => event.stopPropagation()}>
                             <StatusPill
                               active={row.active}
                               label={row.active ? t("components.on") : t("components.off")}
                               onClick={() => updateEquipmentRow(row.id, "active", !row.active)}
                             />
                           </td>
-                          <td className={`${componentRowSeparatorClassName} px-0 py-3 pr-4 align-middle font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]`}>
+                          <td className={`${componentTableCellClassName} pr-4 font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] ${dimmedTextCls}`}>
                             {displayName}
                           </td>
-                          <td className={`hg-mono ${componentRowSeparatorClassName} px-0 py-3 text-right align-middle font-[var(--hg-type-weight-bold)]`}>
-                            {formatNumber(row.powerW)} W
-                          </td>
-                          <td className={`hg-mono ${componentRowSeparatorClassName} px-0 py-3 text-right align-middle font-[var(--hg-type-weight-bold)]`}>
-                            {formatNumber(row.runtimeHoursPerDay)} t
-                          </td>
-                          <td className={`hg-mono ${componentRowSeparatorClassName} px-0 py-3 text-right align-middle font-[var(--hg-type-weight-bold)]`}>
-                            {formatConsumption(row)}
-                          </td>
-                          <td className={`${componentRowSeparatorClassName} px-0 py-3 text-right align-middle`} onClick={(event) => event.stopPropagation()}>
+                          {[
+                            ["power", `${formatNumber(row.powerW)} W`],
+                            ["runtime", `${formatNumber(row.runtimeHoursPerDay)} t`],
+                            ["consumption", formatConsumption(row)]
+                          ].map(([key, value]) => (
+                            <td key={key} className={`${componentNumberCellClassName} ${dimmedTextCls}`}>{value}</td>
+                          ))}
+                          <td className={`${componentTableCellClassName} text-right`} onClick={(event) => event.stopPropagation()}>
                             <button
                               type="button"
                               onClick={() => handleRemoveRow(row.id)}
-                              className="inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-rose-50 px-3 text-[11px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.08em] text-rose-700 transition hover:bg-rose-100"
+                              className={`${componentDeleteButtonClassName} transition hover:bg-rose-100`}
                             >
                               Slett
                             </button>
@@ -437,15 +449,14 @@ export default function ComponentsPage() {
             </div>
 
             <div className="grid gap-3 md:hidden">
-              {rows.map((row) => {
-                const sourceRow = activeDraft.equipmentRows.find((item) => item.id === row.id);
-                if (!sourceRow) {
-                  return null;
-                }
+              {componentRows.map(({ row, sourceRow, displayName }) => {
                 const editing = editingRowId === row.id;
+                const inactive = !row.active;
+                const cardBg = inactive ? "bg-[#cdd2db] -mx-2 px-2 rounded-md" : "";
+                const dimmedTextCls = inactive ? "opacity-45 [text-decoration:line-through]" : "";
 
                 return (
-                  <article key={row.id} data-component-edit-row className={`${componentRowSeparatorClassName} pb-3`}>
+                  <article key={row.id} data-component-edit-row className={`${componentRowSeparatorClassName} pb-3 ${cardBg}`}>
                     <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 py-3">
                       <StatusPill
                         active={row.active}
@@ -455,37 +466,32 @@ export default function ComponentsPage() {
                       <button
                         type="button"
                         onClick={() => setEditingRowId((current) => (current === row.id ? null : row.id))}
-                        className="min-w-0 truncate text-left font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]"
+                        className={`min-w-0 truncate text-left font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] ${dimmedTextCls}`}
                       >
-                        {sourceRow.name.trim() || "Nytt utstyr"}
+                        {displayName}
                       </button>
-                      <span className="hg-mono text-[12px] font-[var(--hg-type-weight-bold)]">{formatConsumption(row)}</span>
+                      <span className={`hg-mono text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] ${dimmedTextCls}`}>{formatConsumption(row)}</span>
                     </div>
                     {editing ? (
-                      <div className="border-l-2 border-[var(--hg-accent-2)] bg-[var(--hg-surface-2)] p-3">
+                      <div className="border-l-2 border-[var(--hg-accent-2)] bg-[#dde1e7] p-3">
                         <div className="grid gap-3">
-                          <InlineTextField label="Namn" value={sourceRow.name} onChange={(next) => updateEquipmentRow(sourceRow.id, "name", next)} />
-                          <InlineNumberField label="Effekt" unit="W" value={sourceRow.powerW} error={errors[`equipmentRows.${sourceRow.id}.powerW`]} onChange={(next) => updateEquipmentRow(sourceRow.id, "powerW", next)} />
-                          <InlineNumberField label="Drift" unit="t/d" value={sourceRow.runtimeHoursPerDay} max={24} error={errors[`equipmentRows.${sourceRow.id}.runtimeHoursPerDay`]} onChange={(next) => updateEquipmentRow(sourceRow.id, "runtimeHoursPerDay", next)} />
-                          <InlineNumberField label="Innkjøp" unit="kr" value={sourceRow.purchaseCost} onChange={(next) => updateEquipmentRow(sourceRow.id, "purchaseCost", next)} />
-                          <InlineNumberField label="Levetid" unit="år" value={sourceRow.lifetimeYears} onChange={(next) => updateEquipmentRow(sourceRow.id, "lifetimeYears", next)} />
-                          <InlineNumberField label="Vedlikehald" unit="kr/år" value={sourceRow.annualMaintenance} onChange={(next) => updateEquipmentRow(sourceRow.id, "annualMaintenance", next)} />
-                          <InlineTextField label="Leverandør" value={sourceRow.supplier} onChange={(next) => updateEquipmentRow(sourceRow.id, "supplier", next)} />
-                          <label>
-                            <span className={workspaceMetaClassName}>Kommentar</span>
-                            <textarea
-                              value={sourceRow.comment}
-                              onChange={(event) => updateEquipmentRow(sourceRow.id, "comment", event.target.value)}
-                              className={`${workspaceInputClassName} mt-1 min-h-[72px] resize-y`}
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveRow(row.id)}
-                            className="inline-flex h-8 items-center justify-center justify-self-start rounded-md border border-rose-200 bg-rose-50 px-3 text-[11px] font-[var(--hg-type-weight-bold)] uppercase tracking-[0.08em] text-rose-700"
-                          >
-                            Slett
-                          </button>
+                          <EquipmentDetailFields
+                            sourceRow={sourceRow}
+                            updateEquipmentRow={updateEquipmentRow}
+                            errors={errors}
+                            layoutClassName="grid gap-3"
+                            commentLabelClassName="block"
+                            commentClassName={`${workspaceInputClassName} mt-1 min-h-[72px] resize-y`}
+                            footer={
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRow(row.id)}
+                                className={`${componentDeleteButtonClassName} justify-self-start`}
+                              >
+                                Slett
+                              </button>
+                            }
+                          />
                         </div>
                       </div>
                     ) : null}
@@ -495,14 +501,6 @@ export default function ComponentsPage() {
             </div>
           </>
         )}
-
-        <div className="hidden">
-          <SummaryItem label="Aktive einingar" value={`${activeCount}`} unit={`/ ${rows.length}`} />
-          <SummaryItem label="Toppeffekt" value={formatNumber(peakPower)} unit="W" />
-          <SummaryItem label="Total - Wh/døgn" value={formatNumber(totalWhPerDay)} unit="Wh" />
-          <SummaryItem label="Total - Ah/døgn" value={canShowAh ? formatNumber(totalAhPerDay) : "-"} unit="Ah" />
-          <SummaryItem label="Innkjøp - sum" value={formatNumber(purchaseSum)} unit="kr" />
-        </div>
       </section>
     </main>
   );

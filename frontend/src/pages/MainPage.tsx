@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { BooleanChoiceField, NumberField } from "../components/FormFields";
 import NveStandaloneMap from "../components/NveStandaloneMap";
 import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
-import WorkspaceSection from "../components/WorkspaceSection";
+import EditorialSection from "../components/EditorialSection";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import { sections } from "../questions";
@@ -12,7 +12,6 @@ import {
   workspaceContentValueClassName,
   workspaceFieldLabelClassName,
   workspaceInputClassName,
-  workspaceMetaClassName,
   workspacePageClassName,
   workspaceSecondaryButtonClassName,
   workspaceSubsectionTitleClassName
@@ -31,7 +30,7 @@ export default function MainPage() {
     useConfigurationContext();
   const { t, language } = useLanguage();
   const [showValidationErrors, setShowValidationErrors] = useState(false);
-  const calculatorMode = (activeDraft.engineMode ?? "standard") === "standard";
+  const calculatorMode = (activeDraft.engineMode ?? "calculator") === "calculator";
   const validationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
   const visibleValidationErrors = showValidationErrors ? validationErrors : {};
   const errors = calculatorMode
@@ -72,7 +71,7 @@ export default function MainPage() {
         <select
           value={String(value)}
           onChange={(event) => setQuestionValue(question.key, event.target.value)}
-          className={`${workspaceInputClassName} h-9 py-1.5 text-right hg-mono`}
+          className={`${workspaceInputClassName} h-10 py-1.5 leading-[1.2] text-right hg-mono`}
           aria-invalid={error ? true : undefined}
         >
           <option value="">{t("shared.selectOption")}</option>
@@ -113,23 +112,24 @@ export default function MainPage() {
     }
 
     return (
-      <div className="grid grid-cols-2 gap-1 rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface-2)] p-0.5">
-        {(["ja", "nei"] as const).map((option) => {
+      <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2" role="radiogroup" aria-label={question.labelKey ? t(question.labelKey) : question.label}>
+        {(["yes", "no"] as const).map((option) => {
           const selected = value === option;
 
           return (
             <button
               key={option}
               type="button"
+              role="radio"
+              aria-checked={selected}
               onClick={() => setQuestionValue(question.key, option)}
-              className={`rounded-md px-2 py-1.5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] transition ${
+              className={`h-9 rounded-md border px-3 py-1.5 ${workspaceFieldLabelClassName} transition ${
                 selected
-                  ? "bg-[var(--hg-accent)] text-white"
-                  : "text-[var(--hg-muted)] hover:bg-[var(--hg-surface)] hover:text-[var(--hg-ink)]"
+                  ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
+                  : "border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[var(--hg-ink)] hover:border-[var(--hg-accent-2)]"
               }`}
-              aria-pressed={selected}
             >
-              {option === "ja" ? t("shared.yes") : t("shared.no")}
+              {option === "yes" ? t("shared.yes") : t("shared.no")}
             </button>
           );
         })}
@@ -150,43 +150,45 @@ export default function MainPage() {
       />
 
       <div className="space-y-4">
-        <WorkspaceSection title="Kildedata" description="Koordinater, NVE-punkt og prosjektidentitet samles før vurderingsspørsmålene.">
-          <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
-            <div className="grid gap-x-8 md:grid-cols-2">
-              {[
-                ["Prosjekt", activeDraft.name.trim() || t("shared.unnamed")],
-                ["Stasjon", activeDraft.location || "Ikke valgt"],
-                ["NVE-id", activeDraft.locationPlaceId || "Ikke valgt"],
-                [
-                  "Koordinater",
-                  activeDraft.locationLat !== null && activeDraft.locationLng !== null
-                    ? `${activeDraft.locationLat.toFixed(5)}, ${activeDraft.locationLng.toFixed(5)}`
-                    : "Ikke valgt"
-                ]
-              ].map(([label, value]) => (
-                <div key={label} className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-[var(--hg-hairline-2)] py-3">
-                  <span className={workspaceBodyMutedClassName}>{label}</span>
-                  <span className={`hg-mono text-right ${workspaceContentValueClassName}`}>{value}</span>
-                </div>
-              ))}
+        <EditorialSection title="Kildedata" description="Koordinater, NVE-punkt og prosjektidentitet samles før vurderingsspørsmålene.">
+          <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,360px)] md:items-start">
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-x-8">
+                {[
+                  ["Prosjekt", activeDraft.name.trim() || t("shared.unnamed")],
+                  ["Stasjon", activeDraft.location || "Ikke valgt"],
+                  ["NVE-id", activeDraft.locationPlaceId || "Ikke valgt"],
+                  [
+                    "Koordinater",
+                    activeDraft.locationLat !== null && activeDraft.locationLng !== null
+                      ? `${activeDraft.locationLat.toFixed(5)}, ${activeDraft.locationLng.toFixed(5)}`
+                      : "Ikke valgt"
+                  ]
+                ].map(([label, value]) => (
+                  <div key={label} className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-[var(--hg-hairline-2)] py-3">
+                    <span className={workspaceBodyMutedClassName}>{label}</span>
+                    <span className={`hg-mono text-right ${workspaceContentValueClassName}`}>{value}</span>
+                  </div>
+                ))}
+              </div>
+              <Link to="/oversikt" className={`${workspaceSecondaryButtonClassName} self-start`}>
+                Åpne oversikt
+              </Link>
             </div>
-            <Link to="/oversikt" className={workspaceSecondaryButtonClassName}>
-              Åpne oversikt
-            </Link>
+            <div className="max-h-[280px] overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)]">
+              <NveStandaloneMap
+                value={activeDraft.location}
+                lat={activeDraft.locationLat}
+                lng={activeDraft.locationLng}
+                nveId={activeDraft.locationPlaceId}
+                onChange={updateConfigurationLocation}
+                showPlantDetails={false}
+              />
+            </div>
           </div>
-          <div className="mt-5 overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)]">
-            <NveStandaloneMap
-              value={activeDraft.location}
-              lat={activeDraft.locationLat}
-              lng={activeDraft.locationLng}
-              nveId={activeDraft.locationPlaceId}
-              onChange={updateConfigurationLocation}
-              showPlantDetails={false}
-            />
-          </div>
-        </WorkspaceSection>
+        </EditorialSection>
 
-        <WorkspaceSection title={t("main.operatingAssumptions")} description="Prosjektforutsetninger som brukes videre i anbefaling og kostnadsbilde.">
+        <EditorialSection title={t("main.operatingAssumptions")} description="Prosjektforutsetninger som brukes videre i anbefaling og kostnadsbilde.">
           <div className="grid gap-4 md:grid-cols-5">
             <NumberField
               label={t("main.evaluationHorizon")}
@@ -229,17 +231,16 @@ export default function MainPage() {
               </>
             )}
           </div>
-        </WorkspaceSection>
+        </EditorialSection>
 
         {!calculatorMode && (
-          <WorkspaceSection
+          <EditorialSection
             title="Spørsmål - anlegg, slipp og drift"
             description={`${completedQuestions} / ${visibleQuestions.length} fullført`}
           >
             <div className="grid gap-x-8 md:grid-cols-2">
               {visibleQuestions.map((question, index) => {
                 const qLabel = question.labelKey ? t(question.labelKey) : question.label;
-                const qHelper = question.helperKey ? t(question.helperKey) : question.helper;
                 const error = errors[question.key];
 
                 return (
@@ -250,13 +251,12 @@ export default function MainPage() {
                     } ${index > 0 ? "max-md:border-t max-md:border-[var(--hg-hairline-2)]" : ""}`}
                   >
                     <div className="min-w-0">
-                      <p className={workspaceMetaClassName}>{qHelper || "Vurderingspunkt"}</p>
-                      <p className={`mt-1 truncate ${workspaceSubsectionTitleClassName}`}>{qLabel}</p>
+                      <p className={workspaceSubsectionTitleClassName}>{qLabel}</p>
                     </div>
                     <div className="grid grid-cols-[minmax(0,1fr)_1.25rem] items-center gap-3">
                       {renderQuestionControl(question)}
                       <span
-                        className={`flex h-5 w-5 items-center justify-center rounded-md border text-[10px] font-[var(--hg-type-weight-extra)] ${
+                        className={`flex h-5 w-5 items-center justify-center rounded-md border text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-extra)] ${
                           isAnswered(activeDraft.answers[question.key])
                             ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
                             : "border-[var(--hg-hairline)] text-[var(--hg-muted)]"
@@ -271,7 +271,7 @@ export default function MainPage() {
                 );
               })}
             </div>
-          </WorkspaceSection>
+          </EditorialSection>
         )}
       </div>
     </main>

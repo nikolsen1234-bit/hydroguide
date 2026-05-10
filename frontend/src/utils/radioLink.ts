@@ -1,11 +1,9 @@
 import type {
   KFactorKey,
   Polarization,
-  RadioLinkConfiguration,
-  RadioLinkEndpointConfiguration
+  RadioLinkConfiguration
 } from "../types";
 
-export type RadioLinkEndpointInput = RadioLinkEndpointConfiguration;
 export type RadioLinkFormState = RadioLinkConfiguration;
 
 export interface RadioLinkPoint {
@@ -53,7 +51,6 @@ interface TerrainProfileResponse {
 
 const EARTH_RADIUS_M = 6_375_000;
 const DEGREE_RADIUS_M = 8_500_000;
-const SPEED_OF_LIGHT_IN_AIR = 299_705;
 const MAX_TERRAIN_SAMPLES = 200;
 
 export function parseCoordinateInput(input: string): RadioLinkPoint | null {
@@ -160,19 +157,18 @@ export async function runRadioLinkAnalysis(input: RadioLinkFormState): Promise<R
   const earthCurve = getEarthCurve(kFactorRadius, heights.length, terrainDistance);
   const terrain = addArrays(heights, earthCurve);
   const lineOfSight = createLineOfSightList(startAltitude, endAltitude, heights.length);
-  const waveLength = SPEED_OF_LIGHT_IN_AIR / (input.frequencyMHz * 1000);
-  const fresnel = fresnelZone(terrainDistance, waveLength, heights.length, clampFresnelFactor(input.fresnelFactor));
+  const fresnel = fresnelZone(terrainDistance, input.frequencyMHz / 1000, heights.length, clampFresnelFactor(input.fresnelFactor));
   const fresnelLower = addArrays(lineOfSight, fresnel, -1);
   const fresnelUpper = addArrays(lineOfSight, fresnel);
   const degrees = calculateDegrees2(startAltitude, endAltitude, linkDistance, DEGREE_RADIUS_M);
   const rainAttenuation = getRainAttenuation(
     linkDistance / 1000,
-    input.frequencyMHz,
+    input.frequencyMHz / 1000,
     input.polarization === "horizontal",
     input.rainFactor
   );
 
-  const freeSpaceLossDb = 20 * (Math.log((4 * Math.PI * terrainDistance) / waveLength) / Math.LN10);
+  const freeSpaceLossDb = 32.4 + 20 * Math.log10(input.frequencyMHz) + 20 * Math.log10(terrainDistance / 1000);
   const rainAttenuationDb = Math.abs(rainAttenuation);
   const receivedPowerDbm = txPowerDbm + antennaGainA + antennaGainB - freeSpaceLossDb - rainAttenuationDb - lineLossDb;
 
@@ -355,18 +351,19 @@ function normalizeAngle(value: number) {
   return ((value % 360) + 360) % 360;
 }
 
-function fresnelZone(distance: number, waveLength: number, numberOfZones: number, factor: number) {
+function fresnelZone(distance: number, frequencyGHz: number, numberOfZones: number, factor: number) {
   const result: number[] = [];
-  let d1 = 0;
-  let d2 = distance;
-  const stepLength = distance / (numberOfZones - 1);
+  const distanceKm = distance / 1000;
+  let d1Km = 0;
+  let d2Km = distanceKm;
+  const stepLengthKm = distanceKm / (numberOfZones - 1);
 
   result[0] = 0;
 
   for (let index = 1; index < numberOfZones - 1; index += 1) {
-    d1 += stepLength;
-    d2 -= stepLength;
-    result[index] = Math.sqrt((waveLength * d1 * d2) / (d1 + d2)) * factor;
+    d1Km += stepLengthKm;
+    d2Km -= stepLengthKm;
+    result[index] = 17.31 * Math.sqrt((d1Km * d2Km) / (frequencyGHz * distanceKm)) * factor;
   }
 
   result[numberOfZones - 1] = 0;

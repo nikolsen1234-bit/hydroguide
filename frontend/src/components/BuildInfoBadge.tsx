@@ -1,33 +1,12 @@
 import { useEffect, useState } from "react";
 import fallbackBuildInfo from "../generated/build-info.json";
-import { useLanguage } from "../i18n";
 
 type BuildInfo = {
   updatedAt?: string | null;
+  siteTraceId?: string | null;
 };
 
-function formatBuildTimestamp(value: string | null | undefined) {
-  if (!value) {
-    return "-";
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("nb-NO", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).format(parsed);
-}
-
 export default function BuildInfoBadge() {
-  const { t } = useLanguage();
   const [buildInfo, setBuildInfo] = useState<BuildInfo>(fallbackBuildInfo);
 
   useEffect(() => {
@@ -56,11 +35,8 @@ export default function BuildInfoBadge() {
 
   return (
     <div className="flex h-[74px] flex-col justify-end px-3 pb-2 text-center">
-      <p className="hg-mono text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-medium)] uppercase tracking-[0.14em] text-[var(--hg-rail-ink)]">
-        {t("shared.lastUpdated")}
-      </p>
-      <p className="mt-1 min-h-[1.25rem] text-[length:var(--hg-type-content-size)] leading-[var(--hg-type-content-leading)] text-[var(--hg-rail-ink)]">
-        {formatBuildTimestamp(buildInfo.updatedAt)}
+      <p className="hg-mono min-h-[1rem] text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-semibold)] uppercase tracking-[var(--hg-type-overline-tracking)] text-[var(--hg-rail-ink)]">
+        {buildInfo.siteTraceId ? `Ver: ${buildInfo.siteTraceId}` : ""}
       </p>
     </div>
   );

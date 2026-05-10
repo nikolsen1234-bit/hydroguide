@@ -63,48 +63,44 @@ export function normalizeBody(raw: unknown): NormalizedBody | null {
   const body = raw as Record<string, unknown>;
 
   return {
-    prosjekt: toCleanText(body.prosjekt, 120),
-    prosjektbeskrivelse: toCleanText(body.prosjektbeskrivelse, 1200),
-    rapportutdrag: toCleanText(body.rapportutdrag, 9000),
-    lokasjon: toCleanText(body.lokasjon, 120),
-    anleggstype: toCleanText(body.anleggstype, 120),
-    hydrologi: toCleanText(body.hydrologi, 200),
-    hovudloysing: toCleanText(body.hovudloysing, DEFAULT_FIELD_MAX_LENGTH),
-    slippmetode: toCleanText(body.slippmetode, DEFAULT_FIELD_MAX_LENGTH),
-    primaermaaling: toCleanText(body.primaermaaling, DEFAULT_FIELD_MAX_LENGTH),
-    kontrollmaaling: toCleanText(body.kontrollmaaling, DEFAULT_FIELD_MAX_LENGTH),
-    maleprinsipp: toCleanText(body.maleprinsipp, DEFAULT_FIELD_MAX_LENGTH),
-    maleutstyr: toCleanText(body.maleutstyr, DEFAULT_FIELD_MAX_LENGTH),
-    loggeroppsett: toCleanText(body.loggeroppsett, DEFAULT_FIELD_MAX_LENGTH),
-    reserveLogger: toCleanText(body.reserveLogger, 80),
-    kommunikasjon: toCleanText(body.kommunikasjon, 150),
-    alarmVarsling: toCleanText(body.alarmVarsling, 120),
-    reservekjelde: toCleanText(body.reservekjelde, 120),
-    reserveEnergikjelde: toCleanText(body.reserveEnergikjelde, 120),
-    primaerEnergikjelde: toCleanText(body.primaerEnergikjelde, 120),
-    reserveeffektW: toFiniteNumber(body.reserveeffektW),
-    batteribankAh: toFiniteNumber(body.batteribankAh),
-    autonomiDagar: toFiniteNumber(body.autonomiDagar),
-    istilpassing: toCleanText(body.istilpassing, DEFAULT_FIELD_MAX_LENGTH),
-    frostsikring: toCleanText(body.frostsikring, DEFAULT_FIELD_MAX_LENGTH),
+    project: toCleanText(body.project, 120),
+    projectDescription: toCleanText(body.projectDescription, 1200),
+    reportExtract: toCleanText(body.reportExtract, 9000),
+    location: toCleanText(body.location, 120),
+    facilityType: toCleanText(body.facilityType, 120),
+    hydrology: toCleanText(body.hydrology, 200),
+    mainSolution: toCleanText(body.mainSolution, DEFAULT_FIELD_MAX_LENGTH),
+    releaseMethod: toCleanText(body.releaseMethod, DEFAULT_FIELD_MAX_LENGTH),
+    primaryMeasurement: toCleanText(body.primaryMeasurement, DEFAULT_FIELD_MAX_LENGTH),
+    controlMeasurement: toCleanText(body.controlMeasurement, DEFAULT_FIELD_MAX_LENGTH),
+    measurementPrinciple: toCleanText(body.measurementPrinciple, DEFAULT_FIELD_MAX_LENGTH),
+    measurementEquipment: toCleanText(body.measurementEquipment, DEFAULT_FIELD_MAX_LENGTH),
+    loggerSetup: toCleanText(body.loggerSetup, DEFAULT_FIELD_MAX_LENGTH),
+    backupLogger: toCleanText(body.backupLogger, 80),
+    communication: toCleanText(body.communication, 150),
+    alarmNotification: toCleanText(body.alarmNotification, 120),
+    backupSource: toCleanText(body.backupSource, 120),
+    backupEnergySource: toCleanText(body.backupEnergySource, 120),
+    primaryEnergySource: toCleanText(body.primaryEnergySource, 120),
+    backupPowerW: toFiniteNumber(body.backupPowerW),
+    batteryBankAh: toFiniteNumber(body.batteryBankAh),
+    autonomyDays: toFiniteNumber(body.autonomyDays),
+    iceAdaptation: toCleanText(body.iceAdaptation, DEFAULT_FIELD_MAX_LENGTH),
+    frostProtection: toCleanText(body.frostProtection, DEFAULT_FIELD_MAX_LENGTH),
     bypass: toCleanText(body.bypass, 150),
-    arsproduksjonSolKWh: toFiniteNumber(body.arsproduksjonSolKWh),
-    arslastKWh: toFiniteNumber(body.arslastKWh),
-    arsbalanseKWh: toFiniteNumber(body.arsbalanseKWh),
-    solproduksjonPerArKWh: toFiniteNumber(body.solproduksjonPerArKWh),
-    lastPerArKWh: toFiniteNumber(body.lastPerArKWh),
-    energibalansePerArKWh: toFiniteNumber(body.energibalansePerArKWh),
-    grunngiving: toStringArray(body.grunngiving),
-    tilleggskrav: toStringArray(body.tilleggskrav),
-    driftskrav: toStringArray(body.driftskrav),
-    // v2 structured answer fields
-    slippkravvariasjon: toCleanText(body.slippkravvariasjon, 50),
-    slippmetodeVal: toCleanText(body.slippmetodeVal ?? body.slippmetode, 80),
-    isSedimentTilstopping: toCleanText(body.isSedimentTilstopping, 10),
-    fiskepassasje: toCleanText(body.fiskepassasje, 10),
-    bypassVedDriftsstans: toCleanText(body.bypassVedDriftsstans, 10),
-    maleprofil: toCleanText(body.maleprofil, 50),
-    allmentaKontroll: toCleanText(body.allmentaKontroll, 10),
+    annualSolarProductionKWh: toFiniteNumber(body.annualSolarProductionKWh),
+    annualLoadDemandKWh: toFiniteNumber(body.annualLoadDemandKWh),
+    annualEnergyBalanceKWh: toFiniteNumber(body.annualEnergyBalanceKWh),
+    justification: toStringArray(body.justification),
+    additionalRequirements: toStringArray(body.additionalRequirements),
+    operationalRequirements: toStringArray(body.operationalRequirements),
+    releaseRequirementVariation: toCleanText(body.releaseRequirementVariation, 50),
+    releaseMethodSelected: toCleanText(body.releaseMethodSelected ?? body.releaseMethod, 80),
+    isSedimentClogging: toCleanText(body.isSedimentClogging, 10),
+    fishPassage: toCleanText(body.fishPassage, 10),
+    bypassOnOutage: toCleanText(body.bypassOnOutage, 10),
+    measurementProfile: toCleanText(body.measurementProfile, 50),
+    publicControl: toCleanText(body.publicControl, 10),
     action: toCleanText(body.action, 20) || undefined,
   };
 }
@@ -113,36 +109,36 @@ export function normalizeBody(raw: unknown): NormalizedBody | null {
 
 export function buildDocumentedProjectDataText(body: NormalizedBody): string {
   const lines = [
-    body.lokasjon ? `- Lokasjon: ${body.lokasjon}` : "",
-    body.anleggstype ? `- Type anlegg: ${body.anleggstype}` : "",
-    body.hydrologi ? `- Minstevannføring / variasjon: ${body.hydrologi}` : "",
-    body.hovudloysing ? `- Hovedløsning: ${body.hovudloysing}` : "",
-    body.slippmetode ? `- Slippmetode: ${body.slippmetode}` : "",
-    body.primaermaaling ? `- Måling i ordinær drift: ${body.primaermaaling}` : "",
-    body.kontrollmaaling ? `- Kontrollmåling for verifikasjon: ${body.kontrollmaaling}` : "",
-    body.maleprinsipp ? `- Måleprinsipp: ${body.maleprinsipp}` : "",
-    body.maleutstyr ? `- Måleutstyr: ${body.maleutstyr}` : "",
-    body.loggeroppsett ? `- Loggeroppsett: ${body.loggeroppsett}` : "",
-    body.reserveLogger ? `- Reserve-/backup-logger: ${body.reserveLogger}` : "",
-    body.kommunikasjon ? `- Kommunikasjon: ${body.kommunikasjon}` : "",
-    body.alarmVarsling ? `- Alarm / varsling: ${body.alarmVarsling}` : "",
-    body.primaerEnergikjelde ? `- Primaer energikjelde: ${body.primaerEnergikjelde}` : "",
-    body.reservekjelde ? `- Reservekjelde: ${body.reservekjelde}` : "",
-    body.reserveEnergikjelde ? `- Reserve energikjelde: ${body.reserveEnergikjelde}` : "",
-    body.reserveeffektW !== null ? `- Reserveeffekt: ${formatNumber(body.reserveeffektW, "W")}` : "",
-    body.batteribankAh !== null ? `- Batteribank: ${formatNumber(body.batteribankAh, "Ah")}` : "",
-    body.autonomiDagar !== null ? `- Autonomi: ${formatNumber(body.autonomiDagar, "dagar")}` : "",
-    body.frostsikring ? `- Frostsikring: ${body.frostsikring}` : "",
-    body.istilpassing ? `- Istilpassing: ${body.istilpassing}` : "",
+    body.location ? `- Lokasjon: ${body.location}` : "",
+    body.facilityType ? `- Type anlegg: ${body.facilityType}` : "",
+    body.hydrology ? `- Minstevannføring / variasjon: ${body.hydrology}` : "",
+    body.mainSolution ? `- Hovedløsning: ${body.mainSolution}` : "",
+    body.releaseMethod ? `- Slippmetode: ${body.releaseMethod}` : "",
+    body.primaryMeasurement ? `- Måling i ordinær drift: ${body.primaryMeasurement}` : "",
+    body.controlMeasurement ? `- Kontrollmåling for verifikasjon: ${body.controlMeasurement}` : "",
+    body.measurementPrinciple ? `- Måleprinsipp: ${body.measurementPrinciple}` : "",
+    body.measurementEquipment ? `- Måleutstyr: ${body.measurementEquipment}` : "",
+    body.loggerSetup ? `- Loggeroppsett: ${body.loggerSetup}` : "",
+    body.backupLogger ? `- Reserve-/backup-logger: ${body.backupLogger}` : "",
+    body.communication ? `- Kommunikasjon: ${body.communication}` : "",
+    body.alarmNotification ? `- Alarm / varsling: ${body.alarmNotification}` : "",
+    body.primaryEnergySource ? `- Primær energikilde: ${body.primaryEnergySource}` : "",
+    body.backupSource ? `- Reservekilde: ${body.backupSource}` : "",
+    body.backupEnergySource ? `- Reserveenergikilde: ${body.backupEnergySource}` : "",
+    body.backupPowerW !== null ? `- Reserveeffekt: ${formatNumber(body.backupPowerW, "W")}` : "",
+    body.batteryBankAh !== null ? `- Batteribank: ${formatNumber(body.batteryBankAh, "Ah")}` : "",
+    body.autonomyDays !== null ? `- Autonomi: ${formatNumber(body.autonomyDays, "dagar")}` : "",
+    body.frostProtection ? `- Frostsikring: ${body.frostProtection}` : "",
+    body.iceAdaptation ? `- Istilpassing: ${body.iceAdaptation}` : "",
     body.bypass ? `- Bypass / reserveslipp: ${body.bypass}` : "",
-    (body.solproduksjonPerArKWh ?? body.arsproduksjonSolKWh) !== null
-      ? `- Solproduksjon per ar: ${formatNumber(body.solproduksjonPerArKWh ?? body.arsproduksjonSolKWh, "kWh")}`
+    body.annualSolarProductionKWh !== null
+      ? `- Solproduksjon per ar: ${formatNumber(body.annualSolarProductionKWh, "kWh")}`
       : "",
-    (body.lastPerArKWh ?? body.arslastKWh) !== null
-      ? `- Last per ar: ${formatNumber(body.lastPerArKWh ?? body.arslastKWh, "kWh")}`
+    body.annualLoadDemandKWh !== null
+      ? `- Last per ar: ${formatNumber(body.annualLoadDemandKWh, "kWh")}`
       : "",
-    (body.energibalansePerArKWh ?? body.arsbalanseKWh) !== null
-      ? `- Energibalanse per ar: ${formatNumber(body.energibalansePerArKWh ?? body.arsbalanseKWh, "kWh")}`
+    body.annualEnergyBalanceKWh !== null
+      ? `- Energibalanse per ar: ${formatNumber(body.annualEnergyBalanceKWh, "kWh")}`
       : "",
   ].filter(Boolean);
 
@@ -151,9 +147,9 @@ export function buildDocumentedProjectDataText(body: NormalizedBody): string {
 
 export function buildSupplementaryProjectDataText(body: NormalizedBody): string {
   const lines = [
-    body.grunngiving.length > 0 ? `- Grunngiving: ${body.grunngiving.join("; ")}` : "",
-    body.tilleggskrav.length > 0 ? `- Tilleggskrav: ${body.tilleggskrav.join("; ")}` : "",
-    body.driftskrav.length > 0 ? `- Drift og tilpassing: ${body.driftskrav.join("; ")}` : "",
+    body.justification.length > 0 ? `- Grunngiving: ${body.justification.join("; ")}` : "",
+    body.additionalRequirements.length > 0 ? `- Tilleggskrav: ${body.additionalRequirements.join("; ")}` : "",
+    body.operationalRequirements.length > 0 ? `- Drift og tilpassing: ${body.operationalRequirements.join("; ")}` : "",
   ].filter(Boolean);
 
   return lines.length > 0 ? lines.join("\n") : "- Ingen supplerande opplysningar oppgitt.";
@@ -169,34 +165,34 @@ export function clampPromptSize(
   nveSnippetsText: string,
   rules: Rules
 ): {
-  prosjektbeskrivelse: string;
-  rapportutdrag: string;
+  projectDescription: string;
+  reportExtract: string;
   documented_project_data: string;
   supplementary_project_data: string;
   nve_snippets: string;
 } {
   const hardChars = (rules.max_input_tokens_hard ?? DEFAULT_INPUT_TOKEN_HARD) * APPROX_CHARS_PER_TOKEN;
 
-  let prosjektbeskrivelse = body.prosjektbeskrivelse || "Ingen eiga prosjektbeskriving oppgitt.";
-  let rapportutdrag = body.rapportutdrag || "Ingen rapportutdrag oppgitt.";
+  let projectDescription = body.projectDescription || "Ingen eiga prosjektbeskriving oppgitt.";
+  let reportExtract = body.reportExtract || "Ingen rapportutdrag oppgitt.";
   let documented_project_data = documentedProjectDataText;
   let supplementary_project_data = supplementaryProjectDataText;
   let nve_snippets = nveSnippetsText;
 
   const currentLength = () =>
     fillTemplate(userTemplate, {
-      prosjekt: body.prosjekt || "Uoppgitt",
-      prosjektbeskrivelse,
+      project: body.project || "Uoppgitt",
+      projectDescription,
       documented_project_data,
       supplementary_project_data,
-      rapportutdrag,
+      reportExtract,
       nve_snippets,
     }).length;
 
   if (currentLength() <= hardChars) {
     return {
-      prosjektbeskrivelse,
-      rapportutdrag,
+      projectDescription,
+      reportExtract,
       documented_project_data,
       supplementary_project_data,
       nve_snippets,
@@ -206,8 +202,8 @@ export function clampPromptSize(
   supplementary_project_data = "- Supplerande opplysningar kutta av omsyn til inputstorleik.";
   if (currentLength() <= hardChars) {
     return {
-      prosjektbeskrivelse,
-      rapportutdrag,
+      projectDescription,
+      reportExtract,
       documented_project_data,
       supplementary_project_data,
       nve_snippets,
@@ -217,31 +213,31 @@ export function clampPromptSize(
   nve_snippets = nve_snippets.slice(0, Math.max(700, Math.floor(hardChars * 0.3))).trim();
   if (currentLength() <= hardChars) {
     return {
-      prosjektbeskrivelse,
-      rapportutdrag,
+      projectDescription,
+      reportExtract,
       documented_project_data,
       supplementary_project_data,
       nve_snippets,
     };
   }
 
-  prosjektbeskrivelse = prosjektbeskrivelse.slice(0, Math.max(500, Math.floor(hardChars * 0.12))).trim();
+  projectDescription = projectDescription.slice(0, Math.max(500, Math.floor(hardChars * 0.12))).trim();
   if (currentLength() <= hardChars) {
     return {
-      prosjektbeskrivelse,
-      rapportutdrag,
+      projectDescription,
+      reportExtract,
       documented_project_data,
       supplementary_project_data,
       nve_snippets,
     };
   }
 
-  const remainingForReport = Math.max(1200, hardChars - currentLength() + rapportutdrag.length - 300);
-  rapportutdrag = rapportutdrag.slice(0, remainingForReport).trim();
+  const remainingForReport = Math.max(1200, hardChars - currentLength() + reportExtract.length - 300);
+  reportExtract = reportExtract.slice(0, remainingForReport).trim();
 
   return {
-    prosjektbeskrivelse,
-    rapportutdrag,
+    projectDescription,
+    reportExtract,
     documented_project_data,
     supplementary_project_data,
     nve_snippets,
@@ -314,10 +310,6 @@ export function extractOpenAiText(payload: OpenAIResponsePayload): string {
     .join(" ")
     .replace(WHITESPACE_RE, " ")
     .trim();
-}
-
-export function extractResponseText(payload: OpenAIResponsePayload): string {
-  return extractOpenAiText(payload);
 }
 
 export function finalizeAiText(text: string, rules: Rules): string {
@@ -442,11 +434,11 @@ export async function runSelfFeedback(
 Krav: Teksten skal være på bokmål, 120-250 ord, underbygge løsningen med NVE-kilder, ikke blande kontrollmåling med primærmåling, og være selvstendig lesbar uten resten av rapporten.`;
   }
 
-  const userMsg = `TEKST:\n${generatedText}\n\nEVIDENS:\n${evidenceText}\n\nLØSNING: ${body.hovudloysing ?? ""}\nPRIMÆRMÅLING: ${body.primaermaaling ?? ""}\nKONTROLLMÅLING: ${body.kontrollmaaling ?? ""}`;
+  const userMsg = `TEKST:\n${generatedText}\n\nEVIDENS:\n${evidenceText}\n\nLØSNING: ${body.mainSolution ?? ""}\nPRIMÆRMÅLING: ${body.primaryMeasurement ?? ""}\nKONTROLLMÅLING: ${body.controlMeasurement ?? ""}`;
 
   try {
     const result = await callViaGateway(env, feedbackPrompt, userMsg, feedbackModel, maxOutputTokens);
-    const raw = extractResponseText(result.raw);
+    const raw = extractOpenAiText(result.raw);
     const parsed = JSON.parse(raw);
     return {
       score: typeof parsed.score === "number" ? parsed.score : 3,
@@ -519,7 +511,7 @@ export async function generateWithFallback(
   // Step 1: Gateway → primary model (cached + retried)
   try {
     const result = await callViaGateway(env, systemPrompt, userPrompt, primaryModel, maxOutputTokens);
-    const text = finalizeAiText(extractResponseText(result.raw), rules);
+    const text = finalizeAiText(extractOpenAiText(result.raw), rules);
     if (text) {
       return { text, model: result.model, source: "openai-gateway", gatewayUsed: true, fallbackStep: 1 };
     }
@@ -531,7 +523,7 @@ export async function generateWithFallback(
   // Step 2: Gateway → fallback model (lighter, more likely to succeed)
   try {
     const result = await callViaGateway(env, systemPrompt, userPrompt, fallbackModel, maxOutputTokens);
-    const text = finalizeAiText(extractResponseText(result.raw), rules);
+    const text = finalizeAiText(extractOpenAiText(result.raw), rules);
     if (text) {
       return { text, model: result.model, source: "openai-gateway-fallback", gatewayUsed: true, fallbackStep: 2 };
     }

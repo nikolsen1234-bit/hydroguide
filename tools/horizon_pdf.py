@@ -5,7 +5,7 @@ Generates a POV-style horizon diagram: as if standing at the measurement
 station looking outward 360°, seeing terrain silhouette against sky with
 sun paths (summer solstice, equinox, winter solstice) and hour markers.
 
-Uses PVGIS 6.0 / NOAA solar position algorithms (same as solarEngine.ts).
+Uses PVGIS 6.0 / NOAA solar position algorithms.
 
 Usage:
     python horizon_pdf.py --lat 61.5 --lon 6.8 --name "Stasjon Aurland" --height-offset 3
@@ -62,7 +62,7 @@ GRID_LABEL_COLOR = Color(1, 1, 1, 0.6)
 HOUR_DOT_COLOR = Color(1, 1, 1, 0.9)
 
 # ---------------------------------------------------------------------------
-# NOAA Solar Position (same as solarEngine.ts)
+# NOAA Solar Position
 # ---------------------------------------------------------------------------
 
 def fractional_year(doy, hour, days_in_year=365):

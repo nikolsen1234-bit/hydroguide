@@ -68,7 +68,7 @@ function normalizePlantDetails(value: unknown): NvePlantDetails | null {
     grossHeadM: numberOrNull(detail.grossHeadM),
     commissionedYear: stringOrNull(detail.commissionedYear),
     plantType: stringOrNull(detail.plantType),
-    kdbNr: stringOrNull(detail.kdbNr),
+    kdbNumber: stringOrNull(detail.kdbNumber),
     concessionUrl: stringOrNull(detail.concessionUrl),
     wikiUrl: stringOrNull(detail.wikiUrl),
     imageUrl: stringOrNull(detail.imageUrl),

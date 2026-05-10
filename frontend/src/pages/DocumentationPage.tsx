@@ -1,15 +1,12 @@
 ﻿import { useEffect, useRef } from "react";
 import WorkspaceHeader from "../components/WorkspaceHeader";
 import { useMemo } from "react";
-import WorkspaceSection from "../components/WorkspaceSection";
+import EditorialSection from "../components/EditorialSection";
 import { useLanguage } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import {
   workspaceBodyClassName,
-  workspaceBodyMutedClassName,
   workspaceContentValueBaseClassName,
-  workspaceContentValueClassName,
-  workspaceMetaClassName,
   workspacePageClassName,
   workspaceSubsectionTitleClassName
 } from "../styles/workspace";
@@ -34,6 +31,7 @@ type MathJaxWindow = Window & typeof globalThis & {
 
 type FormulaItem = {
   symbol: string;
+  unit?: string;
   description: string;
 };
 
@@ -62,12 +60,12 @@ function buildSections(t: (key: TranslationKey) => string): DocSection[] {
           formula: String.raw`\displaystyle
 I = \frac{P}{V_{nom}}, \qquad E_{dag} = P \cdot t, \qquad Q_{dag} = I \cdot t`,
           items: [
-            { symbol: "I", description: t("docs.current") },
-            { symbol: "P", description: t("docs.power") },
-            { symbol: "V_{nom}", description: t("docs.nominalVoltage") },
-            { symbol: "E_{dag}", description: t("docs.dailyConsumption") },
-            { symbol: "Q_{dag}", description: t("docs.dailyCurrent") },
-            { symbol: "t", description: t("docs.hoursPerDay") }
+            { symbol: "I", unit: "A", description: t("docs.current") },
+            { symbol: "P", unit: "W", description: t("docs.power") },
+            { symbol: "V_{nom}", unit: "V", description: t("docs.nominalVoltage") },
+            { symbol: "E_{dag}", unit: "Wh", description: t("docs.dailyConsumption") },
+            { symbol: "Q_{dag}", unit: "Ah", description: t("docs.dailyCurrent") },
+            { symbol: "t", unit: "h", description: t("docs.hoursPerDay") }
           ]
         }
       ]
@@ -82,10 +80,10 @@ I = \frac{P}{V_{nom}}, \qquad E_{dag} = P \cdot t, \qquad Q_{dag} = I \cdot t`,
           formula: String.raw`\displaystyle
 E_{sol} = G \cdot P_{panel} \cdot n_{panel} \cdot \eta_{system}`,
           items: [
-            { symbol: "E_{sol}", description: t("docs.solarProductionSymbol") },
-            { symbol: "G", description: t("docs.solarRadiation") },
-            { symbol: "P_{panel}", description: t("docs.panelPower") },
-            { symbol: "n_{panel}", description: t("docs.panelCount") },
+            { symbol: "E_{sol}", unit: "Wh", description: t("docs.solarProductionSymbol") },
+            { symbol: "G", unit: "kWh/m^2", description: t("docs.solarRadiation") },
+            { symbol: "P_{panel}", unit: "W", description: t("docs.panelPower") },
+            { symbol: "n_{panel}", unit: "stk", description: t("docs.panelCount") },
             { symbol: "\\eta_{system}", description: t("docs.systemEfficiency") }
           ]
         },
@@ -95,11 +93,11 @@ E_{sol} = G \cdot P_{panel} \cdot n_{panel} \cdot \eta_{system}`,
           formula: String.raw`\displaystyle
 E_{forbruk} = E_{dag} \cdot n_{dager}, \qquad E_{underskudd} = E_{forbruk} - E_{sol}`,
           items: [
-            { symbol: "E_{forbruk}", description: t("docs.totalConsumption") },
-            { symbol: "E_{dag}", description: t("docs.dailyConsumptionSymbol") },
-            { symbol: "n_{dager}", description: t("docs.numberOfDays") },
-            { symbol: "E_{underskudd}", description: t("docs.energyDeficit") },
-            { symbol: "E_{sol}", description: t("docs.solarProductionSymbol") }
+            { symbol: "E_{forbruk}", unit: "Wh", description: t("docs.totalConsumption") },
+            { symbol: "E_{dag}", unit: "Wh", description: t("docs.dailyConsumptionSymbol") },
+            { symbol: "n_{dager}", unit: "d", description: t("docs.numberOfDays") },
+            { symbol: "E_{underskudd}", unit: "Wh", description: t("docs.energyDeficit") },
+            { symbol: "E_{sol}", unit: "Wh", description: t("docs.solarProductionSymbol") }
           ]
         },
         {
@@ -108,9 +106,9 @@ E_{forbruk} = E_{dag} \cdot n_{dager}, \qquad E_{underskudd} = E_{forbruk} - E_{
           formula: String.raw`\displaystyle
 E_{bal} = E_{sol} - E_{forbruk}`,
           items: [
-            { symbol: "E_{bal}", description: t("docs.energyBalanceSymbol") },
-            { symbol: "E_{sol}", description: t("docs.solarProductionSymbol") },
-            { symbol: "E_{forbruk}", description: t("docs.totalConsumption") }
+            { symbol: "E_{bal}", unit: "Wh", description: t("docs.energyBalanceSymbol") },
+            { symbol: "E_{sol}", unit: "Wh", description: t("docs.solarProductionSymbol") },
+            { symbol: "E_{forbruk}", unit: "Wh", description: t("docs.totalConsumption") }
           ]
         },
         {
@@ -119,10 +117,10 @@ E_{bal} = E_{sol} - E_{forbruk}`,
           formula: String.raw`\displaystyle
 t_{drift} = \frac{E_{underskudd}}{P_{sek}}, \qquad t_{tot} = \sum t_{drift}`,
           items: [
-            { symbol: "t_{drift}", description: t("docs.runtimeHoursSymbol") },
-            { symbol: "t_{tot}", description: t("docs.totalRuntimeHours") },
-            { symbol: "E_{underskudd}", description: t("docs.energyDeficitSymbol") },
-            { symbol: "P_{sek}", description: t("docs.secondaryPower") }
+            { symbol: "t_{drift}", unit: "h", description: t("docs.runtimeHoursSymbol") },
+            { symbol: "t_{tot}", unit: "h", description: t("docs.totalRuntimeHours") },
+            { symbol: "E_{underskudd}", unit: "Wh", description: t("docs.energyDeficitSymbol") },
+            { symbol: "P_{sek}", unit: "W", description: t("docs.secondaryPower") }
           ]
         },
         {
@@ -131,13 +129,13 @@ t_{drift} = \frac{E_{underskudd}}{P_{sek}}, \qquad t_{tot} = \sum t_{drift}`,
           formula: String.raw`\displaystyle
 F = E_{underskudd} \cdot r_{forbruk}\ \text{eller} \Rightarrow\ F = t_{drift} \cdot P_{sek} \cdot r_{forbruk}, \qquad C_{drivstoff} = F \cdot p_{drivstoff}`,
           items: [
-            { symbol: "F", description: t("docs.fuelSymbol") },
-            { symbol: "E_{underskudd}", description: t("docs.energyDeficitSymbol") },
-            { symbol: "t_{drift}", description: t("docs.runtimeHoursSymbol") },
-            { symbol: "P_{sek}", description: t("docs.secondaryPower") },
-            { symbol: "r_{forbruk}", description: t("docs.consumptionRate") },
-            { symbol: "C_{drivstoff}", description: t("docs.fuelCost") },
-            { symbol: "p_{drivstoff}", description: t("docs.fuelPriceSymbol") }
+            { symbol: "F", unit: "L", description: t("docs.fuelSymbol") },
+            { symbol: "E_{underskudd}", unit: "Wh", description: t("docs.energyDeficitSymbol") },
+            { symbol: "t_{drift}", unit: "h", description: t("docs.runtimeHoursSymbol") },
+            { symbol: "P_{sek}", unit: "W", description: t("docs.secondaryPower") },
+            { symbol: "r_{forbruk}", unit: "L/kWh", description: t("docs.consumptionRate") },
+            { symbol: "C_{drivstoff}", unit: "kr", description: t("docs.fuelCost") },
+            { symbol: "p_{drivstoff}", unit: "kr/L", description: t("docs.fuelPriceSymbol") }
           ]
         }
       ]
@@ -152,10 +150,10 @@ F = E_{underskudd} \cdot r_{forbruk}\ \text{eller} \Rightarrow\ F = t_{drift} \c
           formula: String.raw`\displaystyle
  C_{batt} = \frac{E_{dag} \cdot n_{autonomi}}{V_{nom} \cdot DoD}`,
           items: [
-            { symbol: "C_{batt}", description: t("docs.batteryCapacitySymbol") },
-            { symbol: "E_{dag}", description: t("docs.dailyConsumptionSymbol") },
-            { symbol: "n_{autonomi}", description: t("docs.autonomyDays") },
-            { symbol: "V_{nom}", description: t("docs.nominalVoltage") },
+            { symbol: "C_{batt}", unit: "Ah", description: t("docs.batteryCapacitySymbol") },
+            { symbol: "E_{dag}", unit: "Wh", description: t("docs.dailyConsumptionSymbol") },
+            { symbol: "n_{autonomi}", unit: "d", description: t("docs.autonomyDays") },
+            { symbol: "V_{nom}", unit: "V", description: t("docs.nominalVoltage") },
             { symbol: "DoD", description: t("docs.dodSymbol") }
           ]
         }
@@ -171,18 +169,18 @@ F = E_{underskudd} \cdot r_{forbruk}\ \text{eller} \Rightarrow\ F = t_{drift} \c
           formula: String.raw`\displaystyle
 TOC = C_{innkjøp} + H \cdot \left(C_{drivstoff} + C_{vedlikehold}\right)`,
           items: [
-            { symbol: "TOC", description: t("docs.tocSymbol") },
-            { symbol: "C_{innkjøp}", description: t("docs.purchaseCost") },
-            { symbol: "H", description: t("docs.horizonYears") },
-            { symbol: "C_{drivstoff}", description: t("docs.fuelCostPerYear") },
-            { symbol: "C_{vedlikehold}", description: t("docs.maintenanceCostPerYear") }
+            { symbol: "TOC", unit: "kr", description: t("docs.tocSymbol") },
+            { symbol: "C_{innkjøp}", unit: "kr", description: t("docs.purchaseCost") },
+            { symbol: "H", unit: "år", description: t("docs.horizonYears") },
+            { symbol: "C_{drivstoff}", unit: "kr/år", description: t("docs.fuelCostPerYear") },
+            { symbol: "C_{vedlikehold}", unit: "kr/år", description: t("docs.maintenanceCostPerYear") }
           ]
         }
       ]
     },
     {
       title: t("docs.radioLinkSection"),
-      description: t("docs.radioLinkDesc"),
+      description: "",
       entries: [
         {
           title: t("docs.terrainDistance"),
@@ -190,8 +188,8 @@ TOC = C_{innkjøp} + H \cdot \left(C_{drivstoff} + C_{vedlikehold}\right)`,
           formula: String.raw`\displaystyle
 d_g = 2R_E \cdot \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta \phi}{2}\right) + \cos(\phi_A)\cos(\phi_B)\sin^2\left(\frac{\Delta \lambda}{2}\right)}\right)`,
           items: [
-            { symbol: "d_g", description: t("docs.terrainDistanceSymbol") },
-            { symbol: "R_E", description: t("docs.earthRadius") },
+            { symbol: "d_g", unit: "m", description: t("docs.terrainDistanceSymbol") },
+            { symbol: "R_E", unit: "m", description: t("docs.earthRadius") },
             { symbol: "\\phi_A, \\phi_B", description: t("docs.latAB") },
             { symbol: "\\Delta \\phi", description: t("docs.deltaLat") },
             { symbol: "\\Delta \\lambda", description: t("docs.deltaLng") }
@@ -203,11 +201,11 @@ d_g = 2R_E \cdot \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta \phi}{2}\right) + \
           formula: String.raw`\displaystyle
 F_1 = \sqrt{\frac{\lambda d_1 d_2}{d_1 + d_2}} \cdot k_F, \qquad L_{fs} = 20 \log_{10}\left(\frac{4 \pi d_g}{\lambda}\right)`,
           items: [
-            { symbol: "F_1", description: t("docs.fresnelRadius") },
-            { symbol: "\\lambda", description: t("docs.wavelength") },
-            { symbol: "d_1, d_2", description: t("docs.obstructionDistance") },
+            { symbol: "F_1", unit: "m", description: t("docs.fresnelRadius") },
+            { symbol: "\\lambda", unit: "m", description: t("docs.wavelength") },
+            { symbol: "d_1, d_2", unit: "m", description: t("docs.obstructionDistance") },
             { symbol: "k_F", description: t("docs.fresnelFactor") },
-            { symbol: "L_{fs}", description: t("docs.freeSpaceLoss") }
+            { symbol: "L_{fs}", unit: "dB", description: t("docs.freeSpaceLoss") }
           ]
         },
         {
@@ -216,11 +214,11 @@ F_1 = \sqrt{\frac{\lambda d_1 d_2}{d_1 + d_2}} \cdot k_F, \qquad L_{fs} = 20 \lo
           formula: String.raw`\displaystyle
 R_{eff} = k \cdot R_E, \qquad K_{LOS} = \min_x \left(h_{LOS}(x) - \left(h_{terr}(x) + h_E(x)\right)\right), \qquad K_F = \min_x \left(h_{LOS}(x) - F_1(x) - \left(h_{terr}(x) + h_E(x)\right)\right)`,
           items: [
-            { symbol: "R_{eff}", description: t("docs.effectiveEarthRadius") },
+            { symbol: "R_{eff}", unit: "m", description: t("docs.effectiveEarthRadius") },
             { symbol: "k", description: t("docs.kFactorChosen") },
-            { symbol: "K_{LOS}", description: t("docs.losClearance") },
-            { symbol: "K_F", description: t("docs.fresnelClearance") },
-            { symbol: "h_E(x)", description: t("docs.earthCurveCorrection") }
+            { symbol: "K_{LOS}", unit: "m", description: t("docs.losClearance") },
+            { symbol: "K_F", unit: "m", description: t("docs.fresnelClearance") },
+            { symbol: "h_E(x)", unit: "m", description: t("docs.earthCurveCorrection") }
           ]
         },
         {
@@ -229,11 +227,11 @@ R_{eff} = k \cdot R_E, \qquad K_{LOS} = \min_x \left(h_{LOS}(x) - \left(h_{terr}
           formula: String.raw`\displaystyle
 A_r = \gamma_R \cdot r \cdot d, \qquad \gamma_R = k_R \cdot R^\alpha`,
           items: [
-            { symbol: "A_r", description: t("docs.totalRainAtt") },
-            { symbol: "\\gamma_R", description: t("docs.specificRainAtt") },
+            { symbol: "A_r", unit: "dB", description: t("docs.totalRainAtt") },
+            { symbol: "\\gamma_R", unit: "dB/km", description: t("docs.specificRainAtt") },
             { symbol: "r", description: t("docs.reductionFactor") },
-            { symbol: "d", description: t("docs.linkLength") },
-            { symbol: "R", description: t("docs.rainRate") },
+            { symbol: "d", unit: "km", description: t("docs.linkLength") },
+            { symbol: "R", unit: "mm/h", description: t("docs.rainRate") },
             { symbol: "k_R, \\alpha", description: t("docs.rainCoefficients") }
           ]
         }
@@ -314,7 +312,7 @@ function InlineMath({ tex }: { tex: string }) {
 
 function FormulaBlock({ tex }: { tex: string }) {
   return (
-    <div className="my-4 max-w-full overflow-x-auto overflow-y-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-bg)] px-4 py-3 text-left text-[length:var(--hg-type-category-size)] text-[var(--hg-ink)]">
+    <div className="hg-formula-block my-4 max-w-full overflow-x-auto overflow-y-hidden px-0 py-3 text-left text-[1.08rem] text-[var(--hg-ink)]">
       {`\\[${tex}\\]`}
     </div>
   );
@@ -324,20 +322,37 @@ function DefinitionList({ items, heading }: { items: FormulaItem[]; heading: str
   return (
     <div className="mt-4">
       <p className={`${workspaceSubsectionTitleClassName} mb-3`}>{heading}</p>
-      <table className="w-full text-left">
+      <div className="max-w-full overflow-x-auto">
+      <table className="hg-definition-table min-w-[36rem] table-fixed text-left">
+        <colgroup>
+          <col className="w-[31%] sm:w-[28%]" />
+          <col className="w-[22%]" />
+          <col />
+        </colgroup>
+        <thead>
+          <tr className="border-b border-[var(--hg-hairline)]">
+            <th className={`py-2 pr-3 text-left ${workspaceSubsectionTitleClassName}`} aria-label="Symbol" />
+            <th className={`px-3 py-2 text-left ${workspaceSubsectionTitleClassName}`}>Enhet</th>
+            <th className={`px-3 py-2 text-left ${workspaceSubsectionTitleClassName}`}>Forklaring</th>
+          </tr>
+        </thead>
         <tbody>
           {items.map((item) => (
             <tr key={item.symbol} className="border-t border-[var(--hg-hairline-2)] first:border-t-0">
-              <td className={`w-28 whitespace-nowrap py-2 pr-4 align-top sm:w-36 ${workspaceContentValueBaseClassName} text-[var(--hg-ink)]`}>
+              <td className={`whitespace-nowrap py-2 pr-3 align-top ${workspaceContentValueBaseClassName} text-[var(--hg-ink)]`}>
                 <InlineMath tex={item.symbol} />
               </td>
-              <td className={`py-2 align-top ${workspaceBodyClassName}`}>
+              <td className={`whitespace-nowrap px-3 py-2 align-top ${workspaceContentValueBaseClassName} text-[var(--hg-muted)]`}>
+                {item.unit ?? "-"}
+              </td>
+              <td className={`px-3 py-2 align-top ${workspaceBodyClassName}`}>
                 {item.description}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -376,25 +391,9 @@ export default function DocumentationPage() {
       <WorkspaceHeader title={t("docs.title")} />
 
       <div ref={mathDocumentRef} className="min-w-0 space-y-4">
-        <section className="hg-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-          <p className={`${workspaceMetaClassName} shrink-0`}>På denne siden</p>
-          <div className="flex flex-wrap gap-3">
-            {sections.map((section, index) => (
-              <a
-                key={section.title}
-                href={`#doc-${index}`}
-                className="inline-flex items-baseline gap-2 text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink-2)] transition hover:text-[var(--hg-accent)]"
-              >
-                <span className="hg-mono text-[10px] text-[var(--hg-muted)]">{index + 1}</span>
-                {section.title}
-              </a>
-            ))}
-          </div>
-        </section>
-
         {sections.map((section, index) => (
           <div id={`doc-${index}`} key={section.title} className="scroll-mt-4">
-            <WorkspaceSection title={section.title} description={section.description || undefined}>
+            <EditorialSection title={section.title} description={section.description || undefined}>
             <div className="space-y-8">
               {section.entries.map((entry, index) => (
                 <article
@@ -402,21 +401,15 @@ export default function DocumentationPage() {
                   className="border-t border-[var(--hg-hairline-2)] pt-6 first:border-t-0 first:pt-0"
                 >
                   {entry.title ? <h3 className={workspaceSubsectionTitleClassName}>{entry.title}</h3> : null}
-                  {entry.lead ? <p className={`mt-1 ${workspaceBodyMutedClassName}`}>{entry.lead}</p> : null}
+                  {entry.lead ? <p className={`mt-1 max-w-3xl ${workspaceBodyClassName}`}>{entry.lead}</p> : null}
                   {entry.formula ? <FormulaBlock tex={entry.formula} /> : null}
                   {entry.items && entry.items.length > 0 ? <DefinitionList items={entry.items} heading={t("docs.explanations")} /> : null}
                 </article>
               ))}
             </div>
-          </WorkspaceSection>
+          </EditorialSection>
           </div>
         ))}
-        <section className="rounded-lg border border-[var(--hg-hairline-2)] bg-[var(--hg-surface-2)] p-4">
-          <p className={workspaceContentValueClassName}>HydroGuide er et støtteverktøy.</p>
-          <p className={`mt-1 ${workspaceBodyClassName}`}>
-            Formelgrunnlaget skal kontrolleres mot prosjektkrav og faglig vurdering før endelig bruk.
-          </p>
-        </section>
       </div>
     </main>
   );

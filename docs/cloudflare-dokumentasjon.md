@@ -17,17 +17,22 @@ flowchart TB
         subgraph workers[Cloudflare Workers]
             api[hydroguide-api<br/>offentlig API + frontend-hjelpere]
             report[hydroguide-report<br/>rapportinngang]
-            ai[hydroguide-ai<br/>retrieval og rapporttekst<br/>ingen offentlig route]
+            ai[hydroguide-ai<br/>intern rapport-AI<br/>ingen offentleg route]
             admin[hydroguide-admin<br/>/admin/*]
         end
+
+        tunnel[Cloudflare Tunnel<br/>agent-bridge.hydroguide.no]
     end
+
+    bridge[Local report-agent bridge<br/>127.0.0.1:8788]
 
     nettleser --> spa
     spa --> api
     spa --> report
     operator --> admin
 
-    report -.service binding.-> ai
+    report --> tunnel
+    tunnel --> bridge
 ```
 
 Cloudflare WAF avviser API-prefikser utenfor kontrakten, kildeprober og sensitive filstier som `/rest/*`, `/api/v1/*`, `/api/keys*`, `.env`, `.secrets`, `/.git*`, `/.ai*`, `/backend*` og `/node_modules*`.
@@ -55,7 +60,7 @@ WAF avviser `/api/keys*`. Admin for API-nøkler ligger på `/admin/keys`.
 | Worker | Config | Source | Bindinger |
 |--------|--------|--------|-----------|
 | `hydroguide-api` | `backend/cloudflare/api.wrangler.jsonc` | `backend/workers/api/index.js` | `MINIMUM_FLOW_BUCKET`, `API_KEYS`, `API_KEY_HASH_SECRET` |
-| `hydroguide-report` | `backend/cloudflare/report.wrangler.jsonc` | `backend/workers/report/index.js` | `REPORT_AI_WORKER`, `REPORT_ACCESS_CODE_HASH`, `REPORT_WORKER_TOKEN` |
+| `hydroguide-report` | `backend/cloudflare/report.wrangler.jsonc` | `backend/workers/report/index.js` | `REPORT_BRIDGE_URL`, `REPORT_ACCESS_CODE_HASH`, `REPORT_BRIDGE_TOKEN` |
 | `hydroguide-ai` | `backend/cloudflare/ai.wrangler.jsonc` | `backend/workers/ai/index.ts` | `AI`, `REPORT_RULES`, `AI_REFERENCE_BUCKET`, `REPORT_WORKER_TOKEN`, AI Gateway/Search secrets |
 | `hydroguide-admin` | `backend/cloudflare/admin.wrangler.jsonc` | `backend/workers/admin/index.js` | `API_KEYS`, `ADMIN_TOKEN`, `API_KEY_HASH_SECRET` |
 
@@ -69,9 +74,10 @@ flowchart LR
     api --> r2a[(R2 minimum-flow)]
     api --> sec1>API_KEY_HASH_SECRET]
 
-    report[hydroguide-report] -.service binding.-> ai[hydroguide-ai]
+    report[hydroguide-report] --> tunnel[Cloudflare Tunnel]
+    tunnel --> bridge[Local report-agent bridge]
     report --> sec2>REPORT_ACCESS_CODE_HASH]
-    report --> sec3>REPORT_WORKER_TOKEN]
+    report --> sec3>REPORT_BRIDGE_TOKEN]
 
     ai --> kv2[(KV REPORT_RULES)]
     ai --> r2b[(R2 ai-reference)]
@@ -84,7 +90,7 @@ flowchart LR
     admin --> sec1
 ```
 
-`>...]` er secrets, `[(...)]` er KV/R2-lagring, `{{...}}` er native Cloudflare-binding. Pilen `-.service binding.->` er intern Worker-til-Worker uten offentlig URL.
+`>...]` er secrets, `[(...)]` er KV/R2-lagring, `{{...}}` er native Cloudflare-binding. Cloudflare Tunnel peker til en lokal bridge på PC-en og bridge-tokenet begrenser hvem som kan kalle rapportgenereringen.
 
 ## Lagring
 
@@ -102,6 +108,7 @@ Disse ligger som Cloudflare secrets, Cloudflare Secrets Store eller Cloudflare W
 
 - `API_KEY_HASH_SECRET`
 - `REPORT_ACCESS_CODE_HASH`
+- `REPORT_BRIDGE_TOKEN`
 - `REPORT_WORKER_TOKEN`
 - `AI_GATEWAY_AUTH_TOKEN`
 - `AI_SEARCH_API_TOKEN`
@@ -178,7 +185,7 @@ Deploy-rekkefølgen er:
 3. `hydroguide-report`
 4. `hydroguide-admin`
 
-`hydroguide-ai` blir deployet først fordi `hydroguide-report` har en service binding til den. Bindingen peker på navnet `hydroguide-ai`, så Worker-en må eksistere før report-deployen kan lykkes første gang.
+`hydroguide-report` bruker `REPORT_BRIDGE_URL` og `REPORT_BRIDGE_TOKEN` for å nå den lokale rapportagenten. `hydroguide-ai` har ingen offentlig route og brukes ikke av den aktive rapportflyten.
 
 ## Rollback
 
@@ -199,7 +206,7 @@ For en dårlig konfig-endring som ikke er deployet enda: revert commit på `main
 | `npx wrangler tail --name <worker>` | Live-loggstream lokalt |
 | Cloudflare Dashboard → Workers Builds | Bygg- og deploy-historikk per Worker |
 | Cloudflare Dashboard → Analytics → Security | WAF-treff, rate limit-treff, blokkerte requests |
-| Cloudflare Dashboard → AI → AI Gateway | Cache-treff, kostnad og latens for rapport-AI |
+| Lokal CLIProxyAPI / agent-bridge-logg | Modellstatus, retrieval-backend, request-id og valgte kunnskapschunker for rapport |
 
 Alle fire Workers har `observability.enabled: true`. Det betyr at alle requests blir logget med headere, status og runtime-feil uten ekstra kode i hver Worker.
 
@@ -207,8 +214,8 @@ Alle fire Workers har `observability.enabled: true`. Det betyr at alle requests 
 
 - Admin-ruter ligger under `/admin/*`.
 - WAF avviser `/api/keys*`. Adminoperasjoner går gjennom `/admin/keys`.
-- Rapport-AI har ingen offentlig route. `hydroguide-report` kaller den med `REPORT_AI_WORKER`.
-- Rapportkall bruker `REPORT_ACCESS_CODE_HASH` fra nettsiden og `REPORT_WORKER_TOKEN` internt.
+- Rapportagenten har ingen direkte offentlig report-route. `hydroguide-report` kaller den via Cloudflare Tunnel med `REPORT_BRIDGE_TOKEN`.
+- Rapportkall bruker `REPORT_ACCESS_CODE_HASH` fra nettsiden og `REPORT_BRIDGE_TOKEN` internt.
 - API-nøkler ligger i KV som hash/HMAC.
 - R2-bucket for minstevannføring er skilt fra R2-bucket for AI-referanser.
 - Tracked config bruker placeholders for account-IDer, namespace-IDer og tokens.
@@ -235,4 +242,4 @@ Aktive Cloudflare-regler:
 - Arkitektur og dataflyt: [arkitektur.md](arkitektur.md)
 - Lokal utvikling og bygg: [utvikling.md](utvikling.md)
 - Backend-kode og endepunkter: [backend-dokumentasjon.md](backend-dokumentasjon.md)
-- Rapport-AI: [ai-rapport.md](ai-rapport.md)
+- Lokal rapportagent: [../tools/agent-bridge/README.md](../tools/agent-bridge/README.md)

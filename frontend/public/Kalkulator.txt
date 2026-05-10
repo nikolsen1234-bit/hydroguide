@@ -1,9 +1,9 @@
 {
-  "engineMode": "standard",
+  "engineMode": "calculator",
   "name": "Markåni kraftverk — Forenklet",
   "location": "Markåni kraftverk (Vaksdal)",
-  "nveId": 2034,
-  "sporsmal": {
+  "locationPlaceId": "2034",
+  "answers": {
     "q1Anleggstype": "nytt",
     "q2HogasteMinstevassforing": 19,
     "q3Slippkravvariasjon": "tilsigsstyrt",
@@ -14,7 +14,7 @@
     "q8Maleprofil": "naturleg_stabilt",
     "q9AllmentaKontroll": "ja"
   },
-  "systemparametere": {
+  "systemParameters": {
     "4gCoverage": true,
     "nbIotCoverage": true,
     "lineOfSightUnder15km": true,
@@ -23,17 +23,16 @@
     "batteryMode": "ah",
     "batteryValue": 600
   },
-  "sol": {
+  "solar": {
     "panelPowerWp": 425,
     "panelCount": 2,
-    "systemEfficiency": 0.8,
-    "lifetimeYears": 10
+    "systemEfficiency": 0.8
   },
-  "batteri": {
+  "battery": {
     "nominalVoltage": 12.8,
     "maxDepthOfDischarge": 0.8
   },
-  "brenselcelle": {
+  "fuelCell": {
     "purchaseCost": 88000,
     "powerW": 42,
     "fuelConsumptionPerKWh": 0.9,
@@ -49,12 +48,12 @@
     "lifetime": 43800,
     "annualMaintenance": 6500
   },
-  "andre": {
+  "other": {
     "co2Methanol": 1.088,
     "co2Diesel": 2.68,
     "evaluationHorizonYears": 10
   },
-  "solinnstraling": {
+  "monthlySolarRadiation": {
     "jan": 0.11,
     "feb": 1.02,
     "mar": 21.44,
@@ -68,84 +67,124 @@
     "nov": 0.26,
     "des": 0.02
   },
-  "utstyr": [
+  "equipmentRows": [
     {
-      "aktiv": true,
-      "namn": "Victron BMS",
-      "innkjopsprisKr": "",
-      "effektW": 0.1,
-      "timerPerDag": 24
+      "active": true,
+      "name": "Victron BMS",
+      "powerW": 0.1,
+      "runtimeHoursPerDay": 24,
+      "purchaseCost": "",
+      "lifetimeYears": "",
+      "annualMaintenance": "",
+      "supplier": "",
+      "comment": ""
     },
     {
-      "aktiv": true,
-      "namn": "VICTRON Lynx Distributor",
-      "innkjopsprisKr": "",
-      "effektW": 2.4,
-      "timerPerDag": 24
+      "active": true,
+      "name": "VICTRON Lynx Distributor",
+      "powerW": 2.4,
+      "runtimeHoursPerDay": 24,
+      "purchaseCost": "",
+      "lifetimeYears": "",
+      "annualMaintenance": "",
+      "supplier": "",
+      "comment": ""
     },
     {
-      "aktiv": true,
-      "namn": "VICTRON Orion TR Omformer DC-DC",
-      "innkjopsprisKr": "",
-      "effektW": 1.2,
-      "timerPerDag": 24
+      "active": true,
+      "name": "VICTRON Orion TR Omformer DC-DC",
+      "powerW": 1.2,
+      "runtimeHoursPerDay": 24,
+      "purchaseCost": "",
+      "lifetimeYears": "",
+      "annualMaintenance": "",
+      "supplier": "",
+      "comment": ""
     },
     {
-      "aktiv": true,
-      "namn": "Victron Cerbo GX - MK2",
-      "innkjopsprisKr": "",
-      "effektW": 2.8,
-      "timerPerDag": 24
+      "active": true,
+      "name": "Victron Cerbo GX - MK2",
+      "powerW": 2.8,
+      "runtimeHoursPerDay": 24,
+      "purchaseCost": "",
+      "lifetimeYears": "",
+      "annualMaintenance": "",
+      "supplier": "",
+      "comment": ""
     },
     {
-      "aktiv": true,
-      "namn": "VICTRON SmartSolar MPPT 250/100",
-      "innkjopsprisKr": "",
-      "effektW": 0.042,
-      "timerPerDag": 24
+      "active": true,
+      "name": "VICTRON SmartSolar MPPT 250/100",
+      "powerW": 0.042,
+      "runtimeHoursPerDay": 24,
+      "purchaseCost": "",
+      "lifetimeYears": "",
+      "annualMaintenance": "",
+      "supplier": "",
+      "comment": ""
     },
     {
-      "aktiv": true,
-      "namn": "Siemens FMS5020",
-      "innkjopsprisKr": "",
-      "effektW": 6.45,
-      "timerPerDag": 24
+      "active": true,
+      "name": "Siemens FMS5020",
+      "powerW": 6.45,
+      "runtimeHoursPerDay": 24,
+      "purchaseCost": "",
+      "lifetimeYears": "",
+      "annualMaintenance": "",
+      "supplier": "",
+      "comment": ""
     },
     {
-      "aktiv": true,
-      "namn": "Teltonika RUT956",
-      "innkjopsprisKr": "",
-      "effektW": 7,
-      "timerPerDag": 24
+      "active": true,
+      "name": "Teltonika RUT956",
+      "powerW": 7,
+      "runtimeHoursPerDay": 24,
+      "purchaseCost": "",
+      "lifetimeYears": "",
+      "annualMaintenance": "",
+      "supplier": "",
+      "comment": ""
     },
     {
-      "aktiv": true,
-      "namn": "Efoy Pro 1800",
-      "innkjopsprisKr": "",
-      "effektW": 0.5,
-      "timerPerDag": 24
+      "active": true,
+      "name": "Efoy Pro 1800",
+      "powerW": 0.5,
+      "runtimeHoursPerDay": 24,
+      "purchaseCost": "",
+      "lifetimeYears": "",
+      "annualMaintenance": "",
+      "supplier": "",
+      "comment": ""
     },
     {
-      "aktiv": true,
-      "namn": "Efoy Fuel Manager FM4",
-      "innkjopsprisKr": "",
-      "effektW": 0.0374,
-      "timerPerDag": 24
+      "active": true,
+      "name": "Efoy Fuel Manager FM4",
+      "powerW": 0.0374,
+      "runtimeHoursPerDay": 24,
+      "purchaseCost": "",
+      "lifetimeYears": "",
+      "annualMaintenance": "",
+      "supplier": "",
+      "comment": ""
     },
     {
-      "aktiv": true,
-      "namn": "Dataloggar",
-      "innkjopsprisKr": "",
-      "effektW": 7,
-      "timerPerDag": 24
+      "active": true,
+      "name": "Dataloggar",
+      "powerW": 7,
+      "runtimeHoursPerDay": 24,
+      "purchaseCost": "",
+      "lifetimeYears": "",
+      "annualMaintenance": "",
+      "supplier": "",
+      "comment": ""
     }
   ],
-  "komponenter": {
+  "equipmentBudgetSettings": {
     "displayUnit": "wh",
     "useRuntimeHoursPerDay": true,
     "showPurchaseCost": false
   },
-  "radiolinje": {
+  "radioLink": {
     "pointA": {
       "coordinate": "60.61540, 5.80658",
       "antennaHeight": 10,

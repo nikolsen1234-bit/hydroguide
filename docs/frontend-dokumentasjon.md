@@ -81,7 +81,7 @@ Felles komponenter i `frontend/src/components/` (gjenbrukt på flere sider):
 | Komponent | Bruk |
 |-----------|------|
 | `FormFields.tsx` | `SelectField`, `NumberField`, `JaNeiField` osv. — felles input-stil |
-| `WorkspaceHeader.tsx`, `WorkspaceSection.tsx`, `WorkspaceActions.tsx` | Standard sidelayout |
+| `WorkspaceHeader.tsx`, `WorkspaceActions.tsx` | Standard sidelayout |
 | `SystemCharts.tsx` | Egenutviklede SVG-diagrammer (ingen chart-bibliotek) |
 | `RadioLinkMap.tsx`, `NveStandaloneMap.tsx` | Kartvisninger |
 | `ImportDropZone.tsx` | Import av lagret konfigurasjon |
@@ -159,7 +159,7 @@ UI-språk er nynorsk. Engelsk er valgbart for sensor eller eksterne lesere.
 
 Frontend genererer en HTML-rapport med diagrammer, kostnadssammenligning, tilrådinger og AI-tekst som forklarer valget i klart språk.
 
-Implementert i `report.ts`. AI-teksten kommer fra `POST /api/report`, som går via `hydroguide-report` og lokal report-agent bridge (se [arkitektur.md](arkitektur.md)).
+Implementert i `report.ts`. AI-teksten kommer fra `POST /api/report`, som går via `hydroguide-report` og lokal report-agent bridge (se [arkitektur-dokumentasjon.md](arkitektur-dokumentasjon.md)).
 
 ## Bygg og deploy
 
@@ -179,10 +179,10 @@ Frontend blir deployet som statiske filer til Cloudflare. Workers-deploy går vi
 
 I `npm run dev`-modus mapper `vite.config.ts` `/api/*`-kall lokalt til handlere i `backend/api/*.js`. Det gjør at frontend kan teste mot ekte handler-kode uten å deploye Workers. Bridge-rutene er definert i `vite.config.ts`.
 
-For lokalt oppsett, krav og fellesfeil: se [utvikling.md](utvikling.md).
+For lokalt oppsett, krav og fellesfeil: se [utvikling-dokumentasjon.md](utvikling-dokumentasjon.md).
 
 ## Se også
 
 - Endepunkter frontend kaller: [backend-dokumentasjon.md](backend-dokumentasjon.md)
 - Lokal rapportagent: [../tools/agent-bridge/README.md](../tools/agent-bridge/README.md)
-- Lokal utvikling: [utvikling.md](utvikling.md)
+- Lokal utvikling: [utvikling-dokumentasjon.md](utvikling-dokumentasjon.md)

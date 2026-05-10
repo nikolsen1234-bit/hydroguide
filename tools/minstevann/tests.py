@@ -140,7 +140,7 @@ class LMStudioClientTests(unittest.TestCase):
         self.assertEqual(captured["payload"]["temperature"], 0.1)
         self.assertEqual(captured["payload"]["top_p"], 0.95)
         self.assertEqual(captured["payload"]["top_k"], 64)
-        self.assertEqual(captured["payload"]["max_tokens"], 2000)
+        self.assertEqual(captured["payload"]["max_tokens"], 4096)
         self.assertEqual(captured["payload"]["stream"], False)
         self.assertIn("messages", captured["payload"])
         self.assertEqual(captured["payload"]["response_format"]["type"], "json_schema")

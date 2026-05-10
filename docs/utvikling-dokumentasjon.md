@@ -230,13 +230,13 @@ npx wrangler r2 object put hydroguide-minimum-flow/api/minimumflow.json \
 
 | Tema | Dokument |
 |------|----------|
-| Hele systemet | [arkitektur.md](arkitektur.md) |
+| Hele systemet | [arkitektur-dokumentasjon.md](arkitektur-dokumentasjon.md) |
 | Backend per domene | [backend-dokumentasjon.md](backend-dokumentasjon.md) |
-| Frontend | [frontend.md](frontend.md) |
+| Frontend | [frontend-dokumentasjon.md](frontend-dokumentasjon.md) |
 | Cloudflare og deploy | [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md) |
-| Sikkerhet | [sikkerheit.md](sikkerheit.md) |
+| Sikkerhet | [sikkerheit-dokumentasjon.md](sikkerheit-dokumentasjon.md) |
 | Rapportagent | [tools/agent-bridge/README.md](../tools/agent-bridge/README.md) |
-| AI-strategi | [ai-strategi.md](ai-strategi.md) |
+| AI-strategi | [ai-strategi-dokumentasjon.md](ai-strategi-dokumentasjon.md) |
 | Pipeline | [tools/minstevann/README.md](../tools/minstevann/README.md) |
 
 ## Vanlige feil
@@ -262,6 +262,6 @@ npx wrangler r2 object put hydroguide-minimum-flow/api/minimumflow.json \
 
 - Deploy-flyt: [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md)
 - Backend-handlere og endepunkter: [backend-dokumentasjon.md](backend-dokumentasjon.md)
-- Frontend-struktur: [frontend.md](frontend.md)
-- Sikkerhet og secrets: [sikkerheit.md](sikkerheit.md)
+- Frontend-struktur: [frontend-dokumentasjon.md](frontend-dokumentasjon.md)
+- Sikkerhet og secrets: [sikkerheit-dokumentasjon.md](sikkerheit-dokumentasjon.md)
 - Pipeline-detaljer: [tools/minstevann/README.md](../tools/minstevann/README.md)

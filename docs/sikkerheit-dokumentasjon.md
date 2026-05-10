@@ -144,5 +144,5 @@ Kjente begrensninger:
 ## Se også
 
 - Detaljert WAF, secrets, deploy-flyt: [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md)
-- Hvordan rapportagent-flyten er bygget: [arkitektur.md](arkitektur.md)
-- Rapport-AI og prompt-strategi: [ai-strategi.md](ai-strategi.md)
+- Hvordan rapportagent-flyten er bygget: [arkitektur-dokumentasjon.md](arkitektur-dokumentasjon.md)
+- Rapport-AI og prompt-strategi: [ai-strategi-dokumentasjon.md](ai-strategi-dokumentasjon.md)

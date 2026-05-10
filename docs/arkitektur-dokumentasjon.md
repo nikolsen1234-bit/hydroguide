@@ -91,7 +91,7 @@ flowchart LR
 
 Admin-Worker kjører separat på `/admin/*`. Cloudflare WAF blokkerer `/api/keys*` med 403 på sone-nivå. Offentlig API, rapportinngang og admin ligger i hver sin Worker.
 
-For trusselbilde og auth-design: [sikkerheit.md](sikkerheit.md).
+For trusselbilde og auth-design: [sikkerheit-dokumentasjon.md](sikkerheit-dokumentasjon.md).
 
 ## Hovedflyt for kall
 
@@ -133,8 +133,8 @@ For trusselbilde og auth-design: [sikkerheit.md](sikkerheit.md).
 |--------|-----|
 | Konkrete endepunkter og handler-filer | [backend-dokumentasjon.md](backend-dokumentasjon.md) |
 | Worker-bindinger, secrets, deploy-flyt | [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md) |
-| Trusselbilde og forsvar i lag | [sikkerheit.md](sikkerheit.md) |
-| Frontend-struktur og brukerflyt | [frontend.md](frontend.md) |
+| Trusselbilde og forsvar i lag | [sikkerheit-dokumentasjon.md](sikkerheit-dokumentasjon.md) |
+| Frontend-struktur og brukerflyt | [frontend-dokumentasjon.md](frontend-dokumentasjon.md) |
 | Lokal rapportagent | [../tools/agent-bridge/README.md](../tools/agent-bridge/README.md) |
-| AI-strategi (modellrolle, kostnad, prompt) | [ai-strategi.md](ai-strategi.md) |
-| Lokal utvikling | [utvikling.md](utvikling.md) |
+| AI-strategi (modellrolle, kostnad, prompt) | [ai-strategi-dokumentasjon.md](ai-strategi-dokumentasjon.md) |
+| Lokal utvikling | [utvikling-dokumentasjon.md](utvikling-dokumentasjon.md) |

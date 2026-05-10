@@ -110,11 +110,6 @@ function deriveAlarmNotification(operationsRequirements: string[], communication
   return opsHasAlarm || commHasAlarm ? "Automatisk alarm og signaloverføring til driftssystem" : "";
 }
 
-function balanceMarginPct(annualTotals: AnnualTotals): number | null {
-  if (annualTotals.annualLoadDemandKWh <= 0) return null;
-  return (annualTotals.annualEnergyBalanceKWh / annualTotals.annualLoadDemandKWh) * 100;
-}
-
 function tocBarRow(
   item: CostComparisonItem,
   maxToc: number,
@@ -374,19 +369,14 @@ function buildReportHtml(
   const minFlowSub = flowVariationLabel(config.answers) || "\u2014";
 
   const annualSolarKWh = visibleAnnualTotals.annualSolarProductionKWh;
-  const annualLoadKWh = visibleAnnualTotals.annualLoadDemandKWh;
   const annualBalanceKWh = visibleAnnualTotals.annualEnergyBalanceKWh;
   const balancePositive = annualBalanceKWh >= 0;
-  const balanceMargin = balanceMarginPct(visibleAnnualTotals);
 
   const backupKWh = backupAnnualEnergyKWh(sysRec, visibleAnnualTotals);
 
   const panelCount = typeof config.solar.panelCount === "number" ? config.solar.panelCount : 0;
   const panelPower = typeof config.solar.panelPowerWp === "number" ? config.solar.panelPowerWp : 0;
   const totalSolarWp = panelCount * panelPower;
-  const solarSubText = panelCount > 0 && panelPower > 0
-    ? `${panelCount} \u00d7 ${formatNumber(panelPower, 0)} Wp`
-    : "Solcelleanlegg";
   const solarKvValue = panelCount > 0 && panelPower > 0
     ? `${panelCount} \u00d7 ${formatNumber(panelPower, 0)} Wp = ${formatNumber(totalSolarWp, 0)} Wp`
     : "\u2014";
@@ -648,6 +638,9 @@ function buildReportHtml(
   .kv-list .kv:first-child{border-top:0}
   .kv-list .kv .k{color:var(--ink-3);font-weight:500}
   .kv-list .kv .v{color:var(--ink);font-weight:600;text-align:right}
+  .setup-grid{margin-top:28px;gap:22px}
+  .setup-grid .card .card-head{margin-bottom:15px;padding-bottom:10px}
+  .setup-grid .kv-list .kv{padding:9px 0}
 
   .metric{border:0;padding:4px 18px 4px 0;background:transparent;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--hairline);}
   .metric:last-child{border-right:0;padding-right:0}
@@ -870,34 +863,13 @@ function buildReportHtml(
 
   <span class="h-section"><span class="num">02</span> Energibalanse</span>
 
-  <div class="grid-4" style="margin-bottom:14px;">
-    <div class="metric">
-      <div class="lbl">Solproduksjon</div>
-      <div class="val num">${formatNumber(annualSolarKWh, 0)}<span class="unit">kWh/\u00e5r</span></div>
-      <div class="sub">${esc(solarSubText)}</div>
-    </div>
-    <div class="metric">
-      <div class="lbl">\u00c5rlig last</div>
-      <div class="val num">${formatNumber(annualLoadKWh, 0)}<span class="unit">kWh/\u00e5r</span></div>
-      <div class="sub">M\u00e5ling, oppvarming, samband</div>
-    </div>
-    <div class="metric brand">
-      <div class="lbl">Balanse</div>
-      <div class="val num">${balancePositive ? "+" : ""}${formatNumber(annualBalanceKWh, 0)}<span class="unit">kWh/\u00e5r</span></div>
-      <div class="sub">${balanceMargin === null ? "" : `<span class="delta ${balancePositive ? "up" : "down"}">${balancePositive ? "+" : ""}${formatNumber(balanceMargin, 0)} % margin</span>`}</div>
-    </div>
-    <div class="metric dark">
-      <div class="lbl">TOC 15 \u00e5r</div>
-      <div class="val num">${formatNumber(tocRecommended, 0)}<span class="unit">kr</span></div>
-      <div class="sub">Inkl. drift og vedlikehold</div>
-    </div>
-  </div>
-
   <div class="chart">
     <div class="chart-head">
       <div>
         <div class="h-card">M\u00e5nedlig solproduksjon vs. last</div>
-        <div class="meta">kWh per m\u00e5ned \u00b7 solinnstr\u00e5ling og last fra konfigurasjon</div>
+        <div class="meta">
+          \u00c5rsniv\u00e5: sol ${formatNumber(annualSolarKWh, 0)} kWh/\u00e5r \u00b7 reserve ${formatNumber(backupKWh, 0)} kWh/\u00e5r
+        </div>
       </div>
       <div class="chart-legend">
         <span class="swatch solar">Solproduksjon</span>
@@ -910,9 +882,9 @@ function buildReportHtml(
     </div>
   </div>
 
-  <div class="grid-2" style="margin-top:18px;">
+  <div class="grid-2 setup-grid">
     <div class="card">
-      <div class="card-head"><span class="h-card">Slipp og m\u00e5ling</span><span class="tag">M\u00e5ling</span></div>
+      <div class="card-head"><span class="h-card">Teknisk oppsett</span><span class="tag">M\u00e5ling</span></div>
       <div class="kv-list">
         <div class="kv"><span class="k">Slippordning</span><span class="v">${esc(sysRec.releaseArrangement || "\u2014")}</span></div>
         <div class="kv"><span class="k">Prim\u00e6rm\u00e5ling</span><span class="v">${esc(sysRec.primaryMeasurement || "\u2014")}</span></div>
@@ -926,7 +898,7 @@ function buildReportHtml(
       ${renderAiNote(aiFields?.measurementNote)}
     </div>
     <div class="card">
-      <div class="card-head"><span class="h-card">Energi og reserve</span><span class="tag">Energi</span></div>
+      <div class="card-head"><span class="h-card">Energiforsyning</span><span class="tag">Energi</span></div>
       <div class="kv-list">
         <div class="kv"><span class="k">Solcelleanlegg</span><span class="v">${esc(solarKvValue)}</span></div>
         <div class="kv"><span class="k">Batteribank</span><span class="v">${esc(batteryKvValue)}</span></div>

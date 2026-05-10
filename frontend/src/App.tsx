@@ -1,5 +1,5 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
-import { Link, Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { Component, Suspense, lazy, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from "react";
+import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import BuildInfoBadge from "./components/BuildInfoBadge";
 import HydroGuideLogo from "./components/HydroGuideLogo";
 import ImportDropZone from "./components/ImportDropZone";
@@ -20,6 +20,14 @@ const RadioLinkPage = lazy(() => import("./pages/RadioLinkPage"));
 const SystemPage = lazy(() => import("./pages/SystemPage"));
 
 type ThemeMode = "light" | "dark";
+
+type RouteErrorBoundaryProps = {
+  children: ReactNode;
+};
+
+type RouteErrorBoundaryState = {
+  hasError: boolean;
+};
 
 const THEME_STORAGE_KEY = "hydroguide:theme";
 
@@ -144,6 +152,37 @@ function RouteFallback() {
   );
 }
 
+class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBoundaryState> {
+  state: RouteErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown, info: ErrorInfo) {
+    console.error("Route render failed", error, info);
+  }
+
+  render() {
+    if (!this.state.hasError) {
+      return this.props.children;
+    }
+
+    return (
+      <div className="flex min-h-full flex-col items-center justify-center gap-4 p-8 text-center">
+        <p className={workspaceBodyClassName}>Noko gjekk gale ved lasting av sida.</p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-4 py-2 text-[length:var(--hg-type-control-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] hover:border-[var(--hg-accent)]"
+        >
+          Last inn på nytt
+        </button>
+      </div>
+    );
+  }
+}
+
 function ThemeToggle({ theme, setTheme }: { theme: ThemeMode; setTheme: (theme: ThemeMode) => void }) {
   return (
     <div className="hg-theme-toggle grid min-h-[44px] grid-cols-2 gap-1 rounded-lg border border-[var(--hg-hairline)] p-1">
@@ -239,6 +278,7 @@ export default function App() {
   const appShellRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
   const { activeDraft } = useConfigurationContext();
+  const location = useLocation();
   const isCalculatorMode = (activeDraft.engineMode ?? "calculator") === "calculator";
 
   const setTheme = (nextTheme: ThemeMode) => {
@@ -365,31 +405,30 @@ export default function App() {
         />
       )}
 
-      <aside
-        ref={drawerRef}
-        id="mobile-navigation-drawer"
-        role={menuOpen ? "dialog" : undefined}
-        aria-modal={menuOpen ? "true" : undefined}
-        aria-labelledby={menuOpen ? "mobile-navigation-title" : undefined}
-        aria-hidden={!menuOpen}
-        tabIndex={menuOpen ? -1 : undefined}
-        className={`hg-rail fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-1.5rem))] flex-col gap-[18px] border-r border-[#1f2738] px-4 py-5 transition-transform duration-300 md:hidden ${
-          menuOpen ? "translate-x-0" : "pointer-events-none -translate-x-full"
-        }`}
-      >
-        <button
-          ref={closeButtonRef}
-          type="button"
-          onClick={() => setMenuOpen(false)}
-          className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full text-white hover:bg-white/10 md:h-9 md:w-9"
-          aria-label={t("app.closeMenu")}
+      {menuOpen && (
+        <aside
+          ref={drawerRef}
+          id="mobile-navigation-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mobile-navigation-title"
+          tabIndex={-1}
+          className="hg-rail fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-1.5rem))] translate-x-0 flex-col gap-[18px] border-r border-[#1f2738] px-4 py-5 transition-transform duration-300 md:hidden"
         >
-          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-current" strokeWidth="2" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <SidebarContent onNavigate={() => setMenuOpen(false)} titleId="mobile-navigation-title" theme={theme} setTheme={setTheme} />
-      </aside>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={() => setMenuOpen(false)}
+            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full text-white hover:bg-white/10 md:h-9 md:w-9"
+            aria-label={t("app.closeMenu")}
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 stroke-current" strokeWidth="2" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <SidebarContent onNavigate={() => setMenuOpen(false)} titleId="mobile-navigation-title" theme={theme} setTheme={setTheme} />
+        </aside>
+      )}
 
       <div ref={appShellRef} aria-hidden={menuOpen || undefined} className="grid min-h-screen grid-cols-1 md:h-screen md:grid-cols-[232px_minmax(0,1fr)]">
         <aside className="hg-rail hidden h-screen flex-col gap-[18px] border-r border-[#1f2738] px-4 py-5 md:flex">
@@ -398,21 +437,23 @@ export default function App() {
 
         <div className="min-w-0 pt-14 md:h-screen md:pt-0">
           <div className="hg-workspace-frame hide-scrollbar min-h-[calc(100vh-3.5rem)] overflow-x-hidden md:h-screen md:overflow-y-auto">
-            <Suspense fallback={<RouteFallback />}>
-              <Routes>
-                <Route path="/" element={<WelcomePage />} />
-                <Route path="/oversikt" element={<OverviewPage />} />
-                <Route path="/prosjektgrunnlag" element={isCalculatorMode ? <Navigate to="/oversikt" replace /> : <MainPage />} />
-                <Route path="/parametere" element={<SystemPage />} />
-                <Route path="/komponenter" element={<ComponentsPage />} />
-                <Route path="/analyse" element={<AnalysisPage />} />
-                <Route path="/radiolinje" element={<RadioLinkPage />} />
-                <Route path="/dokumentasjon" element={<DocumentationPage />} />
-                <Route path="/kontakt" element={<ContactPage />} />
-                <Route path="/api" element={<ApiPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
+            <RouteErrorBoundary key={location.pathname}>
+              <Suspense fallback={<RouteFallback />}>
+                <Routes>
+                  <Route path="/" element={<WelcomePage />} />
+                  <Route path="/oversikt" element={<OverviewPage />} />
+                  <Route path="/prosjektgrunnlag" element={isCalculatorMode ? <Navigate to="/oversikt" replace /> : <MainPage />} />
+                  <Route path="/parametere" element={<SystemPage />} />
+                  <Route path="/komponenter" element={<ComponentsPage />} />
+                  <Route path="/analyse" element={<AnalysisPage />} />
+                  <Route path="/radiolinje" element={<RadioLinkPage />} />
+                  <Route path="/dokumentasjon" element={<DocumentationPage />} />
+                  <Route path="/kontakt" element={<ContactPage />} />
+                  <Route path="/api" element={<ApiPage />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+            </RouteErrorBoundary>
           </div>
         </div>
       </div>

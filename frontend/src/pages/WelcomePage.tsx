@@ -141,7 +141,7 @@ export default function WelcomePage() {
   };
 
   return (
-    <main className="relative isolate flex min-h-full flex-col bg-[var(--hg-bg)] px-4 pb-0 pt-0 text-[var(--hg-ink)] sm:px-6 lg:min-h-screen lg:px-7 md:h-full md:overflow-hidden">
+    <main className="relative isolate flex min-h-full flex-col bg-[var(--hg-bg)] px-4 pb-0 pt-0 text-[var(--hg-ink)] sm:px-6 lg:min-h-screen lg:px-7">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 z-0 hidden lg:block"
@@ -195,7 +195,7 @@ export default function WelcomePage() {
         />
       </div>
 
-      <section className="relative z-10 min-h-0 flex-1 overflow-hidden py-7">
+      <section className="relative z-10 min-h-0 flex-1 py-7">
         <div className="relative z-10 max-w-[43.5rem]">
           <h1 className={`${workspaceTitleClassName} text-[length:var(--hg-type-hero-title-size)] leading-[1.05] lg:text-[length:var(--hg-type-hero-title-size-lg)]`}>
             HydroGuide
@@ -248,6 +248,7 @@ export default function WelcomePage() {
         ref={fileInputRef}
         type="file"
         className="sr-only"
+        tabIndex={-1}
         accept=".txt,text/plain"
         onChange={(event) => void handleImport(event.target.files?.[0])}
       />

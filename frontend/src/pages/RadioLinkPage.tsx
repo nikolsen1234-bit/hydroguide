@@ -36,7 +36,7 @@ const endpointBadgeClassName = (tone: "cool" | "warm") =>
     ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
     : "border-[var(--hg-hairline)] bg-[var(--hg-warn-soft)] text-[var(--hg-warn)]";
 const radioBlueprintPanelClassName = "border-t-2 border-[var(--hg-ink)] pt-1.5";
-const radioBlueprintKickerClassName = `${workspaceOverlineClassName} tracking-[var(--hg-type-overline-tracking)] text-[var(--hg-ink-2)]`;
+const radioBlueprintKickerClassName = `${workspaceOverlineClassName} whitespace-nowrap tracking-[var(--hg-type-overline-tracking)] text-[var(--hg-ink-2)]`;
 const radioBlueprintTitleClassName = workspaceSectionTitleClassName;
 const radioBlueprintControlLineClassName =
   "mt-0.5 flex items-baseline gap-2 border-b-2 border-[var(--hg-hairline)] pb-0.5 transition-colors focus-within:border-[var(--hg-accent)]";
@@ -46,6 +46,13 @@ const radioBlueprintSelectClassName =
   "hg-mono min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[length:var(--hg-type-control-value-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none focus:text-[var(--hg-accent)]";
 const radioBlueprintUnitClassName =
   "hg-mono shrink-0 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-unit-tracking)] text-[var(--hg-ink-2)]";
+const mapActionButtonClassName =
+  "hg-mono inline-flex min-h-[26px] items-center border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] leading-none text-[var(--hg-ink)] transition hover:border-[var(--hg-accent-2)] hover:text-[var(--hg-accent)] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-[var(--hg-hairline)] disabled:hover:text-[var(--hg-ink)]";
+
+type LegacyMediaQueryList = MediaQueryList & {
+  addListener: (listener: (event: MediaQueryListEvent) => void) => void;
+  removeListener: (listener: (event: MediaQueryListEvent) => void) => void;
+};
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -53,8 +60,14 @@ function useIsMobile() {
     const mql = window.matchMedia("(max-width: 767px)");
     setIsMobile(mql.matches);
     const handler = (event: MediaQueryListEvent) => setIsMobile(event.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
+    if ("addEventListener" in mql) {
+      mql.addEventListener("change", handler);
+      return () => mql.removeEventListener("change", handler);
+    }
+
+    const legacyMql = mql as LegacyMediaQueryList;
+    legacyMql.addListener(handler);
+    return () => legacyMql.removeListener(handler);
   }, []);
   return isMobile;
 }
@@ -312,20 +325,22 @@ function EmptyProfilePreview({ compact = false }: { compact?: boolean }) {
               &mdash;
             </span>
           ))}
-          {emptyDistanceTicks.map(({ key, x, isFirst, isLast }) => (
-            <span
-              key={`dist-${key}`}
-              className="hg-mono absolute font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]"
-              style={{
-                left: `${(x / width) * 100}%`,
-                bottom: 2,
-                transform: isFirst ? "none" : isLast ? "translateX(-100%)" : "translateX(-50%)",
-                fontSize: distanceTickFontSize
-              }}
-            >
-              &mdash; KM
-            </span>
-          ))}
+          {emptyDistanceTicks.map(({ key, x, isFirst, isLast }) => {
+            return (
+              <span
+                key={`dist-${key}`}
+                className="hg-mono absolute whitespace-nowrap font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]"
+                style={{
+                  left: `${(x / width) * 100}%`,
+                  bottom: 2,
+                  transform: isFirst ? "none" : isLast ? "translateX(-100%)" : "translateX(-50%)",
+                  fontSize: distanceTickFontSize
+                }}
+              >
+                &mdash; KM
+              </span>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -859,6 +874,7 @@ export default function RadioLinkPage() {
   const form = activeDraft.radioLink;
   const mapPointA = useMemo(() => parseCoordinateInput(form.pointA.coordinate), [form.pointA.coordinate]);
   const mapPointB = useMemo(() => parseCoordinateInput(form.pointB.coordinate), [form.pointB.coordinate]);
+  const canFitMap = !!mapPointA && !!mapPointB;
 
   useEffect(() => {
     setNextMapPoint(!mapPointA ? "pointA" : !mapPointB ? "pointB" : "pointA");
@@ -917,6 +933,15 @@ export default function RadioLinkPage() {
   function handleMapPointChange(pointKey: "pointA" | "pointB", point: RadioLinkPoint) {
     setShowMapMarkers(true);
     updateRadioLinkEndpoint(pointKey, { coordinate: `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}` });
+  }
+
+  function handleFitMap() {
+    if (!canFitMap) {
+      return;
+    }
+
+    setShowMapMarkers(true);
+    setMapFitVersion((current) => current + 1);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1223,8 +1248,6 @@ export default function RadioLinkPage() {
                 return (
                   <div
                     key={lbl}
-                    aria-pressed={isSelectedForMap}
-                    aria-label={`${t("radio.location")} ${lbl}`}
                     className={`${endpointPanelClassName} space-y-2`}
                   >
                     <div className="flex items-center justify-between">
@@ -1502,13 +1525,13 @@ export default function RadioLinkPage() {
             className="flex min-h-0 flex-col"
             actions={
               <div className="flex flex-wrap gap-2">
-                <button type="button" className="hg-mono inline-flex min-h-[26px] items-center border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] leading-none text-[var(--hg-ink)] transition hover:border-[var(--hg-accent-2)] hover:text-[var(--hg-accent)]" onClick={() => setNextMapPoint("pointA")}>
+                <button type="button" className={mapActionButtonClassName} onClick={() => setNextMapPoint("pointA")}>
                   Sentrer A
                 </button>
-                <button type="button" className="hg-mono inline-flex min-h-[26px] items-center border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] leading-none text-[var(--hg-ink)] transition hover:border-[var(--hg-accent-2)] hover:text-[var(--hg-accent)]" onClick={() => setNextMapPoint("pointB")}>
+                <button type="button" className={mapActionButtonClassName} onClick={() => setNextMapPoint("pointB")}>
                   Sentrer B
                 </button>
-                <button type="button" className="hg-mono inline-flex min-h-[26px] items-center border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] leading-none text-[var(--hg-ink)] transition hover:border-[var(--hg-accent-2)] hover:text-[var(--hg-accent)]" onClick={() => setMapFitVersion((current) => current + 1)}>
+                <button type="button" className={mapActionButtonClassName} onClick={handleFitMap} disabled={!canFitMap}>
                   Tilpass
                 </button>
               </div>
@@ -1531,7 +1554,7 @@ export default function RadioLinkPage() {
             <div className="min-h-0 flex-1">{desktopEndpointPanel}</div>
           </div>
 
-          <div className="sr-only">{submitButton}</div>
+          <div className="hidden">{submitButton}</div>
       </form>
 
     </main>

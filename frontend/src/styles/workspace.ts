@@ -13,13 +13,6 @@ export const workspaceSectionTitleClassName =
 export const workspaceSubsectionTitleClassName =
   "text-[length:var(--hg-type-category-size)] font-[var(--hg-type-weight-bold)] leading-[var(--hg-type-category-leading)] tracking-[var(--hg-type-tight-tracking)] text-[var(--hg-ink)]";
 
-export const workspaceSectionHeadingRowClassName = "flex flex-wrap items-center gap-2";
-
-export const workspaceSectionClassName = "overflow-hidden";
-
-export const workspaceSectionHeaderClassName =
-  "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between";
-
 export const workspaceBodyClassName = "text-[length:var(--hg-type-content-size)] leading-[var(--hg-type-content-leading)] text-[var(--hg-ink-2)]";
 
 export const workspaceMetaClassName =

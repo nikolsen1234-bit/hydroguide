@@ -26,10 +26,11 @@ interface NveLocationMessage {
 const SET_LOCATION_MESSAGE = "hydroguide:set-location";
 const LOCATION_MESSAGE = "hydroguide:nve-location";
 const HEIGHT_MESSAGE = "hydroguide:nve-map-height";
+const MIN_IFRAME_HEIGHT = 280;
 const MAX_IFRAME_HEIGHT = 1800;
 
 function clampHeight(nextHeight: number) {
-  return Math.min(MAX_IFRAME_HEIGHT, nextHeight);
+  return Math.min(MAX_IFRAME_HEIGHT, Math.max(MIN_IFRAME_HEIGHT, nextHeight));
 }
 
 function stringOrNull(value: unknown) {
@@ -85,7 +86,7 @@ export default function NveStandaloneMap({ value, lat, lng, nveId, onChange, sta
   const { language } = useLanguage();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [frameReady, setFrameReady] = useState(false);
-  const [iframeHeight, setIframeHeight] = useState(0);
+  const [iframeHeight, setIframeHeight] = useState(MIN_IFRAME_HEIGHT);
   const iframeSrc = useMemo(() => {
     const params = new URLSearchParams({
       lang: language,
@@ -97,7 +98,7 @@ export default function NveStandaloneMap({ value, lat, lng, nveId, onChange, sta
 
   useEffect(() => {
     setFrameReady(false);
-    setIframeHeight(0);
+    setIframeHeight(MIN_IFRAME_HEIGHT);
   }, [iframeSrc]);
 
   useEffect(() => {

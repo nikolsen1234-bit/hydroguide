@@ -314,9 +314,9 @@ export default function ComponentsPage() {
   const headerActions = (
     <>
       <WorkspaceHeaderActionButton
-        icon={workspaceHeaderActionIcons.upload}
-        label="Importer"
-        subLabel="Komponentliste"
+        icon={workspaceHeaderActionIcons.save}
+        label="Lagre"
+        subLabel="Utkast"
         tone="success"
         onClick={saveDraftMetadata}
       />

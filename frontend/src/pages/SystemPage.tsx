@@ -17,7 +17,8 @@ const FULL_MONTH_LABELS = MONTH_KEYS.map((month) => MONTH_NAMES[month]);
 const MONTH_LABELS = FULL_MONTH_LABELS.map((month) => month.toUpperCase());
 const DEFAULT_MONTH_VALUES = [0.4, 1.0, 2.7, 4.2, 5.6, 5.2, 5.1, 4.1, 2.4, 1.2, 0.5, 0.3];
 const MONTH_PANEL_COLUMNS = ["MÅNED", "kWh/m²", "Δ FRA STANDARD"];
-const noop = () => {};
+const PANEL_FOCUSABLE_SELECTOR =
+  'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 type FlatFieldProps = {
   label: string;
@@ -48,7 +49,7 @@ function formatEditable(value: number | ""): string {
 }
 
 export default function SystemPage() {
-  const { activeDraft, saveDraftMetadata } = useConfigurationContext();
+  const { activeDraft, resetDraft, saveDraftMetadata } = useConfigurationContext();
   const { t, language } = useLanguage();
   const validationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
   const hasCompleteConfiguration = Object.keys(validationErrors).length === 0;
@@ -101,7 +102,7 @@ export default function SystemPage() {
         title={t("system.title")}
         actions={
           <>
-            <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.reset} label="Tilbakestill" onClick={noop} />
+            <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.reset} label="Tilbakestill" onClick={resetDraft} />
             <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.save} label="Lagre" onClick={() => saveDraftMetadata()} primary />
           </>
         }
@@ -319,7 +320,9 @@ function EnergiSeksjon() {
           <SectionHeader
             title="BATTERIBANK"
             actions={
-              <PillToggle options={["AGM", "NiMH", "Na-ion", "Li-ion"]} selected="Li-ion" />
+              <span className="hg-mono inline-flex min-h-[30px] items-center rounded-md border border-[var(--hg-accent)] bg-[var(--hg-accent-soft)] px-3 text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-overline-tracking)] text-[var(--hg-accent)]">
+                Li-ion
+              </span>
             }
           />
           <div className="grid gap-x-6 gap-y-3 md:grid-cols-2">
@@ -453,22 +456,70 @@ function RadiationBarChart({ values }: { values: number[] }) {
 }
 
 function MonthlyValuesPanel({ open, values, baseline, onChange, onClose, onReset }: MonthlyValuesPanelProps) {
+  const panelRef = useRef<HTMLElement | null>(null);
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (open) {
-      const id = window.setTimeout(() => {
-        inputsRef.current[0]?.focus();
-        inputsRef.current[0]?.select();
-      }, 220);
-      return () => window.clearTimeout(id);
+    if (!open) {
+      return;
     }
+
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const id = window.setTimeout(() => {
+      inputsRef.current[0]?.focus();
+      inputsRef.current[0]?.select();
+    }, 220);
+
+    return () => {
+      window.clearTimeout(id);
+      document.body.style.overflow = previousOverflow;
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+    };
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (e.key !== "Tab") {
+        return;
+      }
+
+      const panel = panelRef.current;
+      if (!panel) {
+        return;
+      }
+
+      const focusableElements = Array.from(panel.querySelectorAll<HTMLElement>(PANEL_FOCUSABLE_SELECTOR)).filter(
+        (element) => element.getClientRects().length > 0
+      );
+
+      if (focusableElements.length === 0) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement.focus();
+      }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -486,6 +537,10 @@ function MonthlyValuesPanel({ open, values, baseline, onChange, onClose, onReset
     }
   };
 
+  if (!open) {
+    return null;
+  }
+
   return (
     <>
       <div
@@ -496,12 +551,14 @@ function MonthlyValuesPanel({ open, values, baseline, onChange, onClose, onReset
         aria-hidden={!open}
       />
       <aside
+        ref={panelRef}
         className={`fixed right-0 top-0 z-40 flex h-full w-full max-w-[520px] flex-col border-l border-[var(--hg-hairline)] bg-[var(--hg-surface)] shadow-2xl transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
         role="dialog"
         aria-modal="true"
         aria-label="Månedsverdier"
+        tabIndex={-1}
       >
         <header className="flex items-start justify-between border-b border-[var(--hg-hairline)] px-6 py-4">
           <div>

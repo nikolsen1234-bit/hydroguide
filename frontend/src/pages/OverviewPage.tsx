@@ -150,7 +150,7 @@ function MonthlyOverviewChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
           Forbruk
         </span>
       </div>
-      <div className="relative h-[320px] flex-1 pl-8 md:h-auto">
+      <div className="relative h-[320px] min-h-[260px] flex-1 pl-8 md:h-auto">
         <div className="pointer-events-none absolute inset-x-0 left-8 top-[18px] bottom-[19px]">
           {OVERVIEW_GRID_LINES.map((g) => (
             <div
@@ -320,7 +320,7 @@ export default function OverviewPage() {
   ];
 
   return (
-    <main className={`${workspacePageClassName} md:flex md:h-full md:max-h-full md:min-h-0 md:flex-col md:overflow-hidden md:pb-0`}>
+    <main className={`${workspacePageClassName} md:flex md:h-full md:max-h-full md:min-h-0 md:flex-col md:overflow-y-auto md:pb-8`}>
       <WorkspaceHeader title={t("overview.title")} actions={headerActions} />
 
       <KpiStrip items={overviewKpiItems} />

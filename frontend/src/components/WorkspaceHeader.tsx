@@ -111,7 +111,7 @@ export default function WorkspaceHeader({
           <h1 className={workspaceTitleClassName}>{title}</h1>
         </div>
 
-        {actions ? <div className="flex min-w-0 flex-col gap-2 sm:ml-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end">{actions}</div> : null}
+        {actions ? <div className="flex min-w-0 flex-col gap-2 sm:ml-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">{actions}</div> : null}
 
         {showProjectControls ? (
         <div className="flex min-w-0 flex-col gap-2 sm:ml-auto sm:flex-row sm:items-center">

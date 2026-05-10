@@ -66,17 +66,17 @@ flowchart TB
 
 HydroGuide er en React/Vite-frontend pluss fire Cloudflare Workers (api, report, ai, admin), to KV-namespaces og tre R2-buckets. NVE-konsesjonsdokument blir prosessert lokalt (OCR + LLM) og lastet opp som ferdig JSON. Terrengdata kommer fra Kartverket, og rapporttekst går gjennom en lokal report-agent bridge med Qwen retrieval og Codex via CLIProxyAPI.
 
-Detaljert systemkontekst og container-diagram: [docs/arkitektur.md](docs/arkitektur.md).
+Detaljert systemkontekst og container-diagram: [docs/arkitektur-dokumentasjon.md](docs/arkitektur-dokumentasjon.md).
 
 ## Hva som ikke er trivielt
 
 For sensor og lesere som vil se "hvor jobben ligger":
 
-- **Fire Workers med skilte trust-grenser.** Rapport-Worker har offentlig `/api/report`, validerer access code og kaller lokal rapportagent via Cloudflare Tunnel. Admin-Worker ligger på `/admin/*`, mens WAF blokkerer `/api/keys*`. Se [docs/arkitektur.md](docs/arkitektur.md) og [docs/sikkerheit.md](docs/sikkerheit.md).
+- **Fire Workers med skilte trust-grenser.** Rapport-Worker har offentlig `/api/report`, validerer access code og kaller lokal rapportagent via Cloudflare Tunnel. Admin-Worker ligger på `/admin/*`, mens WAF blokkerer `/api/keys*`. Se [docs/arkitektur-dokumentasjon.md](docs/arkitektur-dokumentasjon.md) og [docs/sikkerheit-dokumentasjon.md](docs/sikkerheit-dokumentasjon.md).
 - **Lokal NVE-pipeline med OCR og LLM.** PDF-konsesjonsdokument blir strukturert til JSON med OpenDataLoader, EasyOCR og LM Studio. Kjører lokalt fordi Workers har 30s CPU-grense. Se [tools/minstevann/README.md](tools/minstevann/README.md).
 - **Praktisk energidimensjonering** med månedlige solverdier, batteribank, reservekilde og kostnadssammenligning over levetid. Beregningskjernen er delt mellom frontend og backend så API og UI ikke kan komme ut av sync.
-- **API-nøkler er HMAC-hash-et i KV.** Lekket KV-dump gir ikke brukbare nøkler. Se [docs/sikkerheit.md](docs/sikkerheit.md).
-- **WAF, rate limit, CSP, DNSSEC, TLS-strict, cache-bypass for `/api/*`.** Lagdelt forsvar gjennom Cloudflare-sonen. Se [docs/sikkerheit.md](docs/sikkerheit.md).
+- **API-nøkler er HMAC-hash-et i KV.** Lekket KV-dump gir ikke brukbare nøkler. Se [docs/sikkerheit-dokumentasjon.md](docs/sikkerheit-dokumentasjon.md).
+- **WAF, rate limit, CSP, DNSSEC, TLS-strict, cache-bypass for `/api/*`.** Lagdelt forsvar gjennom Cloudflare-sonen. Se [docs/sikkerheit-dokumentasjon.md](docs/sikkerheit-dokumentasjon.md).
 - **Lokal rapportagent med fast retrieval.** Qwen embeddings henter relevante JSONL-kunnskapschunker, og Codex skriver et kontrollert rapporttillegg uten OpenAI API-key i repoet. Se [tools/agent-bridge/README.md](tools/agent-bridge/README.md).
 
 ## Struktur
@@ -112,7 +112,7 @@ npm run dev          # Vite på localhost:5173 med /api/* bridge til backend/api
 npm run build:test   # bygg og kopier til test-deploy/
 ```
 
-Komplett oppsett, lokal API-bridge, pipeline, vanlige feil: [docs/utvikling.md](docs/utvikling.md).
+Komplett oppsett, lokal API-bridge, pipeline, vanlige feil: [docs/utvikling-dokumentasjon.md](docs/utvikling-dokumentasjon.md).
 
 ## Minstevannføring (pipeline)
 
@@ -129,14 +129,14 @@ Detaljer (LM Studio, OCR-oppsett, validering): [tools/minstevann/README.md](tool
 
 | Tema | Dokument |
 |------|----------|
-| Lokal utvikling og oppsett | [docs/utvikling.md](docs/utvikling.md) |
-| Arkitektur, dataflyt, tekniske valg | [docs/arkitektur.md](docs/arkitektur.md) |
-| Frontend (sider, tilstand, beregningsmoduler) | [docs/frontend.md](docs/frontend.md) |
+| Lokal utvikling og oppsett | [docs/utvikling-dokumentasjon.md](docs/utvikling-dokumentasjon.md) |
+| Arkitektur, dataflyt, tekniske valg | [docs/arkitektur-dokumentasjon.md](docs/arkitektur-dokumentasjon.md) |
+| Frontend (sider, tilstand, beregningsmoduler) | [docs/frontend-dokumentasjon.md](docs/frontend-dokumentasjon.md) |
 | Backend (domeneinndelt: beregning, NVEID, rapport, admin) | [docs/backend-dokumentasjon.md](docs/backend-dokumentasjon.md) |
 | Cloudflare (workers, deploy, observability) | [docs/cloudflare-dokumentasjon.md](docs/cloudflare-dokumentasjon.md) |
-| Sikkerhet (trusselbilde, forsvar i lag, kjente begrensninger) | [docs/sikkerheit.md](docs/sikkerheit.md) |
+| Sikkerhet (trusselbilde, forsvar i lag, kjente begrensninger) | [docs/sikkerheit-dokumentasjon.md](docs/sikkerheit-dokumentasjon.md) |
 | Lokal rapportagent (retrieval, Codex bridge, runtime) | [tools/agent-bridge/README.md](tools/agent-bridge/README.md) |
-| AI-strategi (hallusinering, kostnad, prompt) | [docs/ai-strategi.md](docs/ai-strategi.md) |
+| AI-strategi (hallusinering, kostnad, prompt) | [docs/ai-strategi-dokumentasjon.md](docs/ai-strategi-dokumentasjon.md) |
 | NVE-pipeline (OCR + LLM-strukturering) | [tools/minstevann/README.md](tools/minstevann/README.md) |
 
 ## Krav

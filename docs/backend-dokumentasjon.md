@@ -183,7 +183,7 @@ Kjør med `node --test backend/api/<navn>.test.mjs`.
 ## Se også
 
 - Worker-konfig, deploy, secrets: [cloudflare-dokumentasjon.md](cloudflare-dokumentasjon.md)
-- Trusselbilde og auth-design: [sikkerheit.md](sikkerheit.md)
+- Trusselbilde og auth-design: [sikkerheit-dokumentasjon.md](sikkerheit-dokumentasjon.md)
 - Lokal rapportagent: [../tools/agent-bridge/README.md](../tools/agent-bridge/README.md)
-- KI-strategi: [ai-strategi.md](ai-strategi.md)
-- Lokal utvikling: [utvikling.md](utvikling.md)
+- KI-strategi: [ai-strategi-dokumentasjon.md](ai-strategi-dokumentasjon.md)
+- Lokal utvikling: [utvikling-dokumentasjon.md](utvikling-dokumentasjon.md)

@@ -175,7 +175,7 @@ export default function MainPage() {
                 Åpne oversikt
               </Link>
             </div>
-            <div className="max-h-[280px] overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)]">
+            <div className="min-h-[280px] overflow-hidden rounded-lg border border-[var(--hg-hairline)] bg-[var(--hg-surface)]">
               <NveStandaloneMap
                 value={activeDraft.location}
                 lat={activeDraft.locationLat}

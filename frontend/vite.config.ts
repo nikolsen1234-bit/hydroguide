@@ -23,29 +23,6 @@ const localFunctionEnv = {
   ...process.env
 };
 const cloudflareHosts = ["localhost", "127.0.0.1", ".trycloudflare.com"];
-const canonicalJsChunkNames = new Map([
-  ["AnalysisPage", "AnalysisPage-DW49hPYf.js"],
-  ["ApiPage", "ApiPage-dNgpZCXI.js"],
-  ["ComponentsPage", "ComponentsPage-B8bGVTeL.js"],
-  ["chunk", "chunk-B3K2TuZy.js"],
-  ["ContactPage", "ContactPage-B90tnn8j.js"],
-  ["DocumentationPage", "DocumentationPage-CqfD4sMe.js"],
-  ["FormFields", "FormFields-BU-GDrAu.js"],
-  ["index", "index-BUYsEGeb.js"],
-  ["jsx-runtime", "jsx-runtime-ClXwjIxh.js"],
-  ["leaflet", "leaflet-DCnXZOqV.js"],
-  ["leaflet-src", "leaflet-src-DWk_SuGo.js"],
-  ["MainPage", "MainPage-CWWzLUjE.js"],
-  ["OverviewPage", "OverviewPage-DzvnAPo5.js"],
-  ["RadioLinkPage", "RadioLinkPage-CdFnUkGd.js"],
-  ["SystemCharts", "SystemCharts-Ds9X225g.js"],
-  ["SystemPage", "SystemPage-DGjHx9u5.js"],
-  ["WelcomePage", "WelcomePage-YyXq5FMH.js"],
-  ["workspace", "workspace-Btc1hWRU.js"],
-  ["WorkspaceSection", "WorkspaceSection-CBKHlbw1.js"]
-]);
-const canonicalAssetNames = new Map([["index.css", "index-14iAWX-t.css"]]);
-
 const functionRoutes = new Map([
   ["/api/openapi", path.join(__dirname, "..", "backend", "api", "docs.js")],
   ["/api/health", path.join(__dirname, "..", "backend", "api", "health.js")],
@@ -177,22 +154,6 @@ function resolveFunctionModule(pathname: string) {
 
 export default defineConfig({
   plugins: [react(), functionsDevBridge()],
-  build: {
-    rollupOptions: {
-      output: {
-        entryFileNames(chunkInfo) {
-          return `assets/${canonicalJsChunkNames.get(chunkInfo.name) ?? "[name]-[hash].js"}`;
-        },
-        chunkFileNames(chunkInfo) {
-          return `assets/${canonicalJsChunkNames.get(chunkInfo.name) ?? "[name]-[hash].js"}`;
-        },
-        assetFileNames(assetInfo) {
-          const assetName = assetInfo.name ? path.basename(assetInfo.name) : "";
-          return `assets/${canonicalAssetNames.get(assetName) ?? "[name]-[hash][extname]"}`;
-        }
-      }
-    }
-  },
   server: { host: true, port: 5173, strictPort: true, allowedHosts: cloudflareHosts },
   preview: { host: true, port: 4173, strictPort: true, allowedHosts: cloudflareHosts }
 });

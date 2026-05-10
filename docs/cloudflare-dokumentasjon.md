@@ -238,8 +238,8 @@ Aktive Cloudflare-regler:
 
 ## Se også
 
-- Sikkerhetsmodell og trusselbilde: [sikkerheit.md](sikkerheit.md)
-- Arkitektur og dataflyt: [arkitektur.md](arkitektur.md)
-- Lokal utvikling og bygg: [utvikling.md](utvikling.md)
+- Sikkerhetsmodell og trusselbilde: [sikkerheit-dokumentasjon.md](sikkerheit-dokumentasjon.md)
+- Arkitektur og dataflyt: [arkitektur-dokumentasjon.md](arkitektur-dokumentasjon.md)
+- Lokal utvikling og bygg: [utvikling-dokumentasjon.md](utvikling-dokumentasjon.md)
 - Backend-kode og endepunkter: [backend-dokumentasjon.md](backend-dokumentasjon.md)
 - Lokal rapportagent: [../tools/agent-bridge/README.md](../tools/agent-bridge/README.md)

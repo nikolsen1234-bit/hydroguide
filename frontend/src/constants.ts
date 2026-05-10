@@ -113,21 +113,6 @@ export const MONTH_LABELS: Record<MonthKey, string> = {
   dec: "Des"
 };
 
-export const DAYS_IN_MONTH: Record<MonthKey, number> = {
-  jan: 31,
-  feb: 28,
-  mar: 31,
-  apr: 30,
-  may: 31,
-  jun: 30,
-  jul: 31,
-  aug: 31,
-  sep: 30,
-  oct: 31,
-  nov: 30,
-  dec: 31
-};
-
 export const EMPTY_MONTHLY_SOLAR_RADIATION: MonthlySolarRadiation = {
   jan: "",
   feb: "",

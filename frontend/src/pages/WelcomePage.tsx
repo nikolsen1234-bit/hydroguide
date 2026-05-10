@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
 import { useConfigurationContext } from "../context/ConfigurationContext";
@@ -100,12 +100,24 @@ export default function WelcomePage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [selectedEngineMode, setSelectedEngineMode] = useState<EngineMode>(activeDraft.engineMode ?? "calculator");
+  const selectedEngineModeRef = useRef<EngineMode>(activeDraft.engineMode ?? "calculator");
+
+  useEffect(() => {
+    const currentEngineMode = activeDraft.engineMode ?? "calculator";
+    selectedEngineModeRef.current = currentEngineMode;
+    setSelectedEngineMode(currentEngineMode);
+  }, [activeDraft.engineMode, activeDraft.id]);
 
   const handleStartBlank = () => {
-    const selectedEngineMode = activeDraft.engineMode ?? "calculator";
-    createNewConfiguration();
-    updateConfigField("engineMode", selectedEngineMode);
+    createNewConfiguration(selectedEngineModeRef.current);
     navigate("/oversikt");
+  };
+
+  const handleEngineModeChange = (nextMode: EngineMode) => {
+    selectedEngineModeRef.current = nextMode;
+    setSelectedEngineMode(nextMode);
+    updateConfigField("engineMode", nextMode);
   };
 
   const handleImport = async (file: File | undefined) => {
@@ -226,8 +238,8 @@ export default function WelcomePage() {
 
           <TeamList />
           <EngineModeButtons
-            mode={activeDraft.engineMode ?? "calculator"}
-            onChange={(nextMode) => updateConfigField("engineMode", nextMode)}
+            mode={selectedEngineMode}
+            onChange={handleEngineModeChange}
           />
         </div>
       </section>

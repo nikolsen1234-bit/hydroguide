@@ -56,7 +56,7 @@ interface ConfigurationContextValue {
   activeDraft: PlantConfiguration;
   baselineDraft: PlantConfiguration;
   hasUnsavedChanges: boolean;
-  createNewConfiguration: () => void;
+  createNewConfiguration: (engineMode?: PlantConfiguration["engineMode"]) => void;
   selectConfiguration: (id: string) => void;
   updateConfigurationName: (name: string) => void;
   updateConfigurationLocation: (
@@ -252,8 +252,9 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
     [activateConfiguration]
   );
 
-  const createNewConfiguration = useCallback(() => {
-    commitConfiguration(createBlankConfiguration(configurations.length + 1));
+  const createNewConfiguration = useCallback((engineMode?: PlantConfiguration["engineMode"]) => {
+    const nextConfiguration = createBlankConfiguration(configurations.length + 1);
+    commitConfiguration(engineMode ? { ...nextConfiguration, engineMode } : nextConfiguration);
   }, [commitConfiguration, configurations.length]);
 
   const selectConfiguration = useCallback(

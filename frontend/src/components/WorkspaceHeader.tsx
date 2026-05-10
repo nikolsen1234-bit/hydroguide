@@ -132,7 +132,7 @@ export default function WorkspaceHeader({
           </select>
           <button
             type="button"
-            onClick={createNewConfiguration}
+            onClick={() => createNewConfiguration(activeDraft.engineMode)}
             className={`w-full shrink-0 sm:w-auto ${workspacePrimaryButtonClassName}`}
           >
             {t("shared.newConfiguration")}

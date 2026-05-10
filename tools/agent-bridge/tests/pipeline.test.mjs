@@ -33,6 +33,15 @@ function firstEvidenceIdFromPrompt(body) {
   return content.match(/^id: ([^\n]+)$/m)?.[1] ?? "nve.metode.rormaaling";
 }
 
+function validReportFields() {
+  return {
+    recommendationNote: "Rorslipp etter varegrind passer fordi losningen gir et tydelig og kontrollerbart malepunkt for valgt driftssituasjon.",
+    measurementNote: "Mengdemaler, logger og kontrollmaling henger sammen ved at ordinaer registrering kan kontrolleres mot sporbare feltmalinger.",
+    energyNote: "Logger, samband og reserveoppsett passer nar batteri og solproduksjon vurderes samlet mot beregnet last og krav til oppetid.",
+    evidenceNote: "Kildegrunnlaget stotter dokumentasjon med sporbar maling, kontrollverdier og etterprovbar drift."
+  };
+}
+
 function createMockFetch({ failEmbeddings = false } = {}) {
   return async (url, init) => {
     const href = String(url);
@@ -54,7 +63,7 @@ function createMockFetch({ failEmbeddings = false } = {}) {
           {
             message: {
               content: JSON.stringify({
-                text: validReportText(),
+                fields: validReportFields(),
                 evidenceIds: [firstEvidenceIdFromPrompt(body)]
               })
             }
@@ -98,7 +107,8 @@ test("generateReport retrieves vectors and returns text with metadata", async ()
   assert.equal(result.body.model, "gpt-test");
   assert.equal(result.body.retrieval_backend, "qwen-vector-rebuilt");
   assert.equal(result.body.evidence_used.length, 1);
-  assert.equal(result.body.validation.word_count <= 130, true);
+  assert.equal(result.body.narrative_mode, "report-fields");
+  assert.equal(typeof result.body.fields.recommendationNote, "string");
 });
 
 test("generateReport falls back to keyword retrieval when embeddings fail", async () => {

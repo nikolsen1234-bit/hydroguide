@@ -121,6 +121,10 @@ function buildBridgeReportUrl(rawUrl) {
   return url.toString();
 }
 
+function readPayloadValue(body, primaryKey, legacyKey) {
+  return body?.[primaryKey] ?? body?.[legacyKey];
+}
+
 export async function onRequestPost(context) {
   const rateLimit = await checkRateLimit({
     request: context.request,
@@ -198,29 +202,45 @@ export async function onRequestPost(context) {
     const bridgeUrl = buildBridgeReportUrl(rawBridgeUrl);
     const requestId = crypto.randomUUID();
     const sanitizedBody = {
-      project: rawBody.project, location: rawBody.location, projectDescription: rawBody.projectDescription,
-      facilityType: rawBody.facilityType, hydrology: rawBody.hydrology,
-      mainSolution: rawBody.mainSolution, releaseMethod: rawBody.releaseMethod,
-      primaryMeasurement: rawBody.primaryMeasurement, controlMeasurement: rawBody.controlMeasurement,
-      measurementPrinciple: rawBody.measurementPrinciple, measurementEquipment: rawBody.measurementEquipment,
-      loggerSetup: rawBody.loggerSetup, backupLogger: rawBody.backupLogger,
-      communication: rawBody.communication, alarmNotification: rawBody.alarmNotification,
-      backupSource: rawBody.backupSource, backupEnergySource: rawBody.backupEnergySource,
-      primaryEnergySource: rawBody.primaryEnergySource,
-      backupPowerW: rawBody.backupPowerW, batteryBankAh: rawBody.batteryBankAh, autonomyDays: rawBody.autonomyDays,
-      iceAdaptation: rawBody.iceAdaptation, frostProtection: rawBody.frostProtection, bypass: rawBody.bypass,
-      annualSolarProductionKWh: rawBody.annualSolarProductionKWh,
-      annualLoadDemandKWh: rawBody.annualLoadDemandKWh,
-      annualEnergyBalanceKWh: rawBody.annualEnergyBalanceKWh,
-      justification: rawBody.justification, additionalRequirements: rawBody.additionalRequirements,
-      operationalRequirements: rawBody.operationalRequirements,
-      releaseMethodSelected: rawBody.releaseMethodSelected,
-      releaseRequirementVariation: rawBody.releaseRequirementVariation,
-      isSedimentClogging: rawBody.isSedimentClogging, fishPassage: rawBody.fishPassage,
-      bypassOnOutage: rawBody.bypassOnOutage, measurementProfile: rawBody.measurementProfile,
-      publicControl: rawBody.publicControl,
+      project: readPayloadValue(rawBody, "project", "prosjekt"),
+      location: readPayloadValue(rawBody, "location", "lokasjon"),
+      projectDescription: readPayloadValue(rawBody, "projectDescription", "prosjektbeskrivelse"),
+      facilityType: readPayloadValue(rawBody, "facilityType", "anleggstype"),
+      hydrology: rawBody.hydrology,
+      mainSolution: readPayloadValue(rawBody, "mainSolution", "hovudloysing"),
+      releaseMethod: readPayloadValue(rawBody, "releaseMethod", "slippmetode"),
+      primaryMeasurement: readPayloadValue(rawBody, "primaryMeasurement", "primaermaaling"),
+      controlMeasurement: readPayloadValue(rawBody, "controlMeasurement", "kontrollmaaling"),
+      measurementPrinciple: readPayloadValue(rawBody, "measurementPrinciple", "maleprinsipp"),
+      measurementEquipment: readPayloadValue(rawBody, "measurementEquipment", "maleutstyr"),
+      loggerSetup: readPayloadValue(rawBody, "loggerSetup", "loggeroppsett"),
+      backupLogger: rawBody.backupLogger ?? rawBody.reserveLogger,
+      communication: readPayloadValue(rawBody, "communication", "kommunikasjon"),
+      alarmNotification: readPayloadValue(rawBody, "alarmNotification", "alarmVarsling"),
+      backupSource: readPayloadValue(rawBody, "backupSource", "reservekjelde"),
+      backupEnergySource: readPayloadValue(rawBody, "backupEnergySource", "reserveEnergikjelde"),
+      primaryEnergySource: readPayloadValue(rawBody, "primaryEnergySource", "primaerEnergikjelde"),
+      backupPowerW: readPayloadValue(rawBody, "backupPowerW", "reserveeffektW"),
+      batteryBankAh: rawBody.batteryBankAh ?? rawBody.batteribankAh,
+      autonomyDays: readPayloadValue(rawBody, "autonomyDays", "autonomiDagar"),
+      iceAdaptation: readPayloadValue(rawBody, "iceAdaptation", "istilpassing"),
+      frostProtection: readPayloadValue(rawBody, "frostProtection", "frostsikring"),
+      bypass: rawBody.bypass,
+      annualSolarProductionKWh: readPayloadValue(rawBody, "annualSolarProductionKWh", "arsproduksjonSolKWh"),
+      annualLoadDemandKWh: readPayloadValue(rawBody, "annualLoadDemandKWh", "arslastKWh"),
+      annualEnergyBalanceKWh: readPayloadValue(rawBody, "annualEnergyBalanceKWh", "arsbalanseKWh"),
+      justification: readPayloadValue(rawBody, "justification", "grunngiving"),
+      additionalRequirements: readPayloadValue(rawBody, "additionalRequirements", "tilleggskrav"),
+      operationalRequirements: readPayloadValue(rawBody, "operationalRequirements", "driftskrav"),
+      releaseMethodSelected: readPayloadValue(rawBody, "releaseMethodSelected", "slippmetodeVal"),
+      releaseRequirementVariation: readPayloadValue(rawBody, "releaseRequirementVariation", "slippkravvariasjon"),
+      isSedimentClogging: readPayloadValue(rawBody, "isSedimentClogging", "isSedimentTilstopping"),
+      fishPassage: readPayloadValue(rawBody, "fishPassage", "fiskepassasje"),
+      bypassOnOutage: readPayloadValue(rawBody, "bypassOnOutage", "bypassVedDriftsstans"),
+      measurementProfile: readPayloadValue(rawBody, "measurementProfile", "maleprofil"),
+      publicControl: readPayloadValue(rawBody, "publicControl", "allmentaKontroll"),
       include_recommendations: rawBody.include_recommendations, ai_on: rawBody.ai_on,
-      reportExtract: rawBody.reportExtract ?? rawBody.rapportutdrag
+      reportExtract: readPayloadValue(rawBody, "reportExtract", "rapportutdrag")
     };
 
     const bridgeRequest = new Request(bridgeUrl, {

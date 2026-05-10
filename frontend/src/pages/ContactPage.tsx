@@ -9,8 +9,8 @@ import {
 const teamMembers = [
   { name: "Nikolas Olsen", role: "Prosjektleder", email: "nikolas.o@live.com" },
   { name: "Dan Roald Larsen", role: "Instrumentering", email: "placeholder@epost.no" },
-  { name: "Jinn-Marie Bakke", role: "Kraftsystem", email: "placeholder@epost.no" },
-  { name: "Espen Espenland", role: "Kommunikasjon", email: "placeholder@epost.no" }
+  { name: "Jin-Marie Bakke", role: "Kraftsystem", email: "placeholder@epost.no" },
+  { name: "Espen Espeland", role: "Kommunikasjon", email: "placeholder@epost.no" }
 ];
 
 const resources = [

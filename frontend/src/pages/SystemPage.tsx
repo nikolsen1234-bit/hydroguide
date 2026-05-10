@@ -1,4 +1,5 @@
 import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import KpiStrip, { type KpiStripItem } from "../components/KpiStrip";
 import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
 import { MONTH_KEYS, MONTH_LABELS as MONTH_NAMES } from "../constants";
 import { useConfigurationContext } from "../context/ConfigurationContext";
@@ -18,7 +19,6 @@ const DEFAULT_MONTH_VALUES = [0.4, 1.0, 2.7, 4.2, 5.6, 5.2, 5.1, 4.1, 2.4, 1.2, 
 const MONTH_PANEL_COLUMNS = ["MÅNED", "kWh/m²", "Δ FRA STANDARD"];
 const noop = () => {};
 
-type KpiTileProps = { kicker: string; value: string; unit: string };
 type FlatFieldProps = {
   label: string;
   value?: string;
@@ -58,19 +58,17 @@ export default function SystemPage() {
   );
 
   const isAutonomyMode = activeDraft.systemParameters.batteryMode === "autonomyDays";
-  const kpiValues = useMemo(() => {
+  const kpiItems = useMemo<KpiStripItem[]>(() => {
     const batteryTileKicker = isAutonomyMode ? "BANKSTØRRELSE" : "AUTONOMI";
     const batteryTileUnit = isAutonomyMode ? "Ah" : "dager";
 
     if (!outputs) {
-      return {
-        solarPerYear: "-",
-        batteryTileKicker,
-        batteryTileValue: "-",
-        batteryTileUnit,
-        reservePct: "-",
-        co2: "-",
-      };
+      return [
+        { kicker: "SOLPRODUKSJON · ÅR", value: "-", unit: "kWh" },
+        { kicker: batteryTileKicker, value: "-", unit: batteryTileUnit },
+        { kicker: "RESERVEKJØRING · ÅR", value: "-", unit: "%" },
+        { kicker: "CO₂ · ÅR", value: "-", unit: "kg" },
+      ];
     }
     const annualSolarKWh = outputs.derivedResults.annualTotals.annualSolarProductionKWh;
 
@@ -89,14 +87,12 @@ export default function SystemPage() {
     );
     const annualCo2Kg = co2Item ? co2Item.annualCo2 : 0;
 
-    return {
-      solarPerYear: formatNumber(annualSolarKWh, 0),
-      batteryTileKicker,
-      batteryTileValue,
-      batteryTileUnit,
-      reservePct: formatNumber(reservePct, 1),
-      co2: formatNumber(annualCo2Kg, 0),
-    };
+    return [
+      { kicker: "SOLPRODUKSJON · ÅR", value: formatNumber(annualSolarKWh, 0), unit: "kWh" },
+      { kicker: batteryTileKicker, value: batteryTileValue, unit: batteryTileUnit },
+      { kicker: "RESERVEKJØRING · ÅR", value: formatNumber(reservePct, 1), unit: "%" },
+      { kicker: "CO₂ · ÅR", value: formatNumber(annualCo2Kg, 0), unit: "kg" },
+    ];
   }, [outputs, isAutonomyMode]);
 
   return (
@@ -111,7 +107,7 @@ export default function SystemPage() {
         }
       />
 
-      <KpiStrip values={kpiValues} />
+      <KpiStrip items={kpiItems} />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <ReserveSection />
@@ -122,43 +118,9 @@ export default function SystemPage() {
   );
 }
 
-function KpiStrip({
-  values,
-}: {
-  values: {
-    solarPerYear: string;
-    batteryTileKicker: string;
-    batteryTileValue: string;
-    batteryTileUnit: string;
-    reservePct: string;
-    co2: string;
-  };
-}) {
-  return (
-    <section className="hg-tp-kpi grid grid-cols-2 gap-0 border-y border-[var(--hg-hairline)] md:grid-cols-4">
-      <KpiTile kicker="SOLPRODUKSJON · ÅR" value={values.solarPerYear} unit="kWh" />
-      <KpiTile kicker={values.batteryTileKicker} value={values.batteryTileValue} unit={values.batteryTileUnit} />
-      <KpiTile kicker="RESERVEKJØRING · ÅR" value={values.reservePct} unit="%" />
-      <KpiTile kicker="CO₂ · ÅR" value={values.co2} unit="kg" />
-    </section>
-  );
-}
-
-function KpiTile({ kicker, value, unit }: KpiTileProps) {
-  return (
-    <div className="flex flex-col gap-1 border-r border-[var(--hg-hairline)] px-4 py-2 last:border-r-0">
-      <span className={`${workspaceOverlineClassName} text-[var(--hg-ink-2)]`}>{kicker}</span>
-      <div className="flex items-baseline gap-1.5">
-        <span className="hg-mono text-[length:var(--hg-type-kpi-size)] font-[var(--hg-type-weight-bold)] leading-none tabular-nums text-[var(--hg-ink)]">{value}</span>
-        <span className="hg-mono text-[13px] font-[var(--hg-type-weight-bold)] tracking-normal text-[var(--hg-ink)]">{unit}</span>
-      </div>
-    </div>
-  );
-}
-
 function SectionHeader({ title, actions }: { title: string; actions?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 pb-2">
+    <div className="flex min-h-[38px] flex-wrap items-end justify-between gap-3 pb-2">
       <div className="min-w-0">
         <h2 className={workspaceSectionTitleClassName}>{title}</h2>
       </div>

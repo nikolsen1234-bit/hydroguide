@@ -244,7 +244,7 @@ export function EnergyOverviewChart({
 
             return (
               <g key={ratio}>
-                <line x1={left} x2={width - right} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="3 5" />
+                <line x1={left} x2={width - right} y1={y} y2={y} stroke="#cbd5e1" strokeWidth="1.75" strokeDasharray="3 5" />
                 <text x={left - 8} y={y + 5} textAnchor="end" className={workspaceChartAxisClassName}>
                   {formatNumber(energyLabel, 0)}
                 </text>
@@ -257,7 +257,7 @@ export function EnergyOverviewChart({
 
             return (
               <g key={`neg-${ratio}`}>
-                <line x1={left} x2={width - right} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="3 5" />
+                <line x1={left} x2={width - right} y1={y} y2={y} stroke="#cbd5e1" strokeWidth="1.75" strokeDasharray="3 5" />
                 <text x={left - 8} y={y + 5} textAnchor="end" className={workspaceChartAxisClassName}>
                   {formatNumber(energyLabel, 0)}
                 </text>
@@ -298,7 +298,7 @@ export function EnergyOverviewChart({
             </text>
           ) : null}
 
-          <line x1={left} x2={width - right} y1={zeroY} y2={zeroY} stroke="#94a3b8" strokeWidth="1.5" />
+          <line x1={left} x2={width - right} y1={zeroY} y2={zeroY} stroke="#94a3b8" strokeWidth="1.75" />
 
           {rows.map((row, index) => {
             const barX = left + index * stepX + (stepX - balanceBarWidth) / 2;
@@ -367,8 +367,8 @@ export function EnergyOverviewChart({
                 height={tooltipH}
                 rx="8"
                 fill="white"
-                stroke="#e2e8f0"
-                strokeWidth="1.5"
+                stroke="#cbd5e1"
+                strokeWidth="1.75"
               />
               <text x={tooltipX + 10} y={tooltipY + 19} fontSize={tooltipTitleFontSize} fontWeight="var(--hg-type-weight-bold)" fill="#0f172a">
                 {hoverRow.label}

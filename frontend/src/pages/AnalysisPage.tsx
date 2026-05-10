@@ -803,7 +803,6 @@ export default function AnalysisPage() {
           ) : (
             <EditorialSection
               title="Klar for analyse"
-              description="Kjør berekning når prosjektgrunnlag, tekniske parameterar og komponentar er registrerte."
             >
               <div className="flex flex-wrap gap-3">
                 <NavLink to="/parametere" className={blockerLinkClass}>

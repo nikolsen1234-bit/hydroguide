@@ -8,8 +8,8 @@ import type { EngineMode } from "../types";
 const team = [
   ["Nikolas Olsen", "Prosjektleder"],
   ["Dan Roald Larsen", "Instrumentering"],
-  ["Jinn-Marie Bakke", "Kraftsystem"],
-  ["Espen Espenland", "Kommunikasjon"]
+  ["Jin-Marie Bakke", "Kraftsystem"],
+  ["Espen Espeland", "Kommunikasjon"]
 ];
 
 function TeamList() {

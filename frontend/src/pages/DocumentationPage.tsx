@@ -331,7 +331,7 @@ function DefinitionList({
     <div className="mt-4">
       <p className={`${workspaceSubsectionTitleClassName} mb-3`}>{heading}</p>
       <div className="max-w-full overflow-x-auto">
-      <table className="hg-definition-table min-w-[36rem] table-fixed text-left">
+      <table className="hg-definition-table min-w-[36rem] w-full table-fixed text-left">
         <colgroup>
           <col className="w-[31%] sm:w-[28%]" />
           <col className="w-[22%]" />

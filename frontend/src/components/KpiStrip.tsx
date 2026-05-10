@@ -1,5 +1,3 @@
-import { workspaceOverlineClassName } from "../styles/workspace";
-
 export type KpiStripItem = {
   kicker: string;
   value: string;
@@ -11,6 +9,15 @@ export type KpiStripProps = {
   items: KpiStripItem[];
   className?: string;
 };
+
+const kpiTileClassName =
+  "hg-kpi-strip-item flex min-h-[64px] min-w-0 flex-col justify-center gap-1 border-b border-r border-[var(--hg-hairline)] px-4 py-2 even:border-r-0 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0";
+const kpiLabelClassName =
+  "hg-kpi-header";
+const kpiValueClassName =
+  "hg-mono text-[length:var(--hg-type-kpi-size)] font-[var(--hg-type-weight-bold)] leading-none tabular-nums text-[var(--hg-ink)]";
+const kpiUnitClassName =
+  "hg-mono text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-bold)] leading-none tracking-normal text-[var(--hg-ink)]";
 
 export default function KpiStrip({ items, className }: KpiStripProps): JSX.Element {
   const columnsClass =
@@ -27,12 +34,12 @@ export default function KpiStrip({ items, className }: KpiStripProps): JSX.Eleme
       {items.map((item, index) => (
         <div
           key={`${item.kicker}-${index}`}
-          className="hg-kpi-strip-item flex min-w-0 flex-col gap-1 border-b border-r border-[var(--hg-hairline)] px-4 py-2 even:border-r-0 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0"
+          className={kpiTileClassName}
         >
-          <span className={`hg-kpi-strip-label ${workspaceOverlineClassName} text-[var(--hg-ink-2)]`}>{item.kicker}</span>
+          <span className={kpiLabelClassName}>{item.kicker}</span>
           <div className="flex items-baseline gap-1.5">
-            <span className="hg-mono text-[length:var(--hg-type-kpi-size)] font-[var(--hg-type-weight-bold)] leading-none tabular-nums text-[var(--hg-ink)]">{item.value}</span>
-            {item.unit ? <span className="hg-mono text-[13px] font-[var(--hg-type-weight-bold)] tracking-normal text-[var(--hg-ink)]">{item.unit}</span> : null}
+            <span className={kpiValueClassName}>{item.value}</span>
+            {item.unit ? <span className={kpiUnitClassName}>{item.unit}</span> : null}
           </div>
           {item.trend ? (
             <span className="truncate text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)] max-sm:whitespace-normal max-sm:leading-tight max-sm:[overflow-wrap:anywhere]">

@@ -273,33 +273,28 @@ export default function OverviewPage() {
     {
       kicker: "SOLPRODUKSJON · ÅR",
       value: outputs ? formatNumber(outputs.derivedResults.annualTotals.annualSolarProductionKWh, 0) : "-",
-      unit: "kWh",
-      trend: "Beregnet årlig"
+      unit: "kWh"
     },
     {
       kicker: "LAST · ÅR",
       value: outputs ? formatNumber(outputs.derivedResults.annualTotals.annualLoadDemandKWh, 0) : "-",
-      unit: "kWh",
-      trend: "Samlet forbruk"
+      unit: "kWh"
     },
     {
       kicker: "RESERVEKJØRING · ÅR",
       value: reservePct !== null ? formatNumber(reservePct, 1) : "-",
-      unit: "%",
-      trend: "Andel av året"
+      unit: "%"
     },
     isAutonomyMode
       ? {
           kicker: "BANKSTØRRELSE",
           value: outputs ? formatNumber(outputs.derivedResults.systemRecommendation.batteryCapacityAh) : "-",
-          unit: "Ah",
-          trend: "Beregnet for oppgitt autonomi"
+          unit: "Ah"
         }
       : {
           kicker: "AUTONOMI",
           value: outputs ? formatNumber(outputs.derivedResults.systemRecommendation.batteryAutonomyDays, 1) : "-",
-          unit: "dager",
-          trend: "Beregnet for oppgitt bankstørrelse"
+          unit: "dager"
         }
   ];
 

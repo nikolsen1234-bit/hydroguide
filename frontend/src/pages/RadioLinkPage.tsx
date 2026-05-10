@@ -239,8 +239,6 @@ function EmptyProfilePreview({ compact = false }: { compact?: boolean }) {
   const innerRight = width - padding.right;
   const innerTop = padding.top;
   const innerBottom = height - padding.bottom;
-  const centerX = (innerLeft + innerRight) / 2;
-  const centerY = (innerTop + innerBottom) / 2;
   const emptyYTicks = [0, 1, 2, 3, 4].map((step) => ({
     key: step,
     y: innerTop + ((innerBottom - innerTop) * (4 - step)) / 4
@@ -270,7 +268,7 @@ function EmptyProfilePreview({ compact = false }: { compact?: boolean }) {
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.75;
     ctx.strokeStyle = css("--hg-hairline", "rgba(148, 163, 184, 0.4)");
     ctx.setLineDash([4, 6]);
     emptyYTicks.forEach(({ y }) => {
@@ -305,17 +303,6 @@ function EmptyProfilePreview({ compact = false }: { compact?: boolean }) {
           aria-label="Tom terrengprofil — venter på beregning"
         />
         <div className="pointer-events-none absolute inset-0">
-          <div
-            className="absolute text-center"
-            style={{ left: centerX, top: centerY - 8, transform: "translate(-50%, -50%)" }}
-          >
-            <div className="font-[var(--hg-type-weight-bold)] text-[var(--hg-ink-2)]" style={{ fontSize: "var(--hg-type-content-size)" }}>
-              Ingen LOS-profil enno
-            </div>
-            <div className="text-[var(--hg-muted)]" style={{ fontSize: "var(--hg-type-meta-size)" }}>
-              Set punkt A og B, og trykk Beregn
-            </div>
-          </div>
           {emptyYTicks.map(({ key, y }) => (
             <span
               key={`y-${key}`}
@@ -345,16 +332,29 @@ function EmptyProfilePreview({ compact = false }: { compact?: boolean }) {
   );
 }
 function ProfileChart({ analysis, compact = false }: { analysis: RadioLinkAnalysis | null; compact?: boolean }) {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const isMobile = useIsMobile();
-  const { t } = useLanguage();
   const isCompactDesktop = compact && !isMobile;
-  const { containerRef, viewport } = useMeasuredChartViewport(isCompactDesktop);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   if (!analysis) {
     return <EmptyProfilePreview compact={isCompactDesktop} />;
   }
+
+  return <ProfileChartCanvas analysis={analysis} isMobile={isMobile} isCompactDesktop={isCompactDesktop} />;
+}
+
+function ProfileChartCanvas({
+  analysis,
+  isMobile,
+  isCompactDesktop
+}: {
+  analysis: RadioLinkAnalysis;
+  isMobile: boolean;
+  isCompactDesktop: boolean;
+}) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const { t } = useLanguage();
+  const { containerRef, viewport } = useMeasuredChartViewport(isCompactDesktop);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const width = isMobile ? 430 : isCompactDesktop ? Math.max(320, viewport?.width ?? 640) : 1200;
   const height = isMobile ? 300 : isCompactDesktop ? Math.max(220, viewport?.height ?? 300) : 360;
@@ -452,7 +452,7 @@ function ProfileChart({ analysis, compact = false }: { analysis: RadioLinkAnalys
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
 
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.75;
     ctx.strokeStyle = css("--hg-hairline", "rgba(148, 163, 184, 0.4)");
     ctx.setLineDash([4, 6]);
     valueTicks.forEach(({ y }) => {
@@ -593,7 +593,7 @@ function ProfileChart({ analysis, compact = false }: { analysis: RadioLinkAnalys
             return (
               <span
                 key={`dist-${tick}-${index}`}
-                className="hg-mono absolute font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]"
+                className="hg-mono absolute whitespace-nowrap font-[var(--hg-type-weight-semibold)] text-[var(--hg-muted)]"
                 style={{
                   left: `${(x / width) * 100}%`,
                   bottom: 2,
@@ -1119,8 +1119,8 @@ export default function RadioLinkPage() {
     </BlueprintPanel>
   );
   const desktopAnalysisResults = (
-    <BlueprintPanel title={t("radio.resultsSection")} className="min-h-0">
-      <div className="grid gap-x-3 gap-y-1 sm:grid-cols-2">
+    <BlueprintPanel title={t("radio.resultsSection")} className="h-full min-h-0 overflow-hidden">
+      <div className="grid h-[calc(100%-2rem)] min-h-0 grid-cols-2 grid-rows-4 gap-x-3 gap-y-0 overflow-hidden">
         <BlueprintReadout
           label={t("radio.pointA")}
           value={analysis ? formatNumber(analysis.startAltitudeM, 0) : "-"}
@@ -1492,7 +1492,7 @@ export default function RadioLinkPage() {
             </div>
           </BlueprintPanel>
 
-          <div className="min-h-0 overflow-hidden pr-4">
+          <div className="h-full min-h-0 overflow-hidden pr-4">
             {desktopAnalysisResults}
           </div>
 
@@ -1514,7 +1514,7 @@ export default function RadioLinkPage() {
               </div>
             }
           >
-            <div className="min-h-0 flex-1 overflow-hidden rounded-[4px] border border-[var(--hg-hairline)] bg-[var(--hg-surface)]">
+            <div className="hg-radio-map-frame min-h-0 flex-1 overflow-hidden rounded-[4px] bg-[var(--hg-surface)]">
               <RadioLinkMap
                 pointA={showMapMarkers ? mapPointA : null}
                 pointB={showMapMarkers ? mapPointB : null}

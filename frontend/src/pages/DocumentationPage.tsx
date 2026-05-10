@@ -95,7 +95,7 @@ E_{forbruk} = E_{dag} \cdot n_{dager}, \qquad E_{underskudd} = E_{forbruk} - E_{
           items: [
             { symbol: "E_{forbruk}", unit: "Wh", description: t("docs.totalConsumption") },
             { symbol: "E_{dag}", unit: "Wh", description: t("docs.dailyConsumptionSymbol") },
-            { symbol: "n_{dager}", unit: "d", description: t("docs.numberOfDays") },
+            { symbol: "n_{dager}", unit: "dagar", description: t("docs.numberOfDays") },
             { symbol: "E_{underskudd}", unit: "Wh", description: t("docs.energyDeficit") },
             { symbol: "E_{sol}", unit: "Wh", description: t("docs.solarProductionSymbol") }
           ]
@@ -152,7 +152,7 @@ F = E_{underskudd} \cdot r_{forbruk}\ \text{eller} \Rightarrow\ F = t_{drift} \c
           items: [
             { symbol: "C_{batt}", unit: "Ah", description: t("docs.batteryCapacitySymbol") },
             { symbol: "E_{dag}", unit: "Wh", description: t("docs.dailyConsumptionSymbol") },
-            { symbol: "n_{autonomi}", unit: "d", description: t("docs.autonomyDays") },
+            { symbol: "n_{autonomi}", unit: "dagar", description: t("docs.autonomyDays") },
             { symbol: "V_{nom}", unit: "V", description: t("docs.nominalVoltage") },
             { symbol: "DoD", description: t("docs.dodSymbol") }
           ]
@@ -318,7 +318,15 @@ function FormulaBlock({ tex }: { tex: string }) {
   );
 }
 
-function DefinitionList({ items, heading }: { items: FormulaItem[]; heading: string }) {
+function DefinitionList({
+  items,
+  heading,
+  descriptionHeading
+}: {
+  items: FormulaItem[];
+  heading: string;
+  descriptionHeading: string;
+}) {
   return (
     <div className="mt-4">
       <p className={`${workspaceSubsectionTitleClassName} mb-3`}>{heading}</p>
@@ -333,7 +341,7 @@ function DefinitionList({ items, heading }: { items: FormulaItem[]; heading: str
           <tr className="border-b border-[var(--hg-hairline)]">
             <th className={`py-2 pr-3 text-left ${workspaceSubsectionTitleClassName}`} aria-label="Symbol" />
             <th className={`px-3 py-2 text-left ${workspaceSubsectionTitleClassName}`}>Enhet</th>
-            <th className={`px-3 py-2 text-left ${workspaceSubsectionTitleClassName}`}>Forklaring</th>
+            <th className={`px-3 py-2 text-left ${workspaceSubsectionTitleClassName}`}>{descriptionHeading}</th>
           </tr>
         </thead>
         <tbody>
@@ -403,7 +411,13 @@ export default function DocumentationPage() {
                   {entry.title ? <h3 className={workspaceSubsectionTitleClassName}>{entry.title}</h3> : null}
                   {entry.lead ? <p className={`mt-1 max-w-3xl ${workspaceBodyClassName}`}>{entry.lead}</p> : null}
                   {entry.formula ? <FormulaBlock tex={entry.formula} /> : null}
-                  {entry.items && entry.items.length > 0 ? <DefinitionList items={entry.items} heading={t("docs.explanations")} /> : null}
+                  {entry.items && entry.items.length > 0 ? (
+                    <DefinitionList
+                      items={entry.items}
+                      heading="Forklaringer"
+                      descriptionHeading="Forklaring"
+                    />
+                  ) : null}
                 </article>
               ))}
             </div>

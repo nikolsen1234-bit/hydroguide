@@ -7,6 +7,7 @@ import react from "@vitejs/plugin-react";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const MINIMUM_FLOW_LOCAL_PATH = path.join(__dirname, "..", "backend", "data", "minimumflow.json");
+const LOCAL_SECRETS_PATH = path.join(__dirname, "..", ".secrets");
 const minimumFlowBucketStub = {
   async get(_key: string) {
     const text = readFileSync(MINIMUM_FLOW_LOCAL_PATH, "utf8");
@@ -16,6 +17,10 @@ const minimumFlowBucketStub = {
       }
     };
   }
+};
+const localFunctionEnv = {
+  ...readLocalSecrets(),
+  ...process.env
 };
 const cloudflareHosts = ["localhost", "127.0.0.1", ".trycloudflare.com"];
 const canonicalJsChunkNames = new Map([
@@ -98,7 +103,7 @@ function functionsDevBridge() {
     const requestBody = method === "GET" || method === "HEAD" ? undefined : await readRequestBody(req);
     const response = await handler({
       request: new Request(requestUrl.toString(), { method, headers, body: requestBody }),
-      env: { ...process.env, MINIMUM_FLOW_BUCKET: minimumFlowBucketStub }
+      env: { ...localFunctionEnv, MINIMUM_FLOW_BUCKET: minimumFlowBucketStub }
     });
 
     res.statusCode = response.status;
@@ -116,6 +121,27 @@ function functionsDevBridge() {
       installBridgeMiddleware(server, handleRequest);
     }
   };
+}
+
+function readLocalSecrets() {
+  try {
+    const values: Record<string, string> = {};
+    const text = readFileSync(LOCAL_SECRETS_PATH, "utf8");
+    for (const line of text.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) {
+        continue;
+      }
+      const [name, ...rest] = trimmed.split("=");
+      const key = name.trim();
+      if (key) {
+        values[key] = rest.join("=").trim();
+      }
+    }
+    return values;
+  } catch {
+    return {};
+  }
 }
 
 function installBridgeMiddleware(

@@ -8,6 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const MINIMUM_FLOW_LOCAL_PATH = path.join(__dirname, "..", "backend", "data", "minimumflow.json");
 const LOCAL_SECRETS_PATH = path.join(__dirname, "..", ".secrets");
+const BUILD_INFO_LOCAL_PATH = path.join(__dirname, "src", "generated", "build-info.json");
 const minimumFlowBucketStub = {
   async get(_key: string) {
     const text = readFileSync(MINIMUM_FLOW_LOCAL_PATH, "utf8");
@@ -125,6 +126,25 @@ function installBridgeMiddleware(
   server: BridgeServer,
   handleRequest: (req: BridgeRequest, res: any) => Promise<boolean>
 ) {
+  server.middlewares.use((req, res, next) => {
+    if (req.url?.split("?")[0] !== "/build-info.json") {
+      next();
+      return;
+    }
+
+    try {
+      const payload = readFileSync(BUILD_INFO_LOCAL_PATH, "utf8");
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.end(payload);
+      return;
+    } catch {
+      next();
+      return;
+    }
+  });
+
   // Rewrite extensionless public HTML paths so Vite serves the file
   // instead of falling through to the SPA index.html.
   server.middlewares.use((req, _res, next) => {

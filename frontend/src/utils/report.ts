@@ -952,7 +952,7 @@ function buildReportHtml(
   .appendix .up-row:first-child{padding-top:1px}
   .appendix .up-row:last-child{border-bottom:0;padding-bottom:1px}
   .appendix .up-row::before{content:"";flex:1 1 auto;order:2;align-self:end;margin-bottom:3px;border-bottom:1px dotted var(--line);min-width:18px}
-  .appendix .up-row .k{order:1;flex:0 0 auto;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .appendix .up-row .k{order:1;flex:0 0 auto;font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:700}
   .appendix .up-row .v{order:3;flex:0 0 auto;text-align:right;color:var(--ink);font-weight:700;font-size:11px;letter-spacing:-.015em;line-height:1;display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
   .appendix .up-row .v small{font-size:8.5px;color:var(--muted);font-weight:700;margin-left:2px;letter-spacing:0;white-space:nowrap}
   .appendix .up-row .v .sub{font-size:8px;color:var(--ink-2);font-weight:400;letter-spacing:-.005em;white-space:nowrap}

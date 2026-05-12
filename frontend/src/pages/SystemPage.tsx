@@ -19,7 +19,6 @@ const DEFAULT_MONTH_VALUES = [0.4, 1.0, 2.7, 4.2, 5.6, 5.2, 5.1, 4.1, 2.4, 1.2, 
 const MONTH_PANEL_COLUMNS = ["MÅNED", "kWh/m²", "Δ FRA STANDARD"];
 const PANEL_FOCUSABLE_SELECTOR =
   'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
 type FlatFieldProps = {
   label: string;
   value?: string;
@@ -65,10 +64,10 @@ export default function SystemPage() {
 
     if (!outputs) {
       return [
-        { kicker: "SOLPRODUKSJON · ÅR", value: "-", unit: "kWh" },
+        { kicker: "SOLPRODUKSJON", value: "-", unit: "kWh" },
         { kicker: batteryTileKicker, value: "-", unit: batteryTileUnit },
-        { kicker: "RESERVEKJØRING · ÅR", value: "-", unit: "%" },
-        { kicker: "CO₂ · ÅR", value: "-", unit: "kg" },
+        { kicker: "RESERVEDRIFT", value: "-", unit: "%" },
+        { kicker: "CO₂", value: "-", unit: "kg" },
       ];
     }
     const annualSolarKWh = outputs.derivedResults.annualTotals.annualSolarProductionKWh;
@@ -89,10 +88,10 @@ export default function SystemPage() {
     const annualCo2Kg = co2Item ? co2Item.annualCo2 : 0;
 
     return [
-      { kicker: "SOLPRODUKSJON · ÅR", value: formatNumber(annualSolarKWh, 0), unit: "kWh" },
+      { kicker: "SOLPRODUKSJON", value: formatNumber(annualSolarKWh, 0), unit: "kWh" },
       { kicker: batteryTileKicker, value: batteryTileValue, unit: batteryTileUnit },
-      { kicker: "RESERVEKJØRING · ÅR", value: formatNumber(reservePct, 1), unit: "%" },
-      { kicker: "CO₂ · ÅR", value: formatNumber(annualCo2Kg, 0), unit: "kg" },
+      { kicker: "RESERVEDRIFT", value: formatNumber(reservePct, 1), unit: "%" },
+      { kicker: "CO₂", value: formatNumber(annualCo2Kg, 0), unit: "kg" },
     ];
   }, [outputs, isAutonomyMode]);
 
@@ -128,11 +127,11 @@ export default function SystemPage() {
 
 function SectionHeader({ title, actions }: { title: string; actions?: ReactNode }) {
   return (
-    <div className="flex min-h-[38px] flex-wrap items-end justify-between gap-3 pb-2">
+    <div className="flex min-h-[38px] flex-wrap items-end justify-between gap-3 pb-2 max-md:flex-col max-md:items-stretch">
       <div className="min-w-0">
         <h2 className={workspaceSectionTitleClassName}>{title}</h2>
       </div>
-      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex items-center gap-2 max-md:flex-wrap">{actions}</div> : null}
     </div>
   );
 }
@@ -164,7 +163,7 @@ function FlatField({ label, value, unit, hint, info, highlighted, onChange, read
     ? "border-[var(--hg-accent)]"
     : highlighted
       ? "border-[var(--hg-accent)]"
-      : "border-[var(--hg-hairline)]";
+      : "border-[var(--hg-ink)]";
   return (
     <label className="flex min-w-0 flex-col gap-1">
       <FieldLabel label={label} focused={focused} info={info} />
@@ -189,7 +188,7 @@ function FlatField({ label, value, unit, hint, info, highlighted, onChange, read
           className="hg-mono min-w-0 flex-1 border-0 bg-transparent p-0 text-[length:var(--hg-type-control-value-size)] font-[var(--hg-type-weight-extra)] text-[var(--hg-ink)] outline-none focus:text-[var(--hg-accent)]"
         />
         {unit ? (
-          <span className="hg-mono shrink-0 text-[13px] font-[var(--hg-type-weight-bold)] tracking-normal text-[var(--hg-ink-2)]">
+          <span className="hg-mono shrink-0 text-[13px] font-[var(--hg-type-weight-bold)] tracking-normal text-[var(--hg-ink)]">
             {unit}
           </span>
         ) : null}
@@ -217,7 +216,7 @@ function FlatSelect({
   return (
     <label className="flex min-w-0 flex-col gap-1">
       <FieldLabel label={label} />
-      <div className={`flex items-center justify-between gap-2 border-b-2 ${focused ? "border-[var(--hg-accent)]" : "border-[var(--hg-hairline)]"} pb-0.5 transition-colors`}>
+      <div className={`flex items-center justify-between gap-2 border-b-2 ${focused ? "border-[var(--hg-accent)]" : "border-[var(--hg-ink)]"} pb-0.5 transition-colors`}>
         <select
           value={display}
           onChange={(e) => {
@@ -232,7 +231,7 @@ function FlatSelect({
             <option key={opt} value={opt}>{opt}</option>
           ))}
         </select>
-        <span className="text-[var(--hg-ink-2)]">▾</span>
+        <span className="text-[var(--hg-ink)]">▾</span>
       </div>
     </label>
   );
@@ -397,8 +396,11 @@ function SolinnstralingSection() {
           Rediger månedsverdier
         </button>
       </div>
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1 max-md:hidden">
         <RadiationBarChart values={values} />
+      </div>
+      <div className="hidden max-md:block">
+        <RadiationBarChartHorizontal values={values} />
       </div>
       <p className="hg-mono mt-1 text-right text-[13px] font-[var(--hg-type-weight-bold)] tracking-normal text-[var(--hg-ink)]">
         Sum: {sum.toFixed(2)} kWh/m² · år
@@ -457,6 +459,54 @@ function RadiationBarChart({ values }: { values: number[] }) {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function RadiationBarChartHorizontal({ values }: { values: number[] }) {
+  const max = Math.max(...values);
+  const niceMax = max > 0 ? Math.ceil(max) : 6;
+
+  return (
+    <div className="border-t-2 border-[var(--hg-ink)]">
+      <ul className="m-0 list-none p-0">
+        {values.map((v, i) => {
+          const ratio = niceMax > 0 ? v / niceMax : 0;
+          const barWidth = `${Math.max(ratio * 100, v > 0 ? 1.5 : 0)}%`;
+          return (
+            <li
+              key={i}
+              className="grid grid-cols-[2.25rem_minmax(0,1fr)_2.75rem] items-center gap-x-3 border-b border-[var(--hg-hairline-2)] py-2 last:border-b-0"
+            >
+              <span className="hg-mono text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-unit-tracking)] text-[var(--hg-ink-2)]">
+                {MONTH_LABELS[i]}
+              </span>
+              <div
+                className="relative h-2 w-full overflow-hidden bg-[var(--hg-hairline-2)]"
+                aria-label={`${MONTH_LABELS[i]}: ${v.toFixed(1)} kWh/m²`}
+              >
+                <div
+                  className="absolute inset-y-0 left-0"
+                  style={{ width: barWidth, background: SOLAR_BAR_COLOR }}
+                />
+              </div>
+              <span className="hg-mono text-right text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] tabular-nums text-[var(--hg-ink)]">
+                {v.toFixed(1)}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_2.75rem] items-center gap-x-3 border-t border-[var(--hg-ink)] pt-1.5">
+        <span aria-hidden="true" />
+        <div className="hg-mono flex justify-between text-[length:var(--hg-type-micro-size)] font-[var(--hg-type-weight-semibold)] tabular-nums text-[var(--hg-muted)]">
+          <span>0</span>
+          <span>{niceMax}</span>
+        </div>
+        <span className="hg-mono text-right text-[length:var(--hg-type-micro-size)] font-[var(--hg-type-weight-semibold)] uppercase tracking-[var(--hg-type-unit-tracking)] text-[var(--hg-muted)]">
+          kWh/m²
+        </span>
       </div>
     </div>
   );

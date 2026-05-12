@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BooleanChoiceField, NumberField } from "../components/FormFields";
+import { NumberField } from "../components/FormFields";
 import NveStandaloneMap from "../components/NveStandaloneMap";
 import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
 import EditorialSection from "../components/EditorialSection";
@@ -22,7 +22,7 @@ import { validateConfiguration } from "../utils/validation";
 type ProjectBasisQuestion = (typeof sections)[number]["questions"][number];
 
 function isAnswered(value: unknown) {
-  return value !== "" && value !== null && value !== undefined;
+  return Array.isArray(value) ? value.length > 0 : value !== "" && value !== null && value !== undefined;
 }
 
 export default function MainPage() {
@@ -65,6 +65,44 @@ export default function MainPage() {
       value: option.value,
       label: option.labelKey ? t(option.labelKey) : option.label
     }));
+    const exclusiveMultiOptions = new Set(["unknown", "none", "noneKnown", "no", "unresolved", "notRelevant"]);
+
+    if (question.input === "multiSelect") {
+      const selectedValues = Array.isArray(value) ? (value as string[]) : [];
+
+      return (
+        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
+          {qOptions?.map((option) => {
+            const selected = selectedValues.includes(option.value);
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => {
+                  const withoutCurrent = selectedValues.filter((item) => item !== option.value);
+                  const next = selected
+                    ? withoutCurrent
+                    : exclusiveMultiOptions.has(option.value)
+                      ? [option.value]
+                      : [...withoutCurrent.filter((item) => !exclusiveMultiOptions.has(item)), option.value];
+
+                  setQuestionValue(question.key, next);
+                }}
+                className={`min-h-9 rounded-md border px-3 py-1.5 text-left ${workspaceFieldLabelClassName} transition ${
+                  selected
+                    ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
+                    : "border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[var(--hg-ink)] hover:border-[var(--hg-accent-2)]"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      );
+    }
 
     if (question.input === "select") {
       return (
@@ -209,24 +247,6 @@ export default function MainPage() {
                   min={0}
                   step={1}
                   onChange={(next) => updateConfigSectionField("systemParameters", "inspectionsPerYear", next)}
-                />
-                <BooleanChoiceField
-                  label={t("main.4gCoverage")}
-                  value={activeDraft.systemParameters["4gCoverage"]}
-                  error={errors["systemParameters.4gCoverage"]}
-                  onChange={(next) => updateConfigSectionField("systemParameters", "4gCoverage", next)}
-                />
-                <BooleanChoiceField
-                  label={t("main.nbIotCoverage")}
-                  value={activeDraft.systemParameters.nbIotCoverage}
-                  error={errors["systemParameters.nbIotCoverage"]}
-                  onChange={(next) => updateConfigSectionField("systemParameters", "nbIotCoverage", next)}
-                />
-                <BooleanChoiceField
-                  label={t("main.lineOfSight")}
-                  value={activeDraft.systemParameters.lineOfSightUnder15km}
-                  error={errors["systemParameters.lineOfSightUnder15km"]}
-                  onChange={(next) => updateConfigSectionField("systemParameters", "lineOfSightUnder15km", next)}
                 />
               </>
             )}

@@ -11,7 +11,7 @@ export type KpiStripProps = {
 };
 
 const kpiTileClassName =
-  "hg-kpi-strip-item flex min-h-[64px] min-w-0 flex-col justify-center gap-1 border-b border-r border-[var(--hg-hairline)] px-4 py-2 even:border-r-0 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0";
+  "hg-kpi-strip-item flex min-h-[64px] min-w-0 flex-col justify-center gap-1 px-4 py-2";
 const kpiLabelClassName =
   "hg-kpi-header";
 const kpiValueClassName =
@@ -29,25 +29,30 @@ export default function KpiStrip({ items, className }: KpiStripProps): JSX.Eleme
           ? "md:grid-cols-3"
           : "md:grid-cols-2";
 
+  const isOdd = items.length % 2 === 1;
+
   return (
     <section className={`hg-kpi-strip grid grid-cols-2 gap-0 border-y border-[var(--hg-hairline)] ${columnsClass} ${className ?? ""}`}>
-      {items.map((item, index) => (
-        <div
-          key={`${item.kicker}-${index}`}
-          className={kpiTileClassName}
-        >
-          <span className={kpiLabelClassName}>{item.kicker}</span>
-          <div className="flex items-baseline gap-1.5">
-            <span className={kpiValueClassName}>{item.value}</span>
-            {item.unit ? <span className={kpiUnitClassName}>{item.unit}</span> : null}
+      {items.map((item, index) => {
+        const isLastOddOnMobile = isOdd && index === items.length - 1;
+        return (
+          <div
+            key={`${item.kicker}-${index}`}
+            className={`${kpiTileClassName} ${isLastOddOnMobile ? "max-md:col-span-2" : ""}`}
+          >
+            <span className={kpiLabelClassName}>{item.kicker}</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className={kpiValueClassName}>{item.value}</span>
+              {item.unit ? <span className={kpiUnitClassName}>{item.unit}</span> : null}
+            </div>
+            {item.trend ? (
+              <span className="truncate text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)] max-sm:whitespace-normal max-sm:leading-tight max-sm:[overflow-wrap:anywhere]">
+                {item.trend}
+              </span>
+            ) : null}
           </div>
-          {item.trend ? (
-            <span className="truncate text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)] max-sm:whitespace-normal max-sm:leading-tight max-sm:[overflow-wrap:anywhere]">
-              {item.trend}
-            </span>
-          ) : null}
-        </div>
-      ))}
+        );
+      })}
     </section>
   );
 }

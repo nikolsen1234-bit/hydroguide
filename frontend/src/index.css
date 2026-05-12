@@ -172,34 +172,85 @@ svg line:is([stroke="var(--hg-hairline)"], [stroke="var(--hg-hairline-2)"]) {
   background-color: #3c4247 !important;
 }
 
+/* ── Header action button — original sleek left-stripe stil ── */
 .hg-header-action-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 10px;
   min-width: 118px;
   max-width: 100%;
-  min-height: 38px;
+  height: 38px;
   padding: 4px 10px;
   border: 0;
-  border-left: 1.75px solid var(--hg-hairline);
+  border-left: 2px solid var(--hg-accent);
   border-radius: 0;
   background: transparent;
   color: var(--hg-ink);
   cursor: pointer;
   text-align: left;
+  will-change: border-left-width, background-color;
+  transition:
+    border-left-width 110ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    background-color 110ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 80ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .hg-header-action-button--wide { min-width: 190px; }
-.hg-header-action-button--primary { border-left: 2px solid var(--hg-accent); }
-.hg-header-action-icon { color: var(--hg-accent); }
+.hg-header-action-icon { color: var(--hg-accent); transition: transform 140ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+
 .hg-header-action-button[data-tone="success"] { border-left-color: var(--hg-ok); }
 .hg-header-action-button[data-tone="success"] .hg-header-action-icon { color: var(--hg-ok); }
 .hg-header-action-button[data-tone="warning"] { border-left-color: var(--hg-warn); }
 .hg-header-action-button[data-tone="warning"] .hg-header-action-icon { color: var(--hg-warn); }
+.hg-header-action-button[data-tone="danger"] { border-left-color: var(--hg-danger, #b91c1c); }
+.hg-header-action-button[data-tone="danger"] .hg-header-action-icon { color: var(--hg-danger, #b91c1c); }
+.hg-header-action-button[data-tone="run"] { border-left-color: #047857; }
+.hg-header-action-button[data-tone="run"] .hg-header-action-icon { color: #047857; }
+
+/* Sleek hover: stripe grows + tints background, icon nudges forward */
+.hg-header-action-button:is(:hover, :focus-visible) {
+  border-left-width: 4px;
+  background: rgba(37, 99, 235, 0.06);
+  outline: none;
+}
+.hg-header-action-button:is(:hover, :focus-visible) .hg-header-action-icon {
+  transform: translateX(1px);
+}
+.hg-header-action-button[data-tone="success"]:is(:hover, :focus-visible) {
+  background: rgba(4, 120, 87, 0.07);
+}
+.hg-header-action-button[data-tone="warning"]:is(:hover, :focus-visible) {
+  background: rgba(180, 83, 9, 0.07);
+}
+.hg-header-action-button[data-tone="danger"]:is(:hover, :focus-visible) {
+  background: rgba(185, 28, 28, 0.07);
+}
+.hg-header-action-button[data-tone="run"]:is(:hover, :focus-visible) {
+  background: rgba(4, 120, 87, 0.07);
+}
+
+.hg-header-action-button:is(:active, .hg-header-action-button--pressed) {
+  transform: translateY(1px);
+  background: rgba(37, 99, 235, 0.1);
+}
 
 .hg-header-action-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+  background: transparent;
+  border-left-width: 2px;
+}
+.hg-header-action-button:disabled .hg-header-action-icon { transform: none; }
+
+[data-theme="dark"] .hg-header-action-button:is(:hover, :focus-visible) {
+  background: rgba(97, 175, 254, 0.1);
+}
+[data-theme="dark"] .hg-header-action-button[data-tone="success"]:is(:hover, :focus-visible) {
+  background: rgba(73, 204, 144, 0.1);
+}
+[data-theme="dark"] .hg-header-action-button[data-tone="warning"]:is(:hover, :focus-visible) {
+  background: rgba(230, 184, 121, 0.1);
 }
 
 .api-light-island {
@@ -494,33 +545,46 @@ svg line:is([stroke="var(--hg-hairline)"], [stroke="var(--hg-hairline-2)"]) {
   white-space: nowrap;
 }
 
+/* ── KPI strip — global, single source of truth for separators ── */
 .hg-kpi-strip {
-  border-top: 2px solid var(--hg-hairline) !important;
-  border-bottom: 2px solid var(--hg-hairline) !important;
+  border-top: 2px solid var(--hg-hairline);
+  border-bottom: 2px solid var(--hg-hairline);
 }
 
+/* Default (mobile, 2-column grid): right border on every cell, blank on every
+   2nd cell. Bottom border on every cell, blank on the last row. */
 .hg-kpi-strip-item {
-  border-right: 2px solid var(--hg-hairline) !important;
-  border-bottom: 2px solid var(--hg-hairline) !important;
+  border-right: 2px solid var(--hg-hairline);
+  border-bottom: 2px solid var(--hg-hairline);
 }
-
-.hg-kpi-strip-item:nth-child(even),
+.hg-kpi-strip-item:nth-child(2n) {
+  border-right: 0;
+}
+/* the bottom row(s) — last cell and, if uneven count, second-to-last */
 .hg-kpi-strip-item:last-child {
-  border-right: 0 !important;
+  border-bottom: 0;
 }
-
-.hg-kpi-strip-item:last-child {
-  border-bottom: 0 !important;
+.hg-kpi-strip-item:nth-last-child(2):nth-child(2n + 1) {
+  border-bottom: 0;
 }
-
-@media (min-width: 768px) {
-  .hg-kpi-strip-item {
-    border-bottom: 0 !important;
-    border-right: 2px solid var(--hg-hairline) !important;
+/* When the last odd item spans both mobile columns (col-span-2), it has no
+   right neighbour — drop the dividing right border that would otherwise
+   point into empty space. */
+@media (max-width: 767.98px) {
+  .hg-kpi-strip-item.max-md\:col-span-2 {
+    border-right: 0;
   }
+}
 
+/* Desktop: single row, right border on every cell except the last. */
+@media (min-width: 768px) {
+  .hg-kpi-strip-item,
+  .hg-kpi-strip-item:nth-child(2n) {
+    border-bottom: 0;
+    border-right: 2px solid var(--hg-hairline);
+  }
   .hg-kpi-strip-item:last-child {
-    border-right: 0 !important;
+    border-right: 0;
   }
 }
 

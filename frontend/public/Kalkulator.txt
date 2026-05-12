@@ -3,17 +3,6 @@
   "name": "Markåni kraftverk — Forenklet",
   "location": "Markåni kraftverk (Vaksdal)",
   "locationPlaceId": "2034",
-  "answers": {
-    "q1Anleggstype": "nytt",
-    "q2HogasteMinstevassforing": 19,
-    "q3Slippkravvariasjon": "tilsigsstyrt",
-    "q4Slippmetode": "royr_frostfritt",
-    "q5IsSedimentTilstopping": "ja",
-    "q6Fiskepassasje": "ja",
-    "q7BypassVedDriftsstans": "ja",
-    "q8Maleprofil": "naturleg_stabilt",
-    "q9AllmentaKontroll": "ja"
-  },
   "systemParameters": {
     "4gCoverage": true,
     "nbIotCoverage": true,
@@ -74,7 +63,7 @@
       "powerW": 0.1,
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
-      "lifetimeYears": "",
+      "lifetimeHours": "",
       "annualMaintenance": "",
       "supplier": "",
       "comment": ""
@@ -85,7 +74,7 @@
       "powerW": 2.4,
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
-      "lifetimeYears": "",
+      "lifetimeHours": "",
       "annualMaintenance": "",
       "supplier": "",
       "comment": ""
@@ -96,7 +85,7 @@
       "powerW": 1.2,
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
-      "lifetimeYears": "",
+      "lifetimeHours": "",
       "annualMaintenance": "",
       "supplier": "",
       "comment": ""
@@ -107,7 +96,7 @@
       "powerW": 2.8,
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
-      "lifetimeYears": "",
+      "lifetimeHours": "",
       "annualMaintenance": "",
       "supplier": "",
       "comment": ""
@@ -118,7 +107,7 @@
       "powerW": 0.042,
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
-      "lifetimeYears": "",
+      "lifetimeHours": "",
       "annualMaintenance": "",
       "supplier": "",
       "comment": ""
@@ -129,7 +118,7 @@
       "powerW": 6.45,
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
-      "lifetimeYears": "",
+      "lifetimeHours": "",
       "annualMaintenance": "",
       "supplier": "",
       "comment": ""
@@ -140,7 +129,7 @@
       "powerW": 7,
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
-      "lifetimeYears": "",
+      "lifetimeHours": "",
       "annualMaintenance": "",
       "supplier": "",
       "comment": ""
@@ -151,7 +140,7 @@
       "powerW": 0.5,
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
-      "lifetimeYears": "",
+      "lifetimeHours": "",
       "annualMaintenance": "",
       "supplier": "",
       "comment": ""
@@ -162,7 +151,7 @@
       "powerW": 0.0374,
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
-      "lifetimeYears": "",
+      "lifetimeHours": "",
       "annualMaintenance": "",
       "supplier": "",
       "comment": ""
@@ -173,7 +162,7 @@
       "powerW": 7,
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
-      "lifetimeYears": "",
+      "lifetimeHours": "",
       "annualMaintenance": "",
       "supplier": "",
       "comment": ""

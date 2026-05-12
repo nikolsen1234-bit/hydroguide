@@ -64,50 +64,84 @@ export function calculateEquipmentBudgetRows(
 
 function simplifyReleaseArrangement(mainSolution: string): string {
   const h = mainSolution.toLowerCase();
-  if (h.includes("rørslipp") && h.includes("aktiv reguleringsventil"))
-    return "Rørslipp i frostfritt rom med aktiv reguleringsventil";
-  if (h.includes("rørslipp") && h.includes("fast struping"))
-    return "Rørslipp i frostfritt rom med fast struping";
-  if (h.includes("reguleringskum"))
-    return "Reguleringskum med skjermet måleseksjon";
-  if (h.includes("passiv slipp"))
-    return "Passiv slippseksjon med vern mot is og drivgods";
-  if (h.includes("standard slipp"))
-    return "Fast slippordning med definert målepunkt";
+  if (h.startsWith("s1+")) return "Rør via inntak til beskyttet målepunkt";
+  if (h.startsWith("s2+")) return "Rør gjennom dam med nedstrøms måleprofil";
+  if (h.startsWith("s3+")) return "Tappeluke med nedstrøms måleprofil";
+  if (h.startsWith("s4+")) return "Utsparing i dam med dokumenterende måleprofil";
+  if (h.startsWith("s5+")) return "Fiskepassasje med dokumentert MVF-måling";
+  if (h.startsWith("s6+")) return "Coanda-spesifikk kombinasjonsløsning";
+  if (h.startsWith("s7+")) return "Alternativ slippform til NVE-samråd";
+  if (h.includes("+m1")) return "Rørbasert MVF-måling";
+  if (h.includes("+m2")) return "Naturlig måleprofil nedstrøms slipp";
+  if (h.includes("+m3")) return "Kunstig V-profil";
+  if (h.includes("+m4")) return "Rektangulært eller sammensatt kunstig profil";
+  if (h.includes("+m5")) return "Crump-overløp";
+  if (h.includes("+m6")) return "Fiskepassasjebasert MVF-måling";
+  if (h.includes("+m7")) return "Coanda-spesifikk kombinasjonsløsning";
+  if (h.includes("m8")) return "Alternativ metode med NVE-samråd";
+  if (h.startsWith("m1")) return "Rørbasert MVF-måling";
+  if (h.startsWith("m2")) return "Naturlig måleprofil nedstrøms slipp";
+  if (h.startsWith("m3")) return "Kunstig V-profil";
+  if (h.startsWith("m4")) return "Rektangulært eller sammensatt kunstig profil";
+  if (h.startsWith("m5")) return "Crump-overløp";
+  if (h.startsWith("m6")) return "Tappeluke med nedstrøms måleprofil";
+  if (h.startsWith("m7")) return "Utsparing i dam med nedstrøms måleprofil";
+  if (h.startsWith("m8")) return "Fiskepassasjebasert MVF-måling";
+  if (h.startsWith("m9")) return "Coanda-spesifikk kombinasjonsløsning";
+  if (h.startsWith("m10")) return "Alternativ metode med NVE-samråd";
+  if (h.includes("fiskepassasje")) return "Fiskepassasje med dokumentert MVF-måling";
+  if (h.includes("coanda") || h.includes("tyroler")) return "Slipp ved coanda-/tyrolerrist";
+  if (h.includes("rør") || h.includes("pipe")) return "Måling i rør eller lukket kanal";
+  if (h.includes("crump") || h.includes("målerenne")) return "Crump-overløp eller målerenne";
+  if (h.includes("v-overløp")) return "V-overløp / trekantoverløp";
+  if (h.includes("naturlig elveløp")) return "Naturlig elveprofil";
   return mainSolution;
 }
 
 function derivePrimaryMeasurement(recommendation: Recommendation): string {
-  const h = recommendation.mainSolution.toLowerCase();
+  const h = `${recommendation.measurementMethodCode ?? ""} ${recommendation.mainSolution}`.toLowerCase();
   const k = recommendation.controlMeasurementMethod;
-  if (h.includes("mengdemåler")) return "Mengdemåling i rør";
-  if (k === "Volum/tid-måling i beholder") return "Volum/tid-måling i beholder";
-  if (k === "Kontroll i naturlig måleprofil nedstrøms") return "Vannstand i naturlig måleprofil";
-  if (k === "Kontroll i kunstig bygget måleprofil nedstrøms") return "Vannstand i kunstig måleprofil";
-  if (k === "Fortynningsmåling") return "Fortynningsmåling";
-  if (k === "Areal-hastighetmåling") return "Areal-hastighetmåling";
+  if (h.startsWith("m1a")) return "Elektromagnetisk vannmåler";
+  if (h.startsWith("m1b")) return "Ultralydmåler i rør";
+  if (h.startsWith("m1c")) return "Måleblende/måledyse";
+  if (h.startsWith("m1d")) return "ADP i rør/kanal";
+  if (h.startsWith("m1")) return "Direkte vannføringsmåler i rør";
+  if (h.startsWith("m2")) return "Vannstand + vannføringskurve i naturlig elveprofil";
+  if (h.startsWith("m3")) return "Vannstand + kunstig V-profil";
+  if (h.startsWith("m4")) return "Vannstand + rektangulært/sammensatt profil";
+  if (h.startsWith("m5")) return "Vannstand + Crump-overløp";
+  if (h.startsWith("m6")) return "Vannstand/lukeåpning + nedstrøms måleprofil";
+  if (h.startsWith("m7")) return "Vannstand ved utsparing + nedstrøms måleprofil";
+  if (h.startsWith("m8")) return "Fiskepassasjebasert vannstandsmåling";
+  if (h.startsWith("m9")) return "Coanda-spesifikk målekombinasjon";
+  if (h.startsWith("m10")) return "Alternativ metode til NVE-samråd";
+  if (h.includes("elektromagnetisk")) return "Elektromagnetisk vannmåler";
+  if (h.includes("ultralyd")) return "Utvendig ultralydmåler";
+  if (k) return k;
   return "Måleprinsipp må fastsettes";
 }
 
 function deriveControlMeasurement(recommendation: Recommendation): string {
-  if (recommendation.controlMeasurementMethod === "Trenger nærmere prosjektering")
+  if (recommendation.controlMeasurementMethod === "Måleprinsipp må fastsettes fra valgt målested")
     return "Må avklares i detaljprosjektering";
   return recommendation.controlMeasurementMethod;
 }
 
 function deriveMeasurementEquipment(primaryMeasurement: string, controlMeasurement: string): string {
-  if (primaryMeasurement === "Mengdemåling i rør")
-    return "Mengdemåler i rør";
-  if (primaryMeasurement === "Volum/tid-måling i beholder")
-    return "Beholder med kjent volum og nivåregistrering";
-  if (primaryMeasurement === "Vannstand i naturlig måleprofil")
-    return "Sensor og logger mot naturlig profil";
-  if (primaryMeasurement === "Vannstand i kunstig måleprofil")
-    return "Sensor og logger mot kunstig profil";
-  if (primaryMeasurement === "Fortynningsmåling")
-    return "Fortynningsutstyr og logget prøveserie";
-  if (primaryMeasurement === "Areal-hastighetmåling")
-    return "Sensor for nivå og hastighet i definert måleseksjon";
+  if (primaryMeasurement === "Elektromagnetisk vannmåler")
+    return "Elektromagnetisk mengdemåler i fullt rør";
+  if (primaryMeasurement === "Utvendig ultralydmåler")
+    return "Clamp-on ultralydmåler";
+  if (primaryMeasurement === "Ultralydmåler i rør")
+    return "Ultralydmåler med leverandørkrav til rettstrekk";
+  if (primaryMeasurement === "Måleblende/måledyse")
+    return "Måleblende eller måledyse med differansetrykkmåling";
+  if (primaryMeasurement === "ADP i rør/kanal")
+    return "ADP-sensor i kjent rør- eller kanalgeometri";
+  if (primaryMeasurement === "Direkte vannføringsmåler i rør")
+    return "Flowmåler i fullt rør";
+  if (primaryMeasurement.includes("vannstand") || primaryMeasurement.includes("Vannstand"))
+    return "Vannstandssensor, logger og kapasitetskurve";
   if (controlMeasurement === "Må avklares i detaljprosjektering")
     return "Må velges i detaljprosjektering";
   return controlMeasurement;
@@ -125,22 +159,30 @@ function calculateSystemRecommendation(
   const inspectionsPerYear = inspectionsForLogic(systemParameters.inspectionsPerYear);
   const sourceConfig = selectedSourceConfig(configuration, sourceName);
 
-  const has4gCoverage = systemParameters["4gCoverage"] === true;
-  const communication = calculatorMode
-    ? "Ikke beregnet"
-    : has4gCoverage
-      ? "4G-ruter"
-      : systemParameters.nbIotCoverage === true
-        ? "NB-IoT"
-        : systemParameters.lineOfSightUnder15km === true
-          ? "LoRaWAN"
-          : "Satellittmodem";
+  const has4gCoverage = answers.q11PowerCommunication.includes("mobileCoverage");
+  const hasRadioOrSatellite = answers.q11PowerCommunication.includes("satelliteRadio");
+  let communication = "Satellittmodem";
+  if (calculatorMode) {
+    communication = "Ikke beregnet";
+  } else if (has4gCoverage) {
+    communication = "4G-ruter";
+  } else if (hasRadioOrSatellite) {
+    communication = "LoRaWAN";
+  } else if (answers.q11PowerCommunication.includes("solarBattery") || answers.q11PowerCommunication.includes("gridPower")) {
+    communication = "Kommunikasjon må velges fra tilgjengelig infrastruktur";
+  } else if (answers.q11PowerCommunication.includes("none")) {
+    communication = "Kommunikasjon mangler";
+  }
 
   const loggerSetup = calculatorMode
     ? "Ikke beregnet"
-    : inspectionsPerYear <= 4
-      ? "2 loggere + backuplogger"
-      : "1 logger";
+    : answers.q65HourlyAutomaticLogging === "yes"
+      ? "Automatisk logger minst hver time"
+      : answers.q65HourlyAutomaticLogging === "no"
+        ? "Mangler automatisk timeslogging"
+        : inspectionsPerYear <= 4
+          ? "Automatisk logging må avklares med backuplogger"
+          : "Automatisk logging må avklares";
 
   const energyMonitoring = calculatorMode ? "Ikke beregnet" : has4gCoverage ? "Ja" : "Nei";
 
@@ -153,37 +195,40 @@ function calculateSystemRecommendation(
 
   const icingAdaptation = calculatorMode
     ? "Ikke beregnet"
-    :
-    answers.q5IsSedimentClogging === "yes" && answers.q4ReleaseMethod === "pipeFrostFree"
-      ? "Frostsikret sensorhus / varmekabel"
-      : answers.q5IsSedimentClogging === "yes"
-        ? "Isreduksjon i måleprofil"
-        : "Standard";
+    : answers.q07ReleaseSolution === "pipeIntake"
+      ? "Beskyttet rør- og sensorpunkt"
+      : "Stabilt og frostvurdert vannstandspunkt";
 
   const operationsRequirements = calculatorMode ? [] : dedupe([
-    releaseArrangement.startsWith("Rørslipp")
-      ? "Serviceadkomst til ventil, måler og innløp i frostfritt rom"
+    answers.q07ReleaseSolution === "pipeIntake"
+      ? "Rettstrekk, fullt rør og rolig strømbilde gjennom måleren for stabil signalkvalitet"
       : "",
-    primaryMeasurement === "Mengdemåling i rør"
-      ? "Rettstrekk og rolig strømbilde gjennom måleren for stabil signalkvalitet"
+    recommendation.measurementMethodCode === "M2"
+      ? "Naturlig profil må ha stabil geometri og dokumentert sammenheng mellom vannstand og vannføring"
       : "",
-    controlMeasurement === "Kontroll i naturlig måleprofil nedstrøms"
-      ? "Naturlig kontrollprofil nedstrøms med stabil geometri og adkomst for kontrollmåling"
+    recommendation.measurementMethodCode === "M3" || recommendation.measurementMethodCode === "M4" || recommendation.measurementMethodCode === "M5"
+      ? "Overløp eller renne må ha kjent geometri, fri utstrømning og korrekt plassert vannstandssensor"
       : "",
-    controlMeasurement === "Kontroll i kunstig bygget måleprofil nedstrøms"
-      ? "Kunstig kontrollprofil nedstrøms med definert geometri og adkomst for kontrollmåling"
+    answers.q07ReleaseSolution === "gate" || answers.q07ReleaseSolution === "damOpening"
+      ? "Luke, åpning, terskel eller overløp må ha stabilt vannspeil og kjent geometri"
       : "",
-    controlMeasurement === "Fortynningsmåling"
-      ? "Tilstrekkelig turbulens og dokumentert innblanding ved kontrollmåling"
+    answers.q08FishMigration !== "no" && answers.q08FishMigration !== ""
+      ? "Fiskepassasje må beskrives separat fra ordinær MVF-måling i rapporten"
       : "",
-    controlMeasurement === "Areal-hastighetmåling"
-      ? "Jevn dybde og definert tverrsnitt for areal-hastighetsmåling"
+    (answers.q09CoandaExists === "yes" || answers.q09CoandaExists === "planned" || answers.q07ReleaseSolution === "coandaSpecific")
+      ? "Coanda-løsning må vurderes prosjektspesifikt og slippet bør føres over eller rett nedstrøms terskelen"
       : "",
-    controlMeasurement === "Volum/tid-måling i beholder"
-      ? "Samlet beholder med kjent volum og repeterbar tømmetid"
+    answers.q65HourlyAutomaticLogging === "no"
+      ? "Automatisk timeslogging mangler og må etableres før løsningen er NVE-klar"
       : "",
-    answers.q3ReleaseRequirementVariation === "seasonal" || answers.q3ReleaseRequirementVariation === "inflowControlled"
-      ? "Regulering må kunne spores og styres trygt ved hyppige endringer"
+    answers.q68SecureDataStorageForNve === "no"
+      ? "Sikker datalagring og fremlegging for NVE må etableres"
+      : "",
+    answers.q66AccuracyWithinFivePercent === "no"
+      ? "Målenøyaktighet innenfor +/-5 prosent må prosjekteres før endelig anbefaling"
+      : "",
+    answers.q67CompletenessNinetySevenPercent === "no"
+      ? "Systemet må prosjekteres for minst 97 prosent komplette/korrekte registreringer"
       : "",
     recommendation.status === "NeedsClarification"
       ? `Avklar prosjekteringsgrunnlaget for ${recommendation.controlMeasurementMethod.toLowerCase()}`
@@ -359,7 +404,7 @@ export function calculateConfigurationOutputs(
           additionalRequirements: [],
           status: "NeedsClarification" as const
         }
-      : calculateRecommendation(configuration.answers, configuration.systemParameters.inspectionsPerYear);
+      : calculateRecommendation(configuration.answers);
   const derivedResults = calculateDerivedResults(configuration, recommendation);
 
   return {

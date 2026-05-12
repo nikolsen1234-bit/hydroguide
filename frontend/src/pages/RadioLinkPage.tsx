@@ -859,7 +859,7 @@ function BlueprintReadout({
   );
 }
 
-export default function RadioLinkPage() {
+export function RadioLinkPanel({ embedded = false }: { embedded?: boolean }) {
   const { activeDraft, saveDraftMetadata, updateConfigSectionField, updateRadioLinkEndpoint, updateCachedRadioAnalysis } = useConfigurationContext();
   const { t } = useLanguage();
   const [analysis, setAnalysis] = useState<RadioLinkAnalysis | null>(
@@ -1216,8 +1216,24 @@ export default function RadioLinkPage() {
   );
 
   return (
-    <main className={`${workspacePageClassName} md:flex md:h-full md:max-h-full md:min-h-0 md:flex-col md:space-y-3 md:overflow-hidden md:pb-3`}>
-      <WorkspaceHeader title={t("radio.title")} actions={headerActions} />
+    <main
+      className={
+        embedded
+          ? "hg-tp-section flex min-h-[720px] flex-col border-t-2 border-[var(--hg-ink)] pt-2 md:max-h-none md:overflow-visible"
+          : `${workspacePageClassName} md:flex md:h-full md:max-h-full md:min-h-0 md:flex-col md:space-y-3 md:overflow-hidden md:pb-3`
+      }
+    >
+      {embedded ? (
+        <div className="flex min-h-[38px] flex-wrap items-end justify-between gap-3 pb-2">
+          <div className="min-w-0">
+            <p className={`${workspaceOverlineClassName} text-[var(--hg-ink-2)]`}>KOMMUNIKASJON</p>
+            <h2 className={workspaceSectionTitleClassName}>{t("radio.title")}</h2>
+          </div>
+          <div className="flex items-center gap-2">{headerActions}</div>
+        </div>
+      ) : (
+        <WorkspaceHeader title={t("radio.title")} actions={headerActions} />
+      )}
 
       {/* ==================== MOBILE LAYOUT ==================== */}
       <div className="space-y-5 md:hidden">
@@ -1559,4 +1575,8 @@ export default function RadioLinkPage() {
 
     </main>
   );
+}
+
+export default function RadioLinkPage() {
+  return <RadioLinkPanel />;
 }

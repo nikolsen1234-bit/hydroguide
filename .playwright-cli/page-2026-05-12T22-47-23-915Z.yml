@@ -1,0 +1,170 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]: HydroGuide · Komponentliste
+    - button "Last ned PDF" [ref=e4] [cursor=pointer]
+  - generic [ref=e5]:
+    - generic [ref=e7]:
+      - heading "Komponentliste" [level=1] [ref=e9]
+      - generic [ref=e10]:
+        - generic [ref=e11]: HG-E85DE351
+        - generic [ref=e12]: 13. mai 2026
+    - table "Komponentliste for HydroGuide konfigurasjon" [ref=e13]:
+      - caption [ref=e14]: Komponentliste for HydroGuide konfigurasjon
+      - rowgroup [ref=e22]:
+        - row "Komponent Antall Stykkpris Pris Ekskl. mva Pris Inkl. mva Nettside" [ref=e23]:
+          - columnheader "Komponent" [ref=e24]
+          - columnheader "Antall" [ref=e25]
+          - columnheader "Stykkpris" [ref=e26]
+          - columnheader "Pris Ekskl. mva" [ref=e27]
+          - columnheader "Pris Inkl. mva" [ref=e28]
+          - columnheader "Nettside" [ref=e29]
+      - rowgroup [ref=e30]:
+        - row "Victron LiFePO4 12,8V 200Ah 1 kr 14 095,00 kr 11 276,00 kr 14 095,00 skanbatt.no" [ref=e31]:
+          - cell "Victron LiFePO4 12,8V 200Ah" [ref=e32]
+          - cell "1" [ref=e33]
+          - cell "kr 14 095,00" [ref=e34]
+          - cell "kr 11 276,00" [ref=e35]
+          - cell "kr 14 095,00" [ref=e36]
+          - cell "skanbatt.no" [ref=e37]:
+            - link "skanbatt.no" [ref=e38] [cursor=pointer]:
+              - /url: https://skanbatt.no/product/6867368/victron-lifepo4-battery-12-8v-200ah-smart
+        - row "Victron SmallBMS 1 kr 1 259,00 kr 1 007,20 kr 1 259,00 skanbatt.no" [ref=e39]:
+          - cell "Victron SmallBMS" [ref=e40]
+          - cell "1" [ref=e41]
+          - cell "kr 1 259,00" [ref=e42]
+          - cell "kr 1 007,20" [ref=e43]
+          - cell "kr 1 259,00" [ref=e44]
+          - cell "skanbatt.no" [ref=e45]:
+            - link "skanbatt.no" [ref=e46] [cursor=pointer]:
+              - /url: https://skanbatt.no/product/11440660/victron-smallbms-ng
+        - row "Victron distributur 1 kr 2 989,00 kr 2 391,20 kr 2 989,00 skanbatt.no" [ref=e47]:
+          - cell "Victron distributur" [ref=e48]
+          - cell "1" [ref=e49]
+          - cell "kr 2 989,00" [ref=e50]
+          - cell "kr 2 391,20" [ref=e51]
+          - cell "kr 2 989,00" [ref=e52]
+          - cell "skanbatt.no" [ref=e53]:
+            - link "skanbatt.no" [ref=e54] [cursor=pointer]:
+              - /url: https://skanbatt.no/product/8797037/victron-lynx-distributor-m10
+        - row "Victron DC-DC 12-24v 5A 1 kr 949,00 kr 759,20 kr 949,00 skanbatt.no" [ref=e55]:
+          - cell "Victron DC-DC 12-24v 5A" [ref=e56]
+          - cell "1" [ref=e57]
+          - cell "kr 949,00" [ref=e58]
+          - cell "kr 759,20" [ref=e59]
+          - cell "kr 949,00" [ref=e60]
+          - cell "skanbatt.no" [ref=e61]:
+            - link "skanbatt.no" [ref=e62] [cursor=pointer]:
+              - /url: https://skanbatt.no/product/1633804/victron-orion-tr-omformer-dc-dc-12-24v-5a-galvanisk-isolert
+        - row "Victron Cerbo GX -MK2 1 kr 3 489,00 kr 2 791,20 kr 3 489,00 skanbatt.no" [ref=e63]:
+          - cell "Victron Cerbo GX -MK2" [ref=e64]
+          - cell "1" [ref=e65]
+          - cell "kr 3 489,00" [ref=e66]
+          - cell "kr 2 791,20" [ref=e67]
+          - cell "kr 3 489,00" [ref=e68]
+          - cell "skanbatt.no" [ref=e69]:
+            - link "skanbatt.no" [ref=e70] [cursor=pointer]:
+              - /url: https://skanbatt.no/product/9401120/victron-cerbo-gx-mk2
+        - row "VICTRON Blue Solar MPPT 75/15 1 kr 669,00 kr 535,20 kr 669,00 skanbatt.no" [ref=e71]:
+          - cell "VICTRON Blue Solar MPPT 75/15" [ref=e72]
+          - cell "1" [ref=e73]
+          - cell "kr 669,00" [ref=e74]
+          - cell "kr 535,20" [ref=e75]
+          - cell "kr 669,00" [ref=e76]
+          - cell "skanbatt.no" [ref=e77]:
+            - link "skanbatt.no" [ref=e78] [cursor=pointer]:
+              - /url: https://skanbatt.no/product/424458/victron-blue-solar-mppt-75-15-u-blatann
+        - row "Trina Solar 425W 2 kr 1 079,00 kr 1 726,40 kr 2 158,00 elektroimportoren.no" [ref=e79]:
+          - cell "Trina Solar 425W" [ref=e80]
+          - cell "2" [ref=e81]
+          - cell "kr 1 079,00" [ref=e82]
+          - cell "kr 1 726,40" [ref=e83]
+          - cell "kr 2 158,00" [ref=e84]
+          - cell "elektroimportoren.no" [ref=e85]:
+            - link "elektroimportoren.no" [ref=e86] [cursor=pointer]:
+              - /url: https://www.elektroimportoren.no/trina-solar-de09r-08-425-w-solcellepanel/6607207/Product.html
+        - row "Efoy Pro 1800 BT 1 kr 105 000,00 kr 84 000,00 kr 105 000,00 awilco.dk" [ref=e87]:
+          - cell "Efoy Pro 1800 BT" [ref=e88]
+          - cell "1" [ref=e89]
+          - cell "kr 105 000,00" [ref=e90]
+          - cell "kr 84 000,00" [ref=e91]
+          - cell "kr 105 000,00" [ref=e92]
+          - cell "awilco.dk" [ref=e93]:
+            - link "awilco.dk" [ref=e94] [cursor=pointer]:
+              - /url: https://www.awilco.dk/product/fuel-cells/methanol-fuel-cells/efoy-pro-fuel-cells/efoy-fuel-cell-pro-1800-op-set-12-24v-dc-125w/
+        - row "Efoy Fuel Manager FM2 1 kr 17 500,00 kr 14 000,00 kr 17 500,00 awilco.dk" [ref=e95]:
+          - cell "Efoy Fuel Manager FM2" [ref=e96]
+          - cell "1" [ref=e97]
+          - cell "kr 17 500,00" [ref=e98]
+          - cell "kr 14 000,00" [ref=e99]
+          - cell "kr 17 500,00" [ref=e100]
+          - cell "awilco.dk" [ref=e101]:
+            - link "awilco.dk" [ref=e102] [cursor=pointer]:
+              - /url: https://www.awilco.dk/product/fuel-cells/methanol-fuel/accessories-for-methanol-cartridges/efoy-fuel-manager-fm2-set/
+        - row "Efoy 28L Methanol 5 kr 2 771,25 kr 11 085,00 kr 13 856,25 awilco.dk" [ref=e103]:
+          - cell "Efoy 28L Methanol" [ref=e104]
+          - cell "5" [ref=e105]
+          - cell "kr 2 771,25" [ref=e106]
+          - cell "kr 11 085,00" [ref=e107]
+          - cell "kr 13 856,25" [ref=e108]
+          - cell "awilco.dk" [ref=e109]:
+            - link "awilco.dk" [ref=e110] [cursor=pointer]:
+              - /url: https://www.awilco.dk/product/fuel-cells/methanol-fuel/efoy-methanol/efoy-methanol-energy-cartridge-28l/
+        - row "Teltonika RUT956 1 kr 3 000,00 kr 2 400,00 kr 3 000,00 avxperten.no" [ref=e111]:
+          - cell "Teltonika RUT956" [ref=e112]
+          - cell "1" [ref=e113]
+          - cell "kr 3 000,00" [ref=e114]
+          - cell "kr 2 400,00" [ref=e115]
+          - cell "kr 3 000,00" [ref=e116]
+          - cell "avxperten.no" [ref=e117]:
+            - link "avxperten.no" [ref=e118] [cursor=pointer]:
+              - /url: https://www.avxperten.no/4g-router/teltonika-rut956-300-mbps-lte-router-wifi-4.asp
+        - row "Efoy M28 Nozzle Adapter 2 kr 3 125,00 kr 5 000,00 kr 6 250,00 awilco.dk" [ref=e119]:
+          - cell "Efoy M28 Nozzle Adapter" [ref=e120]
+          - cell "2" [ref=e121]
+          - cell "kr 3 125,00" [ref=e122]
+          - cell "kr 5 000,00" [ref=e123]
+          - cell "kr 6 250,00" [ref=e124]
+          - cell "awilco.dk" [ref=e125]:
+            - link "awilco.dk" [ref=e126] [cursor=pointer]:
+              - /url: https://www.awilco.dk/product/fuel-cells/methanol-fuel/accessories-for-methanol-cartridges/efoy-m28-adapter-for-pro-series/
+        - row "Pelicase med 2 loggere + 3 splittere 1 kr 20 000,00 kr 20 000,00 kr 25 000,00" [ref=e127]:
+          - cell "Pelicase med 2 loggere + 3 splittere" [ref=e128]
+          - cell "1" [ref=e129]
+          - cell "kr 20 000,00" [ref=e130]
+          - cell "kr 20 000,00" [ref=e131]
+          - cell "kr 25 000,00" [ref=e132]
+          - cell [ref=e133]
+        - row "Siemens Sitrans FMS520 1 kr 26 196,00 kr 26 196,00 kr 32 745,00" [ref=e134]:
+          - cell "Siemens Sitrans FMS520" [ref=e135]
+          - cell "1" [ref=e136]
+          - cell "kr 26 196,00" [ref=e137]
+          - cell "kr 26 196,00" [ref=e138]
+          - cell "kr 32 745,00" [ref=e139]
+          - cell [ref=e140]
+        - row "Diverse forbruksmateriell kr 634,09 kr 792,61" [ref=e141]:
+          - cell "Diverse forbruksmateriell" [ref=e142]
+          - cell [ref=e143]
+          - cell [ref=e144]
+          - cell "kr 634,09" [ref=e145]
+          - cell "kr 792,61" [ref=e146]
+          - cell [ref=e147]
+        - row "WAGO Basic Controller 100 1 kr 5 800,00 kr 5 800,00 kr 7 250,00 wago.com" [ref=e148]:
+          - cell "WAGO Basic Controller 100" [ref=e149]
+          - cell "1" [ref=e150]
+          - cell "kr 5 800,00" [ref=e151]
+          - cell "kr 5 800,00" [ref=e152]
+          - cell "kr 7 250,00" [ref=e153]
+          - cell "wago.com" [ref=e154]:
+            - link "wago.com" [ref=e155] [cursor=pointer]:
+              - /url: https://www.wago.com/global/plcs-%E2%80%93-controllers/controller-pfc100/p/750-8110
+      - rowgroup [ref=e156]:
+        - row "Sum 189 601,49 237 001,86" [ref=e157]:
+          - rowheader "Sum" [ref=e158]
+          - cell "189 601,49" [ref=e159]:
+            - generic [ref=e160]: 189 601,49
+          - cell "237 001,86" [ref=e161]:
+            - generic [ref=e162]: 237 001,86
+          - cell [ref=e163]
+    - generic [ref=e164]:
+      - generic [ref=e165]: Hovedprosjekt · Markåni · hydroguide.no
+      - generic [ref=e166]: 1 / 1

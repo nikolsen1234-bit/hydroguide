@@ -271,17 +271,17 @@ export default function OverviewPage() {
     : null;
   const overviewKpiItems: KpiStripItem[] = [
     {
-      kicker: "SOLPRODUKSJON · ÅR",
+      kicker: "SOLPRODUKSJON",
       value: outputs ? formatNumber(outputs.derivedResults.annualTotals.annualSolarProductionKWh, 0) : "-",
       unit: "kWh"
     },
     {
-      kicker: "LAST · ÅR",
+      kicker: "LAST",
       value: outputs ? formatNumber(outputs.derivedResults.annualTotals.annualLoadDemandKWh, 0) : "-",
       unit: "kWh"
     },
     {
-      kicker: "RESERVEKJØRING · ÅR",
+      kicker: "RESERVEDRIFT",
       value: reservePct !== null ? formatNumber(reservePct, 1) : "-",
       unit: "%"
     },

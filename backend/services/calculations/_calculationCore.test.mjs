@@ -116,6 +116,33 @@ describe("validateCalculationRequest", () => {
   });
 });
 
+describe("normalizeCalculationRequest", () => {
+  it("keeps component lifetime in hours", () => {
+    const configuration = normalizeCalculationRequest({
+      ...basePayload,
+      equipmentRows: [
+        {
+          active: true,
+          name: "New component",
+          powerW: 5,
+          runtimeHoursPerDay: 12,
+          purchaseCost: 1200,
+          lifetimeHours: 20000,
+          annualMaintenance: 100,
+          supplier: "Vendor",
+          comment: "Main logger"
+        }
+      ]
+    });
+
+    assert.equal(configuration.equipmentRows[0].lifetimeHours, 20000);
+    assert.equal(configuration.equipmentRows[0].purchaseCost, 1200);
+    assert.equal(configuration.equipmentRows[0].annualMaintenance, 100);
+    assert.equal(configuration.equipmentRows[0].supplier, "Vendor");
+    assert.equal(configuration.equipmentRows[0].comment, "Main logger");
+  });
+});
+
 describe("calculateNumericResults", () => {
   it("includes fractional replacement cost when reserve runtime exceeds lifetime", () => {
     const configuration = normalizeCalculationRequest({

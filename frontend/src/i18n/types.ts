@@ -55,36 +55,35 @@ export interface Translations {
   "main.lineOfSight": string;
 
   // Questions
-  "questions.section.facilityAndRelease": string;
-  "questions.section.environmentAndOperation": string;
-  "questions.section.measurementAndControl": string;
+  "questions.section.fishPassage": string;
+  "questions.section.releaseAndMeasurement": string;
+  "questions.section.measurementConditions": string;
 
   "questions.q1": string;
   "questions.q2": string;
+  "questions.q2.helper": string;
   "questions.q3": string;
   "questions.q4": string;
   "questions.q4.helper": string;
   "questions.q5": string;
   "questions.q6": string;
   "questions.q7": string;
+  "questions.q7.helper": string;
   "questions.q8": string;
   "questions.q9": string;
+  "questions.q10": string;
 
   "questions.option.yes": string;
   "questions.option.no": string;
-  "questions.option.new": string;
-  "questions.option.existing": string;
-  "questions.option.conversion": string;
-  "questions.option.fixedMinFlow": string;
-  "questions.option.seasonalReq": string;
-  "questions.option.inflowControlled": string;
-  "questions.option.pipeInFrostFreeRoom": string;
-  "questions.option.pipeThroughDamNoFrost": string;
-  "questions.option.gateWeirOverflow": string;
-  "questions.option.directRiverRelease": string;
-  "questions.option.naturalStableProfile": string;
-  "questions.option.canBuildArtificial": string;
-  "questions.option.noSuitableProfile": string;
+  "questions.option.pipeOrChannel": string;
+  "questions.option.crumpOrFlume": string;
+  "questions.option.vNotch": string;
+  "questions.option.gateThresholdOverflow": string;
+  "questions.option.naturalRiverbed": string;
+  "questions.option.flow0To50": string;
+  "questions.option.flow50To200": string;
+  "questions.option.flow200To500": string;
+  "questions.option.flowOver500": string;
 
   "questions.unit.lps": string;
 

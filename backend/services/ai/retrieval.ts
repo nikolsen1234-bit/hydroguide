@@ -552,30 +552,30 @@ export async function retrieveEvidence(
 // ─── v2 Pipeline: 4-bucket KV + AI Search hybrid ───
 
 export function mapAnswersToBucketKeywords(body: NormalizedBody): Record<BucketPrefix, string[]> {
-  const releaseLower = (body.releaseMethodSelected || body.releaseMethod || "").toLowerCase();
-  const profileLower = (body.measurementProfile || body.controlMeasurement || "").toLowerCase();
-  const sedimentClogged = (body.isSedimentClogging || "").toLowerCase();
+  const releaseLower = `${body.releaseSolutionCode} ${body.releaseMethodSelected} ${body.releaseMethodLabel} ${body.releaseMethod}`.toLowerCase();
+  const methodLower = `${body.measurementMethodCode} ${body.measurementMethodName} ${body.measurementProfile} ${body.controlMeasurement}`.toLowerCase();
+  const siteRiskText = body.siteChallenges.join(" ").toLowerCase();
 
   return {
     krav: ["oppetid", "97", "timefrekvens", "noyaktigheit", "kontrollintervall", "dokumentasjon", "sensorredundans", "rapportering"],
     metode: [
-      releaseLower.includes("royr") || releaseLower.includes("ror") ? "rormaaling" : "",
-      releaseLower.includes("luke") || releaseLower.includes("overloep") ? "luke_tapperoyr" : "",
+      releaseLower.includes("s1") || releaseLower.includes("royr") || releaseLower.includes("rør") || releaseLower.includes("ror") ? "rormaaling" : "",
+      releaseLower.includes("s3") || releaseLower.includes("luke") || releaseLower.includes("overloep") ? "luke_tapperoyr" : "",
       releaseLower.includes("elve") ? "elvemaaling" : "",
-      profileLower.includes("vasstand") || profileLower.includes("naturleg") ? "vasstand_kurve" : "",
+      methodLower.includes("m2") || methodLower.includes("vasstand") || methodLower.includes("vannstand") || methodLower.includes("naturleg") ? "vasstand_kurve" : "",
       "mengdemalar",
     ].filter(Boolean),
     valgkrit: [
       releaseLower.includes("royr") || releaseLower.includes("ror") ? "ror_vs_utvendig" : "",
       "volumtid_grense",
-      profileLower.includes("naturleg") || profileLower.includes("kunstig") ? "profil" : "",
-      body.releaseRequirementVariation === "seasonal" || body.releaseRequirementVariation === "inflowControlled" ? "aktiv_vs_passiv" : "",
+      methodLower.includes("naturleg") || methodLower.includes("naturlig") || methodLower.includes("kunstig") ? "profil" : "",
+      body.releaseRequirementVariation === "summerWinter" || body.releaseRequirementVariation === "inflowControlled" ? "aktiv_vs_passiv" : "",
     ].filter(Boolean),
     risiko: [
-      sedimentClogged === "yes" ? "is_frost" : "",
-      sedimentClogged === "yes" ? "sediment_tilstopping" : "",
-      "kontroll_vs_ordinaer",
-      profileLower.includes("ingen") ? "ikke_stabilt_profil" : "",
+      siteRiskText.includes("ice") || siteRiskText.includes("freezing") || siteRiskText.includes("anchorice") ? "is_frost" : "",
+      siteRiskText.includes("sediment") || siteRiskText.includes("debris") ? "sediment_tilstopping" : "",
+      "dokumentasjon",
+      methodLower.includes("ingen") ? "ikke_stabilt_profil" : "",
     ].filter(Boolean),
     drift: ["tilsyn", "vedlikehald", "kalibrering"],
   };

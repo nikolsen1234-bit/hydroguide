@@ -158,7 +158,12 @@ function normalizeEquipmentRows(rows) {
       active: typeof maybeRow.active === "boolean" ? maybeRow.active : true,
       name: typeof maybeRow.name === "string" ? maybeRow.name : "",
       powerW: normalizeNumber(maybeRow.powerW),
-      runtimeHoursPerDay: normalizeNumber(maybeRow.runtimeHoursPerDay)
+      runtimeHoursPerDay: normalizeNumber(maybeRow.runtimeHoursPerDay),
+      purchaseCost: normalizeNumber(maybeRow.purchaseCost),
+      lifetimeHours: normalizeNumber(maybeRow.lifetimeHours),
+      annualMaintenance: normalizeNumber(maybeRow.annualMaintenance),
+      supplier: typeof maybeRow.supplier === "string" ? maybeRow.supplier : "",
+      comment: typeof maybeRow.comment === "string" ? maybeRow.comment : ""
     };
   });
 }

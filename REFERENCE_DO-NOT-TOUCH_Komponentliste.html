@@ -1,0 +1,221 @@
+<!DOCTYPE html><html lang="nb"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HydroGuide · Komponentliste</title>
+<style>
+  :root{
+    --slate-50:#f8fafc;--slate-200:#e2e8f0;--slate-300:#cbd5e1;--slate-500:#64748b;--slate-700:#334155;--slate-950:#020617;
+    --brand:#2563eb;--brand-700:#1d4ed8;--ink:var(--slate-950);--ink-2:var(--slate-700);--ink-3:var(--slate-500);
+    --hairline:var(--slate-200);--hairline-2:var(--slate-300);--font-mono:"JetBrains Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --page-w:297mm;--page-h:420mm;--page-pad-x:18mm;--page-pad-y:12mm;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:16px;background:#eef2f7}
+  body{font-family:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);line-height:1.45;padding:24px 0 64px;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-feature-settings:"tnum";}
+  .toolbar{position:sticky;top:12px;z-index:50;width:var(--page-w);max-width:calc(100% - 32px);margin:0 auto 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:rgba(255,255,255,.94);border:1px solid var(--hairline);box-shadow:0 1px 2px rgba(15,23,42,.08);font-size:13px;}
+  .toolbar .brand{font-family:var(--font-mono);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+  .toolbar button{font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;border:1px solid var(--brand);background:var(--brand);color:#fff}
+  .page{position:relative;width:var(--page-w);min-height:var(--page-h);margin:0 auto 18px;background:#fff;box-shadow:0 12px 32px -12px rgba(15,23,42,.16);overflow:hidden;padding:var(--page-pad-y) var(--page-pad-x);display:flex;flex-direction:column}
+  .ds-head{padding-top:4px}
+  .page-logo{position:absolute;top:3mm;left:16mm;width:48mm;height:auto;pointer-events:none}
+  .ds-head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding-bottom:5px;border-bottom:2px solid var(--ink)}
+  .kicker{display:block;font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+  h1{font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:1;color:var(--ink)}
+  .right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-family:var(--font-mono);font-size:12px;color:var(--ink-3);letter-spacing:.06em;text-align:right}
+  .docid{font-size:13px;font-weight:700;color:var(--ink)}
+  table.component-list{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums;table-layout:fixed;border:1px solid var(--ink)}
+  table.component-list caption{position:absolute;left:-9999px}
+  table.component-list col.c-prod{width:70mm}
+  table.component-list col.c-units{width:16mm}
+  table.component-list col.c-unit-price{width:36mm}
+  table.component-list col.c-tot-ex{width:40mm}
+  table.component-list col.c-tot-inc{width:40mm}
+  table.component-list col.c-link{width:59mm}
+  table.component-list th,table.component-list td{border:1px solid var(--hairline);padding:7px 5px;vertical-align:middle;line-height:1.24;overflow:hidden}
+  table.component-list thead th{text-align:left;font-family:var(--font-mono);font-size:14px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:var(--ink);border-bottom:2px solid var(--ink);background:var(--slate-50);white-space:nowrap;overflow:hidden;text-overflow:clip}
+  table.component-list thead th.qty-head,table.component-list thead th.center-head{text-align:center}
+  table.component-list thead th.num-head{text-align:right}
+  table.component-list tbody td{font-size:13.8px;font-weight:600;color:var(--ink)}
+  .prod-cell{color:var(--ink);font-weight:800;letter-spacing:0;font-size:13.2px;text-align:left}
+  .qty-cell{text-align:center;font-family:var(--font-mono);font-weight:700;color:var(--ink);white-space:nowrap}
+  .price-cell{text-align:right;font-family:var(--font-mono);color:var(--ink);font-size:12.2px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:clip}
+  .link-cell{text-align:left;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+  .link-cell a{display:block;max-width:100%;color:var(--ink);text-decoration:underline;font-family:var(--font-mono);font-size:12.8px;font-weight:800;line-height:1.2;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+  .link-cell.empty{color:var(--slate-300);font-family:var(--font-mono);font-size:12.4px;font-weight:600}
+  table.component-list tfoot td{border-top:2px solid var(--ink);background:#fff;vertical-align:middle}
+  table.component-list tfoot .sum-cell{text-align:right;font-family:var(--font-mono)}
+  table.component-list tfoot th{text-align:right;font-family:var(--font-mono);font-size:12.4px;font-weight:800;text-transform:uppercase;color:var(--ink)}
+  table.component-list tfoot .sum-value{display:block;font-size:14.5px;font-weight:800;color:var(--ink);line-height:1.2}
+  .ds-foot{margin-top:auto;padding-top:5px;border-top:1px solid var(--hairline);display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-mono);font-size:10.5px;color:var(--ink-3);letter-spacing:.08em}
+  .ds-foot .pageno{text-align:right;line-height:1.3}
+  .ds-foot .docid-foot{display:block;font-size:9.5px;color:var(--ink-3);font-weight:600;letter-spacing:.04em}
+  .pageno{font-weight:700;color:var(--ink)}
+  @page{size:A3 portrait;margin:0}
+  @media print{html,body{background:#fff}body{padding:0}.toolbar{display:none!important}.page{width:297mm;min-height:420mm;height:420mm;box-shadow:none;margin:0;page-break-after:auto;break-after:auto}}
+</style>
+</head>
+<body>
+<div class="toolbar"><div class="brand">HydroGuide · Komponentliste</div><button type="button" onclick="window.print()">Last ned PDF</button></div>
+<section class="page">
+  <img class="page-logo" src="hydroguide-logo-black.svg" alt="">
+  <div class="ds-head">
+    <div class="ds-head-row">
+      <div><h1>Komponentliste</h1></div>
+      <div class="right"><span class="docid">HG-E85DE351</span><span>13. mai 2026</span></div>
+    </div>
+  </div>
+  <table class="component-list">
+    <caption>Komponentliste for HydroGuide konfigurasjon</caption>
+    <colgroup><col class="c-prod"><col class="c-units"><col class="c-unit-price"><col class="c-tot-ex"><col class="c-tot-inc"><col class="c-link"></colgroup>
+    <thead>
+      <tr>
+        <th scope="col">Komponent</th>
+        <th scope="col" class="qty-head">Antall</th>
+        <th scope="col" class="num-head">Stykkpris</th>
+        <th scope="col" class="num-head">Pris Ekskl. mva</th>
+        <th scope="col" class="num-head">Pris Inkl. mva</th>
+        <th scope="col">Nettside</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="prod-cell">Victron LiFePO4 12,8V 200Ah</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 14&nbsp;095,00</td>
+        <td class="price-cell">kr 11&nbsp;276,00</td>
+        <td class="price-cell">kr 14&nbsp;095,00</td>
+        <td class="link-cell"><a href="https://skanbatt.no/product/6867368/victron-lifepo4-battery-12-8v-200ah-smart" target="_blank" rel="noreferrer">skanbatt.no</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Victron SmallBMS</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 1&nbsp;259,00</td>
+        <td class="price-cell">kr 1&nbsp;007,20</td>
+        <td class="price-cell">kr 1&nbsp;259,00</td>
+        <td class="link-cell"><a href="https://skanbatt.no/product/11440660/victron-smallbms-ng" target="_blank" rel="noreferrer">skanbatt.no</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Victron distributur</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 2&nbsp;989,00</td>
+        <td class="price-cell">kr 2&nbsp;391,20</td>
+        <td class="price-cell">kr 2&nbsp;989,00</td>
+        <td class="link-cell"><a href="https://skanbatt.no/product/8797037/victron-lynx-distributor-m10" target="_blank" rel="noreferrer">skanbatt.no</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Victron DC-DC 12-24v 5A</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 949,00</td>
+        <td class="price-cell">kr 759,20</td>
+        <td class="price-cell">kr 949,00</td>
+        <td class="link-cell"><a href="https://skanbatt.no/product/1633804/victron-orion-tr-omformer-dc-dc-12-24v-5a-galvanisk-isolert" target="_blank" rel="noreferrer">skanbatt.no</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Victron Cerbo GX -MK2</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 3&nbsp;489,00</td>
+        <td class="price-cell">kr 2&nbsp;791,20</td>
+        <td class="price-cell">kr 3&nbsp;489,00</td>
+        <td class="link-cell"><a href="https://skanbatt.no/product/9401120/victron-cerbo-gx-mk2" target="_blank" rel="noreferrer">skanbatt.no</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">VICTRON Blue Solar MPPT 75/15</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 669,00</td>
+        <td class="price-cell">kr 535,20</td>
+        <td class="price-cell">kr 669,00</td>
+        <td class="link-cell"><a href="https://skanbatt.no/product/424458/victron-blue-solar-mppt-75-15-u-blatann" target="_blank" rel="noreferrer">skanbatt.no</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Trina Solar 425W</td>
+        <td class="qty-cell">2</td>
+        <td class="price-cell">kr 1&nbsp;079,00</td>
+        <td class="price-cell">kr 1&nbsp;726,40</td>
+        <td class="price-cell">kr 2&nbsp;158,00</td>
+        <td class="link-cell"><a href="https://www.elektroimportoren.no/trina-solar-de09r-08-425-w-solcellepanel/6607207/Product.html" target="_blank" rel="noreferrer">elektroimportoren.no</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Efoy Pro 1800 BT</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 105&nbsp;000,00</td>
+        <td class="price-cell">kr 84&nbsp;000,00</td>
+        <td class="price-cell">kr 105&nbsp;000,00</td>
+        <td class="link-cell"><a href="https://www.awilco.dk/product/fuel-cells/methanol-fuel-cells/efoy-pro-fuel-cells/efoy-fuel-cell-pro-1800-op-set-12-24v-dc-125w/" target="_blank" rel="noreferrer">awilco.dk</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Efoy Fuel Manager FM2</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 17&nbsp;500,00</td>
+        <td class="price-cell">kr 14&nbsp;000,00</td>
+        <td class="price-cell">kr 17&nbsp;500,00</td>
+        <td class="link-cell"><a href="https://www.awilco.dk/product/fuel-cells/methanol-fuel/accessories-for-methanol-cartridges/efoy-fuel-manager-fm2-set/" target="_blank" rel="noreferrer">awilco.dk</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Efoy 28L Methanol</td>
+        <td class="qty-cell">5</td>
+        <td class="price-cell">kr 2&nbsp;771,25</td>
+        <td class="price-cell">kr 11&nbsp;085,00</td>
+        <td class="price-cell">kr 13&nbsp;856,25</td>
+        <td class="link-cell"><a href="https://www.awilco.dk/product/fuel-cells/methanol-fuel/efoy-methanol/efoy-methanol-energy-cartridge-28l/" target="_blank" rel="noreferrer">awilco.dk</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Teltonika RUT956</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 3&nbsp;000,00</td>
+        <td class="price-cell">kr 2&nbsp;400,00</td>
+        <td class="price-cell">kr 3&nbsp;000,00</td>
+        <td class="link-cell"><a href="https://www.avxperten.no/4g-router/teltonika-rut956-300-mbps-lte-router-wifi-4.asp" target="_blank" rel="noreferrer">avxperten.no</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Efoy M28 Nozzle Adapter</td>
+        <td class="qty-cell">2</td>
+        <td class="price-cell">kr 3&nbsp;125,00</td>
+        <td class="price-cell">kr 5&nbsp;000,00</td>
+        <td class="price-cell">kr 6&nbsp;250,00</td>
+        <td class="link-cell"><a href="https://www.awilco.dk/product/fuel-cells/methanol-fuel/accessories-for-methanol-cartridges/efoy-m28-adapter-for-pro-series/" target="_blank" rel="noreferrer">awilco.dk</a></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Pelicase med 2 loggere + 3 splittere</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 20&nbsp;000,00</td>
+        <td class="price-cell">kr 20&nbsp;000,00</td>
+        <td class="price-cell">kr 25&nbsp;000,00</td>
+        <td class="link-cell empty"></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Siemens Sitrans FMS520</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 26&nbsp;196,00</td>
+        <td class="price-cell">kr 26&nbsp;196,00</td>
+        <td class="price-cell">kr 32&nbsp;745,00</td>
+        <td class="link-cell empty"></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">Diverse forbruksmateriell</td>
+        <td class="qty-cell"></td>
+        <td class="price-cell"></td>
+        <td class="price-cell">kr 634,09</td>
+        <td class="price-cell">kr 792,61</td>
+        <td class="link-cell empty"></td>
+      </tr>
+      <tr>
+        <td class="prod-cell">WAGO Basic Controller 100</td>
+        <td class="qty-cell">1</td>
+        <td class="price-cell">kr 5&nbsp;800,00</td>
+        <td class="price-cell">kr 5&nbsp;800,00</td>
+        <td class="price-cell">kr 7&nbsp;250,00</td>
+        <td class="link-cell"><a href="https://www.wago.com/global/plcs-%E2%80%93-controllers/controller-pfc100/p/750-8110" target="_blank" rel="noreferrer">wago.com</a></td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row" colspan="3">Sum</th>
+        <td class="sum-cell ex-vat"><span class="sum-value">189&nbsp;601,49</span></td>
+        <td class="sum-cell"><span class="sum-value">237&nbsp;001,86</span></td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+  <div class="ds-foot"><span>Hovedprosjekt · Markåni · hydroguide.no</span><span class="pageno">1 / 1</span></div>
+</section>
+</body></html>

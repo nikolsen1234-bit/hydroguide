@@ -4,13 +4,12 @@ import KpiStrip, { type KpiStripItem } from "../components/KpiStrip";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import {
-  workspaceInputClassName,
   workspaceMetaClassName,
   workspacePageClassName,
   workspaceSectionTitleClassName
 } from "../styles/workspace";
 import type { BudgetDisplayUnit, EditableNumber, EquipmentRow } from "../types";
-import { openBomReportWindow } from "../utils/bomReport";
+import { openComponentListWindow } from "../utils/componentListReport";
 import { formatNumber } from "../utils/format";
 import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
@@ -22,14 +21,16 @@ const componentTextAreaClassName =
   "mt-1 w-full resize-y font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none transition focus:border-[var(--hg-accent-2)]";
 const componentDeleteButtonClassName =
   "inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-rose-50 px-3 text-[length:var(--hg-type-badge-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-button-tracking)] text-rose-700";
+const componentInputUnderlineClassName = "border-b-2 border-[#98a3b3] focus:border-[var(--hg-accent-2)]";
 type UpdateEquipmentRow = <K extends keyof EquipmentRow>(id: string, key: K, value: EquipmentRow[K]) => void;
 
 const equipmentNumberFields = [
   { key: "powerW", label: "Effekt", unit: "W", errorKey: "powerW" },
-  { key: "runtimeHoursPerDay", label: "Drift", unit: "t/d", errorKey: "runtimeHoursPerDay" },
-  { key: "purchaseCost", label: "Innkjøp", unit: "kr" },
-  { key: "lifetimeYears", label: "Levetid", unit: "år" },
-  { key: "annualMaintenance", label: "Vedlikehald", unit: "kr/år" }
+  { key: "runtimeHoursPerDay", label: "Timer/dag", unit: "timer", errorKey: "runtimeHoursPerDay" }
+] as const;
+
+const equipmentPurchaseFields = [
+  { key: "purchaseCost", label: "Stykkpris", unit: "kr" }
 ] as const;
 
 function StatusPill({
@@ -114,7 +115,7 @@ function InlineTextField({
         type="text"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 h-8 w-full border-0 border-b border-[var(--hg-hairline)] bg-transparent px-1 text-[length:var(--hg-type-control-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none transition focus:border-[var(--hg-accent-2)]"
+        className={`mt-1 h-8 w-full border-0 bg-transparent px-1 text-[length:var(--hg-type-control-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none transition ${componentInputUnderlineClassName}`}
       />
     </label>
   );
@@ -136,7 +137,7 @@ function InlineNumberField({
   return (
     <label className="block min-w-0">
       <span className={workspaceMetaClassName}>{label}</span>
-      <span className="mt-1 grid h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-[var(--hg-hairline)] px-1 transition focus-within:border-[var(--hg-accent-2)]">
+      <span className={`mt-1 grid h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-1 transition focus-within:border-[var(--hg-accent-2)] ${componentInputUnderlineClassName}`}>
         <input
           type="text"
           inputMode="decimal"
@@ -182,8 +183,9 @@ function DetailRow({
             sourceRow={sourceRow}
             updateEquipmentRow={updateEquipmentRow}
             errors={errors}
-            layoutClassName="grid gap-x-4 gap-y-3 lg:grid-cols-[1.45fr_0.72fr_0.72fr_0.72fr_0.72fr_0.9fr_1.45fr]"
-            commentClassName={`${componentTextAreaClassName} min-h-[54px] border-0 border-b border-[var(--hg-hairline)] bg-transparent px-1 py-2 text-[length:var(--hg-type-control-size)]`}
+            layoutClassName="grid gap-x-4 gap-y-3 lg:grid-cols-[1.2fr_0.72fr_0.72fr_1.8fr]"
+            purchaseLayoutClassName="mt-3 grid gap-x-4 gap-y-3 lg:grid-cols-[0.72fr_1.8fr]"
+            commentClassName={`${componentTextAreaClassName} h-8 min-h-8 resize-none overflow-hidden border-0 bg-transparent px-1 py-1 text-[length:var(--hg-type-control-size)] ${componentInputUnderlineClassName}`}
           />
         </div>
       </td>
@@ -196,14 +198,16 @@ function EquipmentDetailFields({
   updateEquipmentRow,
   errors,
   layoutClassName,
+  purchaseLayoutClassName,
   commentClassName,
-  commentLabelClassName = "mt-3 block",
+  commentLabelClassName = "block min-w-0",
   footer
 }: {
   sourceRow: EquipmentRow;
   updateEquipmentRow: UpdateEquipmentRow;
   errors: Record<string, string>;
   layoutClassName: string;
+  purchaseLayoutClassName: string;
   commentClassName: string;
   commentLabelClassName?: string;
   footer?: ReactNode;
@@ -211,30 +215,41 @@ function EquipmentDetailFields({
   return (
     <>
       <div className={layoutClassName}>
-        <InlineTextField label="Namn" value={sourceRow.name} onChange={(next) => updateEquipmentRow(sourceRow.id, "name", next)} />
+        <InlineTextField label="Komponent" value={sourceRow.name} onChange={(next) => updateEquipmentRow(sourceRow.id, "name", next)} />
         {equipmentNumberFields.map((field) => {
           const errorKey = "errorKey" in field ? field.errorKey : undefined;
           return (
+            <InlineNumberField
+              key={field.key}
+              label={field.label}
+              unit={field.unit}
+              value={sourceRow[field.key]}
+              error={errorKey ? errors[`equipmentRows.${sourceRow.id}.${errorKey}`] : undefined}
+              onChange={(next) => updateEquipmentRow(sourceRow.id, field.key, next)}
+            />
+          );
+        })}
+        <label className={commentLabelClassName}>
+          <span className={workspaceMetaClassName}>Beskrivelse</span>
+          <textarea
+            value={sourceRow.comment}
+            onChange={(event) => updateEquipmentRow(sourceRow.id, "comment", event.target.value)}
+            className={commentClassName}
+          />
+        </label>
+      </div>
+      <div className={purchaseLayoutClassName}>
+        {equipmentPurchaseFields.map((field) => (
           <InlineNumberField
             key={field.key}
             label={field.label}
             unit={field.unit}
             value={sourceRow[field.key]}
-            error={errorKey ? errors[`equipmentRows.${sourceRow.id}.${errorKey}`] : undefined}
             onChange={(next) => updateEquipmentRow(sourceRow.id, field.key, next)}
           />
-          );
-        })}
-        <InlineTextField label="Leverandør" value={sourceRow.supplier} onChange={(next) => updateEquipmentRow(sourceRow.id, "supplier", next)} />
+        ))}
+        <InlineTextField label="Link" value={sourceRow.supplier} onChange={(next) => updateEquipmentRow(sourceRow.id, "supplier", next)} />
       </div>
-      <label className={commentLabelClassName}>
-        <span className={workspaceMetaClassName}>Kommentar</span>
-        <textarea
-          value={sourceRow.comment}
-          onChange={(event) => updateEquipmentRow(sourceRow.id, "comment", event.target.value)}
-          className={commentClassName}
-        />
-      </label>
       {footer}
     </>
   );
@@ -262,10 +277,6 @@ export default function ComponentsPage() {
   const totalAhPerDay = rows.reduce((sum, row) => sum + row.ahPerDay, 0);
   const totalPurchaseCost = activeDraft.equipmentRows.reduce(
     (sum, row) => sum + (row.active && typeof row.purchaseCost === "number" ? row.purchaseCost : 0),
-    0
-  );
-  const annualMaintenance = activeDraft.equipmentRows.reduce(
-    (sum, row) => sum + (row.active && typeof row.annualMaintenance === "number" ? row.annualMaintenance : 0),
     0
   );
   const componentRows = rows.flatMap((row) => {
@@ -306,9 +317,9 @@ export default function ComponentsPage() {
     setEditingRowId((current) => (current === rowId ? null : current));
   };
 
-  const handleOpenBomReport = () => {
+  const handleOpenComponentList = () => {
     saveDraftMetadata();
-    openBomReportWindow(activeDraft, outputs.derivedResults);
+    openComponentListWindow(activeDraft, outputs.derivedResults);
   };
 
   const headerActions = (
@@ -322,10 +333,10 @@ export default function ComponentsPage() {
       />
       <WorkspaceHeaderActionButton
         icon={workspaceHeaderActionIcons.report}
-        label="BOM-rapport"
+        label="Komponentliste"
         subLabel="Eksporter"
         tone="warning"
-        onClick={handleOpenBomReport}
+        onClick={handleOpenComponentList}
         primary
       />
     </>
@@ -334,12 +345,11 @@ export default function ComponentsPage() {
   const componentsKpiItems: KpiStripItem[] = [
     { kicker: "AKTIVE ENHETER", value: `${activeCount}`, unit: `/ ${rows.length}` },
     {
-      kicker: `FORBRUK · ${displayUnit === "ah" ? "Ah" : "Wh"}`,
+      kicker: "FORBRUK",
       value: displayUnit === "ah" ? (canShowAh ? formatNumber(totalAhPerDay) : "-") : formatNumber(totalWhPerDay),
       unit: displayUnit === "ah" ? "Ah" : "Wh"
     },
-    { kicker: "TOTALPRIS FOR INNKJØP", value: formatNumber(totalPurchaseCost, 0), unit: "kr" },
-    { kicker: "VEDLIKEHOLD · ÅR", value: formatNumber(annualMaintenance, 0), unit: "kr" }
+    { kicker: "TOTALPRIS", value: formatNumber(totalPurchaseCost, 0), unit: "kr" }
   ];
 
   return (
@@ -388,9 +398,9 @@ export default function ComponentsPage() {
                 <thead>
                   <tr className={`text-left ${workspaceMetaClassName}`}>
                     <th className={`w-20 ${componentRowSeparatorClassName} px-0 py-2`}>Aktiv</th>
-                    <th className={`w-[38%] ${componentRowSeparatorClassName} px-0 py-2`}>Utstyr</th>
+                    <th className={`w-[38%] ${componentRowSeparatorClassName} px-0 py-2`}>Komponent</th>
                     <th className={`w-28 ${componentRowSeparatorClassName} px-0 py-2 text-right`}>Effekt</th>
-                    <th className={`w-28 ${componentRowSeparatorClassName} px-0 py-2 text-right`}>Drift</th>
+                    <th className={`w-28 ${componentRowSeparatorClassName} px-0 py-2 text-right`}>Timer/dag</th>
                     <th className={`w-32 ${componentRowSeparatorClassName} px-0 py-2 text-right`}>{dailyUnitLabel}</th>
                     <th className={`w-24 ${componentRowSeparatorClassName} px-0 py-2 text-right`} />
                   </tr>
@@ -425,7 +435,7 @@ export default function ComponentsPage() {
                           </td>
                           {[
                             ["power", `${formatNumber(row.powerW)} W`],
-                            ["runtime", `${formatNumber(row.runtimeHoursPerDay)} t`],
+                            ["runtime", `${formatNumber(row.runtimeHoursPerDay)} timer`],
                             ["consumption", formatConsumption(row)]
                           ].map(([key, value]) => (
                             <td key={key} className={`${componentNumberCellClassName} ${dimmedTextCls}`}>{value}</td>
@@ -480,8 +490,9 @@ export default function ComponentsPage() {
                             updateEquipmentRow={updateEquipmentRow}
                             errors={errors}
                             layoutClassName="grid gap-3"
+                            purchaseLayoutClassName="grid gap-3"
                             commentLabelClassName="block"
-                            commentClassName={`${workspaceInputClassName} mt-1 min-h-[72px] resize-y`}
+                            commentClassName={`${componentTextAreaClassName} min-h-[72px] border-0 bg-transparent px-1 py-2 text-[length:var(--hg-type-control-size)] ${componentInputUnderlineClassName}`}
                             footer={
                               <button
                                 type="button"

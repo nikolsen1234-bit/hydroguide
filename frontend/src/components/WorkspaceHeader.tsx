@@ -1,4 +1,4 @@
-import { useId, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useId, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
@@ -15,7 +15,7 @@ type WorkspaceHeaderActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> 
   label: string;
   primary?: boolean;
   subLabel?: string;
-  tone?: "accent" | "success" | "warning";
+  tone?: "accent" | "success" | "warning" | "danger" | "run";
 };
 
 export const workspaceHeaderActionIcons = {
@@ -34,24 +34,41 @@ export function WorkspaceHeaderActionButton({
   label,
   primary = false,
   subLabel,
-  tone = "accent",
+  tone,
   className,
+  onClick,
   style,
   ...buttonProps
 }: WorkspaceHeaderActionButtonProps) {
+  const [pressed, setPressed] = useState(false);
+  const resolvedTone: NonNullable<WorkspaceHeaderActionButtonProps["tone"]> =
+    tone ?? (icon === workspaceHeaderActionIcons.reset
+      ? "danger"
+      : icon === workspaceHeaderActionIcons.run
+        ? "run"
+        : icon === workspaceHeaderActionIcons.save
+          ? "success"
+          : "accent");
   const buttonClassName = [
     "hg-header-action-button",
     primary ? "hg-header-action-button--primary" : "",
+    pressed ? "hg-header-action-button--pressed" : "",
     subLabel ? "hg-header-action-button--wide" : "",
     className ?? ""
   ].filter(Boolean).join(" ");
+  const handleClick: ButtonHTMLAttributes<HTMLButtonElement>["onClick"] = (event) => {
+    setPressed(true);
+    window.setTimeout(() => setPressed(false), 520);
+    onClick?.(event);
+  };
 
   return (
     <button
       type="button"
       className={buttonClassName}
-      data-tone={tone}
+      data-tone={resolvedTone}
       style={style}
+      onClick={handleClick}
       {...buttonProps}
     >
       {icon ? (

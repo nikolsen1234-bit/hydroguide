@@ -189,6 +189,7 @@ export default function WelcomePage() {
                 label="Importer fil"
                 subLabel="Prosjektfil"
                 onClick={() => fileInputRef.current?.click()}
+                tone="success"
               />
             </>
           }

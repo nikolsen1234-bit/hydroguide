@@ -94,8 +94,33 @@ export function normalizeBody(raw: unknown): NormalizedBody | null {
     justification: toStringArray(body.justification),
     additionalRequirements: toStringArray(body.additionalRequirements),
     operationalRequirements: toStringArray(body.operationalRequirements),
+    methodCode: toCleanText(body.methodCode, 40),
+    methodName: toCleanText(body.methodName, DEFAULT_FIELD_MAX_LENGTH),
+    releaseSolutionCode: toCleanText(body.releaseSolutionCode, 20),
+    releaseSolutionName: toCleanText(body.releaseSolutionName, DEFAULT_FIELD_MAX_LENGTH),
+    measurementMethodCode: toCleanText(body.measurementMethodCode, 20),
+    measurementMethodName: toCleanText(body.measurementMethodName, DEFAULT_FIELD_MAX_LENGTH),
+    solutionName: toCleanText(body.solutionName, DEFAULT_FIELD_MAX_LENGTH),
+    decisionStatus: toCleanText(body.decisionStatus, 40),
+    nveAnchors: toStringArray(body.nveAnchors),
+    alternativeRecommendations: toStringArray(body.alternativeRecommendations),
+    discouragedMethods: toStringArray(body.discouragedMethods),
+    missingForFinalChoice: toStringArray(body.missingForFinalChoice),
+    documentationRequirements: toStringArray(body.documentationRequirements),
+    silentNveRequirements: toStringArray(body.silentNveRequirements),
     releaseRequirementVariation: toCleanText(body.releaseRequirementVariation, 50),
     releaseMethodSelected: toCleanText(body.releaseMethodSelected ?? body.releaseMethod, 80),
+    releaseMethodLabel: toCleanText(body.releaseMethodLabel, 120),
+    minFlowClass: toCleanText(body.minFlowClass, 40),
+    fishMigration: toCleanText(body.fishMigration, 40),
+    coandaExists: toCleanText(body.coandaExists, 40),
+    siteChallenges: toStringArray(body.siteChallenges),
+    powerCommunication: toStringArray(body.powerCommunication),
+    publicDisplay: toStringArray(body.publicDisplay),
+    hourlyAutomaticLogging: toCleanText(body.hourlyAutomaticLogging, 20),
+    secureDataStorageForNve: toCleanText(body.secureDataStorageForNve, 20),
+    accuracyWithinFivePercent: toCleanText(body.accuracyWithinFivePercent, 20),
+    completenessNinetySevenPercent: toCleanText(body.completenessNinetySevenPercent, 20),
     isSedimentClogging: toCleanText(body.isSedimentClogging, 10),
     fishPassage: toCleanText(body.fishPassage, 10),
     bypassOnOutage: toCleanText(body.bypassOnOutage, 10),
@@ -115,7 +140,7 @@ export function buildDocumentedProjectDataText(body: NormalizedBody): string {
     body.mainSolution ? `- Hovedløsning: ${body.mainSolution}` : "",
     body.releaseMethod ? `- Slippmetode: ${body.releaseMethod}` : "",
     body.primaryMeasurement ? `- Måling i ordinær drift: ${body.primaryMeasurement}` : "",
-    body.controlMeasurement ? `- Kontrollmåling for verifikasjon: ${body.controlMeasurement}` : "",
+    body.controlMeasurement ? `- Måleprinsipp: ${body.controlMeasurement}` : "",
     body.measurementPrinciple ? `- Måleprinsipp: ${body.measurementPrinciple}` : "",
     body.measurementEquipment ? `- Måleutstyr: ${body.measurementEquipment}` : "",
     body.loggerSetup ? `- Loggeroppsett: ${body.loggerSetup}` : "",
@@ -150,6 +175,13 @@ export function buildSupplementaryProjectDataText(body: NormalizedBody): string 
     body.justification.length > 0 ? `- Grunngiving: ${body.justification.join("; ")}` : "",
     body.additionalRequirements.length > 0 ? `- Tilleggskrav: ${body.additionalRequirements.join("; ")}` : "",
     body.operationalRequirements.length > 0 ? `- Drift og tilpassing: ${body.operationalRequirements.join("; ")}` : "",
+    body.methodCode ? `- Vald metodekode: ${body.methodCode}` : "",
+    body.releaseSolutionCode ? `- Slippløysing: ${body.releaseSolutionCode} ${body.releaseSolutionName}` : "",
+    body.measurementMethodCode ? `- Målemetode: ${body.measurementMethodCode} ${body.measurementMethodName}` : "",
+    body.decisionStatus ? `- Beslutningsstatus: ${body.decisionStatus}` : "",
+    body.nveAnchors.length > 0 ? `- Regelanker: ${body.nveAnchors.join(", ")}` : "",
+    body.missingForFinalChoice.length > 0 ? `- Manglar for endeleg val: ${body.missingForFinalChoice.join("; ")}` : "",
+    body.discouragedMethods.length > 0 ? `- Frårådde løysingar: ${body.discouragedMethods.join("; ")}` : "",
   ].filter(Boolean);
 
   return lines.length > 0 ? lines.join("\n") : "- Ingen supplerande opplysningar oppgitt.";
@@ -431,10 +463,10 @@ export async function runSelfFeedback(
   let feedbackPrompt = await env.REPORT_RULES?.get("prompt:self_feedback:v1");
   if (!feedbackPrompt) {
     feedbackPrompt = `Vurder denne teksten på en skala fra 1-5. Returner JSON: {"score": N, "flags": ["..."]}
-Krav: Teksten skal være på bokmål, 120-250 ord, underbygge løsningen med NVE-kilder, ikke blande kontrollmåling med primærmåling, og være selvstendig lesbar uten resten av rapporten.`;
+Krav: Teksten skal være på bokmål, 120-250 ord, underbygge løsningen med NVE-kilder, skille tydelig mellom slippløsning og målemetode, og være selvstendig lesbar uten resten av rapporten.`;
   }
 
-  const userMsg = `TEKST:\n${generatedText}\n\nEVIDENS:\n${evidenceText}\n\nLØSNING: ${body.mainSolution ?? ""}\nPRIMÆRMÅLING: ${body.primaryMeasurement ?? ""}\nKONTROLLMÅLING: ${body.controlMeasurement ?? ""}`;
+  const userMsg = `TEKST:\n${generatedText}\n\nEVIDENS:\n${evidenceText}\n\nLØSNING: ${body.mainSolution ?? ""}\nPRIMÆRMÅLING: ${body.primaryMeasurement ?? ""}\nMÅLEPRINSIPP: ${body.controlMeasurement ?? ""}`;
 
   try {
     const result = await callViaGateway(env, feedbackPrompt, userMsg, feedbackModel, maxOutputTokens);

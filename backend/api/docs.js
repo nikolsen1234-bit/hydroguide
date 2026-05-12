@@ -65,7 +65,12 @@ const equipmentRowSchema = {
     active: { ...b, description: "Is the row active?" },
     name: { ...s, description: "Equipment name" },
     powerW: { ...n, description: "Power (W)" },
-    runtimeHoursPerDay: { ...n, description: "Runtime hours per day (0-24)", minimum: 0, maximum: 24 }
+    runtimeHoursPerDay: { ...n, description: "Runtime hours per day (0-24)", minimum: 0, maximum: 24 },
+    purchaseCost: { ...n, description: "Purchase cost (NOK)" },
+    lifetimeHours: { ...n, description: "Technical lifetime (hours)" },
+    annualMaintenance: { ...n, description: "Annual maintenance cost (NOK)" },
+    supplier: { ...s, description: "Supplier name or URL" },
+    comment: { ...s, description: "Equipment note" }
   }
 };
 

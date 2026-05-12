@@ -1,5 +1,6 @@
-import { ANSWER_KEYS, MONTH_KEYS } from "../constants";
 import type { Language } from "../i18n";
+import { MONTH_KEYS } from "../constants";
+import { visibleQuestionsForAnswers } from "../questions";
 import { Answers, EditableNumber, PlantConfiguration, ValidationErrors } from "../types";
 
 interface ValidationStrings {
@@ -10,9 +11,6 @@ interface ValidationStrings {
   fieldMustBeLteq: (label: string, max: number) => string;
   thisFieldRequired: string;
   valueMustBePositive: string;
-  coverage4g: string;
-  coverageNbIot: string;
-  lineOfSight: string;
   reserveSourceRequired: string;
   batteryModeRequired: string;
   inspectionsLabel: string;
@@ -55,9 +53,6 @@ const nn: ValidationStrings = {
   fieldMustBeLteq: (label, max) => `${label} må være mindre enn eller lik ${max}.`,
   thisFieldRequired: "Dette feltet må fylles ut.",
   valueMustBePositive: "Verdien må være et tall større enn 0.",
-  coverage4g: "4G-dekning må avklares.",
-  coverageNbIot: "NB-IoT-dekning må avklares.",
-  lineOfSight: "Fri sikt under 15 km må avklares.",
   reserveSourceRequired: "Det må avklares om systemet har reservekilde.",
   batteryModeRequired: "Batterimodus må velges.",
   inspectionsLabel: "Antall tilsyn per år",
@@ -100,9 +95,6 @@ const en: ValidationStrings = {
   fieldMustBeLteq: (label, max) => `${label} must be less than or equal to ${max}.`,
   thisFieldRequired: "This field is required.",
   valueMustBePositive: "The value must be a number greater than 0.",
-  coverage4g: "4G coverage must be confirmed.",
-  coverageNbIot: "NB-IoT coverage must be confirmed.",
-  lineOfSight: "Line of sight within 15 km must be confirmed.",
   reserveSourceRequired: "Whether the system has a reserve source must be confirmed.",
   batteryModeRequired: "Battery mode must be selected.",
   inspectionsLabel: "Inspections per year",
@@ -187,15 +179,16 @@ function validateRequiredNumber(
 function validateAnswers(answers: Answers): ValidationErrors {
   const errors: ValidationErrors = {};
 
-  ANSWER_KEYS.forEach((field) => {
-    if (answers[field] === "" || answers[field] === null || answers[field] === undefined) {
+  visibleQuestionsForAnswers(answers).forEach(({ key: field, required }) => {
+    if (required === false) {
+      return;
+    }
+
+    const value = answers[field];
+    if (value === "" || value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
       errors[field] = s().thisFieldRequired;
     }
   });
-
-  if (answers.q2HighestRequiredMinFlow !== "" && Number(answers.q2HighestRequiredMinFlow) <= 0) {
-    errors.q2HighestRequiredMinFlow = s().valueMustBePositive;
-  }
 
   return errors;
 }
@@ -219,18 +212,6 @@ export function validateConfiguration(configuration: PlantConfiguration): Valida
       configuration.other.evaluationHorizonYears,
       s().horizonLabel
     );
-  }
-
-  if (!calculatorMode && configuration.systemParameters["4gCoverage"] === null) {
-    errors["systemParameters.4gCoverage"] = s().coverage4g;
-  }
-
-  if (!calculatorMode && configuration.systemParameters.nbIotCoverage === null) {
-    errors["systemParameters.nbIotCoverage"] = s().coverageNbIot;
-  }
-
-  if (!calculatorMode && configuration.systemParameters.lineOfSightUnder15km === null) {
-    errors["systemParameters.lineOfSightUnder15km"] = s().lineOfSight;
   }
 
   if (configuration.systemParameters.hasBackupSource === null) {

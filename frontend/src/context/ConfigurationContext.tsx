@@ -163,7 +163,7 @@ function createExportPayload(configuration: PlantConfiguration) {
       lineLossDb: configuration.radioLink.lineLossDb
     },
     equipmentRows: configuration.equipmentRows
-        .filter((row) => row.name.trim() || row.powerW !== "" || row.runtimeHoursPerDay !== "" || row.purchaseCost !== "" || row.lifetimeYears !== "" || row.annualMaintenance !== "" || row.supplier.trim() || row.comment.trim())
+        .filter((row) => row.name.trim() || row.powerW !== "" || row.runtimeHoursPerDay !== "" || row.purchaseCost !== "" || row.lifetimeHours !== "" || row.annualMaintenance !== "" || row.supplier.trim() || row.comment.trim())
         .map((row) => ({
           id: row.id,
           active: row.active,
@@ -171,7 +171,7 @@ function createExportPayload(configuration: PlantConfiguration) {
           powerW: row.powerW,
           runtimeHoursPerDay: row.runtimeHoursPerDay,
           purchaseCost: row.purchaseCost,
-          lifetimeYears: row.lifetimeYears,
+          lifetimeHours: row.lifetimeHours,
           annualMaintenance: row.annualMaintenance,
           supplier: row.supplier,
           comment: row.comment
@@ -365,7 +365,7 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
             powerW: "",
             runtimeHoursPerDay: "",
             purchaseCost: "",
-            lifetimeYears: "",
+            lifetimeHours: "",
             annualMaintenance: "",
             supplier: "",
             comment: ""

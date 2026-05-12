@@ -9,6 +9,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build && node ../backend/scripts/check-trace-id.mjs --stamp-site dist",
     "build:test": "npm run build && node scripts/copy-build-to-test.mjs",
+    "smoke:recommendations": "node scripts/recommendation-smoke.mjs",
     "preview": "vite preview",
     "api:keys": "node scripts/manage-api-keys.mjs",
     "check:excel": "node scripts/check-excel-reference.mjs",

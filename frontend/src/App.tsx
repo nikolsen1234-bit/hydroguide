@@ -385,8 +385,8 @@ export default function App() {
           aria-controls="mobile-navigation-drawer"
           aria-haspopup="dialog"
         >
-          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 stroke-current" strokeWidth="2" aria-hidden="true">
-            <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" strokeLinejoin="round" />
+          <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8 stroke-current" strokeWidth="1.75" aria-hidden="true">
+            <path d="M3.5 7h17M3.5 12h17M3.5 17h17" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
 

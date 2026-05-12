@@ -333,9 +333,6 @@ export default function AnalysisPage() {
       usesFoundationQuestions &&
       (key === "other.evaluationHorizonYears" ||
         key === "systemParameters.inspectionsPerYear" ||
-        key === "systemParameters.4gCoverage" ||
-        key === "systemParameters.nbIotCoverage" ||
-        key === "systemParameters.lineOfSightUnder15km" ||
         QUESTION_KEY_RE.test(key)),
     [usesFoundationQuestions]
   );
@@ -357,9 +354,9 @@ export default function AnalysisPage() {
   const liveRecommendation = useMemo(
     () =>
       isGuidedMode && foundationReady
-        ? calculateRecommendation(activeDraft.answers, activeDraft.systemParameters.inspectionsPerYear)
+        ? calculateRecommendation(activeDraft.answers)
         : null,
-    [activeDraft.answers, activeDraft.systemParameters.inspectionsPerYear, foundationReady, isGuidedMode]
+    [activeDraft.answers, foundationReady, isGuidedMode]
   );
 
   const liveOutputs = useMemo(
@@ -549,6 +546,7 @@ export default function AnalysisPage() {
     : [];
 
   const showRecommendationContent = isGuidedMode && Boolean(recommendation && solutionLead);
+  const canGenerateReport = Boolean(derivedResults && visibleAnnualTotals && recommendation && hasSystemDetails && !isGeneratingReport);
 
   const recommendationSection =
     showRecommendationContent && recommendation && solutionLead ? (
@@ -587,7 +585,7 @@ export default function AnalysisPage() {
             {showRecommendationContent && recommendation ? (
               <WorkspaceHeaderActionButton
                 icon={workspaceHeaderActionIcons.report}
-                disabled={isGeneratingReport}
+                disabled={!canGenerateReport}
                 onClick={handleGenerateReport}
                 label={isGeneratingReport ? "Genererer..." : "Generer rapport"}
                 subLabel="PDF"
@@ -600,14 +598,14 @@ export default function AnalysisPage() {
 
       <KpiStrip items={[
         {
-          kicker: "ENERGIBALANSE · ÅR",
+          kicker: "ENERGIBALANSE",
           value: visibleAnnualTotals
             ? formatNumber(visibleAnnualTotals.annualEnergyBalanceKWh, 0)
             : "-",
           unit: "kWh",
         },
-        { kicker: "FORBRUK · ÅR", value: visibleAnnualTotals ? formatNumber(visibleAnnualTotals.annualLoadDemandKWh, 0) : "-", unit: "kWh" },
-        { kicker: "RESERVEDRIFT · ÅR", value: visibleAnnualTotals ? formatNumber(visibleAnnualTotals.annualSecondaryRuntimeHours, 0) : "-", unit: "t" },
+        { kicker: "FORBRUK", value: visibleAnnualTotals ? formatNumber(visibleAnnualTotals.annualLoadDemandKWh, 0) : "-", unit: "kWh" },
+        { kicker: "RESERVEDRIFT", value: visibleAnnualTotals ? formatNumber(visibleAnnualTotals.annualSecondaryRuntimeHours, 0) : "-", unit: "t" },
         { kicker: "BATTERIAUTONOMI", value: derivedResults ? formatNumber(derivedResults.systemRecommendation.batteryAutonomyDays, 1) : "-", unit: "dager" },
       ]} />
 

@@ -911,7 +911,7 @@ function buildReportHtml(
   .v6-stack .seg{width:100%}
   .v6-stack .s1{background:var(--brand)}
   .v6-stack .s2{background:#93b3f5}
-  .v6-stack .s3{background:var(--secondary-source-color,#475569)}
+  .v6-stack .s3{background:#cbd5e1}
   .v6-stack-labels{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;margin-top:4px;font-size:8.5px;color:var(--ink);font-weight:800;text-transform:uppercase;text-align:center}
   .eb-foot{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;flex:none}
   .ef{display:grid;grid-template-columns:auto 1fr auto;align-items:baseline;gap:6px;padding:5px 0 0}
@@ -948,12 +948,12 @@ function buildReportHtml(
   .appendix .flex-spacer{display:none}
 
   .appendix .up-tech{border-left:1px solid var(--line);padding-left:12px;display:flex;flex-direction:column}
-  .appendix .up-row{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);line-height:1.25;min-height:22px}
+  .appendix .up-row{display:grid;grid-template-columns:1fr auto;align-items:start;gap:8px;padding:5px 0;border-bottom:0;line-height:1.25;min-height:22px}
   .appendix .up-row:first-child{padding-top:1px}
   .appendix .up-row:last-child{border-bottom:0;padding-bottom:1px}
-  .appendix .up-row::before{content:"";flex:1 1 auto;order:2;align-self:end;margin-bottom:3px;border-bottom:1px dotted var(--line);min-width:18px}
-  .appendix .up-row .k{order:1;flex:0 0 auto;font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:700}
-  .appendix .up-row .v{order:3;flex:0 0 auto;text-align:right;color:var(--ink);font-weight:700;font-size:11px;letter-spacing:-.015em;line-height:1;display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
+  .appendix .up-row::before{content:none}
+  .appendix .up-row .k{font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:700;line-height:1.15}
+  .appendix .up-row .v{text-align:right;color:var(--ink);font-weight:700;font-size:11px;letter-spacing:-.015em;line-height:1.15;display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
   .appendix .up-row .v small{font-size:8.5px;color:var(--muted);font-weight:700;margin-left:2px;letter-spacing:0;white-space:nowrap}
   .appendix .up-row .v .sub{font-size:8px;color:var(--ink-2);font-weight:400;letter-spacing:-.005em;white-space:nowrap}
   .appendix .energy-panel .v6-eb2{height:auto;min-height:0;overflow:visible}
@@ -983,7 +983,7 @@ function buildReportHtml(
   .appendix .eb-foot .ef .v{margin-left:auto;font-size:14px;font-weight:700;letter-spacing:-.025em;line-height:1;color:var(--ink);white-space:nowrap}
   .appendix .eb-foot .ef .v small{font-size:9px;color:var(--muted);font-weight:700;margin-left:2px;letter-spacing:0}
   .appendix .v6-compare{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#fff;font-variant-numeric:tabular-nums;table-layout:fixed;font-size:11px}
-  .appendix .v6-compare th,.appendix .v6-compare td{padding:8px 9px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);text-align:right;font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;min-height:26px;line-height:1.25}
+  .appendix .v6-compare th,.appendix .v6-compare td{padding:8px 9px;border-left:0;border-right:0;border-bottom:1px solid var(--line);text-align:right;font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;min-height:26px;line-height:1.25}
   .appendix .v6-compare th:last-child,.appendix .v6-compare td:last-child{border-right:0}
   .appendix .v6-compare tr:last-child td{border-bottom:0}
   .appendix .v6-compare thead th{font-size:9.5px;letter-spacing:.04em;text-transform:none;color:var(--muted);font-weight:700;background:#fff;border-bottom:1px solid var(--ink);padding:7px 9px}
@@ -1112,7 +1112,7 @@ function buildReportHtml(
         <p>${esc(leadSummary)}</p>
       </div>
       <aside class="up-tech" aria-label="Tekniske valg">
-        <div class="up-row"><span class="k">Primærkilde</span><span class="v">Solcellepanel<span class="sub">${esc(appendixPanelSpec)} · ${formatNumber(annualSolarKWh, 0)} kWh/år</span></span></div>
+        <div class="up-row"><span class="k">Primærkilde</span><span class="v">Solcellepanel<span class="sub">${esc(appendixPanelSpec)}</span></span></div>
         <div class="up-row"><span class="k">Batteribank</span><span class="v">500Ah</span></div>
         <div class="up-row"><span class="k">Sekundærkilde</span><span class="v">${appendixSecondarySpec ? esc(appendixSecondarySpec) : esc(recommendedSourceLabel)}${appendixSecondarySpec ? `<span class="sub">${esc(recommendedSourceLabel)}</span>` : ""}</span></div>
         <div class="up-row"><span class="k">Autonomi</span><span class="v">${esc(autonomyText)}</span></div>

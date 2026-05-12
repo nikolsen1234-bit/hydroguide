@@ -931,9 +931,9 @@ function buildReportHtml(
   .v6-compare th:nth-child(7){width:10.5%}
   .v6-compare th:nth-child(8){width:10.5%}
   .v6-compare th:nth-child(9){width:11%}
-  .v6-compare th{background:transparent;color:var(--ink);font-size:9px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;text-align:right;padding:6px 4px;border-bottom:1px solid var(--hairline);border-left:1px solid var(--hairline)}
+  .v6-compare th{background:transparent;color:var(--ink);font-size:9px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;text-align:right;padding:6px 4px;border-bottom:1px solid var(--hairline);border-left:0;border-right:0}
   .v6-compare th.rowhead,.v6-compare td.rowhead{text-align:left}
-  .v6-compare td{padding:7px 4px;text-align:right;border-left:1px solid var(--hairline);border-bottom:1px solid var(--hairline);font-weight:800;color:var(--ink);white-space:nowrap}
+  .v6-compare td{padding:7px 4px;text-align:right;border-left:0;border-right:0;border-bottom:1px solid var(--hairline);font-weight:800;color:var(--ink);white-space:nowrap}
   .v6-compare td.rowhead{overflow:hidden;text-overflow:ellipsis}
   .v6-compare td small{display:inline;font-size:8.5px;color:var(--ink);font-weight:800;margin-left:2px}
   .v6-compare tr.rec td:first-child{box-shadow:none}
@@ -984,7 +984,7 @@ function buildReportHtml(
   .appendix .eb-foot .ef .k{font-size:7.3px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}
   .appendix .eb-foot .ef .v{margin-left:auto;font-size:14px;font-weight:700;letter-spacing:-.025em;line-height:1;color:var(--ink);white-space:nowrap}
   .appendix .eb-foot .ef .v small{font-size:9px;color:var(--muted);font-weight:700;margin-left:2px;letter-spacing:0}
-  .appendix .v6-compare{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#fff;font-variant-numeric:tabular-nums;table-layout:fixed;font-size:11px}
+  .appendix .v6-compare{width:100%;border-collapse:collapse;border:0;border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);border-radius:0;overflow:visible;background:transparent;font-variant-numeric:tabular-nums;table-layout:fixed;font-size:11px}
   .appendix .v6-compare th,.appendix .v6-compare td{padding:8px 9px;border-left:0;border-right:0;border-bottom:1px solid var(--line);text-align:right;font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;min-height:26px;line-height:1.25}
   .appendix .v6-compare th:last-child,.appendix .v6-compare td:last-child{border-right:0}
   .appendix .v6-compare tr:last-child td{border-bottom:0}

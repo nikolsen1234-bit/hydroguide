@@ -902,7 +902,9 @@ function buildReportHtml(
   .appendix-reason h4{margin:0 0 4px;font-size:13px;line-height:1.15;letter-spacing:-.015em;font-weight:800;color:var(--ink)}
   .appendix-reason p{margin:0;color:var(--ink);font-size:12px;line-height:1.3;font-weight:700}
   .v6-block-title,.v6-rowtitle{display:flex;justify-content:space-between;align-items:baseline;margin:8px 0 5px;border-bottom:1px solid var(--hairline);padding-bottom:4px}
-  .v6-block-title b,.v6-rowtitle b{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+  .v6-block-title b,.v6-rowtitle b{font-size:13px;color:var(--ink)}
+  .v6-block-title b:not(.energy-title),.v6-rowtitle b{letter-spacing:.08em;text-transform:uppercase}
+  .v6-block-title b.energy-title{letter-spacing:0;text-transform:none}
   .v6-block-title span,.v6-rowtitle span{font-size:10px;color:var(--ink-3);font-weight:800;letter-spacing:.08em;text-transform:uppercase}
   .energy-panel .v6-eb2{height:50mm;display:flex;flex-direction:column}
   .v6-eb2{border:0;background:transparent;padding:9px 0 8px;flex:none}
@@ -1126,7 +1128,7 @@ function buildReportHtml(
 
   <section class="energy-panel">
     <div class="v6-block-title">
-      <b>Energibalanse</b>
+      <b class="energy-title">Solproduksjon mot last</b>
     </div>
     <div class="v6-eb2">
       <div class="v6-stack">

@@ -934,7 +934,7 @@ function buildReportHtml(
   .v6-compare td{padding:7px 4px;text-align:right;border-left:1px solid var(--hairline);border-bottom:1px solid var(--hairline);font-weight:800;color:var(--ink);white-space:nowrap}
   .v6-compare td.rowhead{overflow:hidden;text-overflow:ellipsis}
   .v6-compare td small{display:inline;font-size:8.5px;color:var(--ink);font-weight:800;margin-left:2px}
-  .v6-compare tr.rec td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
+  .v6-compare tr.rec td:first-child{box-shadow:none}
   .radio-panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
   .radio-panel .v6-radio-box{height:auto;flex:1 1 auto;min-height:0}
   .v6-radio-box{border:0;background:transparent;padding:0;display:flex;flex-direction:column;gap:8px}
@@ -985,11 +985,11 @@ function buildReportHtml(
   .appendix .v6-compare th,.appendix .v6-compare td{padding:8px 9px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);text-align:right;font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;min-height:26px;line-height:1.25}
   .appendix .v6-compare th:last-child,.appendix .v6-compare td:last-child{border-right:0}
   .appendix .v6-compare tr:last-child td{border-bottom:0}
-  .appendix .v6-compare thead th{font-size:9.5px;letter-spacing:.04em;text-transform:none;color:var(--muted);font-weight:700;background:#f6f8fb;border-bottom:1px solid var(--ink);padding:7px 9px}
-  .appendix .v6-compare th.rowhead,.appendix .v6-compare td.rowhead{text-align:left;font-size:10px;font-weight:700;letter-spacing:-.005em;background:#fafbfc;width:38mm}
+  .appendix .v6-compare thead th{font-size:9.5px;letter-spacing:.04em;text-transform:none;color:var(--muted);font-weight:700;background:#fff;border-bottom:1px solid var(--ink);padding:7px 9px}
+  .appendix .v6-compare th.rowhead,.appendix .v6-compare td.rowhead{text-align:left;font-size:10px;font-weight:700;letter-spacing:-.005em;background:#fff;width:38mm}
   .appendix .v6-compare thead th.rowhead{font-size:9.5px;letter-spacing:.04em;text-transform:none;color:var(--muted);font-weight:700}
   .appendix .v6-compare td small{display:inline;font-size:8.5px;font-weight:700;color:var(--ink);margin-left:2px;letter-spacing:0}
-  .appendix .v6-compare tr.rec td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
+  .appendix .v6-compare tr.rec td:first-child{box-shadow:none}
   .appendix .appendix-meta,.appendix .appendix-meta b,.appendix .up-eyebrow,.appendix .up-main h3,.appendix .appendix-reason .rmark,.appendix .appendix-reason h4,.appendix .v6-block-title b,.appendix .v6-block-title span,.appendix .v6-rowtitle b,.appendix .v6-rowtitle span,.appendix .v6-radio-data .k,.appendix .v6-radio-data .v,.appendix-footer{font-weight:700;color:var(--ink)}
 
   @page{size:A4;margin:0}

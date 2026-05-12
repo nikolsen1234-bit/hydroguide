@@ -956,7 +956,8 @@ function buildReportHtml(
   .appendix .up-row .v{order:3;flex:0 0 auto;text-align:right;color:var(--ink);font-weight:700;font-size:11px;letter-spacing:-.015em;line-height:1;display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
   .appendix .up-row .v small{font-size:8.5px;color:var(--muted);font-weight:700;margin-left:2px;letter-spacing:0;white-space:nowrap}
   .appendix .up-row .v .sub{font-size:8px;color:var(--ink-2);font-weight:400;letter-spacing:-.005em;white-space:nowrap}
-  .appendix .v6-eb2{border:1px solid var(--line);border-radius:4px;background:#fff;padding:10px 12px 4px;display:flex;flex-direction:column;gap:0;flex:1 1 auto;font-variant-numeric:tabular-nums}
+  .appendix .energy-panel .v6-eb2{height:auto;min-height:0;overflow:visible}
+  .appendix .v6-eb2{border:1px solid var(--line);border-radius:4px;background:#fff;padding:10px 12px 8px;display:flex;flex-direction:column;gap:0;flex:1 1 auto;font-variant-numeric:tabular-nums}
   .appendix .v6-stack{position:relative;display:grid;grid-template-columns:repeat(12,1fr);gap:5px;height:130px;min-height:130px;align-items:end;padding:6px 4px 0 26px;border-bottom:0;background-image:repeating-linear-gradient(to right,#cbd5e1 0 5px,transparent 5px 10px),repeating-linear-gradient(to right,#cbd5e1 0 5px,transparent 5px 10px),repeating-linear-gradient(to right,#cbd5e1 0 5px,transparent 5px 10px),repeating-linear-gradient(to right,#cbd5e1 0 5px,transparent 5px 10px),repeating-linear-gradient(to right,#cbd5e1 0 5px,transparent 5px 10px);background-size:calc(100% - 34px) 1px;background-repeat:no-repeat;background-position:34px 6px,34px 37px,34px 68px,34px 99px,34px 100%}
   .appendix .v6-stack::before{content:"";position:absolute;left:26px;right:0;bottom:0;border-bottom:1px solid var(--ink-2)}
   .appendix .v6-stack .yax{position:absolute;left:0;top:0;bottom:0;width:22px;pointer-events:none;font-variant-numeric:tabular-nums}
@@ -1136,7 +1137,7 @@ function buildReportHtml(
       <div class="eb-foot">
         <div class="ef hi"><i style="background:var(--brand)"></i><span class="k">Solcellepanel</span><span class="v">${formatNumber(annualSolarKWh, 0)}<small>kWh/år</small></span></div>
         <div class="ef"><i style="background:#93b3f5"></i><span class="k">Last</span><span class="v">${formatNumber(visibleAnnualTotals.annualLoadDemandKWh, 0)}<small>kWh/år</small></span></div>
-        <div class="ef"><i style="background:#15803d"></i><span class="k">${esc(recommendedSourceLabel)}</span><span class="v">${formatNumber(backupKWh, 0)}<small>kWh/år</small></span></div>
+        <div class="ef"><i style="background:#cbd5e1"></i><span class="k">${esc(recommendedSourceLabel)}</span><span class="v">${formatNumber(backupKWh, 0)}<small>kWh/år</small></span></div>
       </div>
     </div>
   </section>

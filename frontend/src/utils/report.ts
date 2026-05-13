@@ -370,7 +370,7 @@ function costRow(item: CostComparisonItem, powerW: number | null, recommended: b
     <td>${num(item.annualFuelConsumption, 0)}<small>L/år</small></td>
     <td>${num(item.annualCo2, 0)}<small>kg/år</small></td>
     <td>${num(item.purchaseCost, 0)}<small>kr</small></td>
-    <td>${num((finite(item.operatingCostPerYear) ? item.operatingCostPerYear : 0) + (finite(item.annualMaintenance) ? item.annualMaintenance : 0), 0)}<small>kr</small></td>
+    <td>${num((finite(item.operatingCostPerYear) ? item.operatingCostPerYear : 0) + (finite(item.annualMaintenance) ? item.annualMaintenance : 0), 0)}<small>kr/år</small></td>
     <td>${num((finite(item.purchaseCost) ? item.purchaseCost : 0) + ((finite(item.operatingCostPerYear) ? item.operatingCostPerYear : 0) + (finite(item.annualMaintenance) ? item.annualMaintenance : 0)) * (finite(item.evaluationHorizonYears) ? item.evaluationHorizonYears : 1), 0)}<small>kr</small></td>
   </tr>`;
 }
@@ -667,7 +667,7 @@ function buildReportHtml(
         </div>
         <table class="v6-compare">
           <colgroup><col class="c-source"><col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data"></colgroup>
-          <thead><tr><th class="rowhead"><span style="color: rgb(0, 0, 0);">Reservekilde</span></th><th><span style="color: rgb(0, 0, 0);">Effekt</span></th><th><span style="color: rgb(0, 0, 0);">Levetid</span></th><th><span style="color: rgb(0, 0, 0);">Driftstid</span></th><th><span style="color: rgb(0, 0, 0);">Drivstoff</span></th><th><span style="color: rgb(0, 0, 0);">CO₂</span></th><th><span style="color: rgb(0, 0, 0);">Kjøp</span></th><th><span style="color: rgb(0, 0, 0);">Drift/år</span></th><th><span style="color: rgb(0, 0, 0);">TOC ${blank(num(config.other.evaluationHorizonYears, 0))} år</span></th></tr></thead>
+          <thead><tr><th class="rowhead"><span style="color: rgb(0, 0, 0);">Reservekilde</span></th><th><span style="color: rgb(0, 0, 0);">Effekt</span></th><th><span style="color: rgb(0, 0, 0);">Levetid</span></th><th><span style="color: rgb(0, 0, 0);">Driftstid</span></th><th><span style="color: rgb(0, 0, 0);">Drivstoff</span></th><th><span style="color: rgb(0, 0, 0);">CO₂</span></th><th><span style="color: rgb(0, 0, 0);">Kjøp</span></th><th><span style="color: rgb(0, 0, 0);">Drivstoff</span></th><th><span style="color: rgb(0, 0, 0);">TOC ${blank(num(config.other.evaluationHorizonYears, 0))} år</span></th></tr></thead>
           <tbody>${comparisonRows}</tbody>
         </table>
       </div>

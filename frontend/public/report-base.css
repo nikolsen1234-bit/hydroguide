@@ -1,0 +1,472 @@
+/* HydroGuide rapport – delt base for A4-vedlegg (side 2)
+   Tokens i samsvar med HydroGuide Design System. */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --ink: #020617;
+  --ink-2: #1e293b;
+  --ink-3: #475569;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --line-soft: #eef2f7;
+  --brand: #2563eb;
+  --brand-dk: #1d4ed8;
+  --brand-soft: #eef6ff;
+  --brand-100: #dbeafe;
+  --brand-200: #bfdbfe;
+  --brand-300: #93c5fd;
+  --emerald: #047857;
+  --amber: #b45309;
+  --rose: #be123c;
+  --page-w: 210mm;
+  --page-h: 297mm;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: #eef2f7;
+  color: var(--ink);
+  font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  font-variant-numeric: tabular-nums;
+}
+body {
+  padding: 24px 0 48px;
+  font-size: 11.2px;
+  line-height: 1.45;
+}
+
+.page {
+  width: var(--page-w);
+  height: var(--page-h);
+  margin: 0 auto;
+  background: #fff;
+  box-shadow: 0 18px 42px -22px rgba(15, 23, 42, .35);
+  padding: 12mm 12mm 12mm;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === toppbjelke (minimal — frontsida er eiga side) === */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand img { height: 22px; width: auto; display: block; }
+.crumb {
+  font-size: 8.5px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.report-meta {
+  font-size: 8.5px;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  text-align: right;
+}
+.report-meta b { color: var(--ink); font-weight: 800; }
+
+/* === eyebrow / numerated section title === */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 8.5px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--brand);
+  font-weight: 800;
+}
+.eyebrow::before {
+  content: "";
+  width: 16px;
+  height: 1px;
+  background: var(--brand);
+}
+.sec-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--line);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+.sec-title .num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 8.5px;
+  color: var(--muted);
+  letter-spacing: .14em;
+}
+.sec-title small {
+  margin-left: auto;
+  font-weight: 600;
+  font-size: 8.5px;
+  letter-spacing: .14em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* === hero / hovudvalg === */
+.hero h2 {
+  margin: 6px 0 6px;
+  font-size: 21px;
+  line-height: 1.06;
+  letter-spacing: -.035em;
+  font-weight: 800;
+  max-width: 130mm;
+}
+.hero p {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 11.4px;
+  line-height: 1.5;
+  max-width: 145mm;
+}
+
+/* === metric stripe === */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.metric {
+  padding: 8px 12px;
+  border-right: 1px solid var(--line);
+}
+.metric:last-child { border-right: 0; }
+.metric .lbl {
+  font-size: 8px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 800;
+  margin-bottom: 3px;
+}
+.metric .val {
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: -.03em;
+  font-weight: 800;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.metric .val.blue { color: var(--brand); }
+.metric .unit {
+  font-size: 9.5px;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.metric .sub {
+  margin-top: 3px;
+  font-size: 8.5px;
+  color: var(--muted);
+  letter-spacing: .04em;
+}
+
+/* === tech-list aside === */
+.tech-list {
+  border-left: 1px solid var(--line);
+  padding-left: 14px;
+  display: flex;
+  flex-direction: column;
+}
+.tech-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin-bottom: 5px;
+}
+.tech-heading::before {
+  content: "";
+  width: 16px;
+  height: 1px;
+  background: var(--brand);
+}
+.tech-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 10.5px;
+}
+.tech-row:last-child { border-bottom: 0; }
+.tech-row .k { color: var(--ink-2); font-weight: 500; }
+.tech-row .v { color: var(--ink); font-weight: 700; text-align: right; }
+
+/* === bars chart (12 mnd) === */
+.chart {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 6px;
+  height: 92px;
+}
+.chart .axis {
+  position: relative;
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.chart .axis span {
+  position: absolute;
+  right: 4px;
+  line-height: 1;
+}
+.chart .axis span:nth-child(1) { top: -2px; }
+.chart .axis span:nth-child(2) { top: 25%; }
+.chart .axis span:nth-child(3) { top: 50%; }
+.chart .axis span:nth-child(4) { top: 75%; }
+.chart .axis span:nth-child(5) { bottom: 14px; }
+.chart .plot {
+  position: relative;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+  padding-bottom: 14px;
+}
+.chart .plot::before,
+.chart .plot::after,
+.chart .plot > .gridline {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--line-soft);
+}
+.chart .plot::before { top: 0; }
+.chart .plot::after { top: 50%; }
+.chart .plot > .gl1 { top: 25%; }
+.chart .plot > .gl3 { top: 75%; }
+.chart .plot > .gl-base { bottom: 14px; border-top: 1px solid var(--line); }
+
+.bar-col {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  height: calc(100% - 14px);
+}
+.bar {
+  width: 9px;
+  border-radius: 2px 2px 0 0;
+  position: relative;
+  background: var(--brand);
+}
+.bar.load { background: #cbd5e1; }
+.bar-stack {
+  width: 9px;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: 2px 2px 0 0;
+  overflow: hidden;
+}
+.bar-stack .solar { background: var(--brand); }
+.bar-stack .reserve { background: var(--amber); }
+.month {
+  position: absolute;
+  bottom: -13px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.legend {
+  display: flex;
+  gap: 12px;
+  font-size: 8.5px;
+  color: var(--ink-3);
+  font-weight: 700;
+}
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.legend .l-solar i { background: var(--brand); }
+.legend .l-reserve i { background: var(--amber); }
+.legend .l-load i { background: #cbd5e1; }
+
+/* === radio link mini === */
+.radio-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: linear-gradient(180deg, #fbfdff 0%, #fff 100%);
+}
+.radio-data {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+.radio-data div {
+  padding: 6px 9px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.radio-data div:nth-child(2n) { border-right: 0; }
+.radio-data div:nth-last-child(-n+2) { border-bottom: 0; }
+.radio-data .k {
+  display: block;
+  font-size: 7.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+.radio-data .v { font-size: 10.5px; font-weight: 700; color: var(--ink); }
+
+/* === secondary energy comparison table === */
+.cmp {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+}
+.cmp th {
+  padding: 5px 6px;
+  text-align: left;
+  font-size: 8px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 800;
+  border-bottom: 1px solid var(--ink);
+}
+.cmp th.num, .cmp td.num { text-align: right; }
+.cmp td {
+  padding: 6px 6px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.cmp tr.rec td {
+  color: var(--brand-dk);
+  font-weight: 800;
+  background: #f5faff;
+}
+.cmp tr.rec td:first-child::before {
+  content: "● ";
+  color: var(--brand);
+}
+.cmp tr:last-child td { border-bottom: 0; }
+
+/* === reasons (3-col bottom) === */
+.reasons-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.reason {
+  border-left: 2px solid var(--brand);
+  padding: 8px 10px;
+  background: #fcfdff;
+}
+.reason .rmark {
+  font-size: 8.5px;
+  letter-spacing: .14em;
+  color: var(--brand);
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.reason h4 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 1.18;
+  letter-spacing: -.015em;
+  font-weight: 800;
+}
+.reason p {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 10px;
+  line-height: 1.42;
+}
+
+/* === flow principle compact === */
+.principle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--brand-soft);
+  border: 1px solid var(--brand-200);
+  border-radius: 8px;
+}
+.principle svg { flex: none; }
+.principle .p-lbl {
+  font-size: 7.5px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--brand-dk);
+  font-weight: 800;
+  margin-bottom: 1px;
+}
+.principle .p-val {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  line-height: 1.1;
+}
+.principle .p-meta {
+  font-size: 9.5px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+
+/* === footer === */
+.footer {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  font-size: 8.5px;
+  color: var(--muted);
+  letter-spacing: .04em;
+}
+.footer b { color: var(--ink-2); font-weight: 700; }
+
+@page { size: A4; margin: 0; }
+@media print {
+  body { padding: 0; background: #fff; }
+  .page { margin: 0; box-shadow: none; }
+}

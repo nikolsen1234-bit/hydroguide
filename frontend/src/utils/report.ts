@@ -878,7 +878,7 @@ function buildReportHtml(
   .appendix,.appendix *{font-family:Arial,sans-serif;font-style:normal;opacity:1;text-shadow:none}
   .appendix svg,.appendix svg text{font-family:Arial,sans-serif}
   .appendix-top{display:flex;align-items:center;justify-content:space-between;padding-bottom:7px;border-bottom:1px solid var(--hairline);flex:none}
-  .appendix-top .brand{display:flex;align-items:center;gap:10px}
+  .appendix-top .brand{display:flex;align-items:center;gap:10px;transform:translate(-7mm,-5mm)}
   .appendix-top .brand .report-logo{width:124px;height:auto;display:block}
   .appendix-meta{font-size:9.5px;color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase;font-weight:700;text-align:right;line-height:1.35}
   .appendix-meta b{color:var(--ink);font-weight:800}
@@ -942,22 +942,26 @@ function buildReportHtml(
   .v6-radio-box{border:0;background:transparent;padding:0;display:flex;flex-direction:column;gap:8px}
   .v6-terrain-mini{height:auto;min-height:148px;flex:1 1 auto;border-bottom:1px solid var(--hairline);padding-bottom:6px}
   .v6-terrain-mini svg{width:100%;height:100%;display:block}
-  .v6-radio-data{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-  .v6-radio-data div{display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--hairline);padding-left:8px}
-  .v6-radio-data div:first-child{border-left:0;padding-left:0}
-  .v6-radio-data .k{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--ink)}
-  .v6-radio-data .v{font-size:12.5px;font-weight:800;color:var(--ink);text-align:left}
+  .v6-radio-data{position:relative;display:block;height:42px;width:100%;text-align:left!important}
+  .v6-radio-data div{position:absolute;top:0;display:block;border-left:0;padding:0;text-align:left!important}
+  .v6-radio-data div:nth-child(1){left:0}
+  .v6-radio-data div:nth-child(2){left:150px}
+  .v6-radio-data div:nth-child(3){left:300px}
+  .v6-radio-data div:nth-child(4){left:450px}
+  .v6-radio-data::before{content:"";position:absolute;top:0;bottom:0;left:142px;width:1px;background:var(--hairline);box-shadow:150px 0 0 var(--hairline),300px 0 0 var(--hairline)}
+  .v6-radio-data .k{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--ink);white-space:nowrap;text-align:left!important;margin-left:0!important;padding-left:0!important;text-indent:0!important}
+  .v6-radio-data .v{display:block;font-size:12.5px;font-weight:800;color:var(--ink);white-space:nowrap;text-align:left!important;margin:2px 0 0 0!important;padding-left:0!important;text-indent:0!important}
   .appendix .flex-spacer{display:none}
 
   .appendix .up-tech{border-left:1px solid var(--line);padding-left:12px;display:flex;flex-direction:column}
-  .appendix .up-row{display:grid;grid-template-columns:1fr auto;align-items:start;gap:8px;padding:5px 0;border-bottom:0;line-height:1.25;min-height:22px}
+  .appendix .up-row{display:grid;grid-template-columns:1fr auto;align-items:start;gap:8px;padding:1px 0 7px;border-bottom:0;line-height:1.25;min-height:22px}
   .appendix .up-row:first-child{padding-top:1px}
   .appendix .up-row:last-child{border-bottom:0;padding-bottom:1px}
   .appendix .up-row::before{content:none}
-  .appendix .up-row .k{font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:700;line-height:1.15}
-  .appendix .up-row .v{text-align:right;color:var(--ink);font-weight:700;font-size:11px;letter-spacing:-.015em;line-height:1.15;display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
+  .appendix .up-row .k{font-size:12px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:800;line-height:1.05}
+  .appendix .up-row .v{text-align:right;color:var(--ink);font-weight:700;font-size:12px;letter-spacing:-.015em;line-height:1;display:flex;flex-direction:column;align-items:flex-end;gap:1px;white-space:nowrap}
   .appendix .up-row .v small{font-size:8.5px;color:var(--muted);font-weight:700;margin-left:2px;letter-spacing:0;white-space:nowrap}
-  .appendix .up-row .v .sub{font-size:8px;color:var(--ink-2);font-weight:400;letter-spacing:-.005em;white-space:nowrap}
+  .appendix .up-row .v .sub{font-size:inherit;color:var(--ink);font-weight:inherit;letter-spacing:-.005em;line-height:1;white-space:nowrap}
   .appendix .energy-panel .v6-eb2{height:auto;min-height:0;overflow:visible}
   .appendix .v6-eb2{border:1px solid var(--line);border-radius:4px;background:#fff;padding:10px 12px 8px;display:flex;flex-direction:column;gap:0;flex:1 1 auto;font-variant-numeric:tabular-nums}
   .appendix .v6-stack{position:relative;display:grid;grid-template-columns:repeat(12,1fr);gap:5px;height:130px;min-height:130px;align-items:end;padding:6px 4px 0 26px;border-bottom:0;background-image:repeating-linear-gradient(to right,#cbd5e1 0 5px,transparent 5px 10px),repeating-linear-gradient(to right,#cbd5e1 0 5px,transparent 5px 10px),repeating-linear-gradient(to right,#cbd5e1 0 5px,transparent 5px 10px),repeating-linear-gradient(to right,#cbd5e1 0 5px,transparent 5px 10px),repeating-linear-gradient(to right,#cbd5e1 0 5px,transparent 5px 10px);background-size:calc(100% - 34px) 1px;background-repeat:no-repeat;background-position:34px 6px,34px 37px,34px 68px,34px 99px,34px 100%}
@@ -976,20 +980,24 @@ function buildReportHtml(
   .appendix .v6-stack .s3{background:#cbd5e1}
   .appendix .v6-stack-labels{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;font-size:7.8px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:4px 4px 0;text-align:center}
   .appendix .v6-stack-labels span{line-height:1.2}
-  .appendix .eb-foot{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:10px;border-top:0;background:#fff;flex:none}
-  .appendix .eb-foot .ef{padding:4px 12px 2px;border-right:1px solid var(--line);display:flex;align-items:baseline;gap:10px;min-height:28px;line-height:1.25}
-  .appendix .eb-foot .ef:first-child{padding-left:4px}
-  .appendix .eb-foot .ef:last-child{border-right:0;padding-right:4px}
+  .appendix .eb-foot{display:grid;grid-template-columns:repeat(3,1fr);column-gap:10px;margin-top:10px;border-top:0;background:#fff;flex:none;padding-left:26px;box-sizing:border-box}
+  .appendix .eb-foot .ef{padding:4px 0 2px;border-right:0;display:grid;grid-template-columns:auto auto minmax(6px,1fr) max-content;align-items:baseline;column-gap:6px;min-height:28px;line-height:1.25}
+  .appendix .eb-foot .ef i{grid-column:1}
+  .appendix .eb-foot .ef .k{grid-column:2}
+  .appendix .eb-foot .ef .v{grid-column:4}
+  .appendix .eb-foot .ef:last-child{padding-right:4px}
   .appendix .eb-foot .ef i{display:inline-block;width:9px;height:9px;border-radius:2px;flex-shrink:0;align-self:center}
-  .appendix .eb-foot .ef .k{font-size:7.3px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}
-  .appendix .eb-foot .ef .v{margin-left:auto;font-size:14px;font-weight:700;letter-spacing:-.025em;line-height:1;color:var(--ink);white-space:nowrap}
-  .appendix .eb-foot .ef .v small{font-size:9px;color:var(--muted);font-weight:700;margin-left:2px;letter-spacing:0}
+  .appendix .eb-foot .ef .k{font-size:12px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:800}
+  .appendix .eb-foot .ef .v{margin-left:auto;font-size:12px;font-weight:800;letter-spacing:0;line-height:1;color:var(--ink);white-space:nowrap}
+  .appendix .eb-foot .ef .v small{font-size:inherit;color:var(--ink);font-weight:inherit;margin-left:2px;letter-spacing:0}
   .appendix .v6-compare{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#fff;font-variant-numeric:tabular-nums;table-layout:fixed;font-size:11px}
+  .appendix .v6-compare col.c-source{width:22%}
+  .appendix .v6-compare col.c-data{width:auto}
   .appendix .v6-compare th,.appendix .v6-compare td{padding:8px 9px;border-left:0;border-right:0;border-bottom:1px solid var(--line);text-align:right;font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;min-height:26px;line-height:1.25}
   .appendix .v6-compare th:last-child,.appendix .v6-compare td:last-child{border-right:0}
   .appendix .v6-compare tr:last-child td{border-bottom:0}
   .appendix .v6-compare thead th{font-size:9.5px;letter-spacing:.04em;text-transform:none;color:var(--muted);font-weight:700;background:#fff;border-bottom:1px solid var(--ink);padding:7px 9px}
-  .appendix .v6-compare th.rowhead,.appendix .v6-compare td.rowhead{text-align:left;font-size:10px;font-weight:700;letter-spacing:-.005em;background:#fff;width:38mm}
+  .appendix .v6-compare th.rowhead,.appendix .v6-compare td.rowhead{text-align:left;font-size:10px;font-weight:700;letter-spacing:-.005em;background:#fff;width:auto}
   .appendix .v6-compare thead th.rowhead{font-size:9.5px;letter-spacing:.04em;text-transform:none;color:var(--muted);font-weight:700}
   .appendix .v6-compare td small{display:inline;font-size:8.5px;font-weight:700;color:var(--ink);margin-left:2px;letter-spacing:0}
   .appendix .v6-compare tr.rec td:first-child{box-shadow:none}
@@ -1149,6 +1157,11 @@ function buildReportHtml(
       <b>Sekundærkilde</b>
     </div>
     <table class="v6-compare">
+      <colgroup>
+        <col class="c-source">
+        <col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data">
+        <col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data">
+      </colgroup>
       <thead>
         <tr>
           <th class="rowhead">Sekundærkilde</th>

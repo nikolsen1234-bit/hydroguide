@@ -316,7 +316,6 @@ function renderRadioGraph(config: PlantConfiguration) {
           <text x="7" y="88" text-anchor="middle" transform="rotate(-90 7 88)">Meter</text>
         </g>
         <g class="radio-svg-x-axis" font-family="Manrope" font-size="7.8" font-weight="800" fill="#000000" letter-spacing=".06em">
-          <line x1="28" y1="162.00" x2="712" y2="162.00" stroke="#000000" stroke-width="1" shape-rendering="crispEdges" vector-effect="non-scaling-stroke"></line>
           ${xPositions.map((x, index) => `<line x1="${x.toFixed(2)}" y1="162.00" x2="${x.toFixed(2)}" y2="166.00" stroke="#000000" stroke-width="1" shape-rendering="crispEdges" vector-effect="non-scaling-stroke"></line>
           <text x="${x.toFixed(2)}" y="177.00" text-anchor="middle">${esc(xLabels[index])}</text>`).join("\n          ")}
           <text x="370.00" y="187" text-anchor="middle">Kilometer</text>
@@ -370,8 +369,8 @@ function costRow(item: CostComparisonItem, powerW: number | null, recommended: b
     <td>${powerW === null ? "&nbsp;" : `${num(powerW, 0)}<small>W</small>`}</td>
     <td>${num(item.technicalLifetimeHours, 0)}<small>t</small></td>
     <td>${num(item.totalRuntimeHours / Math.max(item.evaluationHorizonYears, 1), 0)}<small>t/år</small></td>
-    <td>${num(item.annualFuelConsumption, 0)}<small>L</small></td>
-    <td>${num(item.annualCo2, 0)}<small>kg</small></td>
+    <td>${num(item.annualFuelConsumption, 0)}<small>L/år</small></td>
+    <td>${num(item.annualCo2, 0)}<small>kg/år</small></td>
     <td>${num(item.purchaseCost, 0)}<small>kr</small></td>
     <td>${num((finite(item.operatingCostPerYear) ? item.operatingCostPerYear : 0) + (finite(item.annualMaintenance) ? item.annualMaintenance : 0), 0)}<small>kr</small></td>
     <td>${num((finite(item.purchaseCost) ? item.purchaseCost : 0) + ((finite(item.operatingCostPerYear) ? item.operatingCostPerYear : 0) + (finite(item.annualMaintenance) ? item.annualMaintenance : 0)) * (finite(item.evaluationHorizonYears) ? item.evaluationHorizonYears : 1), 0)}<small>kr</small></td>
@@ -583,7 +582,7 @@ function buildReportHtml(
     .footer{margin-top:8px;padding-top:6px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:8.5px;color:var(--muted);letter-spacing:.04em}
     .footer b{color:var(--ink-2);font-weight:700}
     .v6-terrain{background-image:none !important;background-color:transparent !important}
-    .v6-terrain::after{content:none !important;display:none !important}
+    .v6-terrain::after{content:"" !important;display:block !important;position:absolute !important;left:28px !important;right:48px !important;bottom:38px !important;height:0 !important;border-bottom:1px solid #000 !important;pointer-events:none !important;z-index:2 !important}
     .v6-terrain svg .radio-svg-y-axis text,.v6-terrain svg .radio-svg-x-axis text,.v6-terrain svg .radio-svg-legend text,.v6-terrain svg .radio-svg-legend{display:none !important}
     .radio-like-eb{display:flex;flex-direction:column;gap:0;width:703px}
     .radio-like-eb .radio-head{display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:10px;border-bottom:0}

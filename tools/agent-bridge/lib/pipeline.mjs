@@ -39,13 +39,17 @@ export function defaultConfig(overrides = {}) {
     embeddingsBaseUrl: process.env.LOCAL_EMBEDDINGS_BASE_URL ?? "http://127.0.0.1:1234/v1",
     embeddingsModel: process.env.EMBEDDINGS_MODEL ?? "text-embedding-qwen3-embedding-4b",
     embeddingsApiKey: process.env.EMBEDDINGS_API_KEY ?? "",
-    embeddingsTimeoutMs: Number.parseInt(process.env.REPORT_EMBEDDINGS_TIMEOUT_MS ?? "", 10) || 8000,
+    embeddingsTimeoutMs: Number.parseInt(process.env.REPORT_EMBEDDINGS_TIMEOUT_MS ?? "", 10) || 15000,
     embeddingsBatchSize: Number.parseInt(process.env.REPORT_EMBEDDINGS_BATCH_SIZE ?? "", 10) || 8,
     cliproxyBaseUrl: process.env.CLIPROXY_BASE_URL ?? "http://127.0.0.1:8317/v1",
     cliproxyApiKey: process.env.CLIPROXY_API_KEY ?? "",
     codexModel: process.env.REPORT_AGENT_MODEL ?? process.env.CLAUDE_MODEL ?? process.env.CODEX_MODEL ?? "gpt-5.4",
     topK: Number.parseInt(process.env.REPORT_RAG_TOP_K ?? "", 10) || DEFAULT_TOP_K,
     requestTimeoutMs: Number.parseInt(process.env.REPORT_CODEX_TIMEOUT_MS ?? "", 10) || 110000,
+    totalBudgetMs: Number.parseInt(process.env.REPORT_TOTAL_BUDGET_MS ?? "", 10) || 90000,
+    responseReserveMs: Number.parseInt(process.env.REPORT_RESPONSE_RESERVE_MS ?? "", 10) || 5000,
+    validationRetryMinBudgetMs: Number.parseInt(process.env.REPORT_VALIDATION_RETRY_MIN_BUDGET_MS ?? "", 10) || 35000,
+    minimumAgentCallMs: Number.parseInt(process.env.REPORT_MIN_AGENT_CALL_MS ?? "", 10) || 10000,
     ...overrides
   };
 }
@@ -404,12 +408,16 @@ function extractJson(text) {
   }
 }
 
-async function callCodexJson({ messages, config, fetchImpl }) {
+async function callCodexJson({ messages, config, fetchImpl, timeoutMs }) {
   const endpoint = `${String(config.cliproxyBaseUrl).replace(/\/+$/, "")}/chat/completions`;
   const headers = { "content-type": "application/json" };
   if (config.cliproxyApiKey) {
     headers.authorization = `Bearer ${config.cliproxyApiKey}`;
   }
+  const effectiveTimeoutMs = Math.max(1000, Math.min(
+    config.requestTimeoutMs,
+    Number.isFinite(timeoutMs) ? timeoutMs : config.requestTimeoutMs
+  ));
 
   const response = await fetchImpl(endpoint, {
     method: "POST",
@@ -421,7 +429,7 @@ async function callCodexJson({ messages, config, fetchImpl }) {
       max_tokens: 700,
       response_format: { type: "json_object" }
     }),
-    signal: AbortSignal.timeout(config.requestTimeoutMs)
+    signal: AbortSignal.timeout(effectiveTimeoutMs)
   });
 
   if (!response.ok) {
@@ -559,6 +567,9 @@ function buildDeterministicFallbackOutput(report, evidence) {
 export async function generateReport(rawReport, options = {}) {
   const config = defaultConfig(options.config ?? {});
   const fetchImpl = options.fetchImpl ?? fetch;
+  const startedAt = Date.now();
+  const remainingBudgetMs = () => Math.max(0, config.totalBudgetMs - (Date.now() - startedAt));
+  const agentCallBudgetMs = () => Math.max(0, remainingBudgetMs() - config.responseReserveMs);
   const report = normalizeReportPayload(rawReport);
   if (!report.reportExtract) {
     return { ok: false, status: 400, error: "reportExtract mangler." };
@@ -572,11 +583,16 @@ export async function generateReport(rawReport, options = {}) {
 
   let output;
   let fallbackStep = null;
+  const firstCallBudgetMs = agentCallBudgetMs();
   try {
+    if (firstCallBudgetMs < config.minimumAgentCallMs) {
+      throw new Error("Insufficient request budget for agent call.");
+    }
     output = await callCodexJson({
       messages: buildMessages({ report, evidence, config }),
       config,
-      fetchImpl
+      fetchImpl,
+      timeoutMs: firstCallBudgetMs
     });
   } catch {
     fallbackStep = "agent-fallback";
@@ -585,15 +601,22 @@ export async function generateReport(rawReport, options = {}) {
   let validation = validateOutput(output, evidence);
 
   if (!validation.ok) {
-    fallbackStep = fallbackStep ?? "validation-retry";
-    try {
-      output = await callCodexJson({
-        messages: buildMessages({ report, evidence, config, retryErrors: validation.errors }),
-        config,
-        fetchImpl
-      });
-    } catch {
-      fallbackStep = "agent-fallback";
+    const retryBudgetMs = agentCallBudgetMs();
+    if (retryBudgetMs >= config.validationRetryMinBudgetMs) {
+      fallbackStep = fallbackStep ?? "validation-retry";
+      try {
+        output = await callCodexJson({
+          messages: buildMessages({ report, evidence, config, retryErrors: validation.errors }),
+          config,
+          fetchImpl,
+          timeoutMs: retryBudgetMs
+        });
+      } catch {
+        fallbackStep = "agent-fallback";
+        output = buildDeterministicFallbackOutput(report, evidence);
+      }
+    } else {
+      fallbackStep = fallbackStep ?? "validation-fallback";
       output = buildDeterministicFallbackOutput(report, evidence);
     }
     validation = validateOutput(output, evidence);

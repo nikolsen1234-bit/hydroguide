@@ -283,10 +283,8 @@ function renderRadioGraph(config: PlantConfiguration) {
   const axisMax = allValues.length ? Math.max(100, Math.ceil((Math.max(...allValues) * 1.25) / 100) * 100) : 0;
   const yTicks = axisMax > 0 ? [axisMax, axisMax * 0.8, axisMax * 0.6, axisMax * 0.4, axisMax * 0.2, 0] : ["", "", "", "", "", ""];
   const yPositions = [14.8, 44.8, 74.8, 104.8, 134.8, 164.8];
-  // Shifted -20 viewBox-units left (no scaling) so the radio plot aligns
-  // horizontally with the Energibalanse stack (first label "0" sits under JAN).
-  const xPositions = [30.06, 95.99, 161.92, 227.84, 293.77, 359.7, 425.63, 491.55, 557.48, 623.41, 695.85];
-  const xPercents = ["3.9553%", "12.6303%", "21.3053%", "29.9789%", "38.6539%", "47.3289%", "56.0039%", "64.6776%", "73.3526%", "82.0276%", "91.5592%"];
+  const xPositions = [50.06, 115.99, 181.92, 247.84, 313.77, 379.7, 445.63, 511.55, 577.48, 643.41, 715.85];
+  const xPercents = ["6.5868%", "15.2618%", "23.9368%", "32.6105%", "41.2855%", "49.9605%", "58.6355%", "67.3092%", "75.9842%", "84.6592%", "94.1908%"];
   const distanceKm = analysis?.terrainDistanceKm ?? 0;
   const xLabels = distanceKm > 0 ? xPositions.map((_, index) => {
     if (index === 0) return "0";
@@ -306,7 +304,7 @@ function renderRadioGraph(config: PlantConfiguration) {
       </div>`,
     xAxis: `<div class="radio-xax" aria-hidden="true">
         ${xPercents.map((left, index) => `<span class="n" style="left:${left}">${blank(xLabels[index])}</span>`).join("\n        ")}
-        <span class="unit" style="left:47.76%">Kilometer</span>
+        <span class="unit" style="left:50.39%">Kilometer</span>
       </div>`,
     svg: `<svg viewBox="0 0 760 200" preserveAspectRatio="none" role="img" aria-label="Terrengprofil fra Linkplanlegger">
         <defs><clipPath id="radioActualPlotClip"><rect x="0" y="0" width="516" height="286"></rect></clipPath></defs>

@@ -55,16 +55,36 @@ function buildSections(t: (key: TranslationKey) => string): DocSection[] {
       description: "",
       entries: [
         {
-          title: t("docs.powerCurrentDaily"),
-          lead: t("docs.powerCurrentDailyLead"),
+          title: t("docs.powerEntry"),
+          lead: t("docs.powerEntryLead"),
           formula: String.raw`\displaystyle
-I = \frac{P}{V_{nom}}, \qquad E_{dag} = P \cdot t, \qquad Q_{dag} = I \cdot t`,
+P = P_{komponent}`,
+          items: [
+            { symbol: "P", unit: "\\mathrm{W}", description: t("docs.power") },
+            { symbol: "P_{komponent}", unit: "\\mathrm{W}", description: t("docs.componentPower") }
+          ]
+        },
+        {
+          title: t("docs.currentEntry"),
+          lead: t("docs.currentEntryLead"),
+          formula: String.raw`\displaystyle
+I = \frac{P}{V_{nom}}`,
           items: [
             { symbol: "I", unit: "\\mathrm{A}", description: t("docs.current") },
             { symbol: "P", unit: "\\mathrm{W}", description: t("docs.power") },
-            { symbol: "V_{nom}", unit: "\\mathrm{V}", description: t("docs.nominalVoltage") },
+            { symbol: "V_{nom}", unit: "\\mathrm{V}", description: t("docs.nominalVoltage") }
+          ]
+        },
+        {
+          title: t("docs.dailyEntry"),
+          lead: t("docs.dailyEntryLead"),
+          formula: String.raw`\displaystyle
+E_{dag} = P \cdot t, \qquad Q_{dag} = I \cdot t`,
+          items: [
             { symbol: "E_{dag}", unit: "\\mathrm{Wh}", description: t("docs.dailyConsumption") },
             { symbol: "Q_{dag}", unit: "\\mathrm{Ah}", description: t("docs.dailyCurrent") },
+            { symbol: "P", unit: "\\mathrm{W}", description: t("docs.power") },
+            { symbol: "I", unit: "\\mathrm{A}", description: t("docs.current") },
             { symbol: "t", unit: "\\mathrm{h}", description: t("docs.hoursPerDay") }
           ]
         }

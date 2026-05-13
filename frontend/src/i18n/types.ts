@@ -270,8 +270,15 @@ export interface Translations {
   "docs.powerBudget": string;
   "docs.powerCurrentDaily": string;
   "docs.powerCurrentDailyLead": string;
+  "docs.powerEntry": string;
+  "docs.powerEntryLead": string;
+  "docs.currentEntry": string;
+  "docs.currentEntryLead": string;
+  "docs.dailyEntry": string;
+  "docs.dailyEntryLead": string;
   "docs.current": string;
   "docs.power": string;
+  "docs.componentPower": string;
   "docs.nominalVoltage": string;
   "docs.dailyConsumption": string;
   "docs.dailyCurrent": string;

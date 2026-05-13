@@ -6,10 +6,10 @@ import { workspaceTitleClassName } from "../styles/workspace";
 import type { EngineMode } from "../types";
 
 const team = [
-  ["Nikolas Olsen", "Prosjektleder"],
-  ["Dan Roald Larsen", "Instrumentering"],
-  ["Jin-Marie Bakke", "Kraftsystem"],
-  ["Espen Espeland", "Kommunikasjon"]
+  { name: "Nikolas Olsen", imageSrc: "/team/nikolas-olsen.jpg", imagePosition: "center 38%" },
+  { name: "Dan Roald Larsen", imageSrc: "/team/dan-roald-larsen.jpg", imagePosition: "42% 34%" },
+  { name: "Jin-Marie Bakke" },
+  { name: "Espen Espeland", imageSrc: "/team/espen-espeland.jpg" }
 ];
 
 function TeamList() {
@@ -18,22 +18,28 @@ function TeamList() {
       <h3 className="text-[length:calc(var(--hg-type-content-size)_+_1px)] font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)]">
         Prosjektgruppe
       </h3>
-      <div className="mt-3 grid max-w-[42rem] gap-x-16 gap-y-4 sm:grid-cols-2">
-        {team.map(([name, role]) => (
-          <div key={name} className="flex min-w-0 items-center gap-3">
-            <div className="hg-mono flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-accent)]">
-              {name
-                .split(" ")
-                .map((part) => part[0])
-                .slice(0, 2)
-                .join("")}
+      <div className="mt-4 grid max-w-[42rem] gap-x-16 gap-y-5 sm:grid-cols-2">
+        {team.map(({ name, imageSrc, imagePosition }, index) => (
+          <div key={name} className={`flex min-w-0 flex-col items-center gap-2 text-center ${index < 2 ? "-translate-y-2" : ""}`}>
+            <div className="hg-mono flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[length:calc(var(--hg-type-content-size)_+_1px)] font-[var(--hg-type-weight-bold)] text-[var(--hg-accent)] shadow-sm">
+              {imageSrc ? (
+                <img
+                  src={imageSrc}
+                  alt={name}
+                  className="h-full w-full object-cover"
+                  style={{ objectPosition: imagePosition ?? "center" }}
+                />
+              ) : (
+                name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .slice(0, 2)
+                  .join("")
+              )}
             </div>
             <div className="min-w-0">
               <p className="truncate text-[length:calc(0.98rem_+_1px)] font-[var(--hg-type-weight-bold)] leading-tight text-[var(--hg-ink)]">
                 {name}
-              </p>
-              <p className="hg-mono mt-1 truncate text-[length:var(--hg-type-meta-size)] uppercase tracking-[var(--hg-type-overline-tracking)] text-[var(--hg-muted)]">
-                {role}
               </p>
             </div>
           </div>
@@ -173,8 +179,7 @@ export default function WelcomePage() {
       </div>
       <div className="relative z-10">
         <WorkspaceHeader
-          title="Velkommen til HydroGuide"
-          breadcrumb="Hjem"
+          title="HydroGuide"
           actions={
             <>
               <WorkspaceHeaderActionButton
@@ -196,7 +201,7 @@ export default function WelcomePage() {
         />
       </div>
 
-      <section className="relative z-10 min-h-0 flex-1 py-7">
+      <section className="relative z-10 min-h-0 flex-1 pb-5 pt-4">
         <div className="relative z-10 max-w-[43.5rem]">
           <h1 className={`${workspaceTitleClassName} text-[length:var(--hg-type-hero-title-size)] leading-[1.05] lg:text-[length:var(--hg-type-hero-title-size-lg)]`}>
             HydroGuide

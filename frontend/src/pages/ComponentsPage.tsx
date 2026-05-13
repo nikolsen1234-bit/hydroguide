@@ -358,7 +358,7 @@ export default function ComponentsPage() {
 
       <KpiStrip items={componentsKpiItems} />
 
-      <section className="flex flex-1 flex-col border-t-[3px] border-[var(--hg-ink)] pt-3">
+      <section className="flex flex-1 flex-col border-t-2 border-[var(--hg-ink)] pt-2">
         <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="pt-4">
             <h2 className={`${workspaceSectionTitleClassName} uppercase`}>Effektbudsjett</h2>

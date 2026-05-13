@@ -1,5 +1,4 @@
 import { useId, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
-import { useLocation } from "react-router-dom";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import {
@@ -26,8 +25,6 @@ export const workspaceHeaderActionIcons = {
   run: "M4.5 5.25v13.5l12-6.75-12-6.75Z",
   report: "M7.5 3.75h6l3 3v13.5h-9A2.25 2.25 0 0 1 5.25 18V6A2.25 2.25 0 0 1 7.5 3.75ZM13.5 3.75v3h3M8.25 11.25h7.5M8.25 14.25h7.5M8.25 17.25h4.5"
 } as const;
-
-const hydroGuideBreadcrumbPaths = new Set(["/kontakt", "/api", "/dokumentasjon"]);
 
 export function WorkspaceHeaderActionButton({
   icon,
@@ -97,26 +94,22 @@ export function WorkspaceHeaderActionButton({
 
 export default function WorkspaceHeader({
   title,
-  breadcrumb: explicitBreadcrumb,
   actions,
   showProjectControls = false
 }: {
   title: string;
-  breadcrumb?: string;
   actions?: ReactNode;
   showProjectControls?: boolean;
 }) {
   const { configurations, activeDraft, createNewConfiguration, selectConfiguration } = useConfigurationContext();
   const { t } = useLanguage();
-  const location = useLocation();
   const selectableConfigurations = configurations.some((config) => config.id === activeDraft.id)
     ? configurations
     : [activeDraft, ...configurations];
   const displayName = (name: string) => name.trim() || t("shared.unnamed");
   const configurationSelectId = useId();
   const projectName = displayName(activeDraft.name);
-  const breadcrumbRoot = hydroGuideBreadcrumbPaths.has(location.pathname) ? "HydroGuide" : "Prosjekt";
-  const breadcrumb = explicitBreadcrumb ?? `${breadcrumbRoot} / ${projectName} / ${title}`;
+  const breadcrumb = `Prosjekt / ${projectName} /`;
 
   return (
     <header className={workspaceHeaderClassName}>

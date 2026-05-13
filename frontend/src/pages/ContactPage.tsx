@@ -7,10 +7,10 @@ import {
 } from "../styles/workspace";
 
 const teamMembers = [
-  { name: "Nikolas Olsen", role: "Prosjektleder", email: "nikolas.o@live.com" },
-  { name: "Dan Roald Larsen", role: "Instrumentering", email: "placeholder@epost.no" },
-  { name: "Jin-Marie Bakke", role: "Kraftsystem", email: "placeholder@epost.no" },
-  { name: "Espen Espeland", role: "Kommunikasjon", email: "placeholder@epost.no" }
+  { name: "Nikolas Olsen", email: "nikolas.o@live.com", imageSrc: "/team/nikolas-olsen.jpg", imagePosition: "center 38%" },
+  { name: "Dan Roald Larsen", email: "larsedr@gmail.com", imageSrc: "/team/dan-roald-larsen.jpg", imagePosition: "42% 34%" },
+  { name: "Jin-Marie Bakke", email: "jinm97@hotmail.com" },
+  { name: "Espen Espeland", email: "Espenask.espeland@gmail.com", imageSrc: "/team/espen-espeland.jpg" }
 ];
 
 const resources = [
@@ -50,15 +50,23 @@ export default function ContactPage() {
               Hovedprosjekt i elektroautomasjon, utviklet av fire studenter med fagbakgrunn i hydraulikk,
               kraftsystem og kommunikasjon.
             </p>
-            <div className="mt-4 grid gap-x-12 gap-y-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-4 grid gap-x-12 gap-y-6 sm:grid-cols-2 xl:grid-cols-4">
               {teamMembers.map((member) => (
-                <div key={member.name} className="flex min-w-0 items-center gap-3">
-                  <div className="hg-mono flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-bold)] text-[var(--hg-accent)]">
-                    {initials(member.name)}
+                <div key={member.name} className="flex min-w-0 flex-col items-center gap-2 text-center">
+                  <div className="hg-mono flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[length:calc(var(--hg-type-content-size)_+_1px)] font-[var(--hg-type-weight-bold)] text-[var(--hg-accent)] shadow-sm">
+                    {member.imageSrc ? (
+                      <img
+                        src={member.imageSrc}
+                        alt={member.name}
+                        className="h-full w-full object-cover"
+                        style={{ objectPosition: member.imagePosition ?? "center" }}
+                      />
+                    ) : (
+                      initials(member.name)
+                    )}
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-bold)] leading-tight text-[var(--hg-ink)]">{member.name}</p>
-                    <p className="hg-mono mt-1 truncate text-[length:var(--hg-type-overline-size)] uppercase tracking-[var(--hg-type-overline-tracking)] text-[var(--hg-muted)]">{member.role}</p>
+                    <p className="truncate text-[length:calc(0.98rem_+_1px)] font-[var(--hg-type-weight-bold)] leading-tight text-[var(--hg-ink)]">{member.name}</p>
                     <a href={`mailto:${member.email}`} className="mt-0.5 block truncate text-[length:var(--hg-type-meta-size)] font-[var(--hg-type-weight-medium)] text-[var(--hg-accent)]">{member.email}</a>
                   </div>
                 </div>

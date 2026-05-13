@@ -143,7 +143,7 @@ function MonthlyOverviewChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
       <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)]">
         <span className="inline-flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-sm bg-[var(--hg-accent-2)]" />
-          Energiproduksjon
+          Solcelleprod.
         </span>
         <span className="inline-flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-sm bg-[var(--hg-muted)]" />
@@ -175,7 +175,7 @@ function MonthlyOverviewChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
                   <div
                     className="w-[42%] rounded-t-[2px]"
                     style={{ height: `${Math.max(solarRatio * 100, row.solarProductionKWh > 0 ? 2 : 0)}%`, background: "var(--hg-accent-2)" }}
-                    aria-label={`${row.label} energiproduksjon: ${formatNumber(row.solarProductionKWh)} kWh`}
+                    aria-label={`${row.label} solcelleproduksjon: ${formatNumber(row.solarProductionKWh)} kWh`}
                   />
                   <div
                     className="w-[42%] rounded-t-[2px]"
@@ -271,12 +271,12 @@ export default function OverviewPage() {
     : null;
   const overviewKpiItems: KpiStripItem[] = [
     {
-      kicker: "SOLPRODUKSJON",
+      kicker: "SOLCELLEPROD.",
       value: outputs ? formatNumber(outputs.derivedResults.annualTotals.annualSolarProductionKWh, 0) : "-",
       unit: "kWh"
     },
     {
-      kicker: "LAST",
+      kicker: "FORBRUK",
       value: outputs ? formatNumber(outputs.derivedResults.annualTotals.annualLoadDemandKWh, 0) : "-",
       unit: "kWh"
     },

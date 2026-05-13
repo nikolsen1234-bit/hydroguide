@@ -51,7 +51,7 @@ type NavItem = { to: string; labelKey: TranslationKey; icon: string };
 
 const navGroups: Array<{ label: string; items: NavItem[] }> = [
   {
-    label: "Project",
+    label: "Prosjekt",
     items: [
       {
         to: "/",
@@ -71,7 +71,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     ]
   },
   {
-    label: "Engineering",
+    label: "Teknisk",
     items: [
       {
         to: "/parametere",
@@ -96,7 +96,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     ]
   },
   {
-    label: "About",
+    label: "Om",
     items: [
       {
         to: "/dokumentasjon",
@@ -170,7 +170,7 @@ class RouteErrorBoundary extends Component<RouteErrorBoundaryProps, RouteErrorBo
 
     return (
       <div className="flex min-h-full flex-col items-center justify-center gap-4 p-8 text-center">
-        <p className={workspaceBodyClassName}>Noko gjekk gale ved lasting av sida.</p>
+        <p className={workspaceBodyClassName}>Noe gikk galt ved lasting av siden.</p>
         <button
           type="button"
           onClick={() => window.location.reload()}

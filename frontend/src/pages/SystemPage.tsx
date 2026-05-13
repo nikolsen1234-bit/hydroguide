@@ -64,7 +64,7 @@ export default function SystemPage() {
 
     if (!outputs) {
       return [
-        { kicker: "SOLPRODUKSJON", value: "-", unit: "kWh" },
+        { kicker: "SOLCELLEPROD.", value: "-", unit: "kWh" },
         { kicker: batteryTileKicker, value: "-", unit: batteryTileUnit },
         { kicker: "RESERVEDRIFT", value: "-", unit: "%" },
         { kicker: "CO₂", value: "-", unit: "kg" },
@@ -88,7 +88,7 @@ export default function SystemPage() {
     const annualCo2Kg = co2Item ? co2Item.annualCo2 : 0;
 
     return [
-      { kicker: "SOLPRODUKSJON", value: formatNumber(annualSolarKWh, 0), unit: "kWh" },
+      { kicker: "SOLCELLEPROD.", value: formatNumber(annualSolarKWh, 0), unit: "kWh" },
       { kicker: batteryTileKicker, value: batteryTileValue, unit: batteryTileUnit },
       { kicker: "RESERVEDRIFT", value: formatNumber(reservePct, 1), unit: "%" },
       { kicker: "CO₂", value: formatNumber(annualCo2Kg, 0), unit: "kg" },
@@ -308,13 +308,13 @@ function EnergiSeksjon() {
           </div>
           <div className="mt-auto grid gap-x-6 gap-y-3 pt-3 md:grid-cols-2">
             <FlatField
-              label="ANTALL"
+              label="ANTALL PANEL"
               value={formatEditable(activeDraft.solar.panelCount)}
               unit="stk"
               onChange={(v) => updateConfigSectionField("solar", "panelCount", parseEditableNumber(v))}
             />
             <FlatField
-              label="VIRK.GRAD"
+              label="VIRKNINGSGRAD"
               value={formatEditable(activeDraft.solar.systemEfficiency)}
               onChange={(v) => updateConfigSectionField("solar", "systemEfficiency", parseEditableNumber(v))}
             />
@@ -333,12 +333,12 @@ function EnergiSeksjon() {
           />
           <div className="grid gap-x-6 gap-y-3 md:grid-cols-2">
             <FlatField
-              label="DC-SPENNING"
+              label="NOMINELL SPENNING"
               value={formatEditable(dcVoltage)}
               unit="V"
               onChange={(v) => updateConfigSectionField("battery", "nominalVoltage", parseEditableNumber(v))}
             />
-            <LabeledControl label="OPPGI SOM">
+            <LabeledControl label="AUTONOMI OPPGITT I">
               <PillToggle
                 options={["DAGER", "AH"]}
                 selected={batteryMode === "autonomyDays" ? "DAGER" : "AH"}
@@ -349,12 +349,12 @@ function EnergiSeksjon() {
               />
             </LabeledControl>
             <FlatField
-              label="MAKS DOD"
+              label="MAKS UTLADINGSDYBDE"
               value={formatEditable(maxDoD)}
               onChange={(v) => updateConfigSectionField("battery", "maxDepthOfDischarge", parseEditableNumber(v))}
             />
             <FlatField
-              label="BANKSTØRRELSE"
+              label={batteryMode === "autonomyDays" ? "AUTONOMI" : "BATTERIBANKSTØRRELSE"}
               value={formatEditable(bankSize)}
               unit={batteryMode === "autonomyDays" ? "dager" : "Ah"}
               onChange={(v) => updateConfigSectionField("systemParameters", "batteryValue", parseEditableNumber(v))}
@@ -623,7 +623,7 @@ function MonthlyValuesPanel({ open, values, baseline, onChange, onClose, onReset
               MÅNEDSVERDIER
             </p>
             <h2 className="mt-1 text-[length:var(--hg-type-dialog-title-size)] font-[var(--hg-type-weight-extra)] tracking-[var(--hg-type-tight-tracking)] text-[var(--hg-ink)]">
-              SOL · kWh/m² PER MÅNED
+              SOLINNSTRÅLING · kWh/m²
             </h2>
           </div>
           <button
@@ -719,30 +719,30 @@ function ReserveSection() {
       />
       {hasReserve === false ? (
         <p className={`${workspaceOverlineClassName} text-[var(--hg-ink-2)]`}>
-          Ingen reservekilde valgt. Systemet dimensjoneres uten backup.
+          Ingen reservekilde valgt. Systemet dimensjoneres uten reservekilde.
         </p>
       ) : (
         <div className="grid gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
           <FlatSelect
-            label="TYPE KILDE"
-            value={sourceKey === "fuelCell" ? "Metanol brenselcelle" : "Diesel aggregat"}
-            options={["Metanol brenselcelle", "Diesel aggregat"]}
-            onChange={(v) => setSourceKey(v === "Metanol brenselcelle" ? "fuelCell" : "diesel")}
+            label="TYPE RESERVEKILDE"
+            value={sourceKey === "fuelCell" ? "Brenselcelle (metanol)" : "Dieselaggregat"}
+            options={["Brenselcelle (metanol)", "Dieselaggregat"]}
+            onChange={(v) => setSourceKey(v === "Brenselcelle (metanol)" ? "fuelCell" : "diesel")}
           />
           <FlatField
-            label="INNKJØP"
+            label="INNKJØPSKOSTNAD"
             value={formatEditable(cfg.purchaseCost)}
             unit="kr"
             onChange={(v) => updateConfigSectionField(sourceKey, "purchaseCost", parseEditableNumber(v))}
           />
           <FlatField
-            label="VEDLIKEHOLD"
+            label="ÅRLIG VEDLIKEHOLD"
             value={formatEditable(cfg.annualMaintenance)}
             unit="kr/år"
             onChange={(v) => updateConfigSectionField(sourceKey, "annualMaintenance", parseEditableNumber(v))}
           />
           <FlatField
-            label="LEVETID"
+            label="TEKNISK LEVETID"
             value={formatEditable(cfg.lifetime)}
             unit="t"
             onChange={(v) => updateConfigSectionField(sourceKey, "lifetime", parseEditableNumber(v))}
@@ -754,13 +754,13 @@ function ReserveSection() {
             onChange={(v) => updateConfigSectionField(sourceKey, "powerW", parseEditableNumber(v))}
           />
           <FlatField
-            label="FORBRUK"
+            label="DRIVSTOFFORBRUK"
             value={formatEditable(cfg.fuelConsumptionPerKWh)}
             unit="L/kWh"
             onChange={(v) => updateConfigSectionField(sourceKey, "fuelConsumptionPerKWh", parseEditableNumber(v))}
           />
           <FlatField
-            label="DRIVSTOFF"
+            label="DRIVSTOFFPRIS"
             value={formatEditable(cfg.fuelPrice)}
             unit="kr/L"
             onChange={(v) => updateConfigSectionField(sourceKey, "fuelPrice", parseEditableNumber(v))}

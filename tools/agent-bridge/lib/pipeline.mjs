@@ -40,9 +40,10 @@ export function defaultConfig(overrides = {}) {
     embeddingsModel: process.env.EMBEDDINGS_MODEL ?? "text-embedding-qwen3-embedding-4b",
     embeddingsApiKey: process.env.EMBEDDINGS_API_KEY ?? "",
     embeddingsTimeoutMs: Number.parseInt(process.env.REPORT_EMBEDDINGS_TIMEOUT_MS ?? "", 10) || 8000,
+    embeddingsBatchSize: Number.parseInt(process.env.REPORT_EMBEDDINGS_BATCH_SIZE ?? "", 10) || 8,
     cliproxyBaseUrl: process.env.CLIPROXY_BASE_URL ?? "http://127.0.0.1:8317/v1",
     cliproxyApiKey: process.env.CLIPROXY_API_KEY ?? "",
-    codexModel: process.env.REPORT_AGENT_MODEL ?? process.env.CLAUDE_MODEL ?? process.env.CODEX_MODEL ?? "gpt-5.5",
+    codexModel: process.env.REPORT_AGENT_MODEL ?? process.env.CLAUDE_MODEL ?? process.env.CODEX_MODEL ?? "gpt-5.4",
     topK: Number.parseInt(process.env.REPORT_RAG_TOP_K ?? "", 10) || DEFAULT_TOP_K,
     requestTimeoutMs: Number.parseInt(process.env.REPORT_CODEX_TIMEOUT_MS ?? "", 10) || 110000,
     ...overrides

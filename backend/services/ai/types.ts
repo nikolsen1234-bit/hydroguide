@@ -232,7 +232,7 @@ export type EvidenceCandidate = {
 };
 
 export const DEFAULT_MODEL_PRIMARY = "gpt-5.1";
-export const DEFAULT_MODEL_FALLBACK = "gpt-5.4-mini";
+export const DEFAULT_MODEL_FALLBACK = "gpt-5.4";
 export const DEFAULT_MAX_OUTPUT_TOKENS = 350;
 export const DEFAULT_MAX_WORDS = 90;
 export const DEFAULT_MAX_SENTENCES = 4;

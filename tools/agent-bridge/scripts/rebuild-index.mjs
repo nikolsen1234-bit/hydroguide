@@ -35,7 +35,7 @@ try {
       "load",
       config.embeddingsModel,
       "--gpu",
-      process.env.LMSTUDIO_EMBEDDINGS_GPU ?? "max",
+      process.env.LMSTUDIO_EMBEDDINGS_GPU ?? "off",
       "--context-length",
       process.env.LMSTUDIO_EMBEDDINGS_CONTEXT ?? "512",
       "--parallel",
@@ -53,7 +53,9 @@ try {
     indexPath: config.indexPath,
     embeddingsBaseUrl: config.embeddingsBaseUrl,
     embeddingsModel: config.embeddingsModel,
-    embeddingsApiKey: config.embeddingsApiKey
+    embeddingsApiKey: config.embeddingsApiKey,
+    embeddingsTimeoutMs: config.embeddingsTimeoutMs,
+    embeddingsBatchSize: config.embeddingsBatchSize
   });
 
   console.log(JSON.stringify({

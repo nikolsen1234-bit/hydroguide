@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 const INDEX_VERSION = 1;
 const DEFAULT_BATCH_SIZE = Number.parseInt(process.env.REPORT_EMBEDDINGS_BATCH_SIZE ?? "", 10) || 8;
 const WORD_RE = /[\p{L}\p{N}]{3,}/gu;
+const EMBEDDING_RETRY_DELAY_MS = 3000;
 
 function normalizeBaseUrl(baseUrl) {
   return String(baseUrl ?? "").trim().replace(/\/+$/, "");
@@ -12,6 +13,10 @@ function normalizeBaseUrl(baseUrl) {
 
 function sha256Hex(value) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function delay(ms) {
+  return new Promise((resolveDelay) => setTimeout(resolveDelay, ms));
 }
 
 function tokenize(text) {
@@ -137,35 +142,56 @@ export async function embedTexts({
 
   const endpoint = `${normalizeBaseUrl(baseUrl)}/embeddings`;
   const embeddings = [];
-  for (let start = 0; start < texts.length; start += batchSize) {
-    const input = texts.slice(start, start + batchSize);
+  const embedBatch = async (input, attempt = 1) => {
     const headers = { "content-type": "application/json" };
     if (apiKey) {
       headers.authorization = `Bearer ${apiKey}`;
     }
 
-    const response = await fetchImpl(endpoint, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ model, input }),
-      signal: AbortSignal.timeout(timeoutMs)
-    });
+    try {
+      const response = await fetchImpl(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ model, input }),
+        signal: AbortSignal.timeout(timeoutMs)
+      });
 
-    if (!response.ok) {
-      throw new Error(`Embedding endpoint returned ${response.status}.`);
-    }
-
-    const payload = await response.json();
-    const rows = extractEmbeddingRows(payload);
-    if (rows.length !== input.length) {
-      throw new Error(`Embedding endpoint returned ${rows.length} vectors for ${input.length} texts.`);
-    }
-    for (const row of rows) {
-      if (!row.every((value) => Number.isFinite(value))) {
-        throw new Error("Embedding endpoint returned a non-numeric vector.");
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "");
+        throw new Error(`Embedding endpoint returned ${response.status}${errorText ? `: ${errorText.slice(0, 300)}` : ""}.`);
       }
-      embeddings.push(row);
+
+      const payload = await response.json();
+      const rows = extractEmbeddingRows(payload);
+      if (rows.length !== input.length) {
+        throw new Error(`Embedding endpoint returned ${rows.length} vectors for ${input.length} texts.`);
+      }
+      for (const row of rows) {
+        if (!row.every((value) => Number.isFinite(value))) {
+          throw new Error("Embedding endpoint returned a non-numeric vector.");
+        }
+      }
+      return rows;
+    } catch (error) {
+      if (input.length > 1) {
+        const midpoint = Math.ceil(input.length / 2);
+        const left = await embedBatch(input.slice(0, midpoint), attempt);
+        const right = await embedBatch(input.slice(midpoint), attempt);
+        return [...left, ...right];
+      }
+
+      if (attempt < 3) {
+        await delay(EMBEDDING_RETRY_DELAY_MS * attempt);
+        return embedBatch(input, attempt + 1);
+      }
+
+      throw error;
     }
+  };
+
+  for (let start = 0; start < texts.length; start += batchSize) {
+    const input = texts.slice(start, start + batchSize);
+    embeddings.push(...await embedBatch(input));
   }
 
   return embeddings;
@@ -196,7 +222,8 @@ export async function ensureVectorIndex({
   embeddingsModel,
   embeddingsApiKey = "",
   fetchImpl = fetch,
-  embeddingsTimeoutMs = 8000
+  embeddingsTimeoutMs = 8000,
+  embeddingsBatchSize = DEFAULT_BATCH_SIZE
 }) {
   const knowledge = await loadKnowledge(knowledgePath);
   const currentIndex = await readIndex(indexPath);
@@ -208,14 +235,66 @@ export async function ensureVectorIndex({
     return { knowledge, index: currentIndex, rebuilt: false };
   }
 
-  const embeddings = await embedTexts({
-    texts: knowledge.chunks.map((chunk) => `${chunk.title}\n${chunk.text}`),
-    baseUrl: embeddingsBaseUrl,
+  const partialPath = `${indexPath}.partial`;
+  const partialIndex = await readIndex(partialPath);
+  const canResume = indexIsCurrent(partialIndex, {
+    sourceHash: knowledge.sourceHash,
     model: embeddingsModel,
-    apiKey: embeddingsApiKey,
-    fetchImpl,
-    timeoutMs: embeddingsTimeoutMs
+    chunks: {
+      length: Math.min(partialIndex?.items?.length ?? 0, knowledge.chunks.length)
+    }
   });
+  const itemsById = new Map(
+    canResume ? partialIndex.items.map((item) => [item.id, item]) : []
+  );
+
+  for (let start = 0; start < knowledge.chunks.length; start += embeddingsBatchSize) {
+    const batch = knowledge.chunks
+      .slice(start, start + embeddingsBatchSize)
+      .filter((chunk) => !itemsById.has(chunk.id));
+    if (batch.length === 0) {
+      continue;
+    }
+
+    const embeddings = await embedTexts({
+      texts: batch.map((chunk) => `${chunk.title}\n${chunk.text}`),
+      baseUrl: embeddingsBaseUrl,
+      model: embeddingsModel,
+      apiKey: embeddingsApiKey,
+      fetchImpl,
+      timeoutMs: embeddingsTimeoutMs,
+      batchSize: batch.length
+    });
+
+    batch.forEach((chunk, index) => {
+      itemsById.set(chunk.id, {
+        id: chunk.id,
+        embedding: embeddings[index]
+      });
+    });
+
+    await mkdir(dirname(indexPath), { recursive: true });
+    await writeFile(
+      partialPath,
+      `${JSON.stringify({
+        version: INDEX_VERSION,
+        generatedAt: new Date().toISOString(),
+        sourcePath: knowledge.absolutePath,
+        sourceHash: knowledge.sourceHash,
+        embeddingModel: embeddingsModel,
+        dimensions: embeddings[0]?.length ?? partialIndex?.dimensions ?? 0,
+        items: knowledge.chunks
+          .map((chunk) => itemsById.get(chunk.id))
+          .filter(Boolean)
+      }, null, 2)}\n`,
+      "utf8"
+    );
+  }
+
+  const orderedItems = knowledge.chunks.map((chunk) => itemsById.get(chunk.id));
+  if (orderedItems.some((item) => !item)) {
+    throw new Error(`Vector index incomplete: ${orderedItems.filter(Boolean).length}/${knowledge.chunks.length} chunks embedded.`);
+  }
 
   const index = {
     version: INDEX_VERSION,
@@ -223,15 +302,13 @@ export async function ensureVectorIndex({
     sourcePath: knowledge.absolutePath,
     sourceHash: knowledge.sourceHash,
     embeddingModel: embeddingsModel,
-    dimensions: embeddings[0]?.length ?? 0,
-    items: knowledge.chunks.map((chunk, itemIndex) => ({
-      id: chunk.id,
-      embedding: embeddings[itemIndex]
-    }))
+    dimensions: orderedItems[0]?.embedding?.length ?? 0,
+    items: orderedItems
   };
 
   await mkdir(dirname(indexPath), { recursive: true });
   await writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`, "utf8");
+  await rm(partialPath, { force: true });
   return { knowledge, index, rebuilt: true };
 }
 

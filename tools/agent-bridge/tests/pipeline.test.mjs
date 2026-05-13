@@ -4,11 +4,25 @@ import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
-import { generateReport, normalizeReportPayload } from "../lib/pipeline.mjs";
+import { defaultConfig, generateReport, normalizeReportPayload } from "../lib/pipeline.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "../../..");
 const knowledgePath = resolve(repoRoot, "tools/agent-bridge/knowledge/report-knowledge.jsonl");
+
+test("defaultConfig uses the LM Studio Qwen embedding model", () => {
+  const previous = process.env.EMBEDDINGS_MODEL;
+  delete process.env.EMBEDDINGS_MODEL;
+  try {
+    assert.equal(defaultConfig({ repoRoot }).embeddingsModel, "text-embedding-qwen3-embedding-4b");
+  } finally {
+    if (previous === undefined) {
+      delete process.env.EMBEDDINGS_MODEL;
+    } else {
+      process.env.EMBEDDINGS_MODEL = previous;
+    }
+  }
+});
 
 function vectorFor(text) {
   const value = String(text ?? "").toLowerCase();

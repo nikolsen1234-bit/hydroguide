@@ -456,7 +456,7 @@ export async function runSelfFeedback(
   body: NormalizedBody,
   rules: Rules
 ): Promise<SelfFeedbackResult> {
-  const feedbackModel = env.SELF_FEEDBACK_MODEL ?? "gpt-5.4-mini";
+  const feedbackModel = env.SELF_FEEDBACK_MODEL ?? "gpt-5.4";
   const maxOutputTokens = 200;
 
   // Load feedback prompt from KV

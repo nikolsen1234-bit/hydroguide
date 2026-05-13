@@ -35,7 +35,7 @@ test("report Worker forwards sanitized report payload to local bridge", async ()
     return Response.json({
       text: "MÃ¥lesystemet bÃ¸r dokumenteres med kontinuerlig registrering og kontrollmÃ¥ling.",
       source: "local-codex-bridge",
-      model: "gpt-5.5",
+      model: "gpt-5.4",
       retrieval_backend: "qwen-vector",
       evidence_used: []
     });

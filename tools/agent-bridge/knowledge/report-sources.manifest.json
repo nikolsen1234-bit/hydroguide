@@ -3,9 +3,9 @@
   "generatedKnowledgePath": "tools/agent-bridge/knowledge/report-knowledge.jsonl",
   "sourceCacheDir": ".ai/agent-rag/sources",
   "chunking": {
-    "maxWords": 220,
-    "overlapWords": 35,
-    "minWords": 45
+    "maxWords": 150,
+    "overlapWords": 25,
+    "minWords": 35
   },
   "sources": [
     {

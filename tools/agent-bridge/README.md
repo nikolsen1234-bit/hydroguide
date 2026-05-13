@@ -31,7 +31,7 @@ Optional:
 - `CLIPROXY_API_KEY` - optional local auth token for CLIProxyAPI.
 - `REPORT_AGENT_MODEL` - preferred answer model name for CLIProxyAPI.
 - `CLAUDE_MODEL` - optional fallback model name if CLIProxyAPI has Claude auth.
-- `CODEX_MODEL` - optional fallback model name, default `gpt-5.5`.
+- `CODEX_MODEL` - optional fallback model name, default `gpt-5.4`.
 - `REPORT_CODEX_TIMEOUT_MS` - local answer-agent timeout, default `110000`.
 - `LOCAL_EMBEDDINGS_BASE_URL` - default `http://127.0.0.1:1234/v1`.
 - `EMBEDDINGS_MODEL` - default `text-embedding-qwen3-embedding-4b`.
@@ -88,7 +88,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\agent-bridge\scripts\s
 model so JIT loading does not use the global LM Studio context default. The
 preload defaults are:
 
-- `LMSTUDIO_EMBEDDINGS_GPU=max`
+- `LMSTUDIO_EMBEDDINGS_GPU=off`
 - `LMSTUDIO_EMBEDDINGS_CONTEXT=512`
 - `LMSTUDIO_EMBEDDINGS_PARALLEL=1`
 - `LMSTUDIO_EMBEDDINGS_TTL=3600`

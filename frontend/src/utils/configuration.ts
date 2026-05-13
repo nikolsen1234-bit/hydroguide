@@ -10,6 +10,7 @@ import {
   EMPTY_SOLAR,
   EMPTY_SYSTEM_PARAMETERS
 } from "../constants";
+import type { HydroGuideAnswers } from "../hydroguide/sourceAnchoredDecision";
 import {
   Answers,
   BackupSourceConfiguration,
@@ -58,155 +59,14 @@ function normalizeBoolean(value: unknown): NullableBoolean {
   return typeof value === "boolean" ? value : null;
 }
 
-const FLOW_CLASS_MIGRATION: Record<string, Answers["q03FlowClass"]> = {
-  "0_50": "0_50",
-  "50_200": "50_200",
-  "200_500": "200_500",
-  "500_1000": "500_1000",
-  "1000_2000": "1000_2000",
-  over_500: "500_1000",
-  over_2000: "over_2000",
-  unknown: "unknown"
-};
-
-const LEGACY_RELEASE_TO_NEW: Record<string, Answers["q07ReleaseSolution"]> = {
-  pipeOrChannel: "pipeIntake",
-  pipeFrostFree: "pipeIntake",
-  pipeNoFrostFree: "pipeThroughDam",
-  royr_frostfritt: "pipeIntake",
-  royr_utan_frostfritt: "pipeThroughDam",
-  gateThresholdOverflow: "gate",
-  gateWeirOverflow: "gate",
-  luke_utsparing_overloep: "gate",
-  naturalRiverbed: "noneSelected",
-  directRiverbed: "noneSelected",
-  direkte_elveleie: "noneSelected",
-  crumpOrFlume: "noneSelected",
-  vNotch: "noneSelected"
-};
-
-function migrateYesNo(value: unknown): "yes" | "no" | "" {
-  if (value === "ja" || value === "yes" || value === true) return "yes";
-  if (value === "nei" || value === "no" || value === false) return "no";
-  return "";
-}
-
-function migrateYesNoUnknown(value: unknown): "yes" | "no" | "unknown" | "" {
-  if (value === "unknown" || value === "ukjent") return "unknown";
-  return migrateYesNo(value);
-}
-
-function migrateYesNoPartialUnknown(value: unknown): "yes" | "no" | "partial" | "unknown" | "" {
-  if (value === "partial" || value === "delvis") return "partial";
-  return migrateYesNoUnknown(value);
-}
-
-function selectString<T extends string>(value: unknown, allowed: readonly T[]): T | "" {
-  return typeof value === "string" && (allowed as readonly string[]).includes(value) ? (value as T) : "";
-}
-
-function selectStringArray<T extends string>(value: unknown, allowed: readonly T[]): T[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is T => typeof item === "string" && (allowed as readonly string[]).includes(item))
-    : [];
-}
-
-function migrateFlowClass(value: unknown): Answers["q03FlowClass"] {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    if (value <= 50) return "0_50";
-    if (value <= 200) return "50_200";
-    if (value <= 500) return "200_500";
-    if (value <= 1000) return "500_1000";
-    if (value <= 2000) return "1000_2000";
-    return "over_2000";
-  }
-
-  return typeof value === "string" ? FLOW_CLASS_MIGRATION[value] || "" : "";
-}
-
 function migrateAnswers(value: unknown): Answers {
   const v = (value ?? {}) as Record<string, unknown>;
-  const legacyLocation = (v.q4MeasurementLocation ?? v.q4ReleaseMethod ?? v.q4Slippmetode) as string | undefined;
-  const legacyFishPassage = migrateYesNo(v.q1FishPassageRequired ?? v.q6FishPassage ?? v.q6Fiskepassasje);
-  const legacyFishOnly = migrateYesNo(v.q2FishPassageOnly);
-  const legacyCoanda = migrateYesNo(v.q3CoandaOrTyrolean);
-  const oldPipeReliable = migrateYesNoUnknown(v.q7PipeMeasurementReliable);
-  const oldStableProfile = migrateYesNoUnknown(v.q8StableWaterLevelProfile);
+  const existing = Object.keys(EMPTY_ANSWERS).some((key) => Object.prototype.hasOwnProperty.call(v, key))
+    ? Object.fromEntries(Object.keys(EMPTY_ANSWERS).map((key) => [key, v[key] ?? EMPTY_ANSWERS[key]])) as HydroGuideAnswers
+    : null;
 
-  return {
-    q01ConcessionRequirement: migrateYesNoUnknown(v.q01ConcessionRequirement),
-    q02ProjectType: selectString(v.q02ProjectType ?? v.q02ProjectSituation, ["new", "olderNewRequirement", "conversion", "existingOperation", "temporary", "unknown"]),
-    q03FlowClass: migrateFlowClass(v.q03FlowClass ?? v.q04FlowClass ?? v.q5MinFlowBand ?? v.q2HighestRequiredMinFlow ?? v.q2HogasteMinstevassforing),
-    q04RequirementPattern: selectString(v.q04RequirementPattern ?? v.q03RequirementType, ["fixed", "summerWinter", "multipleLevels", "inflowControlled", "totalFlowShare", "outageRelease", "unknown"]),
-    q05PassAllInflowWhenLow: migrateYesNoUnknown(v.q05PassAllInflowWhenLow ?? v.q06PassAllInflowLowOrOutage),
-    q06CanChangeRelease: migrateYesNoPartialUnknown(v.q06CanChangeRelease ?? v.q10CanChangeRelease),
-    q07ReleaseSolution: selectString(v.q07ReleaseSolution ?? v.q09ReleaseSolution, ["pipeIntake", "pipeThroughDam", "gate", "damOpening", "fishPassage", "coandaSpecific", "noneSelected", "alternativeRelease", "unknown"]) || (legacyLocation ? LEGACY_RELEASE_TO_NEW[legacyLocation] || "" : ""),
-    q08FishMigration: selectString(v.q08FishMigration ?? v.q07FishMigration, ["no", "upstream", "downstream", "both", "unknown"]) || (legacyFishPassage === "yes" ? "unknown" : legacyFishPassage),
-    q09CoandaExists: selectString(v.q09CoandaExists, ["yes", "no", "planned", "unknown"]) || (legacyCoanda === "yes" || v.q08IntakeType === "coandaTyrolean" ? "yes" : ""),
-    q10SiteChallenges: selectStringArray(v.q10SiteChallenges ?? v.q11SiteChallenges, ["flood", "debris", "sediment", "ice", "anchorIce", "freezing", "backwater", "wideShallow", "difficultAccess", "landslide", "noneKnown", "unknown"]),
-    q11PowerCommunication: selectStringArray(v.q11PowerCommunication ?? v.q12PowerCommunication, ["gridPower", "solarBattery", "mobileCoverage", "satelliteRadio", "none", "unknown"]),
-    q12PublicDisplay: selectStringArray(v.q12PublicDisplay ?? v.q13PublicDisplay, ["sign", "display", "staffGauge", "smsWeb", "unresolved", "no"]),
-    q13AfterIntakeRack: migrateYesNoPartialUnknown(v.q13AfterIntakeRack ?? v.q14PipeAfterIntakeToProtected),
-    q14DryFrostFreePlacement: selectString(v.q14DryFrostFreePlacement, ["yes", "protectedSump", "no", "unknown"]) || (migrateYesNoPartialUnknown(v.q14PipeAfterIntakeToProtected) === "yes" ? "yes" : ""),
-    q15ReturnNearDam: migrateYesNoPartialUnknown(v.q15ReturnNearDam),
-    q16PipeCapacityLowWater: migrateYesNoUnknown(v.q16PipeCapacityLowWater ?? v.q16PipeCapacityAtLowWater),
-    q17PipeFull: migrateYesNoPartialUnknown(v.q17PipeFull ?? v.q17PipeFullAirFree) || oldPipeReliable,
-    q18PipeAirFree: migrateYesNoPartialUnknown(v.q18PipeAirFree ?? v.q17PipeFullAirFree) || oldPipeReliable,
-    q19StraightRunCalmFlow: migrateYesNoPartialUnknown(v.q19StraightRunCalmFlow ?? v.q18StraightRunPossible) || oldPipeReliable,
-    q20ValveDownstream: migrateYesNoPartialUnknown(v.q20ValveDownstream ?? v.q19ValveDownstreamPossible),
-    q21ServiceValveBefore: migrateYesNoUnknown(v.q21ServiceValveBefore),
-    q22PipeGeometryType:
-      selectString(v.q22PipeGeometryType, ["fullPressurePipe", "partlyFilledPipe", "openChannel", "unknown"]) ||
-      (v.q22PipeGeometryType === "channel" ? "openChannel" : ""),
-    q23ConductivityForMagmeter: migrateYesNoUnknown(v.q23ConductivityForMagmeter ?? v.q20ConductivityForMagmeter ?? v.q9ElectromagneticPossible),
-    q24UltrasonicMountPossible: selectString(v.q24UltrasonicMountPossible ?? v.q21UltrasonicMountPossible, ["yes", "no", "notRelevant", "unknown"]) || migrateYesNoUnknown(v.q10ClampOnPossible),
-    q25AdpGeometryKnown: migrateYesNoUnknown(v.q25AdpGeometryKnown ?? v.q23AdpGeometryKnown),
-    q26AirEntrainedAtMeasurement: migrateYesNoPartialUnknown(v.q26AirEntrainedAtMeasurement ?? v.q24AirEntrainedAtMeasurement),
-    q27RegulationFrequency: selectString(v.q27RegulationFrequency ?? v.q05RemoteControlNeed, ["no", "manualSeasonal", "motorizedSeasonal", "continuousAutomatic", "unknown"]),
-    q28DownstreamPointPossible: migrateYesNoUnknown(v.q28DownstreamPointPossible ?? v.q25DownstreamStationPossible),
-    q29NaturalStableProfile: migrateYesNoUnknown(v.q29NaturalStableProfile ?? v.q26NaturalProfileExists),
-    q30StageDischargeUnique: migrateYesNoUnknown(v.q30StageDischargeUnique ?? v.q27StageDischargeUnique) || oldStableProfile,
-    q31ProfileStable: selectString(v.q31ProfileStable ?? v.q29ProfileStable, ["yes", "partial", "no", "unknown"]),
-    q32GoodWaterLevelResolution: migrateYesNoUnknown(v.q32GoodWaterLevelResolution ?? v.q28GoodWaterLevelResolution) || oldStableProfile,
-    q33WideShallowRiver: migrateYesNoUnknown(v.q33WideShallowRiver),
-    q34BackwaterAffects: migrateYesNoUnknown(v.q34BackwaterAffects),
-    q35RepresentativeSensorPlacement: migrateYesNoUnknown(v.q35RepresentativeSensorPlacement),
-    q36StationFloodRobust: migrateYesNoUnknown(v.q36StationFloodRobust ?? v.q30StationRobustPlacement),
-    q37ArtificialProfilePossible: migrateYesNoUnknown(v.q37ArtificialProfilePossible ?? v.q31ArtificialProfilePossible),
-    q38FallForArtificialProfile: selectString(v.q38FallForArtificialProfile ?? v.q32FallForArtificialProfile, ["yes", "no", "littleFall", "unknown"]),
-    q39ArtificialProfileBlocksFish: selectString(v.q39ArtificialProfileBlocksFish ?? v.q33ArtificialProfileBlocksFish, ["yes", "no", "notRelevant", "unknown"]),
-    q40ArtificialProfileFlowClass: selectString(v.q40ArtificialProfileFlowClass ?? v.q34ArtificialProfileFlowClass, ["0_50", "50_200", "200_500", "500_1000", "1000_2000", "over_2000", "unknown", "multipleLevels"]),
-    q41MultipleDistinctLevels: migrateYesNoUnknown(v.q41MultipleDistinctLevels ?? v.q35TwoDistinctReleaseLevels),
-    q42ArtificialProfileProtected: migrateYesNoPartialUnknown(v.q42ArtificialProfileProtected ?? v.q36ArtificialProfileProtected),
-    q43LevelSensorType: selectString(v.q43LevelSensorType, ["pressureCell", "float", "bubbler", "ultrasonicLevel", "radarLevel", "unknown"]),
-    q44DamPipeBelowLrv: selectString(v.q44DamPipeBelowLrv, ["yes", "no", "unknown", "notRelevant"]),
-    q45DamPipeCapacityMarginNoVortex: selectString(v.q45DamPipeCapacityMarginNoVortex, ["yes", "partial", "no", "unknown", "notRelevant"]),
-    q46DamPipeSubmergedNoSediment: selectString(v.q46DamPipeSubmergedNoSediment, ["yes", "partial", "no", "unknown", "notRelevant"]),
-    q47TheoryOnlyDocumentation: migrateYesNoUnknown(v.q47TheoryOnlyDocumentation),
-    q48GateLevelOpeningElectronic: selectString(v.q48GateLevelOpeningElectronic ?? v.q37GateLevelOpeningAndProfile, ["yes", "partial", "no", "unknown", "notRelevant"]),
-    q49GatePowerBackup: selectString(v.q49GatePowerBackup, ["yes", "partial", "no", "unknown", "notRelevant"]),
-    q50GateIceDebrisManageable: selectString(v.q50GateIceDebrisManageable, ["yes", "partial", "no", "unknown", "notRelevant"]),
-    q51OpeningStandardProfile: selectString(v.q51OpeningStandardProfile ?? v.q38DamOpeningProtectedStable, ["yes", "partial", "no", "unknown", "notRelevant"]),
-    q52OpeningProtected: selectString(v.q52OpeningProtected ?? v.q38DamOpeningProtectedStable, ["yes", "partial", "no", "unknown", "notRelevant"]),
-    q53OpeningMeetsLowWater: selectString(v.q53OpeningMeetsLowWater, ["yes", "no", "unknown", "notRelevant"]),
-    q54OpeningShape: selectString(v.q54OpeningShape, ["highNarrow", "lowWide", "other", "unknown", "notRelevant"]),
-    q55FishPassageReleaseShare: selectString(v.q55FishPassageReleaseShare ?? v.q39FishPassageReleaseShare, ["whole", "partial", "no", "unknown"]) || (legacyFishOnly === "yes" ? "whole" : legacyFishOnly === "no" ? "partial" : ""),
-    q56FishPassageIndependentUpstream: migrateYesNoUnknown(v.q56FishPassageIndependentUpstream),
-    q57MeasurementNoFishBarrier: migrateYesNoUnknown(v.q57MeasurementNoFishBarrier),
-    q58FlowSplitFishAndOther: migrateYesNoUnknown(v.q58FlowSplitFishAndOther),
-    q59AttractionWaterNeed: migrateYesNoUnknown(v.q59AttractionWaterNeed),
-    q60CoandaReturnPoint: selectString(v.q60CoandaReturnPoint, ["overThreshold", "rightDownstream", "severalMetersDownstream", "unknown"]),
-    q61CoandaTakeoff: selectString(v.q61CoandaTakeoff ?? v.q40CoandaTakeoff, ["upstreamCoanda", "gateHouse", "regulationChamber", "intakePool", "fixedConstructionOpening", "collectionSumpUnderScreen", "unknown"]) || (legacyCoanda === "yes" ? "unknown" : ""),
-    q62CoandaFlowClass: selectString(v.q62CoandaFlowClass, ["0_50", "50_200", "200_500", "over_500", "unknown"]) || (migrateFlowClass(v.q41CoandaFlowClass) === "500_1000" ? "over_500" : ""),
-    q63CoandaAirEntrained: migrateYesNoPartialUnknown(v.q63CoandaAirEntrained),
-    q64CoandaLittleFall: migrateYesNoUnknown(v.q64CoandaLittleFall),
-    q65HourlyAutomaticLogging: migrateYesNoUnknown(v.q65HourlyAutomaticLogging ?? v.q43HourlyAutomaticLogging),
-    q66AccuracyWithinFivePercent: migrateYesNoUnknown(v.q66AccuracyWithinFivePercent ?? v.q45AccuracyWithinFivePercent),
-    q67CompletenessNinetySevenPercent: migrateYesNoUnknown(v.q67CompletenessNinetySevenPercent ?? v.q46CompletenessNinetySevenPercent),
-    q68SecureDataStorageForNve: migrateYesNoUnknown(v.q68SecureDataStorageForNve ?? v.q44SecureDataStorageForNve),
-    q69AlternativeMethod: migrateYesNo(v.q69AlternativeMethod ?? v.q42AlternativeMethodProposed),
-    q70NveApprovalForAlternative: selectString(v.q70NveApprovalForAlternative, ["yes", "no", "notRelevant"])
-  };
+  if (existing) return existing;
+  return { ...EMPTY_ANSWERS };
 }
 
 function normalizeSystemParameters(value: Partial<SystemParameters> | undefined): SystemParameters {

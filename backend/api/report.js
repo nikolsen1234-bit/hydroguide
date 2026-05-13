@@ -125,6 +125,15 @@ function readPayloadValue(body, primaryKey, legacyKey) {
   return body?.[primaryKey] ?? body?.[legacyKey];
 }
 
+function readSourceAnchoredArray(body, key) {
+  return Array.isArray(body?.[key]) ? body[key] : [];
+}
+
+function readSourceAnchoredObject(body, key) {
+  const value = body?.[key];
+  return value && typeof value === "object" && !Array.isArray(value) ? value : undefined;
+}
+
 export async function onRequestPost(context) {
   const rateLimit = await checkRateLimit({
     request: context.request,
@@ -246,6 +255,11 @@ export async function onRequestPost(context) {
       missingForFinalChoice: rawBody.missingForFinalChoice,
       documentationRequirements: rawBody.documentationRequirements,
       silentNveRequirements: rawBody.silentNveRequirements,
+      deterministicSelection: readSourceAnchoredObject(rawBody, "deterministicSelection"),
+      answerFacts: readSourceAnchoredArray(rawBody, "answerFacts"),
+      implicitObligations: readSourceAnchoredArray(rawBody, "implicitObligations"),
+      sourceChunks: readSourceAnchoredArray(rawBody, "sourceChunks"),
+      aiConstraints: readSourceAnchoredArray(rawBody, "aiConstraints"),
       releaseMethodLabel: rawBody.releaseMethodLabel,
       minFlowClass: rawBody.minFlowClass,
       fishMigration: rawBody.fishMigration,
@@ -253,10 +267,6 @@ export async function onRequestPost(context) {
       siteChallenges: rawBody.siteChallenges,
       powerCommunication: rawBody.powerCommunication,
       publicDisplay: rawBody.publicDisplay,
-      hourlyAutomaticLogging: rawBody.hourlyAutomaticLogging,
-      secureDataStorageForNve: rawBody.secureDataStorageForNve,
-      accuracyWithinFivePercent: rawBody.accuracyWithinFivePercent,
-      completenessNinetySevenPercent: rawBody.completenessNinetySevenPercent,
       releaseMethodSelected: readPayloadValue(rawBody, "releaseMethodSelected", "slippmetodeVal"),
       releaseRequirementVariation: readPayloadValue(rawBody, "releaseRequirementVariation", "slippkravvariasjon"),
       isSedimentClogging: readPayloadValue(rawBody, "isSedimentClogging", "isSedimentTilstopping"),

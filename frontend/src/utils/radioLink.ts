@@ -51,7 +51,7 @@ interface TerrainProfileResponse {
 
 const EARTH_RADIUS_M = 6_375_000;
 const DEGREE_RADIUS_M = 8_500_000;
-const MAX_TERRAIN_SAMPLES = 200;
+const MAX_TERRAIN_SAMPLES = 166;
 
 export function parseCoordinateInput(input: string): RadioLinkPoint | null {
   const cleaned = input.trim().replace(/[()]/g, " ");

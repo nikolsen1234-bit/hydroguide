@@ -59,20 +59,6 @@ export interface Translations {
   "questions.section.releaseAndMeasurement": string;
   "questions.section.measurementConditions": string;
 
-  "questions.q1": string;
-  "questions.q2": string;
-  "questions.q2.helper": string;
-  "questions.q3": string;
-  "questions.q4": string;
-  "questions.q4.helper": string;
-  "questions.q5": string;
-  "questions.q6": string;
-  "questions.q7": string;
-  "questions.q7.helper": string;
-  "questions.q8": string;
-  "questions.q9": string;
-  "questions.q10": string;
-
   "questions.option.yes": string;
   "questions.option.no": string;
   "questions.option.pipeOrChannel": string;

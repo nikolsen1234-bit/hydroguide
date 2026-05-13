@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
-import { generateReport } from "../lib/pipeline.mjs";
+import { generateReport, normalizeReportPayload } from "../lib/pipeline.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "../../..");
@@ -87,6 +87,52 @@ function reportPayload() {
     reportExtract: "Anbefalt hovedløsning: Rørslipp med mengdemåler. Kontrollmåling for verifikasjon hvert tredje år."
   };
 }
+
+test("normalizeReportPayload keeps source-anchored AI contract separate from answer facts", () => {
+  const report = normalizeReportPayload({
+    reportExtract: "Anbefalt hovedløsning: Rørslipp.",
+    deterministicSelection: {
+      methodCode: "pipe_via_intake_with_pipe_flow_meter",
+      decisionStatus: "ANBEFALT_KILDEFORANKRET",
+      sourceRefs: ["NVE_2020_4_2"]
+    },
+    answerFacts: [
+      {
+        id: "pipe_full_through_meter",
+        label: "Rør er vannfylt gjennom måleren",
+        value: "documented_satisfies_source_criterion",
+        sourceRefs: ["NVE_2020_4_2"],
+        sourceScope: "documentation_requirement"
+      },
+      {
+        id: "nve_hourly_registration",
+        label: "Automatisk registrering minst en gang per time",
+        value: "documented_satisfies_source_criterion",
+        sourceRefs: ["NVE_2024_MVF_4_1"],
+        sourceScope: "implicit_obligation"
+      }
+    ],
+    implicitObligations: [
+      {
+        id: "nve_hourly_registration",
+        obligationText: "Valgt metode forutsetter automatisk registrering minst en gang per time.",
+        sourceRefs: ["NVE_2024_MVF_4_1"]
+      }
+    ],
+    sourceChunks: [
+      {
+        id: "NVE_2020_4_2",
+        sourceRefs: ["NVE_2020_4_2"],
+        text: "Rørmåling må ha dokumentert installasjon."
+      }
+    ]
+  });
+
+  assert.equal(report.deterministicSelection.methodCode, "pipe_via_intake_with_pipe_flow_meter");
+  assert.deepEqual(report.answerFacts.map((fact) => fact.id), ["pipe_full_through_meter"]);
+  assert.equal(report.implicitObligations[0].id, "nve_hourly_registration");
+  assert.equal(report.sourceChunks[0].id, "NVE_2020_4_2");
+});
 
 test("generateReport retrieves vectors and returns text with metadata", async () => {
   const tempDir = await mkdtemp(resolve(tmpdir(), "hydroguide-agent-"));

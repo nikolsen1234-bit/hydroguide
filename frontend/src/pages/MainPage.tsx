@@ -6,7 +6,7 @@ import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcon
 import EditorialSection from "../components/EditorialSection";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
-import { sections } from "../questions";
+import { Question, sectionsForAnswers } from "../questions";
 import {
   workspaceBodyMutedClassName,
   workspaceContentValueClassName,
@@ -19,10 +19,20 @@ import {
 import type { Answers } from "../types";
 import { validateConfiguration } from "../utils/validation";
 
-type ProjectBasisQuestion = (typeof sections)[number]["questions"][number];
-
 function isAnswered(value: unknown) {
-  return Array.isArray(value) ? value.length > 0 : value !== "" && value !== null && value !== undefined;
+  if (Array.isArray(value)) {
+    return value.length > 0 && !(value.length === 1 && value[0] === "none_documented");
+  }
+  return value !== "" && value !== "not_documented_yet" && value !== null && value !== undefined;
+}
+
+function displayValue(value: unknown) {
+  return value === "not_documented_yet" ? "" : value;
+}
+
+function selectedValuesForDisplay(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.length === 1 && value[0] === "none_documented" ? [] : value;
 }
 
 export default function MainPage() {
@@ -37,7 +47,8 @@ export default function MainPage() {
     ? { "other.evaluationHorizonYears": visibleValidationErrors["other.evaluationHorizonYears"] }
     : visibleValidationErrors;
 
-  const visibleQuestions = sections.flatMap((section) =>
+  const visibleSections = sectionsForAnswers(activeDraft.answers);
+  const visibleQuestions = visibleSections.flatMap((section) =>
     section.questions.filter((question) => !question.hidden && (!question.condition || question.condition(activeDraft.answers)))
   );
   const completedQuestions = visibleQuestions.filter((question) => isAnswered(activeDraft.answers[question.key])).length;
@@ -58,17 +69,18 @@ export default function MainPage() {
     updateAnswer(key, value as Answers[keyof Answers]);
   };
 
-  const renderQuestionControl = (question: ProjectBasisQuestion) => {
+  const renderQuestionControl = (question: Question) => {
     const value = activeDraft.answers[question.key];
     const error = errors[question.key];
     const qOptions = question.options?.map((option) => ({
       value: option.value,
-      label: option.labelKey ? t(option.labelKey) : option.label
+      label: option.label,
+      title: option.semanticMeaning
     }));
     const exclusiveMultiOptions = new Set(["unknown", "none", "noneKnown", "no", "unresolved", "notRelevant"]);
 
     if (question.input === "multiSelect") {
-      const selectedValues = Array.isArray(value) ? (value as string[]) : [];
+      const selectedValues = selectedValuesForDisplay(value);
 
       return (
         <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
@@ -80,6 +92,7 @@ export default function MainPage() {
                 key={option.value}
                 type="button"
                 aria-pressed={selected}
+                title={option.title}
                 onClick={() => {
                   const withoutCurrent = selectedValues.filter((item) => item !== option.value);
                   const next = selected
@@ -107,14 +120,14 @@ export default function MainPage() {
     if (question.input === "select") {
       return (
         <select
-          value={String(value)}
+          value={String(displayValue(value))}
           onChange={(event) => setQuestionValue(question.key, event.target.value)}
           className={`${workspaceInputClassName} h-10 py-1.5 leading-[1.2] text-right hg-mono`}
           aria-invalid={error ? true : undefined}
         >
           <option value="">{t("shared.selectOption")}</option>
-          {qOptions?.map((option) => (
-            <option key={option.value} value={option.value}>
+          {qOptions?.filter((option) => option.value !== "not_documented_yet").map((option) => (
+            <option key={option.value} value={option.value} title={option.title}>
               {option.label}
             </option>
           ))}
@@ -140,17 +153,12 @@ export default function MainPage() {
             className={`${workspaceInputClassName} h-9 py-1.5 pr-14 text-right hg-mono`}
             aria-invalid={error ? true : undefined}
           />
-          {question.unitKey || question.unit ? (
-            <span className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${workspaceFieldLabelClassName}`}>
-              {question.unitKey ? t(question.unitKey) : question.unit}
-            </span>
-          ) : null}
         </div>
       );
     }
 
     return (
-      <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2" role="radiogroup" aria-label={question.labelKey ? t(question.labelKey) : question.label}>
+      <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2" role="radiogroup" aria-label={question.label}>
         {(["yes", "no"] as const).map((option) => {
           const selected = value === option;
 
@@ -258,38 +266,46 @@ export default function MainPage() {
             title="Spørsmål - anlegg, slipp og drift"
             description={`${completedQuestions} / ${visibleQuestions.length} fullført`}
           >
-            <div className="grid gap-x-8 md:grid-cols-2">
-              {visibleQuestions.map((question, index) => {
-                const qLabel = question.labelKey ? t(question.labelKey) : question.label;
-                const error = errors[question.key];
-
-                return (
-                  <div
-                    key={question.key}
-                    className={`grid gap-3 py-3 ${
-                      index > 1 ? "border-t border-[var(--hg-hairline-2)]" : "md:border-t-0"
-                    } ${index > 0 ? "max-md:border-t max-md:border-[var(--hg-hairline-2)]" : ""}`}
-                  >
-                    <div className="min-w-0">
-                      <p className={workspaceSubsectionTitleClassName}>{qLabel}</p>
-                    </div>
-                    <div className="grid grid-cols-[minmax(0,1fr)_1.25rem] items-center gap-3">
-                      {renderQuestionControl(question)}
-                      <span
-                        className={`flex h-5 w-5 items-center justify-center rounded-md border text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-extra)] ${
-                          isAnswered(activeDraft.answers[question.key])
-                            ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
-                            : "border-[var(--hg-hairline)] text-[var(--hg-muted)]"
-                        }`}
-                        aria-hidden="true"
-                      >
-                        {isAnswered(activeDraft.answers[question.key]) ? "OK" : ""}
-                      </span>
-                    </div>
-                    {error ? <p className="text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-rose-600">{error}</p> : null}
+            <div className="space-y-5">
+              {visibleSections.map((section) => (
+                <section key={section.id} className="border-t border-[var(--hg-hairline-2)] pt-4 first:border-t-0 first:pt-0">
+                  <div className="mb-3 grid gap-1">
+                    <h3 className={workspaceSubsectionTitleClassName}>{section.title}</h3>
                   </div>
-                );
-              })}
+                  <div className="grid gap-x-8 md:grid-cols-2">
+                    {section.questions.map((question, index) => {
+                      const error = errors[question.key];
+
+                      return (
+                        <div
+                          key={question.key}
+                          className={`grid gap-3 py-3 ${
+                            index > 1 ? "border-t border-[var(--hg-hairline-2)]" : "md:border-t-0"
+                          } ${index > 0 ? "max-md:border-t max-md:border-[var(--hg-hairline-2)]" : ""}`}
+                        >
+                          <div className="min-w-0">
+                            <p className={workspaceSubsectionTitleClassName}>{question.label}</p>
+                          </div>
+                          <div className="grid grid-cols-[minmax(0,1fr)_1.25rem] items-center gap-3">
+                            {renderQuestionControl(question)}
+                            <span
+                              className={`flex h-5 w-5 items-center justify-center rounded-md border text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-extra)] ${
+                                isAnswered(activeDraft.answers[question.key])
+                                  ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
+                                  : "border-[var(--hg-hairline)] text-[var(--hg-muted)]"
+                              }`}
+                              aria-hidden="true"
+                            >
+                              {isAnswered(activeDraft.answers[question.key]) ? "OK" : ""}
+                            </span>
+                          </div>
+                          {error ? <p className="text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-rose-600">{error}</p> : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
             </div>
           </EditorialSection>
         )}

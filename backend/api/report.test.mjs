@@ -67,6 +67,78 @@ test("report Worker forwards sanitized report payload to local bridge", async ()
   assert.equal(forwarded.report.accessCodeHash, undefined);
 });
 
+test("report Worker forwards source-anchored AI contract and drops legacy obligation answers", async () => {
+  const accessCodeHash = await sha256Hex("rapport");
+  let capturedRequest;
+  globalThis.fetch = async (request) => {
+    capturedRequest = request;
+    return Response.json({
+      fields: {
+        recommendationNote: "Valgt metode er kildeforankret.",
+        measurementNote: "Måleopplegget har sporbare kriterier.",
+        energyNote: "Energioppsettet er dokumentert.",
+        evidenceNote: "Kildegrunnlaget er brukt som avgrensing."
+      },
+      evidenceIds: ["nve.test"]
+    });
+  };
+
+  const response = await onRequestPost({
+    request: reportRequest({
+      accessCodeHash,
+      reportExtract: "Anbefalt hovedløsning: Rørslipp.",
+      deterministicSelection: {
+        methodCode: "pipe_via_intake_with_pipe_flow_meter",
+        decisionStatus: "ANBEFALT_KILDEFORANKRET",
+        sourceRefs: ["NVE_2020_4_2"]
+      },
+      answerFacts: [
+        {
+          id: "pipe_full_through_meter",
+          label: "Rør er vannfylt gjennom måleren",
+          value: "documented_satisfies_source_criterion",
+          sourceRefs: ["NVE_2020_4_2"],
+          sourceScope: "documentation_requirement"
+        }
+      ],
+      implicitObligations: [
+        {
+          id: "nve_hourly_registration",
+          obligationText: "Valgt metode forutsetter automatisk registrering minst en gang per time.",
+          sourceRefs: ["NVE_2024_MVF_4_1"]
+        }
+      ],
+      sourceChunks: [
+        {
+          id: "NVE_2020_4_2",
+          sourceRefs: ["NVE_2020_4_2"],
+          text: "Rørmåling må ha dokumentert installasjon."
+        }
+      ],
+      hourlyAutomaticLogging: "yes",
+      secureDataStorageForNve: "yes",
+      accuracyWithinFivePercent: "yes",
+      completenessNinetySevenPercent: "yes"
+    }),
+    env: {
+      REPORT_ACCESS_CODE_HASH: accessCodeHash,
+      REPORT_BRIDGE_URL: "https://agent-bridge.hydroguide.no",
+      REPORT_BRIDGE_TOKEN: "bridge-token"
+    }
+  });
+
+  assert.equal(response.status, 200);
+  const forwarded = await capturedRequest.json();
+  assert.equal(forwarded.report.deterministicSelection.methodCode, "pipe_via_intake_with_pipe_flow_meter");
+  assert.equal(forwarded.report.answerFacts[0].id, "pipe_full_through_meter");
+  assert.equal(forwarded.report.implicitObligations[0].id, "nve_hourly_registration");
+  assert.equal(forwarded.report.sourceChunks[0].id, "NVE_2020_4_2");
+  assert.equal(forwarded.report.hourlyAutomaticLogging, undefined);
+  assert.equal(forwarded.report.secureDataStorageForNve, undefined);
+  assert.equal(forwarded.report.accuracyWithinFivePercent, undefined);
+  assert.equal(forwarded.report.completenessNinetySevenPercent, undefined);
+});
+
 test("report Worker accepts structured report fields without narrative text", async () => {
   const accessCodeHash = await sha256Hex("rapport");
   globalThis.fetch = async () =>

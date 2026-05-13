@@ -1,13 +1,13 @@
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
-const tempDir = await mkdtemp(path.join(tmpdir(), "hydroguide-smoke-"));
+const tempDir = await mkdtemp(path.join(tmpdir(), "hydroguide-recommendation-smoke-"));
 const bundlePath = path.join(tempDir, "recommendation.mjs");
-const configBundlePath = path.join(tempDir, "configuration.mjs");
+const engineBundlePath = path.join(tempDir, "source-engine.mjs");
 
 await build({
   entryPoints: [path.join(repoRoot, "src", "utils", "recommendation.ts")],
@@ -19,8 +19,8 @@ await build({
 });
 
 await build({
-  entryPoints: [path.join(repoRoot, "src", "utils", "configuration.ts")],
-  outfile: configBundlePath,
+  entryPoints: [path.join(repoRoot, "src", "hydroguide", "sourceAnchoredDecision.ts")],
+  outfile: engineBundlePath,
   bundle: true,
   platform: "node",
   format: "esm",
@@ -28,250 +28,95 @@ await build({
 });
 
 const { calculateRecommendation } = await import(pathToFileURL(bundlePath));
-const { normalizeConfiguration } = await import(pathToFileURL(configBundlePath));
+const { createEmptyHydroGuideAnswers } = await import(pathToFileURL(engineBundlePath));
 
-const emptyAnswers = {
-  q01ConcessionRequirement: "",
-  q02ProjectType: "",
-  q03FlowClass: "",
-  q04RequirementPattern: "",
-  q05PassAllInflowWhenLow: "",
-  q06CanChangeRelease: "",
-  q07ReleaseSolution: "",
-  q08FishMigration: "",
-  q09CoandaExists: "",
-  q10SiteChallenges: [],
-  q11PowerCommunication: [],
-  q12PublicDisplay: [],
-  q13AfterIntakeRack: "",
-  q14DryFrostFreePlacement: "",
-  q15ReturnNearDam: "",
-  q16PipeCapacityLowWater: "",
-  q17PipeFull: "",
-  q18PipeAirFree: "",
-  q19StraightRunCalmFlow: "",
-  q20ValveDownstream: "",
-  q21ServiceValveBefore: "",
-  q22PipeGeometryType: "",
-  q23ConductivityForMagmeter: "",
-  q24UltrasonicMountPossible: "",
-  q25AdpGeometryKnown: "",
-  q26AirEntrainedAtMeasurement: "",
-  q27RegulationFrequency: "",
-  q28DownstreamPointPossible: "",
-  q29NaturalStableProfile: "",
-  q30StageDischargeUnique: "",
-  q31ProfileStable: "",
-  q32GoodWaterLevelResolution: "",
-  q33WideShallowRiver: "",
-  q34BackwaterAffects: "",
-  q35RepresentativeSensorPlacement: "",
-  q36StationFloodRobust: "",
-  q37ArtificialProfilePossible: "",
-  q38FallForArtificialProfile: "",
-  q39ArtificialProfileBlocksFish: "",
-  q40ArtificialProfileFlowClass: "",
-  q41MultipleDistinctLevels: "",
-  q42ArtificialProfileProtected: "",
-  q43LevelSensorType: "",
-  q44DamPipeBelowLrv: "",
-  q45DamPipeCapacityMarginNoVortex: "",
-  q46DamPipeSubmergedNoSediment: "",
-  q47TheoryOnlyDocumentation: "",
-  q48GateLevelOpeningElectronic: "",
-  q49GatePowerBackup: "",
-  q50GateIceDebrisManageable: "",
-  q51OpeningStandardProfile: "",
-  q52OpeningProtected: "",
-  q53OpeningMeetsLowWater: "",
-  q54OpeningShape: "",
-  q55FishPassageReleaseShare: "",
-  q56FishPassageIndependentUpstream: "",
-  q57MeasurementNoFishBarrier: "",
-  q58FlowSplitFishAndOther: "",
-  q59AttractionWaterNeed: "",
-  q60CoandaReturnPoint: "",
-  q61CoandaTakeoff: "",
-  q62CoandaFlowClass: "",
-  q63CoandaAirEntrained: "",
-  q64CoandaLittleFall: "",
-  q65HourlyAutomaticLogging: "",
-  q66AccuracyWithinFivePercent: "",
-  q67CompletenessNinetySevenPercent: "",
-  q68SecureDataStorageForNve: "",
-  q69AlternativeMethod: "",
-  q70NveApprovalForAlternative: ""
-};
+const pass = "documented_satisfies_source_criterion";
+const fail = "documented_does_not_satisfy_source_criterion";
+const missing = "not_documented_yet";
 
-const nveReady = {
-  q65HourlyAutomaticLogging: "yes",
-  q66AccuracyWithinFivePercent: "yes",
-  q67CompletenessNinetySevenPercent: "yes",
-  q68SecureDataStorageForNve: "yes",
-  q69AlternativeMethod: "no"
-};
-
-const naturalProfile = {
-  q28DownstreamPointPossible: "yes",
-  q29NaturalStableProfile: "yes",
-  q30StageDischargeUnique: "yes",
-  q31ProfileStable: "yes",
-  q32GoodWaterLevelResolution: "yes",
-  q34BackwaterAffects: "no",
-  q35RepresentativeSensorPlacement: "yes",
-  q36StationFloodRobust: "yes"
-};
+function answers(overrides) {
+  return { ...createEmptyHydroGuideAnswers(), ...overrides };
+}
 
 const scenarios = [
   {
-    name: "pipe intake gives electromagnetic pipe meter",
-    answers: {
-      q03FlowClass: "0_50",
-      q06CanChangeRelease: "yes",
-      q07ReleaseSolution: "pipeIntake",
-      q08FishMigration: "no",
-      q09CoandaExists: "no",
-      q10SiteChallenges: ["freezing"],
-      q11PowerCommunication: ["solarBattery", "mobileCoverage"],
-      q13AfterIntakeRack: "yes",
-      q14DryFrostFreePlacement: "protectedSump",
-      q16PipeCapacityLowWater: "yes",
-      q17PipeFull: "yes",
-      q18PipeAirFree: "yes",
-      q19StraightRunCalmFlow: "yes",
-      q22PipeGeometryType: "fullPressurePipe",
-      q23ConductivityForMagmeter: "yes",
-      q24UltrasonicMountPossible: "yes",
-      q25AdpGeometryKnown: "yes",
-      q26AirEntrainedAtMeasurement: "no",
-      ...nveReady
-    },
-    expected: { methodCode: "S1+M1a", decisionStatus: "ANBEFALT", status: "Recommended" }
+    name: "pipe via intake source-backed ready",
+    answers: answers({
+      legal_requirement_documented: pass,
+      minimum_flow_requirement_lps: 120,
+      requirement_pattern: "seasonal_or_conditional_requirement",
+      release_solution_category: "pipe_via_intake",
+      site_constraints: ["winter_ice_or_frost"],
+      pipe_after_rack: pass,
+      pipe_dry_frost_free: pass,
+      pipe_full_through_meter: pass,
+      pipe_air_handled: pass,
+      pipe_straight_run_supplier_requirements: pass,
+      pipe_calibration_control: pass
+    }),
+    expected: { methodCode: "pipe_via_intake_with_pipe_flow_meter", decisionStatus: "ANBEFALT_KILDEFORANKRET", status: "Recommended" }
   },
   {
-    name: "pipe through dam keeps release-specific profile",
-    answers: {
-      q03FlowClass: "50_200",
-      q07ReleaseSolution: "pipeThroughDam",
-      q08FishMigration: "no",
-      q09CoandaExists: "no",
-      q10SiteChallenges: ["noneKnown"],
-      q11PowerCommunication: ["gridPower", "mobileCoverage"],
-      ...naturalProfile,
-      q44DamPipeBelowLrv: "yes",
-      q45DamPipeCapacityMarginNoVortex: "yes",
-      q46DamPipeSubmergedNoSediment: "yes",
-      q47TheoryOnlyDocumentation: "no",
-      ...nveReady
-    },
-    expected: { methodCode: "S2+M2", decisionStatus: "ANBEFALT", status: "Recommended" }
+    name: "pipe through dam theoretical-only remains missing documentation",
+    answers: answers({
+      legal_requirement_documented: pass,
+      minimum_flow_requirement_lps: 180,
+      requirement_pattern: "single_fixed_requirement",
+      release_solution_category: "pipe_through_dam",
+      site_constraints: ["none_documented"],
+      dam_pipe_below_lrv: pass,
+      dam_pipe_capacity_margin_no_vortex: pass,
+      dam_pipe_sediment_blocking_handled: pass,
+      dam_gate_opening_downstream_measurement: missing,
+      theoretical_only_documentation: pass
+    }),
+    expected: { methodCode: "pipe_through_dam_with_downstream_profile", decisionStatus: "MULIG_MEN_MANGLER_STEDSSPESIFIKK_GRUNNLAG", status: "NeedsClarification" }
   },
   {
-    name: "large gate keeps release-specific profile",
-    answers: {
-      q03FlowClass: "1000_2000",
-      q07ReleaseSolution: "gate",
-      q08FishMigration: "no",
-      q09CoandaExists: "no",
-      q10SiteChallenges: ["noneKnown"],
-      q11PowerCommunication: ["gridPower", "mobileCoverage"],
-      ...naturalProfile,
-      q47TheoryOnlyDocumentation: "no",
-      q48GateLevelOpeningElectronic: "yes",
-      ...nveReady
-    },
-    expected: { methodCode: "S3+M2", decisionStatus: "ANBEFALT", status: "Recommended" }
+    name: "fish passage barrier is rejected",
+    answers: answers({
+      legal_requirement_documented: pass,
+      minimum_flow_requirement_lps: 90,
+      release_solution_category: "fish_passage",
+      fish_passage_release_relevant: pass,
+      fish_passage_independent_upstream_level: pass,
+      fish_passage_measurement_no_barrier: fail
+    }),
+    expected: { methodCode: "fish_passage_release_and_measurement", decisionStatus: "FRARADET_KILDEFORANKRET", status: "NeedsReview" }
   },
   {
-    name: "fish passage gives fish hydraulic measurement",
-    answers: {
-      q03FlowClass: "50_200",
-      q07ReleaseSolution: "fishPassage",
-      q08FishMigration: "both",
-      q09CoandaExists: "no",
-      q10SiteChallenges: ["noneKnown"],
-      q11PowerCommunication: ["solarBattery", "mobileCoverage"],
-      q55FishPassageReleaseShare: "whole",
-      q56FishPassageIndependentUpstream: "yes",
-      q57MeasurementNoFishBarrier: "yes",
-      q58FlowSplitFishAndOther: "no",
-      ...nveReady
-    },
-    expected: { methodCode: "S5+M6", decisionStatus: "ANBEFALT", status: "Recommended" }
-  },
-  {
-    name: "bad coanda remains not NVE-ready",
-    answers: {
-      q03FlowClass: "50_200",
-      q07ReleaseSolution: "coandaSpecific",
-      q08FishMigration: "no",
-      q09CoandaExists: "yes",
-      q10SiteChallenges: ["ice", "debris"],
-      q11PowerCommunication: ["solarBattery"],
-      q60CoandaReturnPoint: "severalMetersDownstream",
-      q61CoandaTakeoff: "collectionSumpUnderScreen",
-      q62CoandaFlowClass: "50_200",
-      q63CoandaAirEntrained: "yes",
-      q64CoandaLittleFall: "no",
-      ...nveReady
-    },
-    expected: { methodCode: "S6+M7", decisionStatus: "IKKE_NVE_KLAR", status: "NeedsReview" }
+    name: "alternative method requires NVE clarification",
+    answers: answers({
+      legal_requirement_documented: pass,
+      minimum_flow_requirement_lps: 50,
+      release_solution_category: "other_alternative",
+      alternative_special_justification: missing
+    }),
+    expected: { methodCode: "alternative_method_requires_nve_clarification", decisionStatus: "KREVER_SAERSKILT_BEGRUNNELSE_ELLER_NVE_AVKLARING", status: "NeedsClarification" }
   }
 ];
 
 const results = scenarios.map((scenario) => {
-  const recommendation = calculateRecommendation({ ...emptyAnswers, ...scenario.answers });
+  const recommendation = calculateRecommendation(scenario.answers);
   return {
     name: scenario.name,
     methodCode: recommendation.methodCode,
     decisionStatus: recommendation.decisionStatus,
     status: recommendation.status,
-    missing: recommendation.missingForFinalChoice ?? [],
+    sources: recommendation.sourceRefs ?? [],
     pass:
       recommendation.methodCode === scenario.expected.methodCode &&
       recommendation.decisionStatus === scenario.expected.decisionStatus &&
-      recommendation.status === scenario.expected.status
+      recommendation.status === scenario.expected.status &&
+      (recommendation.sourceRefs ?? []).length > 0
   };
 });
 
-await writeFile(path.join(tempDir, "results.json"), JSON.stringify(results, null, 2));
-
 for (const result of results) {
   const marker = result.pass ? "PASS" : "FAIL";
-  console.log(`${marker} ${result.name}: ${result.methodCode} / ${result.decisionStatus} / ${result.status}`);
-  if (!result.pass || result.missing.length > 0) {
-    console.log(`  missing: ${result.missing.join("; ") || "none"}`);
-  }
+  console.log(`${marker} ${result.name}: ${result.methodCode} / ${result.decisionStatus} / ${result.status} / sources=${result.sources.join(",")}`);
 }
 
-const hydroGuideExample = normalizeConfiguration(
-  JSON.parse(await readFile(path.join(repoRoot, "public", "HydroGuide.txt"), "utf8")),
-  0
-);
-const calculatorExample = normalizeConfiguration(
-  JSON.parse(await readFile(path.join(repoRoot, "public", "Kalkulator.txt"), "utf8")),
-  0
-);
-const exampleResults = [
-  {
-    name: "HydroGuide example import",
-    pass:
-      hydroGuideExample.engineMode === "hydroguide" &&
-      hydroGuideExample.lastRecommendation?.methodCode === "S1+M1a" &&
-      hydroGuideExample.lastRecommendation?.decisionStatus === "ANBEFALT",
-    detail: `${hydroGuideExample.engineMode} / ${hydroGuideExample.lastRecommendation?.methodCode ?? "none"} / ${hydroGuideExample.lastRecommendation?.decisionStatus ?? "none"}`
-  },
-  {
-    name: "Calculator example import",
-    pass: calculatorExample.engineMode === "calculator" && calculatorExample.answers.q03FlowClass === "",
-    detail: `${calculatorExample.engineMode} / answers.q03FlowClass=${calculatorExample.answers.q03FlowClass || "empty"}`
-  }
-];
-
-for (const result of exampleResults) {
-  console.log(`${result.pass ? "PASS" : "FAIL"} ${result.name}: ${result.detail}`);
-}
-
-if (results.some((result) => !result.pass) || exampleResults.some((result) => !result.pass)) {
+if (results.some((result) => !result.pass)) {
   process.exitCode = 1;
 }

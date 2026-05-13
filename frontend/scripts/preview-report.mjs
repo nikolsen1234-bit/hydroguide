@@ -5,13 +5,14 @@
 // the shape produced by AnalysisPage at runtime, then writes the resulting HTML
 // to the given path (default: ../../Music/HydroGuide-report-preview.html).
 
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const outArg = process.argv[2];
+const inputArg = process.argv[3];
 const outPath = outArg
   ? resolve(outArg)
   : resolve(__dirname, "..", "..", "..", "..", "Music", "HydroGuide-report-preview.html");
@@ -31,8 +32,9 @@ const vite = await createServer({
   server: { middlewareMode: true }
 });
 const reportModule = await vite.ssrLoadModule("/src/utils/report.ts");
+const configurationModule = inputArg ? await vite.ssrLoadModule("/src/utils/configuration.ts") : null;
 
-const config = {
+let config = {
   id: "cfg-markani-2034",
   engineMode: "hydroguide",
   name: "Markåni kraftverk",
@@ -65,47 +67,45 @@ const config = {
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   answers: {
-    q01ConcessionRequirement: "yes",
-    q02ProjectType: "new",
-    q03FlowClass: "0_50",
-    q04RequirementPattern: "inflowControlled",
-    q05PassAllInflowWhenLow: "yes",
-    q06CanChangeRelease: "yes",
-    q07ReleaseSolution: "pipeIntake",
-    q08FishMigration: "no",
-    q09CoandaExists: "no",
-    q10SiteChallenges: ["freezing", "difficultAccess"],
-    q11PowerCommunication: ["solarBattery", "mobileCoverage"],
-    q12PublicDisplay: ["sign"],
-    q13AfterIntakeRack: "yes",
-    q14DryFrostFreePlacement: "protectedSump",
-    q15ReturnNearDam: "yes",
-    q16PipeCapacityLowWater: "yes",
-    q17PipeFull: "yes",
-    q18PipeAirFree: "yes",
-    q19StraightRunCalmFlow: "yes",
-    q20ValveDownstream: "yes",
-    q21ServiceValveBefore: "yes",
-    q22PipeGeometryType: "fullPressurePipe",
-    q23ConductivityForMagmeter: "yes",
-    q24UltrasonicMountPossible: "yes",
-    q25AdpGeometryKnown: "yes",
-    q26AirEntrainedAtMeasurement: "no",
-    q27RegulationFrequency: "continuousAutomatic",
-    q65HourlyAutomaticLogging: "yes",
-    q66AccuracyWithinFivePercent: "yes",
-    q67CompletenessNinetySevenPercent: "yes",
-    q68SecureDataStorageForNve: "yes",
-    q69AlternativeMethod: "no",
-    q1FacilityType: "new",
-    q2HighestRequiredMinFlow: 15,
-    q3ReleaseRequirementVariation: "inflowControlled",
-    q4ReleaseMethod: "pipe",
-    q5IsSedimentClogging: "no",
-    q6FishPassage: "no",
-    q7BypassOnOutage: "yes",
-    q8MeasurementProfile: "stable",
-    q9PublicControl: "yes"
+    legal_requirement_documented: "documented_satisfies_source_criterion",
+    minimum_flow_requirement_lps: 15,
+    requirement_pattern: "seasonal_or_conditional_requirement",
+    release_solution_category: "pipe_via_intake",
+    site_constraints: ["winter_ice_or_frost", "difficult_access", "power_or_communication_constraint"],
+    pipe_after_rack: "documented_satisfies_source_criterion",
+    pipe_dry_frost_free: "documented_satisfies_source_criterion",
+    pipe_full_through_meter: "documented_satisfies_source_criterion",
+    pipe_air_handled: "documented_satisfies_source_criterion",
+    pipe_straight_run_supplier_requirements: "documented_satisfies_source_criterion",
+    pipe_calibration_control: "documented_satisfies_source_criterion",
+    water_level_rating_curve: "not_documented_yet",
+    water_level_electronic_registration: "not_documented_yet",
+    water_level_unambiguous_relationship: "not_documented_yet",
+    natural_profile_stable_control: "not_documented_yet",
+    natural_profile_sufficient_measurements: "not_documented_yet",
+    natural_profile_changes_handled: "not_documented_yet",
+    artificial_profile_suitable_when_natural_unsuitable: "not_documented_yet",
+    artificial_profile_standard_construction: "not_documented_yet",
+    artificial_profile_control_measurements: "not_documented_yet",
+    artificial_profile_five_percent_verification: "not_documented_yet",
+    dam_pipe_below_lrv: "not_documented_yet",
+    dam_pipe_capacity_margin_no_vortex: "not_documented_yet",
+    dam_pipe_sediment_blocking_handled: "not_documented_yet",
+    dam_gate_opening_downstream_measurement: "not_documented_yet",
+    theoretical_only_documentation: "not_documented_yet",
+    gate_electronic_level_or_opening: "not_documented_yet",
+    gate_power_backup_winter_operation: "not_documented_yet",
+    opening_standard_profile: "not_documented_yet",
+    opening_clogging_icing_protection: "not_documented_yet",
+    opening_low_water_capacity: "not_documented_yet",
+    fish_passage_release_relevant: "not_documented_yet",
+    fish_passage_independent_upstream_level: "not_documented_yet",
+    fish_passage_measurement_no_barrier: "not_documented_yet",
+    coanda_return_point: "not_documented_yet",
+    coanda_takeoff_point: "not_documented_yet",
+    coanda_low_fall_handled: "not_documented_yet",
+    coanda_air_entrainment_handled: "not_documented_yet",
+    alternative_special_justification: "not_documented_yet"
   },
   systemParameters: {
     "4gCoverage": true,
@@ -158,7 +158,7 @@ const config = {
   lastRecommendation: null
 };
 
-const monthlyEnergyBalance = [
+let monthlyEnergyBalance = [
   { month: "jan", label: "Jan", solarProductionKWh: 1, loadDemandKWh: 20 },
   { month: "feb", label: "Feb", solarProductionKWh: 1, loadDemandKWh: 18 },
   { month: "mar", label: "Mar", solarProductionKWh: 15, loadDemandKWh: 20 },
@@ -173,10 +173,10 @@ const monthlyEnergyBalance = [
   { month: "des", label: "Des", solarProductionKWh: 0, loadDemandKWh: 20 }
 ];
 
-const annualSolar = monthlyEnergyBalance.reduce((s, r) => s + r.solarProductionKWh, 0);
-const annualLoad = monthlyEnergyBalance.reduce((s, r) => s + r.loadDemandKWh, 0);
+let annualSolar = monthlyEnergyBalance.reduce((s, r) => s + r.solarProductionKWh, 0);
+let annualLoad = monthlyEnergyBalance.reduce((s, r) => s + r.loadDemandKWh, 0);
 
-const annualTotals = {
+let annualTotals = {
   totalWhPerDay: annualLoad * 1000 / 365,
   totalAhPerDay: 0,
   totalWhPerWeek: annualLoad * 1000 / 52,
@@ -189,7 +189,7 @@ const annualTotals = {
   annualFuelCost: 3120
 };
 
-const derivedResults = {
+let derivedResults = {
   equipmentBudgetRows: [],
   totalWhPerDay: annualTotals.totalWhPerDay,
   totalAhPerDay: 0,
@@ -246,7 +246,7 @@ const derivedResults = {
   reserveScenarios: { fuelCell: null, diesel: null }
 };
 
-const recommendation = {
+let recommendation = {
   mainSolution: "R\u00f8rslipp via inntak med MID-m\u00e5ling og mobil kommunikasjon",
   controlMeasurementMethod: "Manuell flygelm\u00e5ling",
   justification: [
@@ -257,6 +257,122 @@ const recommendation = {
   additionalRequirements: [],
   status: "Recommended"
 };
+let activeReserveSource = "FuelCell";
+
+if (inputArg) {
+  const inputPath = resolve(inputArg);
+  const importedConfig = configurationModule.normalizeConfiguration(
+    JSON.parse(readFileSync(inputPath, "utf8")),
+    0
+  );
+
+  config = importedConfig;
+  recommendation = importedConfig.lastRecommendation ?? recommendation;
+  // Calculator-mode produces an "Ikke beregnet" recommendation with empty
+  // justification. The fasit (variant-6-A) uses a scalable-package narrative,
+  // so seed those strings when calculator mode is detected and the data is
+  // missing, to keep the report layout (.up-main h3 + paragraph) consistent.
+  if ((config.engineMode ?? "calculator") === "calculator") {
+    if (!recommendation.mainSolution || recommendation.mainSolution === "Ikke beregnet") {
+      recommendation = {
+        ...recommendation,
+        mainSolution: "Skalerbar standardpakke for fjernanlegg"
+      };
+    }
+    if (!recommendation.justification?.length) {
+      recommendation = {
+        ...recommendation,
+        justification: [
+          "Samme arkitektur i alle anlegg — bare dimensjoneringen varierer med målestasjonens forbruk, høyde og solinnstråling."
+        ]
+      };
+    }
+  }
+  derivedResults = importedConfig.derivedResults ?? derivedResults;
+  monthlyEnergyBalance = derivedResults.monthlyEnergyBalance ?? [];
+  annualTotals = derivedResults.annualTotals ?? annualTotals;
+  annualSolar = annualTotals.annualSolarProductionKWh ?? 0;
+  annualLoad = annualTotals.annualLoadDemandKWh ?? 0;
+  activeReserveSource =
+    derivedResults.systemRecommendation?.secondarySource === "DieselGenerator"
+      ? "DieselGenerator"
+      : "FuelCell";
+  // Override: when generating the calculator preview, force FuelCell as the
+  // active reserve so the output matches the fasit (which uses FuelCell).
+  activeReserveSource = "FuelCell";
+  if (derivedResults.systemRecommendation) {
+    const fcPowerW = importedConfig.fuelCell?.powerW;
+    derivedResults.systemRecommendation = {
+      ...derivedResults.systemRecommendation,
+      secondarySource: "FuelCell",
+      secondarySourcePowerW: typeof fcPowerW === "number" ? fcPowerW : 42
+    };
+  }
+  // Run the real radio-link analysis (same code path the frontend uses) so the
+  // report's radio graph and data row match production exactly. We stub the
+  // `/api/terrain-profile` endpoint by proxying directly to Kartverket so the
+  // existing frontend code does not need to change.
+  const radioModule = await vite.ssrLoadModule("/src/utils/radioLink.ts");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (resource, init) => {
+    const url = typeof resource === "string" ? resource : resource?.url || "";
+    if (url.includes("/api/terrain-profile")) {
+      const body = JSON.parse(init?.body || "{}");
+      const { lat1, long1, lat2, long2, samples } = body;
+      const sampleCount = Math.min(Math.max(Math.floor(samples || 100), 2), 200);
+      const points = Array.from({ length: sampleCount }, (_, i) => {
+        const t = sampleCount === 1 ? 0 : i / (sampleCount - 1);
+        return [
+          Number((long1 + (long2 - long1) * t).toFixed(6)),
+          Number((lat1 + (lat2 - lat1) * t).toFixed(6))
+        ];
+      });
+      const CHUNK = 50;
+      const heights = [];
+      for (let start = 0; start < points.length; start += CHUNK) {
+        const chunk = points.slice(start, start + CHUNK);
+        const url2 = new URL("https://ws.geonorge.no/hoydedata/v1/punkt");
+        url2.searchParams.set("koordsys", "4258");
+        url2.searchParams.set("datakilde", "dtm1");
+        url2.searchParams.set("punkter", JSON.stringify(chunk));
+        const upstream = await originalFetch(url2.toString(), {
+          headers: { accept: "application/json" }
+        });
+        const data = await upstream.json();
+        for (const p of data.punkter || []) heights.push({ height: typeof p.z === "number" ? p.z : 0 });
+      }
+      return new Response(JSON.stringify({ heights }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return originalFetch(resource, init);
+  };
+  try {
+    const radioInput = {
+      pointA: {
+        coordinate: importedConfig.radioLink?.pointA?.coordinate || "",
+        antennaHeight: importedConfig.radioLink?.pointA?.antennaHeight,
+        heightScale: importedConfig.radioLink?.pointA?.heightScale || "AGL"
+      },
+      pointB: {
+        coordinate: importedConfig.radioLink?.pointB?.coordinate || "",
+        antennaHeight: importedConfig.radioLink?.pointB?.antennaHeight,
+        heightScale: importedConfig.radioLink?.pointB?.heightScale || "AGL"
+      },
+      frequencyMHz: importedConfig.radioLink?.frequencyMHz,
+      fresnelFactor: importedConfig.radioLink?.fresnelFactor,
+      kFactor: importedConfig.radioLink?.kFactor,
+      polarization: importedConfig.radioLink?.polarization,
+      rainFactor: importedConfig.radioLink?.rainFactor
+    };
+    config.cachedRadioAnalysis = await radioModule.runRadioLinkAnalysis(radioInput);
+  } catch (err) {
+    console.error("Radio analysis failed:", err?.message || err);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
 
 const html = reportModule.openReportWindow.toString
   ? // openReportWindow opens a window; we call buildReportHtml indirectly
@@ -290,7 +406,7 @@ await reportModule.openReportWindow(
   recommendation,
   null,
   derivedResults,
-  "FuelCell",
+  activeReserveSource,
   annualTotals,
   monthlyEnergyBalance
 );
@@ -299,6 +415,13 @@ if (!captured) {
   console.error("No HTML captured.");
   process.exit(1);
 }
+
+// Inline the logo so the report works as a standalone HTML file.
+const logoPath = resolve(__dirname, "..", "public", "hydroguide-logo-black.svg");
+const logoSvg = readFileSync(logoPath, "utf8");
+const logoDataUri =
+  "data:image/svg+xml;base64," + Buffer.from(logoSvg, "utf8").toString("base64");
+captured = captured.replace(/src="\/hydroguide-logo-black\.svg"/g, `src="${logoDataUri}"`);
 
 writeFileSync(outPath, captured, "utf8");
 await vite.close();

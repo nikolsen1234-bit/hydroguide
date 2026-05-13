@@ -4,7 +4,7 @@ import { CostComparisonChart, EnergyOverviewChart } from "../components/SystemCh
 import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
 import EditorialSection from "../components/EditorialSection";
 import KpiStrip from "../components/KpiStrip";
-import { API_ENDPOINTS, STORAGE_KEYS } from "../constants";
+import { ANSWER_KEYS, API_ENDPOINTS, STORAGE_KEYS } from "../constants";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage, translateDynamic } from "../i18n";
 import {
@@ -35,8 +35,8 @@ const ROBUST_RELEASE_RE = /robust slipp-løsning/i;
 const ROBUST_REGULATION_RE = /robust reguleringskum/i;
 const WHITESPACE_RE = /\s+/g;
 const MAIN_SOLUTION_PARTS_RE = /^(.*?)(?: med (.*?))?(?: \((.*)\))?$/;
-const QUESTION_KEY_RE = /^q\d+/i;
 const ACCESS_HASH_RE = /^[a-f0-9]{64}$/;
+const ANSWER_KEY_SET = new Set<string>(ANSWER_KEYS);
 
 async function getAiExportHash(promptText: string) {
   const storedHash = window.sessionStorage.getItem(STORAGE_KEYS.AI_EXPORT_HASH)?.trim().toLowerCase() ?? "";
@@ -333,7 +333,7 @@ export default function AnalysisPage() {
       usesFoundationQuestions &&
       (key === "other.evaluationHorizonYears" ||
         key === "systemParameters.inspectionsPerYear" ||
-        QUESTION_KEY_RE.test(key)),
+        ANSWER_KEY_SET.has(key)),
     [usesFoundationQuestions]
   );
   const foundationErrors = useMemo(

@@ -159,30 +159,25 @@ function calculateSystemRecommendation(
   const inspectionsPerYear = inspectionsForLogic(systemParameters.inspectionsPerYear);
   const sourceConfig = selectedSourceConfig(configuration, sourceName);
 
-  const has4gCoverage = answers.q11PowerCommunication.includes("mobileCoverage");
-  const hasRadioOrSatellite = answers.q11PowerCommunication.includes("satelliteRadio");
+  const siteConstraints = Array.isArray(answers.site_constraints) ? answers.site_constraints : [];
+  const has4gCoverage = systemParameters["4gCoverage"] === true;
+  const hasRadioOrSatellite = siteConstraints.includes("power_or_communication_constraint");
   let communication = "Satellittmodem";
   if (calculatorMode) {
     communication = "Ikke beregnet";
   } else if (has4gCoverage) {
     communication = "4G-ruter";
   } else if (hasRadioOrSatellite) {
-    communication = "LoRaWAN";
-  } else if (answers.q11PowerCommunication.includes("solarBattery") || answers.q11PowerCommunication.includes("gridPower")) {
+    communication = "Kommunikasjon må velges fra dokumentert infrastruktur";
+  } else if (siteConstraints.includes("power_or_communication_constraint")) {
     communication = "Kommunikasjon må velges fra tilgjengelig infrastruktur";
-  } else if (answers.q11PowerCommunication.includes("none")) {
-    communication = "Kommunikasjon mangler";
   }
 
   const loggerSetup = calculatorMode
     ? "Ikke beregnet"
-    : answers.q65HourlyAutomaticLogging === "yes"
-      ? "Automatisk logger minst hver time"
-      : answers.q65HourlyAutomaticLogging === "no"
-        ? "Mangler automatisk timeslogging"
-        : inspectionsPerYear <= 4
-          ? "Automatisk logging må avklares med backuplogger"
-          : "Automatisk logging må avklares";
+    : inspectionsPerYear <= 4
+      ? "Automatisk timeslogging forutsettes med relevant backup"
+      : "Automatisk timeslogging forutsettes";
 
   const energyMonitoring = calculatorMode ? "Ikke beregnet" : has4gCoverage ? "Ja" : "Nei";
 
@@ -195,41 +190,21 @@ function calculateSystemRecommendation(
 
   const icingAdaptation = calculatorMode
     ? "Ikke beregnet"
-    : answers.q07ReleaseSolution === "pipeIntake"
+    : answers.release_solution_category === "pipe_via_intake"
       ? "Beskyttet rør- og sensorpunkt"
       : "Stabilt og frostvurdert vannstandspunkt";
 
   const operationsRequirements = calculatorMode ? [] : dedupe([
-    answers.q07ReleaseSolution === "pipeIntake"
-      ? "Rettstrekk, fullt rør og rolig strømbilde gjennom måleren for stabil signalkvalitet"
+    recommendation.criteriaSatisfied?.length
+      ? `Kildeforankrede kriterier dokumentert: ${recommendation.criteriaSatisfied.join(", ")}`
       : "",
-    recommendation.measurementMethodCode === "M2"
-      ? "Naturlig profil må ha stabil geometri og dokumentert sammenheng mellom vannstand og vannføring"
+    recommendation.criteriaNotSatisfied?.length
+      ? `Kildeforankrede kriterier ikke oppfylt: ${recommendation.criteriaNotSatisfied.join(", ")}`
       : "",
-    recommendation.measurementMethodCode === "M3" || recommendation.measurementMethodCode === "M4" || recommendation.measurementMethodCode === "M5"
-      ? "Overløp eller renne må ha kjent geometri, fri utstrømning og korrekt plassert vannstandssensor"
+    recommendation.missingDocumentation?.length
+      ? `Mangler dokumentasjon: ${recommendation.missingDocumentation.join(", ")}`
       : "",
-    answers.q07ReleaseSolution === "gate" || answers.q07ReleaseSolution === "damOpening"
-      ? "Luke, åpning, terskel eller overløp må ha stabilt vannspeil og kjent geometri"
-      : "",
-    answers.q08FishMigration !== "no" && answers.q08FishMigration !== ""
-      ? "Fiskepassasje må beskrives separat fra ordinær MVF-måling i rapporten"
-      : "",
-    (answers.q09CoandaExists === "yes" || answers.q09CoandaExists === "planned" || answers.q07ReleaseSolution === "coandaSpecific")
-      ? "Coanda-løsning må vurderes prosjektspesifikt og slippet bør føres over eller rett nedstrøms terskelen"
-      : "",
-    answers.q65HourlyAutomaticLogging === "no"
-      ? "Automatisk timeslogging mangler og må etableres før løsningen er NVE-klar"
-      : "",
-    answers.q68SecureDataStorageForNve === "no"
-      ? "Sikker datalagring og fremlegging for NVE må etableres"
-      : "",
-    answers.q66AccuracyWithinFivePercent === "no"
-      ? "Målenøyaktighet innenfor +/-5 prosent må prosjekteres før endelig anbefaling"
-      : "",
-    answers.q67CompletenessNinetySevenPercent === "no"
-      ? "Systemet må prosjekteres for minst 97 prosent komplette/korrekte registreringer"
-      : "",
+    ...(recommendation.silentNveRequirements ?? []),
     recommendation.status === "NeedsClarification"
       ? `Avklar prosjekteringsgrunnlaget for ${recommendation.controlMeasurementMethod.toLowerCase()}`
       : ""

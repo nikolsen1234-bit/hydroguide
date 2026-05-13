@@ -13,6 +13,7 @@ import {
   SystemParameters,
   BackupSourceConfiguration
 } from "./types";
+import { createEmptyHydroGuideAnswers } from "./hydroguide/sourceAnchoredDecision";
 
 export const STORAGE_KEYS = {
   CONFIGS: "hydroguide:configurations:v2",
@@ -36,78 +37,7 @@ export const FLOW_THRESHOLDS = {
   mediumMax: 120
 };
 
-export const EMPTY_ANSWERS: Answers = {
-  q01ConcessionRequirement: "",
-  q02ProjectType: "",
-  q03FlowClass: "",
-  q04RequirementPattern: "",
-  q05PassAllInflowWhenLow: "",
-  q06CanChangeRelease: "",
-  q07ReleaseSolution: "",
-  q08FishMigration: "",
-  q09CoandaExists: "",
-  q10SiteChallenges: [],
-  q11PowerCommunication: [],
-  q12PublicDisplay: [],
-  q13AfterIntakeRack: "",
-  q14DryFrostFreePlacement: "",
-  q15ReturnNearDam: "",
-  q16PipeCapacityLowWater: "",
-  q17PipeFull: "",
-  q18PipeAirFree: "",
-  q19StraightRunCalmFlow: "",
-  q20ValveDownstream: "",
-  q21ServiceValveBefore: "",
-  q22PipeGeometryType: "",
-  q23ConductivityForMagmeter: "",
-  q24UltrasonicMountPossible: "",
-  q25AdpGeometryKnown: "",
-  q26AirEntrainedAtMeasurement: "",
-  q27RegulationFrequency: "",
-  q28DownstreamPointPossible: "",
-  q29NaturalStableProfile: "",
-  q30StageDischargeUnique: "",
-  q31ProfileStable: "",
-  q32GoodWaterLevelResolution: "",
-  q33WideShallowRiver: "",
-  q34BackwaterAffects: "",
-  q35RepresentativeSensorPlacement: "",
-  q36StationFloodRobust: "",
-  q37ArtificialProfilePossible: "",
-  q38FallForArtificialProfile: "",
-  q39ArtificialProfileBlocksFish: "",
-  q40ArtificialProfileFlowClass: "",
-  q41MultipleDistinctLevels: "",
-  q42ArtificialProfileProtected: "",
-  q43LevelSensorType: "",
-  q44DamPipeBelowLrv: "",
-  q45DamPipeCapacityMarginNoVortex: "",
-  q46DamPipeSubmergedNoSediment: "",
-  q47TheoryOnlyDocumentation: "",
-  q48GateLevelOpeningElectronic: "",
-  q49GatePowerBackup: "",
-  q50GateIceDebrisManageable: "",
-  q51OpeningStandardProfile: "",
-  q52OpeningProtected: "",
-  q53OpeningMeetsLowWater: "",
-  q54OpeningShape: "",
-  q55FishPassageReleaseShare: "",
-  q56FishPassageIndependentUpstream: "",
-  q57MeasurementNoFishBarrier: "",
-  q58FlowSplitFishAndOther: "",
-  q59AttractionWaterNeed: "",
-  q60CoandaReturnPoint: "",
-  q61CoandaTakeoff: "",
-  q62CoandaFlowClass: "",
-  q63CoandaAirEntrained: "",
-  q64CoandaLittleFall: "",
-  q65HourlyAutomaticLogging: "",
-  q66AccuracyWithinFivePercent: "",
-  q67CompletenessNinetySevenPercent: "",
-  q68SecureDataStorageForNve: "",
-  q69AlternativeMethod: "",
-  q70NveApprovalForAlternative: ""
-};
+export const EMPTY_ANSWERS: Answers = createEmptyHydroGuideAnswers();
 
 export const ANSWER_KEYS = Object.keys(EMPTY_ANSWERS) as (keyof Answers)[];
 

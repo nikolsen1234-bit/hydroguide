@@ -571,7 +571,7 @@ function buildReportHtml(
       .filter(Boolean)
       .join(", ")
       .replace(/, ([^,]*)$/, " og $1");
-  const coverFlowMeter = "Elektromagnetisk";
+  const coverFlowMeter = visibleText(recommendation.controlMeasurementMethod) || "Etter anbefaling";
   const annualFuelCellKWh = visibleMonthlyEnergyBalance.reduce((sum, row) => {
     if (!row) return sum;
     const solar = finite(row.solarProductionKWh) ? row.solarProductionKWh : 0;

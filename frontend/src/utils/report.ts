@@ -201,12 +201,6 @@ function projectTitle(config: PlantConfiguration): string {
   return text(config.name);
 }
 
-function reportDocId(config: PlantConfiguration): string {
-  const raw = text(config.id).toUpperCase().replace(/-/g, "");
-  if (!raw) return "";
-  return "HG-" + raw.slice(-8);
-}
-
 function isRadioAnalysis(value: unknown): value is RadioLinkAnalysis {
   return Boolean(
     value &&
@@ -248,6 +242,30 @@ function radioRows(config: PlantConfiguration): RadioData {
   };
 }
 
+const RADIO_RENDER_WIDTH = 703;
+const RADIO_VIEWBOX_WIDTH = 760;
+const RADIO_PLOT_SOURCE_WIDTH = 516;
+const RADIO_CHART_LEFT_PX = 26;
+const RADIO_CHART_RIGHT_PX = 0;
+const RADIO_CHART_WIDTH_PX = RADIO_RENDER_WIDTH - RADIO_CHART_LEFT_PX - RADIO_CHART_RIGHT_PX;
+const RADIO_CHART_LEFT_SVG = (RADIO_CHART_LEFT_PX / RADIO_RENDER_WIDTH) * RADIO_VIEWBOX_WIDTH;
+const RADIO_CHART_WIDTH_SVG = (RADIO_CHART_WIDTH_PX / RADIO_RENDER_WIDTH) * RADIO_VIEWBOX_WIDTH;
+const RADIO_PLOT_SCALE_X = RADIO_CHART_WIDTH_SVG / RADIO_PLOT_SOURCE_WIDTH;
+const RADIO_X_POSITIONS = Array.from(
+  { length: 11 },
+  (_, index) => RADIO_CHART_LEFT_SVG + (RADIO_CHART_WIDTH_SVG * index) / 10
+);
+const RADIO_X_PERCENTS = Array.from(
+  { length: 11 },
+  (_, index) => `${trimFixed(((RADIO_CHART_LEFT_PX + (RADIO_CHART_WIDTH_PX * index) / 10) / RADIO_RENDER_WIDTH) * 100, 4)}%`
+);
+const RADIO_X_CENTER_SVG = RADIO_CHART_LEFT_SVG + RADIO_CHART_WIDTH_SVG / 2;
+const RADIO_X_CENTER_PERCENT = `${trimFixed(((RADIO_CHART_LEFT_PX + RADIO_CHART_WIDTH_PX / 2) / RADIO_RENDER_WIDTH) * 100, 4)}%`;
+
+function trimFixed(value: number, digits: number) {
+  return value.toFixed(digits).replace(/\.?0+$/, "");
+}
+
 function simplifyPath(values: number[], axisMax: number): string {
   if (values.length < 2 || axisMax <= 0) return "";
   const n = values.length;
@@ -283,15 +301,13 @@ function renderRadioGraph(config: PlantConfiguration) {
   const axisMax = allValues.length ? Math.max(100, Math.ceil((Math.max(...allValues) * 1.25) / 100) * 100) : 0;
   const yTicks = axisMax > 0 ? [axisMax, axisMax * 0.8, axisMax * 0.6, axisMax * 0.4, axisMax * 0.2, 0] : ["", "", "", "", "", ""];
   const yPositions = [14.8, 44.8, 74.8, 104.8, 134.8, 164.8];
-  const xPositions = [50.06, 115.99, 181.92, 247.84, 313.77, 379.7, 445.63, 511.55, 577.48, 643.41, 715.85];
-  const xPercents = ["6.5868%", "15.2618%", "23.9368%", "32.6105%", "41.2855%", "49.9605%", "58.6355%", "67.3092%", "75.9842%", "84.6592%", "94.1908%"];
   const distanceKm = analysis?.terrainDistanceKm ?? 0;
-  const xLabels = distanceKm > 0 ? xPositions.map((_, index) => {
+  const xLabels = distanceKm > 0 ? RADIO_X_POSITIONS.map((_, index) => {
     if (index === 0) return "0";
-    const v = (distanceKm * index) / (xPositions.length - 1);
+    const v = (distanceKm * index) / (RADIO_X_POSITIONS.length - 1);
     // Match fasit format: dot separator, max 2 decimals, trailing 0 stripped
     return v.toFixed(2).replace(/0$/, "").replace(/\.$/, "");
-  }) : xPositions.map(() => "");
+  }) : RADIO_X_POSITIONS.map(() => "");
   const terrainPath = series ? simplifyPath(series.terrain, axisMax) : "";
   const losPath = series ? simplifyPath(series.lineOfSight, axisMax) : "";
   const fresnelLowerPath = series ? simplifyPath(series.fresnelLower, axisMax) : "";
@@ -303,8 +319,8 @@ function renderRadioGraph(config: PlantConfiguration) {
         <span class="unit">Meter</span>
       </div>`,
     xAxis: `<div class="radio-xax" aria-hidden="true">
-        ${xPercents.map((left, index) => `<span class="n" style="left:${left}">${blank(xLabels[index])}</span>`).join("\n        ")}
-        <span class="unit" style="left:50.39%">Kilometer</span>
+        ${RADIO_X_PERCENTS.map((left, index) => `<span class="n" style="left:${left}">${blank(xLabels[index])}</span>`).join("\n        ")}
+        <span class="unit" style="left:${RADIO_X_CENTER_PERCENT}">Kilometer</span>
       </div>`,
     svg: `<svg viewBox="0 0 760 200" preserveAspectRatio="none" role="img" aria-label="Terrengprofil fra Linkplanlegger">
         <defs><clipPath id="radioActualPlotClip"><rect x="0" y="0" width="516" height="286"></rect></clipPath></defs>
@@ -314,11 +330,11 @@ function renderRadioGraph(config: PlantConfiguration) {
           <text x="7" y="88" text-anchor="middle" transform="rotate(-90 7 88)">Meter</text>
         </g>
         <g class="radio-svg-x-axis" font-family="Manrope" font-size="7.8" font-weight="800" fill="#000000" letter-spacing=".06em">
-          ${xPositions.map((x, index) => `<line x1="${x.toFixed(2)}" y1="162.00" x2="${x.toFixed(2)}" y2="166.00" stroke="#000000" stroke-width="1" shape-rendering="crispEdges" vector-effect="non-scaling-stroke"></line>
+          ${RADIO_X_POSITIONS.map((x, index) => `<line x1="${x.toFixed(2)}" y1="162.00" x2="${x.toFixed(2)}" y2="166.00" stroke="#000000" stroke-width="1" shape-rendering="crispEdges" vector-effect="non-scaling-stroke"></line>
           <text x="${x.toFixed(2)}" y="177.00" text-anchor="middle">${esc(xLabels[index])}</text>`).join("\n          ")}
-          <text x="370.00" y="187" text-anchor="middle">Kilometer</text>
+          <text x="${RADIO_X_CENTER_SVG.toFixed(2)}" y="187" text-anchor="middle">Kilometer</text>
         </g>
-        <g clip-path="url(#radioActualPlotClip)" transform="translate(28 12) scale(1.32558140 0.52447552)">
+        <g clip-path="url(#radioActualPlotClip)" transform="translate(${RADIO_CHART_LEFT_SVG.toFixed(2)} 12) scale(${RADIO_PLOT_SCALE_X.toFixed(5)} 0.52447552)">
           ${terrainPath ? `<path d="${terrainPath}" fill="none" stroke="black" stroke-width="1.45" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>` : ""}
           ${losPath ? `<path d="${losPath}" fill="none" stroke="green" stroke-width="1.45" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>` : ""}
           ${fresnelLowerPath ? `<path d="${fresnelLowerPath}" fill="none" stroke="red" stroke-width="1.45" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>` : ""}
@@ -343,6 +359,37 @@ function renderEnergyStack(rows: MonthlyEnergyBalanceRow[]) {
   );
   const niceMax = Math.max(20, Math.ceil((max * 1.2) / 20) * 20);
   const ticks = [niceMax, niceMax * 0.75, niceMax * 0.5, niceMax * 0.25, 0];
+  const chartWidth = 673;
+  const chartHeight = 124;
+  const barGap = 5;
+  const barWidth = (chartWidth - barGap * 11) / 12;
+  const svgBars = visibleRows
+    .map((row, index) => {
+      const solar = row?.solarProductionKWh ?? 0;
+      const load = row?.loadDemandKWh ?? 0;
+      const reserve = Math.max(0, load - solar);
+      const h = (value: number) => (niceMax > 0 ? Math.max(0, (value / niceMax) * chartHeight) : 0);
+      const x = index * (barWidth + barGap);
+      let y = chartHeight;
+      const segments = [
+        { value: solar, fill: "#2563eb" },
+        { value: load, fill: "#93b3f5" },
+        { value: reserve, fill: "#16a34a" }
+      ];
+      return segments
+        .filter((segment) => segment.value > 0)
+        .map((segment) => {
+          const height = h(segment.value);
+          y -= height;
+          return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${height.toFixed(2)}" fill="${segment.fill}"></rect>`;
+        })
+        .join("");
+    })
+    .join("");
+  const svgGrid = [0, 31, 62, 93, 124]
+    .map((y) => `<line x1="0" y1="${y}" x2="${chartWidth}" y2="${y}" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="5 5" vector-effect="non-scaling-stroke"></line>`)
+    .join("");
+  const svg = `<svg class="energy-print-svg" viewBox="0 0 ${chartWidth} ${chartHeight}" preserveAspectRatio="none" aria-hidden="true">${svgGrid}<line x1="0" y1="${chartHeight}" x2="${chartWidth}" y2="${chartHeight}" stroke="#1e293b" stroke-width="1" vector-effect="non-scaling-stroke"></line>${svgBars}</svg>`;
   const bars = visibleRows
     .map((row) => {
       const solar = row?.solarProductionKWh ?? 0;
@@ -355,9 +402,18 @@ function renderEnergyStack(rows: MonthlyEnergyBalanceRow[]) {
 
   return {
     yAxis: ticks.map((tick) => `<span>${esc(num(tick, 0))}</span>`).join(""),
-    bars,
+    bars: `${svg}${bars}`,
     labels: monthLabels.map((label) => `<span>${label}</span>`).join("")
   };
+}
+
+function reportOwnershipCost(item: CostComparisonItem): number {
+  if (finite(item.totalOwnershipCost)) return item.totalOwnershipCost;
+  const annualCost = finite(item.operatingCostPerYear) ? item.operatingCostPerYear : 0;
+  const horizon = finite(item.evaluationHorizonYears) ? item.evaluationHorizonYears : 1;
+  const purchaseCost = finite(item.purchaseCost) ? item.purchaseCost : 0;
+  const replacementCount = finite(item.replacementCount) ? item.replacementCount : 0;
+  return purchaseCost + annualCost * horizon + replacementCount * purchaseCost;
 }
 
 function costRow(item: CostComparisonItem, powerW: number | null, recommended: boolean): string {
@@ -370,9 +426,52 @@ function costRow(item: CostComparisonItem, powerW: number | null, recommended: b
     <td>${num(item.annualFuelConsumption, 0)}<small>L/år</small></td>
     <td>${num(item.annualCo2, 0)}<small>kg/år</small></td>
     <td>${num(item.purchaseCost, 0)}<small>kr</small></td>
-    <td>${num((finite(item.operatingCostPerYear) ? item.operatingCostPerYear : 0) + (finite(item.annualMaintenance) ? item.annualMaintenance : 0), 0)}<small>kr/år</small></td>
-    <td>${num((finite(item.purchaseCost) ? item.purchaseCost : 0) + ((finite(item.operatingCostPerYear) ? item.operatingCostPerYear : 0) + (finite(item.annualMaintenance) ? item.annualMaintenance : 0)) * (finite(item.evaluationHorizonYears) ? item.evaluationHorizonYears : 1), 0)}<small>kr</small></td>
+    <td>${num(finite(item.operatingCostPerYear) ? item.operatingCostPerYear : 0, 0)}<small>kr/år</small></td>
+    <td>${num(reportOwnershipCost(item), 0)}<small>kr</small></td>
   </tr>`;
+}
+
+function annualEnergyDeficitKWh(rows: MonthlyEnergyBalanceRow[], fallback: unknown): number {
+  if (finite(fallback) && fallback > 0) return fallback;
+  return rows.reduce((sum, row) => {
+    const solar = finite(row?.solarProductionKWh) ? row.solarProductionKWh : 0;
+    const load = finite(row?.loadDemandKWh) ? row.loadDemandKWh : 0;
+    return sum + Math.max(0, load - solar);
+  }, 0);
+}
+
+function fallbackCostRow(config: PlantConfiguration, source: BackupSourceName, deficitKWh: number): CostComparisonItem {
+  const sourceConfig = source === "FuelCell" ? config.fuelCell : config.diesel;
+  const powerW = finite(sourceConfig.powerW) && sourceConfig.powerW > 0 ? sourceConfig.powerW : 0;
+  const horizon = finite(config.other.evaluationHorizonYears) && config.other.evaluationHorizonYears > 0 ? config.other.evaluationHorizonYears : 10;
+  const fuelRate = finite(sourceConfig.fuelConsumptionPerKWh) ? sourceConfig.fuelConsumptionPerKWh : 0;
+  const fuelPrice = finite(sourceConfig.fuelPrice) ? sourceConfig.fuelPrice : 0;
+  const purchaseCost = finite(sourceConfig.purchaseCost) ? sourceConfig.purchaseCost : 0;
+  const annualFuelConsumption = deficitKWh * fuelRate;
+  const operatingCostPerYear = annualFuelConsumption * fuelPrice;
+  const totalRuntimeHours = powerW > 0 ? (deficitKWh / (powerW / 1000)) * horizon : 0;
+  const technicalLifetimeHours = finite(sourceConfig.lifetime) ? sourceConfig.lifetime : 0;
+  const replacementCount =
+    technicalLifetimeHours > 0 && totalRuntimeHours > technicalLifetimeHours
+      ? Math.round((totalRuntimeHours / technicalLifetimeHours - 1) * 10) / 10
+      : 0;
+
+  return {
+    source,
+    purchaseCost,
+    operatingCostPerYear,
+    evaluationHorizonYears: horizon,
+    technicalLifetimeHours,
+    totalRuntimeHours,
+    replacementCount,
+    annualFuelConsumption,
+    annualCo2: annualFuelConsumption * (source === "FuelCell" ? (finite(config.other.co2Methanol) ? config.other.co2Methanol : 0) : (finite(config.other.co2Diesel) ? config.other.co2Diesel : 0)),
+    totalOwnershipCost: purchaseCost + operatingCostPerYear * horizon + replacementCount * purchaseCost
+  };
+}
+
+function shortProjectName(title: string): string {
+  return title.split("—")[0]?.trim() || title;
 }
 
 export function buildAiReportPayload(
@@ -432,7 +531,8 @@ export function buildAiReportPayload(
       "Use answerFacts only as user-provided visible method or site criteria.",
       "Do not treat implicitObligations as user answers.",
       "Do not use legacy q-number answer identifiers.",
-      "Do not claim regulatory approval; describe only source anchoring and remaining documentation."
+      "Do not claim regulatory approval; describe only source anchoring and remaining documentation.",
+      "Do not paste full criteria lists or repeated source titles into report prose; summarize source basis in normal readable sentences."
     ],
     energy: {
       annualSolarProductionKWh: visibleAnnualTotals.annualSolarProductionKWh,
@@ -457,7 +557,6 @@ function buildReportHtml(
 ): string {
   const now = new Date();
   const title = projectTitle(config);
-  const reportId = reportDocId(config);
   const docId = TRACE_PLACEHOLDER;
   const sys = derivedResults.systemRecommendation;
   const backupLabel = localizeBackupSource(activeReserveSource || sys.secondarySource);
@@ -465,16 +564,14 @@ function buildReportHtml(
   const panelPower = finite(config.solar.panelPowerWp) ? config.solar.panelPowerWp : null;
   const panelCount = finite(config.solar.panelCount) ? config.solar.panelCount : null;
   const batteryAh = finite(sys.batteryCapacityAh) ? sys.batteryCapacityAh : null;
-  const batteryVoltage = finite(config.battery.nominalVoltage) ? config.battery.nominalVoltage : 12.8;
-  const batteryDoD = finite(config.battery.maxDepthOfDischarge) ? config.battery.maxDepthOfDischarge : 0.8;
-  const batteryUsableKWh = batteryAh ? (batteryAh * batteryVoltage * batteryDoD) / 1000 : null;
-  const autonomy = finite(sys.batteryAutonomyDays) && sys.batteryAutonomyDays > 0 ? `${num(sys.batteryAutonomyDays, Number.isInteger(sys.batteryAutonomyDays) ? 0 : 1)} døgn` : "";
+  const loggerSetup = visibleText(sys.loggerSetup);
   const packageTitle =
     visibleText(recommendation.mainSolution) ||
     [panelCount && panelPower ? "Solcellepanel" : "", batteryAh ? "batteribank" : "", backupLabel ? backupLabel.toLowerCase() : ""]
       .filter(Boolean)
       .join(", ")
       .replace(/, ([^,]*)$/, " og $1");
+  const coverFlowMeter = "Elektromagnetisk";
   const annualFuelCellKWh = visibleMonthlyEnergyBalance.reduce((sum, row) => {
     if (!row) return sum;
     const solar = finite(row.solarProductionKWh) ? row.solarProductionKWh : 0;
@@ -483,14 +580,16 @@ function buildReportHtml(
   }, 0);
   const secondaryKWh: number | null = annualFuelCellKWh > 0 ? annualFuelCellKWh : null;
   const energy = renderEnergyStack(visibleMonthlyEnergyBalance);
-  const costs = derivedResults.costComparison.alternatives;
+  const costs = derivedResults.costComparison?.alternatives ?? [];
+  const comparisonDeficitKWh = annualEnergyDeficitKWh(visibleMonthlyEnergyBalance, derivedResults.costComparison?.annualEnergyDeficitKWh);
   const radio = radioRows(config);
   const radioGraph = renderRadioGraph(config);
   const freeText = renderFreeText(aiRecommendationText);
   void renderSourceBackedEvidence;
   const lead = normalizeAiReportFields(aiRecommendationText)?.recommendationNote || text(recommendation.justification[0]);
-  const fuelCell = costs.find((item) => item.source === "FuelCell");
-  const diesel = costs.find((item) => item.source === "DieselGenerator");
+  const fuelCell = costs.find((item) => item.source === "FuelCell") ?? fallbackCostRow(config, "FuelCell", comparisonDeficitKWh);
+  const diesel = costs.find((item) => item.source === "DieselGenerator") ?? fallbackCostRow(config, "DieselGenerator", comparisonDeficitKWh);
+  const projectShort = shortProjectName(title);
   const comparisonRows = [
     fuelCell ? costRow(fuelCell, activeReserveSource === "FuelCell" ? backupPowerW : (finite(config.fuelCell.powerW) ? config.fuelCell.powerW : null), activeReserveSource === "FuelCell") : "",
     diesel ? costRow(diesel, activeReserveSource === "DieselGenerator" ? backupPowerW : (finite(config.diesel.powerW) ? config.diesel.powerW : null), activeReserveSource === "DieselGenerator") : ""
@@ -506,15 +605,42 @@ function buildReportHtml(
     :root{--ink:#020617;--ink-2:#1e293b;--ink-3:#475569;--muted:#64748b;--line:#e2e8f0;--line-soft:#eef2f7;--brand:#2563eb;--brand-dk:#1d4ed8;--brand-soft:#eef6ff;--brand-100:#dbeafe;--brand-200:#bfdbfe;--brand-300:#93c5fd;--emerald:#047857;--amber:#b45309;--rose:#be123c;--page-w:794px;--page-h:1123px}
     *{box-sizing:border-box}html,body{margin:0;background:#eef2f7;font-family:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:geometricPrecision}body{padding:24px 0 48px;font-size:11.2px;line-height:1.45}
     .page{position:relative;width:794px;height:1123px;margin:0 auto;background:#fff;padding:45px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 42px -22px rgba(15,23,42,.35)}
+    .page+.page{margin-top:18px}
+    .cover{padding:0;display:block}
+    .cover-inner{width:100%;height:100%;display:grid;grid-template-rows:auto 1fr auto;padding:84px 86px 26px 50px;background:#fff;position:relative;overflow:hidden}
+    .cover-watermark{position:absolute;top:0;bottom:0;right:-250px;width:760px;height:100%;opacity:.045;pointer-events:none}
+    .cover-watermark svg{width:100%;height:100%;display:block}
+    .cover-top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;margin-left:-38px;margin-right:-30px;transform:translateY(-68px)}
+    .cover-top .brand{display:flex;align-items:center;gap:14px}
+    .cover-logo{width:205px !important;height:auto !important;display:block !important;position:static !important;pointer-events:none}
+    .cover-top .doc-id{text-align:right;font-size:11.5px;color:#64748b;letter-spacing:.04em;line-height:1.35}
+    .cover-top .doc-id strong{display:block;color:#334155;font-weight:600;letter-spacing:.04em;font-size:12px}
+    .cover-main{display:flex;flex-direction:column;justify-content:center;gap:24px;position:relative;z-index:1}
+    .cover-main>:not(.cover-meta){transform:translateY(-70px)}
+    .cover-eyebrow{display:inline-flex;align-items:center;gap:10px;color:var(--brand-dk);font-size:11px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;width:fit-content}
+    .cover-eyebrow::before{content:"";width:24px;height:1px;background:var(--brand-dk)}
+    .cover-title{font-size:64px;font-weight:700;letter-spacing:-.035em;line-height:.98;color:var(--ink);max-width:165mm;margin:0}
+    .cover-title em{font-style:normal;display:block;font-weight:650;line-height:1;letter-spacing:-.01em;color:#1d7ed8}
+    .cover-subtitle{font-size:18px;color:var(--ink);font-weight:400;line-height:1.45;max-width:140mm;margin:0}
+    .cover-meta{display:grid;grid-template-columns:1.13fr .92fr 1.03fr .92fr;gap:0;width:min(100%,165mm);align-self:center;transform:translateX(18px);border-top:1px solid #d8e0ea;border-bottom:1px solid #d8e0ea;padding:18px 0}
+    .cover-meta .item{padding:0 18px;border-left:1px solid #d8e0ea;text-align:center}
+    .cover-meta .item:first-child{border-left:0}
+    .cover-meta .item .lbl{font-size:10.8px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--brand-dk);margin-bottom:6px;text-align:center}
+    .cover-meta .item .val{font-size:16.5px;font-weight:700;color:var(--ink);letter-spacing:-.01em;line-height:1.15;text-align:center}
+    .cover-meta .item .sub{font-size:12px;color:#64748b;font-weight:700;margin-top:2px}
+    .cover-bottom{display:flex;justify-content:space-between;align-items:flex-end;position:relative;z-index:1;color:#64748b;font-size:10.5px;letter-spacing:.04em;line-height:1.5}
+    .cover-bottom .disclaimer{max-width:120mm}
+    .cover-bottom .stamp{font-family:"JetBrains Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:10px;color:#64748b;text-align:right;letter-spacing:.06em}
     .top{display:flex;justify-content:space-between;align-items:center;padding-bottom:7px;border-bottom:1px solid var(--line)}
     .brand{display:flex;align-items:center;gap:10px}.brand img{height:22px;width:auto;display:block}.report-logo{width:181px;height:auto;position:absolute;top:0;left:40px;pointer-events:none}
     .crumb{font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:700}
     .report-title{position:absolute;left:45px;top:49px;font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:1;color:#020617;margin:0;white-space:nowrap;pointer-events:none}
     .report-meta{display:flex;flex-direction:column;align-items:flex-end;gap:0;line-height:1.05;font-family:"JetBrains Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:9.5px;font-weight:400;letter-spacing:.06em;color:#64748b;text-align:right}
-    .report-meta .doc-id{font-size:10.3px;font-weight:700;color:#020617}
+    .report-meta .doc-id{font-size:10.3px;font-weight:700;color:#020617}.report-meta .trace-id{font-size:12px;font-weight:800;color:#020617;line-height:1.05}
     section{margin:0}.page-section{margin-top:14px}.page>.v6-mid{margin-top:14px}.page>.reasons-3{margin-top:14px;display:block}
     .page>section:not(:first-of-type):not(.reasons-3){position:relative}.page>section:not(:first-of-type):not(.reasons-3)::after{content:"";position:absolute;left:0;right:0;top:-7px;height:1px;background:var(--line);pointer-events:none}
     .page>.reasons-3,.page>.v6-mid,.page>.page-section,.page>section.card-shell.page-section{margin-top:10px !important}
+    .page>section.card-shell.page-section.radio-section{margin-top:19.1px !important}
     .reasons-3{display:block;padding-top:8px;border-top:1px solid var(--line)}
     .page>section:not(:first-of-type):not(.reasons-3)::after{top:-5px !important}
     .up-card{display:grid;grid-template-columns:minmax(0,1.35fr) 1fr;gap:18px;border:0;background:transparent;position:relative;padding:0 0 0 14px;font-variant-numeric:tabular-nums}
@@ -524,7 +650,7 @@ function buildReportHtml(
     .ft-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--brand-dk);font-weight:850;margin-bottom:6px}
     .up-eyebrow::before,.ft-eyebrow::before{content:"";width:20px;height:1px;background:var(--brand-dk)}
     .up-main h3{margin:0 0 6px;font-size:17px;line-height:1.08;letter-spacing:-.03em;font-weight:850;color:var(--ink);max-width:18em}
-    .up-main p{margin:0;font-size:10.5px;line-height:1.45;color:var(--ink-2);font-weight:500;max-width:40em}
+    .up-main p{margin:0;font-size:9.5px;line-height:1.45;color:var(--ink-2);font-weight:500;max-width:40em}
     .up-tech{border-left:1px solid var(--line);padding-left:14px;display:flex;flex-direction:column;font-variant-numeric:tabular-nums}
     .up-row{display:flex;align-items:flex-start;gap:8px;padding:1px 0 7px;border-bottom:1px solid var(--line);line-height:1.2}
     .up-row:first-child{padding-top:1px}
@@ -537,8 +663,8 @@ function buildReportHtml(
     .freetext-box{position:relative;width:100%;min-height:170px;background:transparent;border:0;padding:0 0 0 14px;display:flex;flex-direction:column}
     .freetext-box::before,.card-shell::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--brand-dk)}
     .freetext-box .ft-title{margin:0 0 10px;font-size:17px;line-height:1.08;letter-spacing:-.03em;font-weight:850;color:var(--ink)}
-    .freetext-box .ft-body{flex:1 1 auto;min-height:110px;font-size:12px;font-weight:700;color:var(--ink)}
-    .freetext-box .ft-body p{margin:0;line-height:1.42}
+    .freetext-box .ft-body{flex:1 1 auto;min-height:110px;font-size:9.5px;font-weight:700;color:var(--ink);line-height:1.34}
+    .freetext-box .ft-body p{margin:0;line-height:1.34}
     .card-shell{position:relative;width:100%;padding:0 0 0 14px}
     .v6-mid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:10px;align-items:stretch}.v6-mid>section{display:flex;flex-direction:column}
     .v6-eb2{position:relative;border:0;background:transparent;padding:0 0 0 14px;display:flex;flex-direction:column;gap:8px;flex:1 1 auto;font-variant-numeric:tabular-nums;width:703px}
@@ -548,6 +674,7 @@ function buildReportHtml(
     .v6-stack .yax{position:absolute;left:0;top:0;bottom:0;width:22px;pointer-events:none;font-variant-numeric:tabular-nums}
     .v6-stack .yax span{position:absolute;right:2px;font-size:7.8px;line-height:normal;color:rgb(0,0,0);font-weight:800;letter-spacing:.06em;text-transform:uppercase;transform:translateY(-50%)}
     .v6-stack .yax span:nth-child(1){top:6px}.v6-stack .yax span:nth-child(2){top:37px}.v6-stack .yax span:nth-child(3){top:68px}.v6-stack .yax span:nth-child(4){top:99px}.v6-stack .yax span:nth-child(5){top:100%}
+    .energy-print-svg{display:none;position:absolute;left:26px;right:4px;top:6px;bottom:0;width:calc(100% - 30px);height:calc(100% - 6px);z-index:1;pointer-events:none}
     .v6-stack .col{position:relative;z-index:1;display:flex;flex-direction:column-reverse;gap:0;height:100%;background:transparent;border:0}.v6-stack .seg{width:100%}.v6-stack .s1{background:var(--brand)}.v6-stack .s2{background:#93b3f5}.v6-stack .s3{background:#16a34a}
     .v6-stack-labels{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;font-size:7.8px;font-weight:800;color:rgb(0,0,0);letter-spacing:.06em;text-transform:uppercase;margin:4px 4px 0;text-align:center}
     .eb-foot{display:grid;grid-template-columns:repeat(3,1fr);column-gap:10px;margin-top:-16px;border-top:0;background:#fff;font-variant-numeric:tabular-nums;padding-left:26px;box-sizing:border-box}
@@ -580,7 +707,7 @@ function buildReportHtml(
     .footer{margin-top:8px;padding-top:6px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:8.5px;color:var(--muted);letter-spacing:.04em}
     .footer b{color:var(--ink-2);font-weight:700}
     .v6-terrain{background-image:none !important;background-color:transparent !important}
-    .v6-terrain::after{content:"" !important;display:block !important;position:absolute !important;left:28px !important;right:48px !important;bottom:38px !important;height:0 !important;border-bottom:1px solid #000 !important;pointer-events:none !important;z-index:2 !important}
+    .v6-terrain::after{content:"" !important;display:block !important;position:absolute !important;left:26px !important;right:0 !important;bottom:38px !important;height:0 !important;border-bottom:1px solid #000 !important;pointer-events:none !important;z-index:2 !important}
     .v6-terrain svg .radio-svg-y-axis text,.v6-terrain svg .radio-svg-x-axis text,.v6-terrain svg .radio-svg-legend text,.v6-terrain svg .radio-svg-legend{display:none !important}
     .radio-like-eb{display:flex;flex-direction:column;gap:0;width:703px}
     .radio-like-eb .radio-head{display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:10px;border-bottom:0}
@@ -591,7 +718,7 @@ function buildReportHtml(
     .v6-terrain .radio-yax .n{position:absolute;left:auto !important;right:2px !important;width:auto !important;text-align:right !important;font-family:inherit !important;font-size:7.8px !important;font-weight:800 !important;color:rgb(0,0,0) !important;letter-spacing:.06em !important;text-transform:uppercase !important;font-variant-numeric:tabular-nums !important;line-height:normal !important;transform:translateY(-50%) !important;text-shadow:none !important;-webkit-text-stroke:0 !important;paint-order:normal !important;white-space:nowrap}
     .v6-terrain .radio-yax .unit{position:absolute;left:-6px !important;top:88px !important;font-family:inherit !important;font-size:7.8px !important;font-weight:800 !important;color:rgb(0,0,0) !important;letter-spacing:.06em !important;text-transform:uppercase !important;font-variant-numeric:tabular-nums !important;line-height:normal !important;transform:translate(-50%,-50%) rotate(-90deg) !important;text-shadow:none !important;-webkit-text-stroke:0 !important;paint-order:normal !important;white-space:nowrap}
     .v6-terrain .radio-xax .n{position:absolute;top:174px !important;font-family:inherit !important;font-size:7.8px !important;font-weight:800 !important;color:rgb(0,0,0) !important;letter-spacing:.06em !important;text-transform:uppercase !important;font-variant-numeric:tabular-nums !important;line-height:normal !important;transform:translateX(-50%);white-space:nowrap;text-shadow:none !important;-webkit-text-stroke:0 !important;paint-order:normal !important}
-    .v6-terrain .radio-xax .unit{position:absolute;top:187px;left:47.76% !important;font-family:inherit !important;font-size:7.8px !important;font-weight:800 !important;color:rgb(0,0,0) !important;letter-spacing:.06em !important;text-transform:uppercase !important;font-variant-numeric:tabular-nums !important;line-height:normal !important;transform:translateX(-50%);white-space:nowrap;text-shadow:none !important;-webkit-text-stroke:0 !important;paint-order:normal !important}
+    .v6-terrain .radio-xax .unit{position:absolute;top:187px;left:${RADIO_X_CENTER_PERCENT} !important;font-family:inherit !important;font-size:7.8px !important;font-weight:800 !important;color:rgb(0,0,0) !important;letter-spacing:.06em !important;text-transform:uppercase !important;font-variant-numeric:tabular-nums !important;line-height:normal !important;transform:translateX(-50%);white-space:nowrap;text-shadow:none !important;-webkit-text-stroke:0 !important;paint-order:normal !important}
     .radio-legend-html{position:absolute !important;left:28px !important;right:28px !important;top:186px !important;bottom:auto !important;margin:0 !important;display:grid !important;grid-template-columns:repeat(4,max-content) !important;justify-content:space-between !important;align-items:center !important;column-gap:18px !important;z-index:4 !important;pointer-events:none !important;font-family:inherit !important;font-size:9.5px !important;font-weight:800 !important;letter-spacing:.02em !important;color:#000 !important;font-variant-numeric:tabular-nums !important;line-height:1 !important;white-space:nowrap !important;height:auto !important}
     .radio-legend-html .item{position:static !important;display:inline-flex !important;align-items:center !important;gap:6px !important;white-space:nowrap !important;color:#000 !important}
     .radio-legend-html .item span{color:#000 !important}
@@ -607,14 +734,48 @@ function buildReportHtml(
     .v6-stack-labels>span{color:rgb(0,0,0) !important}
     .eb-foot{margin-top:0 !important}
     .v6-eb2{margin-bottom:0 !important}
-    @page{size:A4;margin:0}@media print{html,body{background:#fff}.page{box-shadow:none;margin:0;page-break-after:auto;break-after:auto}}
+    .pdf-save{position:fixed;right:18px;bottom:18px;z-index:50;border:1px solid #bfdbfe;background:#1d4ed8;color:#fff;border-radius:6px;padding:10px 14px;font:700 13px/1 "Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;box-shadow:0 12px 28px -18px rgba(15,23,42,.55);cursor:pointer}
+    .pdf-save:hover{background:#1e40af}
+    @page{size:A4;margin:0}@media print{html,body{background:#fff}body{padding:0}.pdf-save{display:none !important}.page,.page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}.energy-print-svg{display:block}.v6-stack{background-image:none}.v6-stack .col{visibility:hidden}.page{box-shadow:none;margin:0;page-break-after:always;break-after:page}.page:last-of-type{page-break-after:auto;break-after:auto}}
   </style>
 </head><body>
-  <main class="page" style="object-fit: fill;">
+  <button class="pdf-save" type="button" onclick="window.print()">Lagre som PDF</button>
+  <section class="page cover">
+    <div class="cover-inner">
+      <div class="cover-watermark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="185 106 350 396.5" preserveAspectRatio="none">
+        <g fill="#2563eb">
+          <path d="M399.37,106.08l-29.52-.03c-40.3,69.13-52.96,148.42-8.85,217.9,12.84,20.22,27.85,37.46,44.12,55.08l53.21,57.61c18.04,19.54,31.42,41.37,42.71,65.42l33.02.11c-3.66-7.2-8.74-16.83-15.21-27.97-5.92-10.19-11.99-20.64-21.08-33.37-5.89-8.24-14.04-18.83-24.72-30.5l-41.6-44.53c-15.36-16.44-29.76-32.28-42.59-50.75-24.88-35.81-33.95-78.23-25.87-121.31,5.77-31.61,18.74-59.22,36.39-87.65Z"/>
+          <path d="M320.4,106.06c-41.51,76.35-52.9,158.38-9.04,235.98,32.17,56.91,77.87,98.9,103.4,159.95l30.43.3c-10.13-26.71-22.48-51.16-39.19-73.96l-37.65-51.37c-12.29-16.76-23.6-32.77-33.66-50.99-21.54-39.02-28.1-82.44-19.15-126.4,6.41-33.1,19.5-62.65,36.88-93.52h-32.01Z"/>
+          <path d="M270.54,106.06c-39.02,85.2-50.77,169.12-10.32,255.62,22.84,48.83,51.51,90.18,69.91,140.49l29.49-.12c-9.77-30.45-24.24-58.08-39.37-86.58l-32.39-61.03c-41.53-85.36-26.23-165.08,13.68-248.38h-31Z"/>
+          <path d="M213.87,106.06c-28.21,87.31-41.36,164.46-16.12,253.62,13.87,49,33.74,93.67,47.41,142.48l29.02-.02c-8.17-29.89-17.2-56.66-27.6-84.69-8.52-23.61-16.53-46.02-23.09-70.31-22.79-84.46-7.13-159.28,20.12-241.07h-29.73Z"/>
+        </g>
+      </svg></div>
+      <div class="cover-top">
+        <div class="brand"><img class="cover-logo" src="/hydroguide-logo-black.svg" alt="HydroGuide"></div>
+        <div class="doc-id"><strong>${esc(docId)}</strong>${esc(reportDate(now))}</div>
+      </div>
+      <div class="cover-main">
+        <span class="cover-eyebrow">Analyse og anbefaling</span>
+        <h1 class="cover-title">${blank(projectShort)}<br><em>minstevannføring.</em></h1>
+        <p class="cover-subtitle">Rapport for sideinntaket på ${blank(projectShort)}.<br>Resultatene er basert på oppgitte svar, tall og anbefalinger er veiledende.</p>
+        <div class="cover-meta">
+          <div class="item"><div class="lbl">Måleprinsipp</div><div class="val">${blank(coverFlowMeter)}</div><div class="sub">&nbsp;</div></div>
+          <div class="item"><div class="lbl">Primærkilde</div><div class="val">Solcellepanel</div><div class="sub">&nbsp;</div></div>
+          <div class="item"><div class="lbl">Sekundærkilde</div><div class="val">${blank(backupLabel)}</div><div class="sub">&nbsp;</div></div>
+          <div class="item"><div class="lbl">Batteribank</div><div class="val">${batteryAh ? `${num(batteryAh, 0)} Ah` : "Ikke beregnet"}</div><div class="sub">&nbsp;</div></div>
+        </div>
+      </div>
+      <div class="cover-bottom">
+        <div class="disclaimer">Tall og anbefalinger er veiledende.<br>Denne rapporten brukes på eget ansvar.</div>
+      </div>
+    </div>
+  </section>
+
+  <main class="page appendix" style="object-fit: fill;">
     <header class="top">
       <div class="brand"><img class="report-logo" src="/hydroguide-logo-black.svg" alt="HydroGuide" style="width: 181px; height: auto; position: absolute; top: 0px; left: 40px; pointer-events: none;"><span class="crumb"><br></span></div>
       <h1 class="report-title">${blank(title)}</h1>
-      <div class="report-meta"><span class="doc-id">${esc(docId)}</span><span>${blank(reportId)}</span><span>${esc(reportDate(now))}</span></div>
+      <div class="report-meta"><span aria-hidden="true">&nbsp;</span><span class="trace-id">${esc(docId)}</span><span>${esc(reportDate(now))}</span></div>
     </header>
 
     <section>
@@ -626,9 +787,9 @@ function buildReportHtml(
         </div>
         <aside class="up-tech" aria-label="Tekniske valg">
           <div class="up-row"><span class="k"><span style="color: rgb(0, 0, 0);">Solcellepanel</span></span><span class="v">${panelCount && panelPower ? `${num(panelCount * panelPower, 0)} Wp<span class="sub">${num(panelCount, 0)} × ${num(panelPower, 0)} Wp</span>` : "&nbsp;"}</span></div>
-          <div class="up-row"><span class="k"><span style="color: rgb(0, 0, 0);">Batteribank</span></span><span class="v">${batteryAh ? `${num(batteryAh, 0)} Ah${batteryUsableKWh ? `<span class="sub">${num(batteryUsableKWh, 1)} kWh brukbar</span>` : ""}` : "&nbsp;"}</span></div>
+          <div class="up-row"><span class="k"><span style="color: rgb(0, 0, 0);">Batteribank</span></span><span class="v">${batteryAh ? `${num(batteryAh, 0)} Ah` : "&nbsp;"}</span></div>
           <div class="up-row" style="color: rgb(0, 0, 0);"><span class="k"><span style="color: rgb(0, 0, 0);">Sekundærkilde</span></span><span class="v">${backupPowerW ? `${num(backupPowerW, 0)} W<span class="sub">${esc(backupLabel)}</span>` : "&nbsp;"}</span></div>
-          <div class="up-row"><span class="k"><span style="color: rgb(0, 0, 0);">Autonomi</span></span><span class="v">${blank(autonomy)}</span></div>
+          <div class="up-row"><span class="k"><span style="color: rgb(0, 0, 0);">Datalogger</span></span><span class="v">${blank(loggerSetup)}</span></div>
         </aside>
       </div>
     </section>
@@ -667,15 +828,15 @@ function buildReportHtml(
         </div>
         <table class="v6-compare">
           <colgroup><col class="c-source"><col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data"><col class="c-data"></colgroup>
-          <thead><tr><th class="rowhead"><span style="color: rgb(0, 0, 0);">Reservekilde</span></th><th><span style="color: rgb(0, 0, 0);">Effekt</span></th><th><span style="color: rgb(0, 0, 0);">Levetid</span></th><th><span style="color: rgb(0, 0, 0);">Driftstid</span></th><th><span style="color: rgb(0, 0, 0);">Drivstoff</span></th><th><span style="color: rgb(0, 0, 0);">CO₂</span></th><th><span style="color: rgb(0, 0, 0);">Kjøp</span></th><th><span style="color: rgb(0, 0, 0);">Drivstoff</span></th><th><span style="color: rgb(0, 0, 0);">TOC ${blank(num(config.other.evaluationHorizonYears, 0))} år</span></th></tr></thead>
+          <thead><tr><th class="rowhead"><span style="color: rgb(0, 0, 0);">Reservekilde</span></th><th><span style="color: rgb(0, 0, 0);">Effekt</span></th><th><span style="color: rgb(0, 0, 0);">Levetid</span></th><th><span style="color: rgb(0, 0, 0);">Driftstid</span></th><th><span style="color: rgb(0, 0, 0);">Drivstoff</span></th><th><span style="color: rgb(0, 0, 0);">CO₂</span></th><th><span style="color: rgb(0, 0, 0);">Kostnad</span></th><th><span style="color: rgb(0, 0, 0);">Drivstoff</span></th><th><span style="color: rgb(0, 0, 0);">TOC ${blank(num(config.other.evaluationHorizonYears, 0))} år</span></th></tr></thead>
           <tbody>${comparisonRows}</tbody>
         </table>
       </div>
     </section>
 
-    <section class="card-shell page-section">
+    <section class="card-shell page-section radio-section">
       <div class="radio-like-eb">
-        <div class="radio-head"><span class="ft-eyebrow">Radiolinje</span><b style="font-size:17px; font-weight:850; letter-spacing:-.03em; line-height:1.08; color:var(--ink);">Radiolinje · ${blank(title)}</b></div>
+        <div class="radio-head"><span class="ft-eyebrow">Radiolinje</span><b style="font-size:17px; font-weight:850; letter-spacing:-.03em; line-height:1.08; color:var(--ink);">${blank(title)}</b></div>
         <div class="v6-terrain" style="margin-top:0;height:200px">
           ${radioGraph.svg}
           ${radioGraph.yAxis}
@@ -695,7 +856,7 @@ function buildReportHtml(
       </div>
     </section>
 
-    <footer class="footer"><b>HydroGuide · Beslutningsrapport · ${blank(title)}&nbsp;</b><span class="trace-line">Sist sporing: ${esc(docId)}</span><b>Side 2 / 2</b></footer>
+    <footer class="footer"><b>HydroGuide</b><span class="trace-line" aria-hidden="true" style="display:none">Sist sporing: ${esc(docId)}</span><b>Side 2 / 2</b></footer>
   </main>
 </body></html>`;
 }

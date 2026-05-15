@@ -1,5 +1,4 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { useLanguage } from "../i18n";
 import { formatNumberDraft } from "../utils/format";
 import {
   workspaceContentValueClassName,
@@ -8,7 +7,6 @@ import {
   workspaceFieldStackClassName,
   workspaceInputClassName
 } from "../styles/workspace";
-import { NullableBoolean } from "../types";
 import { HelpTip } from "./WorkspaceActions";
 
 interface BaseProps {
@@ -17,11 +15,6 @@ interface BaseProps {
   error?: string;
   ariaLabel?: string;
   reserveErrorSpace?: boolean;
-}
-
-interface ChoiceOption<T extends string | boolean> {
-  value: T;
-  label: string;
 }
 
 function FieldLabel({
@@ -87,51 +80,6 @@ function FieldWrapper({
       {children}
       <FieldError error={error} id={errorId} reserveSpace={reserveErrorSpace} />
     </div>
-  );
-}
-
-function ChoiceField<T extends string | boolean>({
-  label,
-  helper,
-  error,
-  value,
-  onChange,
-  options
-}: BaseProps & {
-  value: T | "" | null;
-  onChange: (value: T) => void;
-  options: ChoiceOption<T>[];
-}) {
-  return (
-    <fieldset className={workspaceFieldStackClassName}>
-      <legend className={`${workspaceFieldLabelRowClassName} ${workspaceFieldLabelClassName}`}>
-        <span>{label}</span>
-        {helper ? <HelpTip text={helper} /> : null}
-      </legend>
-      <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2" role="radiogroup" aria-label={label}>
-        {options.map((option) => {
-          const selected = value === option.value;
-
-          return (
-            <button
-              key={String(option.value)}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              onClick={() => onChange(option.value)}
-              className={`h-9 rounded-md border px-3 py-1.5 ${workspaceFieldLabelClassName} transition ${
-                selected
-                  ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
-                  : "border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[var(--hg-ink)] hover:border-[var(--hg-accent-2)]"
-              }`}
-            >
-              {option.label}
-            </button>
-          );
-        })}
-      </div>
-      <FieldError error={error} />
-    </fieldset>
   );
 }
 
@@ -246,36 +194,3 @@ export function NumberField({
   );
 }
 
-interface BooleanChoiceFieldProps extends BaseProps {
-  value: NullableBoolean;
-  onChange: (value: boolean) => void;
-  trueLabel?: string;
-  falseLabel?: string;
-}
-
-export function BooleanChoiceField({
-  label,
-  helper,
-  error,
-  value,
-  onChange,
-  trueLabel,
-  falseLabel
-}: BooleanChoiceFieldProps) {
-  const { t } = useLanguage();
-  const resolvedTrueLabel = trueLabel ?? t("shared.yes");
-  const resolvedFalseLabel = falseLabel ?? t("shared.no");
-  return (
-    <ChoiceField
-      label={label}
-      helper={helper}
-      error={error}
-      value={value}
-      onChange={onChange}
-      options={[
-        { value: true, label: resolvedTrueLabel },
-        { value: false, label: resolvedFalseLabel }
-      ]}
-    />
-  );
-}

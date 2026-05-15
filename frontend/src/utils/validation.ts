@@ -1,7 +1,7 @@
 import type { Language } from "../i18n";
 import { MONTH_KEYS } from "../constants";
 import { visibleQuestionsForAnswers } from "../questions";
-import { Answers, EditableNumber, PlantConfiguration, ValidationErrors } from "../types";
+import { Answers, BackupSourceConfiguration, EditableNumber, PlantConfiguration, SecondarySourceKey, ValidationErrors } from "../types";
 
 interface ValidationStrings {
   fieldRequired: (label: string) => string;
@@ -11,7 +11,7 @@ interface ValidationStrings {
   fieldMustBeLteq: (label: string, max: number) => string;
   thisFieldRequired: string;
   valueMustBePositive: string;
-  reserveSourceRequired: string;
+  secondarySourceRequired: string;
   batteryModeRequired: string;
   inspectionsLabel: string;
   batteryValueLabel: string;
@@ -25,13 +25,11 @@ interface ValidationStrings {
   fuelCellConsumptionLabel: string;
   fuelCellPriceLabel: string;
   fuelCellLifetimeLabel: string;
-  fuelCellMaintenanceLabel: string;
   dieselPurchaseLabel: string;
   dieselPowerLabel: string;
   dieselConsumptionLabel: string;
   dieselPriceLabel: string;
   dieselLifetimeLabel: string;
-  dieselMaintenanceLabel: string;
   horizonLabel: string;
   co2FuelCellLabel: string;
   co2DieselLabel: string;
@@ -53,7 +51,7 @@ const nn: ValidationStrings = {
   fieldMustBeLteq: (label, max) => `${label} må være mindre enn eller lik ${max}.`,
   thisFieldRequired: "Dette feltet må fylles ut.",
   valueMustBePositive: "Verdien må være et tall større enn 0.",
-  reserveSourceRequired: "Det må avklares om systemet har reservekilde.",
+  secondarySourceRequired: "Det må avklares om systemet har sekundærkilde.",
   batteryModeRequired: "Batterimodus må velges.",
   inspectionsLabel: "Antall tilsyn per år",
   batteryValueLabel: "Batteriverdi",
@@ -67,13 +65,11 @@ const nn: ValidationStrings = {
   fuelCellConsumptionLabel: "Drivstofforbruk brenselcelle",
   fuelCellPriceLabel: "Drivstoffpris brenselcelle",
   fuelCellLifetimeLabel: "Levetid brenselcelle",
-  fuelCellMaintenanceLabel: "Årlig vedlikehold brenselcelle",
   dieselPurchaseLabel: "Innkjøpskostnad diesel",
   dieselPowerLabel: "Effekt diesel",
   dieselConsumptionLabel: "Drivstofforbruk diesel",
   dieselPriceLabel: "Drivstoffpris diesel",
   dieselLifetimeLabel: "Levetid diesel",
-  dieselMaintenanceLabel: "Årlig vedlikehold diesel",
   horizonLabel: "Vurderingshorisont",
   co2FuelCellLabel: "CO2-faktor for brenselcelle",
   co2DieselLabel: "CO2-faktor for diesel",
@@ -95,7 +91,7 @@ const en: ValidationStrings = {
   fieldMustBeLteq: (label, max) => `${label} must be less than or equal to ${max}.`,
   thisFieldRequired: "This field is required.",
   valueMustBePositive: "The value must be a number greater than 0.",
-  reserveSourceRequired: "Whether the system has a reserve source must be confirmed.",
+  secondarySourceRequired: "Whether the system has a secondary source must be confirmed.",
   batteryModeRequired: "Battery mode must be selected.",
   inspectionsLabel: "Inspections per year",
   batteryValueLabel: "Battery value",
@@ -109,13 +105,11 @@ const en: ValidationStrings = {
   fuelCellConsumptionLabel: "Fuel consumption fuel cell",
   fuelCellPriceLabel: "Fuel price fuel cell",
   fuelCellLifetimeLabel: "Lifetime fuel cell",
-  fuelCellMaintenanceLabel: "Annual maintenance fuel cell",
   dieselPurchaseLabel: "Purchase cost diesel",
   dieselPowerLabel: "Power diesel",
   dieselConsumptionLabel: "Fuel consumption diesel",
   dieselPriceLabel: "Fuel price diesel",
   dieselLifetimeLabel: "Lifetime diesel",
-  dieselMaintenanceLabel: "Annual maintenance diesel",
   horizonLabel: "Planning horizon",
   co2FuelCellLabel: "CO2 factor for fuel cell",
   co2DieselLabel: "CO2 factor for diesel",
@@ -193,6 +187,58 @@ function validateAnswers(answers: Answers): ValidationErrors {
   return errors;
 }
 
+function secondarySourceLabels(sourceKey: SecondarySourceKey) {
+  return sourceKey === "fuelCell"
+    ? {
+        purchase: s().fuelCellPurchaseLabel,
+        power: s().fuelCellPowerLabel,
+        consumption: s().fuelCellConsumptionLabel,
+        price: s().fuelCellPriceLabel,
+        lifetime: s().fuelCellLifetimeLabel,
+        co2: s().co2FuelCellLabel,
+        co2Key: "other.co2Methanol" as const
+      }
+    : {
+        purchase: s().dieselPurchaseLabel,
+        power: s().dieselPowerLabel,
+        consumption: s().dieselConsumptionLabel,
+        price: s().dieselPriceLabel,
+        lifetime: s().dieselLifetimeLabel,
+        co2: s().co2DieselLabel,
+        co2Key: "other.co2Diesel" as const
+      };
+}
+
+function validateBackupSource(
+  errors: ValidationErrors,
+  sourceKey: SecondarySourceKey,
+  source: BackupSourceConfiguration
+) {
+  const labels = secondarySourceLabels(sourceKey);
+
+  validateRequiredNumber(errors, `${sourceKey}.purchaseCost`, source.purchaseCost, labels.purchase, {
+    min: 0,
+    allowZero: true
+  });
+  validateRequiredNumber(errors, `${sourceKey}.powerW`, source.powerW, labels.power);
+  validateRequiredNumber(errors, `${sourceKey}.fuelConsumptionPerKWh`, source.fuelConsumptionPerKWh, labels.consumption, {
+    min: 0,
+    allowZero: true
+  });
+  validateRequiredNumber(errors, `${sourceKey}.fuelPrice`, source.fuelPrice, labels.price, {
+    min: 0,
+    allowZero: true
+  });
+  validateRequiredNumber(errors, `${sourceKey}.lifetime`, source.lifetime, labels.lifetime);
+}
+
+function secondarySourceOptions(configuration: PlantConfiguration): SecondarySourceKey[] {
+  const sources = configuration.systemParameters.secondarySourceOptions.filter(
+    (source): source is SecondarySourceKey => source === "fuelCell" || source === "diesel"
+  );
+  return sources.length > 0 ? sources : [configuration.systemParameters.selectedSecondarySource];
+}
+
 function validateRecommendationAccess(configuration: Pick<PlantConfiguration, "name" | "answers">): ValidationErrors {
   return validateAnswers(configuration.answers);
 }
@@ -215,7 +261,7 @@ export function validateConfiguration(configuration: PlantConfiguration): Valida
   }
 
   if (configuration.systemParameters.hasBackupSource === null) {
-    errors["systemParameters.hasBackupSource"] = s().reserveSourceRequired;
+    errors["systemParameters.hasBackupSource"] = s().secondarySourceRequired;
   }
 
   if (!configuration.systemParameters.batteryMode) {
@@ -250,61 +296,17 @@ export function validateConfiguration(configuration: PlantConfiguration): Valida
   );
 
   if (configuration.systemParameters.hasBackupSource === true) {
-    for (const sourceKey of ["fuelCell", "diesel"] as const) {
-      const source = configuration[sourceKey];
-      const labels =
-        sourceKey === "fuelCell"
-          ? {
-              purchase: s().fuelCellPurchaseLabel,
-              power: s().fuelCellPowerLabel,
-              consumption: s().fuelCellConsumptionLabel,
-              price: s().fuelCellPriceLabel,
-              lifetime: s().fuelCellLifetimeLabel,
-              maintenance: s().fuelCellMaintenanceLabel
-            }
-          : {
-              purchase: s().dieselPurchaseLabel,
-              power: s().dieselPowerLabel,
-              consumption: s().dieselConsumptionLabel,
-              price: s().dieselPriceLabel,
-              lifetime: s().dieselLifetimeLabel,
-              maintenance: s().dieselMaintenanceLabel
-            };
-
-      validateRequiredNumber(errors, `${sourceKey}.purchaseCost`, source.purchaseCost, labels.purchase, {
-        min: 0,
-        allowZero: true
-      });
-      validateRequiredNumber(errors, `${sourceKey}.powerW`, source.powerW, labels.power);
-      validateRequiredNumber(errors, `${sourceKey}.fuelConsumptionPerKWh`, source.fuelConsumptionPerKWh, labels.consumption, {
-        min: 0,
-        allowZero: true
-      });
-      validateRequiredNumber(errors, `${sourceKey}.fuelPrice`, source.fuelPrice, labels.price, {
-        min: 0,
-        allowZero: true
-      });
-      validateRequiredNumber(errors, `${sourceKey}.lifetime`, source.lifetime, labels.lifetime);
-      validateRequiredNumber(errors, `${sourceKey}.annualMaintenance`, source.annualMaintenance, labels.maintenance, {
-        min: 0,
-        allowZero: true
-      });
-    }
-
-    validateRequiredNumber(
-      errors,
-      "other.co2Methanol",
-      configuration.other.co2Methanol,
-      s().co2FuelCellLabel,
-      { min: 0, allowZero: true }
-    );
-    validateRequiredNumber(
-      errors,
-      "other.co2Diesel",
-      configuration.other.co2Diesel,
-      s().co2DieselLabel,
-      { min: 0, allowZero: true }
-    );
+    secondarySourceOptions(configuration).forEach((sourceKey) => {
+      const labels = secondarySourceLabels(sourceKey);
+      validateBackupSource(errors, sourceKey, configuration[sourceKey]);
+      validateRequiredNumber(
+        errors,
+        labels.co2Key,
+        sourceKey === "fuelCell" ? configuration.other.co2Methanol : configuration.other.co2Diesel,
+        labels.co2,
+        { min: 0, allowZero: true }
+      );
+    });
   }
 
   MONTH_KEYS.forEach((month) => {

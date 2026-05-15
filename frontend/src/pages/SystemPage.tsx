@@ -5,6 +5,7 @@ import { MONTH_KEYS, MONTH_LABELS as MONTH_NAMES } from "../constants";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import { workspaceOverlineClassName, workspacePageClassName, workspaceSectionTitleClassName } from "../styles/workspace";
+import type { MonthlySolarRadiation, SecondarySourceKey } from "../types";
 import { formatNumber } from "../utils/format";
 import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
@@ -17,6 +18,11 @@ const FULL_MONTH_LABELS = MONTH_KEYS.map((month) => MONTH_NAMES[month]);
 const MONTH_LABELS = FULL_MONTH_LABELS.map((month) => month.toUpperCase());
 const DEFAULT_MONTH_VALUES = [0.4, 1.0, 2.7, 4.2, 5.6, 5.2, 5.1, 4.1, 2.4, 1.2, 0.5, 0.3];
 const MONTH_PANEL_COLUMNS = ["MÅNED", "kWh/m²", "Δ FRA STANDARD"];
+const SECONDARY_SOURCE_OPTIONS = ["BRENSELCELLE", "DIESEL", "BEGGE"];
+const SECONDARY_SOURCE_LABELS: Record<SecondarySourceKey, string> = {
+  fuelCell: "Brenselcelle (metanol)",
+  diesel: "Dieselaggregat"
+};
 const PANEL_FOCUSABLE_SELECTOR =
   'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 type FlatFieldProps = {
@@ -47,9 +53,44 @@ function formatEditable(value: number | ""): string {
   return value === "" ? "" : String(value);
 }
 
+function secondarySourceOptions(sources: SecondarySourceKey[] | undefined, fallback: SecondarySourceKey): SecondarySourceKey[] {
+  const cleaned = (sources ?? []).filter((source): source is SecondarySourceKey => source === "fuelCell" || source === "diesel");
+  return cleaned.length > 0 ? cleaned : [fallback];
+}
+
+function secondarySelectionValue(sources: SecondarySourceKey[]): string {
+  const hasFuelCell = sources.includes("fuelCell");
+  const hasDiesel = sources.includes("diesel");
+  if (hasFuelCell && hasDiesel) return "BEGGE";
+  return hasDiesel ? "DIESEL" : "BRENSELCELLE";
+}
+
+function secondarySourcesForSelection(value: string): SecondarySourceKey[] {
+  if (value === "BEGGE") return ["fuelCell", "diesel"];
+  if (value === "DIESEL") return ["diesel"];
+  return ["fuelCell"];
+}
+
+function monthlyRadiationValues(radiation: MonthlySolarRadiation): number[] {
+  return MONTH_KEYS.map((key) => {
+    const v = radiation[key];
+    return typeof v === "number" && Number.isFinite(v) ? v : 0;
+  });
+}
+
+function cleanSolarValuesFromUrl(fallback: number[]): number[] {
+  if (typeof window === "undefined") return fallback;
+
+  const raw = new URLSearchParams(window.location.search).get("solarValues");
+  const values = (raw?.match(/\d+(?:[,.]\d+)?/g) ?? []).map((part) => Number(part.replace(",", ".")));
+  return values.length === 12 && values.every((value) => Number.isFinite(value) && value >= 0) ? values : fallback;
+}
+
 export default function SystemPage() {
   const { activeDraft, resetDraft, saveDraftMetadata } = useConfigurationContext();
   const { t, language } = useLanguage();
+  const cleanSolarChartMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("cleanSolarChart");
+  const activeSolarValues = monthlyRadiationValues(activeDraft.monthlySolarRadiation);
   const validationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
   const hasCompleteConfiguration = Object.keys(validationErrors).length === 0;
   const outputs = useMemo(
@@ -66,7 +107,7 @@ export default function SystemPage() {
       return [
         { kicker: "SOLCELLEPROD.", value: "-", unit: "kWh" },
         { kicker: batteryTileKicker, value: "-", unit: batteryTileUnit },
-        { kicker: "RESERVEDRIFT", value: "-", unit: "%" },
+        { kicker: "SEKUNDÆRDRIFT", value: "-", unit: "%" },
         { kicker: "CO₂", value: "-", unit: "kg" },
       ];
     }
@@ -79,7 +120,7 @@ export default function SystemPage() {
       : formatNumber(autonomyDays, 1);
 
     const annualRuntimeHours = outputs.derivedResults.annualTotals.annualSecondaryRuntimeHours;
-    const reservePct = (annualRuntimeHours / (365 * 24)) * 100;
+    const secondaryRuntimePct = (annualRuntimeHours / (365 * 24)) * 100;
 
     const recommendedSource = outputs.derivedResults.systemRecommendation.secondarySource;
     const co2Item = outputs.derivedResults.costComparison.alternatives.find(
@@ -90,10 +131,14 @@ export default function SystemPage() {
     return [
       { kicker: "SOLCELLEPROD.", value: formatNumber(annualSolarKWh, 0), unit: "kWh" },
       { kicker: batteryTileKicker, value: batteryTileValue, unit: batteryTileUnit },
-      { kicker: "RESERVEDRIFT", value: formatNumber(reservePct, 1), unit: "%" },
+      { kicker: "SEKUNDÆRDRIFT", value: formatNumber(secondaryRuntimePct, 1), unit: "%" },
       { kicker: "CO₂", value: formatNumber(annualCo2Kg, 0), unit: "kg" },
     ];
   }, [outputs, isAutonomyMode]);
+
+  if (cleanSolarChartMode) {
+    return <CleanSolinnstralingChart values={cleanSolarValuesFromUrl(activeSolarValues)} />;
+  }
 
   const handleReset = () => {
     const configurationName = activeDraft.name.trim() || t("shared.thisConfiguration");
@@ -117,7 +162,7 @@ export default function SystemPage() {
       <KpiStrip items={kpiItems} />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3">
-        <ReserveSection />
+        <SecondarySection />
         <EnergiSeksjon />
         <SolinnstralingSection />
       </div>
@@ -367,14 +412,11 @@ function EnergiSeksjon() {
   );
 }
 
-function SolinnstralingSection() {
+function SolinnstralingSection({ exportMode = false, overrideValues }: { exportMode?: boolean; overrideValues?: number[] } = {}) {
   const { activeDraft, updateConfigSectionField } = useConfigurationContext();
   const [panelOpen, setPanelOpen] = useState(false);
   const radiation = activeDraft.monthlySolarRadiation;
-  const values: number[] = MONTH_KEYS.map((key) => {
-    const v = radiation[key as keyof typeof radiation];
-    return typeof v === "number" && Number.isFinite(v) ? v : 0;
-  });
+  const values = overrideValues ?? monthlyRadiationValues(radiation);
   const sum = values.reduce((acc, v) => acc + v, 0);
 
   const setMonthlyValue = (i: number, raw: number) => {
@@ -383,18 +425,20 @@ function SolinnstralingSection() {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div data-clean-solar-chart={exportMode || undefined} className="flex min-h-0 flex-1 flex-col">
       <div className="mb-1 flex items-center gap-3">
         <p className={`${workspaceOverlineClassName} text-[var(--hg-ink-2)]`}>
           SOLINNSTRÅLING · kWh/m²
         </p>
-        <button
-          type="button"
-          onClick={() => setPanelOpen(true)}
-          className="hg-mono inline-flex h-8 items-center justify-center rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-badge-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-unit-tracking)] text-[var(--hg-accent)] transition hover:border-[var(--hg-accent-2)] hover:bg-[var(--hg-accent-soft)]"
-        >
-          Rediger månedsverdier
-        </button>
+        {!exportMode ? (
+          <button
+            type="button"
+            onClick={() => setPanelOpen(true)}
+            className="hg-mono inline-flex h-8 items-center justify-center rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-badge-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-unit-tracking)] text-[var(--hg-accent)] transition hover:border-[var(--hg-accent-2)] hover:bg-[var(--hg-accent-soft)]"
+          >
+            Rediger månedsverdier
+          </button>
+        ) : null}
       </div>
       <div className="min-h-0 flex-1 max-md:hidden">
         <RadiationBarChart values={values} />
@@ -405,15 +449,27 @@ function SolinnstralingSection() {
       <p className="hg-mono mt-1 text-right text-[13px] font-[var(--hg-type-weight-bold)] tracking-normal text-[var(--hg-ink)]">
         Sum: {sum.toFixed(2)} kWh/m² · år
       </p>
-      <MonthlyValuesPanel
-        open={panelOpen}
-        values={values}
-        baseline={DEFAULT_MONTH_VALUES}
-        onChange={(i, v) => setMonthlyValue(i, v)}
-        onClose={() => setPanelOpen(false)}
-        onReset={() => MONTH_KEYS.forEach((key, i) => updateConfigSectionField("monthlySolarRadiation", key as keyof typeof radiation, DEFAULT_MONTH_VALUES[i]))}
-      />
+      {!exportMode ? (
+        <MonthlyValuesPanel
+          open={panelOpen}
+          values={values}
+          baseline={DEFAULT_MONTH_VALUES}
+          onChange={(i, v) => setMonthlyValue(i, v)}
+          onClose={() => setPanelOpen(false)}
+          onReset={() => MONTH_KEYS.forEach((key, i) => updateConfigSectionField("monthlySolarRadiation", key as keyof typeof radiation, DEFAULT_MONTH_VALUES[i]))}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function CleanSolinnstralingChart({ values }: { values: number[] }) {
+  return (
+    <main className="hg-tp flex min-h-screen items-center justify-center bg-[var(--hg-bg)] p-8 text-[var(--hg-ink)]">
+      <section className="flex h-[430px] w-[1180px] max-w-full flex-col bg-[var(--hg-bg)]">
+        <SolinnstralingSection exportMode overrideValues={values} />
+      </section>
+    </main>
   );
 }
 
@@ -697,80 +753,107 @@ function MonthlyValuesPanel({ open, values, baseline, onChange, onClose, onReset
   );
 }
 
-function ReserveSection() {
+function SecondarySourceFields({ sourceKey }: { sourceKey: SecondarySourceKey }) {
   const { activeDraft, updateConfigSectionField } = useConfigurationContext();
-  const [sourceKey, setSourceKey] = useState<"fuelCell" | "diesel">("fuelCell");
   const cfg = activeDraft[sourceKey];
   const co2Factor = sourceKey === "fuelCell" ? activeDraft.other.co2Methanol : activeDraft.other.co2Diesel;
   const co2FactorKey = sourceKey === "fuelCell" ? "co2Methanol" : "co2Diesel";
 
-  const hasReserve = activeDraft.systemParameters.hasBackupSource;
+  return (
+    <div className="grid gap-y-3 border-t border-[var(--hg-hairline)] pt-3 first:border-t-0 first:pt-0">
+      <p className={`${workspaceOverlineClassName} text-[var(--hg-ink-2)]`}>{SECONDARY_SOURCE_LABELS[sourceKey]}</p>
+      <div className="grid gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
+        <FlatField
+          label="INNKJØPSKOSTNAD"
+          value={formatEditable(cfg.purchaseCost)}
+          unit="kr"
+          onChange={(v) => updateConfigSectionField(sourceKey, "purchaseCost", parseEditableNumber(v))}
+        />
+        <FlatField
+          label="TEKNISK LEVETID"
+          value={formatEditable(cfg.lifetime)}
+          unit="t"
+          onChange={(v) => updateConfigSectionField(sourceKey, "lifetime", parseEditableNumber(v))}
+        />
+        <FlatField
+          label="EFFEKT"
+          value={formatEditable(cfg.powerW)}
+          unit="W"
+          onChange={(v) => updateConfigSectionField(sourceKey, "powerW", parseEditableNumber(v))}
+        />
+        <FlatField
+          label="DRIVSTOFFORBRUK"
+          value={formatEditable(cfg.fuelConsumptionPerKWh)}
+          unit="L/kWh"
+          onChange={(v) => updateConfigSectionField(sourceKey, "fuelConsumptionPerKWh", parseEditableNumber(v))}
+        />
+        <FlatField
+          label="DRIVSTOFFPRIS"
+          value={formatEditable(cfg.fuelPrice)}
+          unit="kr/L"
+          onChange={(v) => updateConfigSectionField(sourceKey, "fuelPrice", parseEditableNumber(v))}
+        />
+        <FlatField
+          label="CO₂-FAKTOR"
+          value={formatEditable(co2Factor)}
+          unit="kg/L"
+          onChange={(v) => updateConfigSectionField("other", co2FactorKey, parseEditableNumber(v))}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SecondarySection() {
+  const { activeDraft, updateConfigSectionField } = useConfigurationContext();
+  const selectedSources = secondarySourceOptions(
+    activeDraft.systemParameters.secondarySourceOptions,
+    activeDraft.systemParameters.selectedSecondarySource
+  );
+  const comparisonValue = secondarySelectionValue(selectedSources);
+  const hasSecondarySource = activeDraft.systemParameters.hasBackupSource;
+  const hasBothSources = comparisonValue === "BEGGE";
+
+  const handleComparisonChange = (value: string) => {
+    const sources = secondarySourcesForSelection(value);
+    updateConfigSectionField("systemParameters", "secondarySourceOptions", sources);
+    if (!sources.includes(activeDraft.systemParameters.selectedSecondarySource)) {
+      updateConfigSectionField("systemParameters", "selectedSecondarySource", sources[0]);
+    }
+  };
+
   return (
     <section className="hg-tp-section border-t-2 border-[var(--hg-ink)] pt-2">
       <SectionHeader
-        title="RESERVEKILDE"
+        title="SEKUNDÆRKILDE"
         actions={
           <PillToggle
-            options={["MED RESERVE", "UTEN RESERVE"]}
-            selected={hasReserve === false ? "UTEN RESERVE" : "MED RESERVE"}
-            onChange={(v) => updateConfigSectionField("systemParameters", "hasBackupSource", v === "MED RESERVE")}
+            options={["MED SEKUNDÆRKILDE", "UTEN SEKUNDÆRKILDE"]}
+            selected={hasSecondarySource === false ? "UTEN SEKUNDÆRKILDE" : "MED SEKUNDÆRKILDE"}
+            onChange={(v) => updateConfigSectionField("systemParameters", "hasBackupSource", v === "MED SEKUNDÆRKILDE")}
           />
         }
       />
-      {hasReserve === false ? (
+      {hasSecondarySource === false ? (
         <p className={`${workspaceOverlineClassName} text-[var(--hg-ink-2)]`}>
-          Ingen reservekilde valgt. Systemet dimensjoneres uten reservekilde.
+          Ingen sekundærkilde valgt. Systemet dimensjoneres uten sekundærkilde.
         </p>
       ) : (
-        <div className="grid gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4">
           <FlatSelect
-            label="TYPE RESERVEKILDE"
-            value={sourceKey === "fuelCell" ? "Brenselcelle (metanol)" : "Dieselaggregat"}
-            options={["Brenselcelle (metanol)", "Dieselaggregat"]}
-            onChange={(v) => setSourceKey(v === "Brenselcelle (metanol)" ? "fuelCell" : "diesel")}
+            label="SEKUNDÆRKILDE"
+            value={comparisonValue}
+            options={SECONDARY_SOURCE_OPTIONS}
+            onChange={handleComparisonChange}
           />
-          <FlatField
-            label="INNKJØPSKOSTNAD"
-            value={formatEditable(cfg.purchaseCost)}
-            unit="kr"
-            onChange={(v) => updateConfigSectionField(sourceKey, "purchaseCost", parseEditableNumber(v))}
-          />
-          <FlatField
-            label="ÅRLIG VEDLIKEHOLD"
-            value={formatEditable(cfg.annualMaintenance)}
-            unit="kr/år"
-            onChange={(v) => updateConfigSectionField(sourceKey, "annualMaintenance", parseEditableNumber(v))}
-          />
-          <FlatField
-            label="TEKNISK LEVETID"
-            value={formatEditable(cfg.lifetime)}
-            unit="t"
-            onChange={(v) => updateConfigSectionField(sourceKey, "lifetime", parseEditableNumber(v))}
-          />
-          <FlatField
-            label="EFFEKT"
-            value={formatEditable(cfg.powerW)}
-            unit="W"
-            onChange={(v) => updateConfigSectionField(sourceKey, "powerW", parseEditableNumber(v))}
-          />
-          <FlatField
-            label="DRIVSTOFFORBRUK"
-            value={formatEditable(cfg.fuelConsumptionPerKWh)}
-            unit="L/kWh"
-            onChange={(v) => updateConfigSectionField(sourceKey, "fuelConsumptionPerKWh", parseEditableNumber(v))}
-          />
-          <FlatField
-            label="DRIVSTOFFPRIS"
-            value={formatEditable(cfg.fuelPrice)}
-            unit="kr/L"
-            onChange={(v) => updateConfigSectionField(sourceKey, "fuelPrice", parseEditableNumber(v))}
-          />
-          <FlatField
-            label="CO₂-FAKTOR"
-            value={formatEditable(co2Factor)}
-            unit="kg/L"
-            onChange={(v) => updateConfigSectionField("other", co2FactorKey, parseEditableNumber(v))}
-          />
+          <div
+            data-secondary-source-list
+            className={`grid gap-4 ${hasBothSources ? "max-h-[340px] overflow-y-auto pr-2" : ""}`}
+          >
+            {selectedSources.map((sourceKey) => (
+              <SecondarySourceFields key={sourceKey} sourceKey={sourceKey} />
+            ))}
+          </div>
         </div>
       )}
 

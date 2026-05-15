@@ -19,6 +19,8 @@ const componentTableCellClassName = `${componentRowSeparatorClassName} px-0 py-3
 const componentNumberCellClassName = `hg-mono ${componentTableCellClassName} text-right font-[var(--hg-type-weight-bold)]`;
 const componentTextAreaClassName =
   "mt-1 w-full resize-y font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] outline-none transition focus:border-[var(--hg-accent-2)]";
+const componentEditButtonClassName =
+  "hg-mono inline-flex h-8 items-center justify-center rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 text-[length:var(--hg-type-badge-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-button-tracking)] text-[var(--hg-accent)] transition hover:border-[var(--hg-accent-2)] hover:bg-[var(--hg-accent-soft)]";
 const componentDeleteButtonClassName =
   "inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-rose-50 px-3 text-[length:var(--hg-type-badge-size)] font-[var(--hg-type-weight-bold)] uppercase tracking-[var(--hg-type-button-tracking)] text-rose-700";
 const componentInputUnderlineClassName = "border-b-2 border-[#98a3b3] focus:border-[var(--hg-accent-2)]";
@@ -421,7 +423,7 @@ export default function ComponentsPage() {
                         <tr
                           data-component-edit-row
                           onClick={() => setEditingRowId((current) => (current === row.id ? null : row.id))}
-                          className={`cursor-pointer align-middle transition ${rowBg}`}
+                          className={`group cursor-pointer align-middle transition ${rowBg}`}
                         >
                           <td className={componentTableCellClassName} onClick={(event) => event.stopPropagation()}>
                             <StatusPill
@@ -441,6 +443,14 @@ export default function ComponentsPage() {
                             <td key={key} className={`${componentNumberCellClassName} ${dimmedTextCls}`}>{value}</td>
                           ))}
                           <td className={`${componentTableCellClassName} text-right`} onClick={(event) => event.stopPropagation()}>
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setEditingRowId((current) => (current === row.id ? null : row.id))}
+                                className={componentEditButtonClassName}
+                              >
+                                {editing ? "Lukk" : "Rediger"}
+                              </button>
                             <button
                               type="button"
                               onClick={() => handleRemoveRow(row.id)}
@@ -448,6 +458,7 @@ export default function ComponentsPage() {
                             >
                               Slett
                             </button>
+                            </div>
                           </td>
                         </tr>
                         {editing ? <DetailRow sourceRow={sourceRow} updateEquipmentRow={updateEquipmentRow} errors={errors} /> : null}
@@ -476,7 +487,7 @@ export default function ComponentsPage() {
                       <button
                         type="button"
                         onClick={() => setEditingRowId((current) => (current === row.id ? null : row.id))}
-                        className={`min-w-0 truncate text-left font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] ${dimmedTextCls}`}
+                        className={`min-w-0 truncate rounded-md border border-[var(--hg-hairline)] bg-[var(--hg-surface)] px-3 py-2 text-left font-[var(--hg-type-weight-bold)] text-[var(--hg-ink)] transition hover:border-[var(--hg-accent-2)] hover:bg-[var(--hg-accent-soft)] ${dimmedTextCls}`}
                       >
                         {displayName}
                       </button>

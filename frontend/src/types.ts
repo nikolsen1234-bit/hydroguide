@@ -17,7 +17,10 @@ export type BudgetDisplayUnit = "wh" | "ah";
 export type HeightScale = "AGL" | "ASL";
 export type Polarization = "horizontal" | "vertical";
 export type KFactorKey = "4/3" | "1" | "2/3" | "-2/3";
-export type BackupSourceName = "FuelCell" | "DieselGenerator";
+export type SecondarySourceKey = "fuelCell" | "diesel";
+export type SecondarySourceName = "FuelCell" | "DieselGenerator";
+export type BackupSourceKey = SecondarySourceKey;
+export type BackupSourceName = SecondarySourceName;
 
 export type EngineMode = "calculator" | "hydroguide";
 
@@ -69,6 +72,10 @@ export interface SystemParameters {
   lineOfSightUnder15km: NullableBoolean;
   inspectionsPerYear: EditableNumber;
   hasBackupSource: NullableBoolean;
+  selectedSecondarySource: SecondarySourceKey;
+  secondarySourceOptions: SecondarySourceKey[];
+  selectedBackupSource?: SecondarySourceKey;
+  reserveComparisonSources?: SecondarySourceKey[];
   batteryMode: BatteryMode | "";
   batteryValue: EditableNumber;
 }
@@ -90,7 +97,6 @@ export interface BackupSourceConfiguration {
   fuelConsumptionPerKWh: EditableNumber;
   fuelPrice: EditableNumber;
   lifetime: EditableNumber;
-  annualMaintenance: EditableNumber;
 }
 
 export interface OtherParameters {
@@ -147,7 +153,6 @@ export interface EquipmentRow {
   runtimeHoursPerDay: EditableNumber;
   purchaseCost: EditableNumber;
   lifetimeHours: EditableNumber;
-  annualMaintenance: EditableNumber;
   supplier: string;
   comment: string;
 }
@@ -212,7 +217,6 @@ export interface CostComparisonItem {
   source: BackupSourceName;
   purchaseCost: number;
   operatingCostPerYear: number;
-  annualMaintenance: number;
   evaluationHorizonYears: number;
   technicalLifetimeHours: number;
   totalRuntimeHours: number;
@@ -227,7 +231,7 @@ export interface CostComparison {
   alternatives: CostComparisonItem[];
 }
 
-export interface ReserveScenarioResult {
+export interface SecondaryScenarioResult {
   source: BackupSourceName;
   monthlyEnergyBalance: MonthlyEnergyBalanceRow[];
   annualTotals: AnnualTotals;
@@ -246,8 +250,8 @@ export interface DerivedResults {
   systemRecommendation: SystemRecommendationResult;
   costComparison: CostComparison;
   reserveScenarios: {
-    fuelCell: ReserveScenarioResult;
-    diesel: ReserveScenarioResult;
+    fuelCell: SecondaryScenarioResult;
+    diesel: SecondaryScenarioResult;
   };
 }
 

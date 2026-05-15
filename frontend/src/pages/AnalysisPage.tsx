@@ -12,8 +12,7 @@ import {
   workspaceContentValueBaseClassName,
   workspaceContentValueClassName,
   workspaceOverlineClassName,
-  workspacePageClassName,
-  workspaceTitleClassName
+  workspacePageClassName
 } from "../styles/workspace";
 import { BackupSourceName, CostComparisonItem, MonthlyEnergyBalanceRow, ValidationErrors } from "../types";
 import { formatNumber } from "../utils/format";
@@ -121,6 +120,34 @@ function InfoColumn({
     </div>
   );
 }
+
+const SOURCE_SUFFIX_RE = /\s+\(([^()]*?(?:NVE|Retningslinje)[^()]*)\)\.?$/i;
+const DETAIL_LABEL_RE = /^(Kriterium dokumentert|Kriterium ikke oppfylt|Mangler dokumentasjon|Driftsforutsetning|Svar Nei|Dokumentert|Ikke oppfylt):\s*/i;
+
+function sentence(value: string): string {
+  const trimmed = value.trim();
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+function parseDetailItem(item: string): { label: string; text: string; source: string } {
+  let text = item.trim();
+  let source = "";
+
+  const sourceMatch = text.match(SOURCE_SUFFIX_RE);
+  if (sourceMatch?.index !== undefined) {
+    source = sourceMatch[1].trim();
+    text = text.slice(0, sourceMatch.index).trim();
+  }
+
+  const labelMatch = text.match(DETAIL_LABEL_RE);
+  const label = labelMatch?.[1] ?? "";
+  if (labelMatch) {
+    text = text.slice(labelMatch[0].length).trim();
+  }
+
+  return { label, text, source };
+}
+
 function DetailGroupsPanel({
   groups
 }: {
@@ -135,16 +162,27 @@ function DetailGroupsPanel({
             {group.items.length === 0 ? (
               <p className={analysisMetricValueClassName}>{group.emptyText}</p>
             ) : (
-              group.items.map((item, itemIndex) => (
-                <div
-                  key={`${group.title}-${itemIndex}`}
-                  className="border-t border-[var(--hg-hairline)] pt-2 first:border-t-0 first:pt-0"
-                >
-                  <p className={analysisMetricValueClassName}>
-                    {item.endsWith(".") ? item : `${item}.`}
-                  </p>
-                </div>
-              ))
+              group.items.map((item, itemIndex) => {
+                const detail = parseDetailItem(item);
+                return (
+                  <div
+                    key={`${group.title}-${itemIndex}`}
+                    className="border-t border-[var(--hg-hairline)] pt-2 first:border-t-0 first:pt-0"
+                  >
+                    {detail.label ? (
+                      <p className={`${analysisMetricTitleClassName} mb-1 text-[10px] uppercase tracking-[0.16em]`}>
+                        {detail.label}
+                      </p>
+                    ) : null}
+                    <p className={analysisMetricValueClassName}>{sentence(detail.text)}</p>
+                    {detail.source ? (
+                      <p className={`${analysisMetricValueClassName} mt-1 text-[11px] text-[var(--hg-muted)]`}>
+                        Kilde: {detail.source}.
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
@@ -234,7 +272,6 @@ function CostCard({ item }: { item: CostComparisonItem }) {
       <div className="mt-3">
         <InfoRow label={t("analysis.purchase")} value={`${formatNumber(item.purchaseCost)} kr`} />
         <InfoRow label={t("analysis.fuelCostPerYearLabel")} value={`${formatNumber(item.operatingCostPerYear)} kr`} />
-        <InfoRow label={t("analysis.maintenancePerYear")} value={`${formatNumber(item.annualMaintenance)} kr`} />
         <InfoRow label={t("analysis.evaluationHorizon")} value={`${formatNumber(item.evaluationHorizonYears)} ${t("main.year")}`} />
         <InfoRow label={t("analysis.fuelPerYearLabel")} value={`${formatNumber(item.annualFuelConsumption)} l`} />
         <InfoRow label={t("analysis.co2PerYear")} value={`${formatNumber(item.annualCo2)} kg`} />
@@ -275,8 +312,15 @@ function LifetimePanel({ items }: { items: CostComparisonItem[] }) {
   );
 }
 
-function ReserveSourceToggle({ value, onChange }: { value: BackupSourceName; onChange: (v: BackupSourceName) => void }) {
-  const options: BackupSourceName[] = ["FuelCell", "DieselGenerator"];
+function SecondarySourceToggle({
+  value,
+  options,
+  onChange
+}: {
+  value: BackupSourceName;
+  options: BackupSourceName[];
+  onChange: (v: BackupSourceName) => void;
+}) {
   const { t, language } = useLanguage();
 
   return (
@@ -317,7 +361,7 @@ export default function AnalysisPage() {
   const { t, language } = useLanguage();
   const d = (value: string) => translateDynamic(value, language);
   const { activeDraft, saveDraft, saveDraftMetadata } = useConfigurationContext();
-  const [reserveSourceOverrides, setReserveSourceOverrides] = useState<Partial<Record<string, BackupSourceName>>>({});
+  const [secondarySourceOverrides, setSecondarySourceOverrides] = useState<Partial<Record<string, BackupSourceName>>>({});
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const autonomyResultLabel =
@@ -367,36 +411,45 @@ export default function AnalysisPage() {
   const recommendation = isGuidedMode ? liveOutputs?.recommendation ?? liveRecommendation : null;
   const derivedResults = liveOutputs?.derivedResults ?? null;
   const hasBackupSource = activeDraft.systemParameters.hasBackupSource === true;
-  const recommendedReserveSource: BackupSourceName =
+  const secondaryDisplayOptions: BackupSourceName[] =
+    derivedResults?.costComparison.alternatives.map((item) => item.source) ?? [];
+  const recommendedSecondarySource: BackupSourceName =
     derivedResults?.systemRecommendation.secondarySource === "FuelCell" ? "FuelCell" : "DieselGenerator";
-  const activeReserveSource = reserveSourceOverrides[activeDraft.id] ?? recommendedReserveSource;
-  const handleReserveSourceChange = useCallback(
+  const fallbackSecondarySource = secondaryDisplayOptions.includes(recommendedSecondarySource)
+    ? recommendedSecondarySource
+    : secondaryDisplayOptions[0] ?? recommendedSecondarySource;
+  const overrideSecondarySource = secondarySourceOverrides[activeDraft.id];
+  const activeSecondarySource =
+    overrideSecondarySource && secondaryDisplayOptions.includes(overrideSecondarySource)
+      ? overrideSecondarySource
+      : fallbackSecondarySource;
+  const handleSecondarySourceChange = useCallback(
     (value: BackupSourceName) => {
-      setReserveSourceOverrides((current) =>
+      setSecondarySourceOverrides((current) =>
         current[activeDraft.id] === value ? current : { ...current, [activeDraft.id]: value }
       );
     },
     [activeDraft.id]
   );
 
-  const activeReserveScenario = derivedResults
-    ? activeReserveSource === "FuelCell"
+  const activeSecondaryScenario = derivedResults
+    ? activeSecondarySource === "FuelCell"
       ? derivedResults.reserveScenarios.fuelCell
       : derivedResults.reserveScenarios.diesel
     : null;
 
   const visibleMonthlyEnergyBalance =
-    hasBackupSource && activeReserveScenario
-      ? activeReserveScenario.monthlyEnergyBalance
+    hasBackupSource && activeSecondaryScenario
+      ? activeSecondaryScenario.monthlyEnergyBalance
       : derivedResults?.monthlyEnergyBalance ?? [];
   const visibleAnnualTotals =
-    hasBackupSource && activeReserveScenario ? activeReserveScenario.annualTotals : derivedResults?.annualTotals ?? null;
+    hasBackupSource && activeSecondaryScenario ? activeSecondaryScenario.annualTotals : derivedResults?.annualTotals ?? null;
   const visibleSecondarySourcePowerW =
-    hasBackupSource && activeReserveScenario
-      ? activeReserveScenario.secondarySourcePowerW
+    hasBackupSource && activeSecondaryScenario
+      ? activeSecondaryScenario.secondarySourcePowerW
       : derivedResults?.systemRecommendation.secondarySourcePowerW ?? 0;
-  const visibleReserveSourceValue =
-    hasBackupSource ? activeReserveSource : derivedResults?.systemRecommendation.secondarySource ?? "NotComputed";
+  const visibleSecondarySourceValue =
+    hasBackupSource ? activeSecondarySource : derivedResults?.systemRecommendation.secondarySource ?? "NotComputed";
 
   const handleSave = () => {
     if (foundationReady && hasSystemDetails) {
@@ -427,7 +480,7 @@ export default function AnalysisPage() {
         activeDraft,
         recommendation,
         derivedResults,
-        activeReserveSource,
+        activeSecondarySource,
         visibleAnnualTotals,
         visibleSecondarySourcePowerW
       );
@@ -468,7 +521,7 @@ export default function AnalysisPage() {
         recommendation,
         aiRecommendationText,
         derivedResults,
-        activeReserveSource,
+        activeSecondarySource,
         visibleAnnualTotals,
         visibleMonthlyEnergyBalance
       );
@@ -530,9 +583,9 @@ export default function AnalysisPage() {
       ]
     : [];
 
-  const reserveSummaryItems = derivedResults
+  const secondarySummaryItems = derivedResults
     ? [
-        { label: t("analysis.reserveSource"), value: d(visibleReserveSourceValue) },
+        { label: t("analysis.reserveSource"), value: d(visibleSecondarySourceValue) },
         { label: t("analysis.reserveSourcePower"), value: `${formatNumber(visibleSecondarySourcePowerW)} W` },
         { label: t("analysis.batteryBank"), value: `${formatNumber(derivedResults.systemRecommendation.batteryCapacityAh)} Ah` },
         {
@@ -547,27 +600,6 @@ export default function AnalysisPage() {
 
   const showRecommendationContent = isGuidedMode && Boolean(recommendation && solutionLead);
   const canGenerateReport = Boolean(derivedResults && visibleAnnualTotals && recommendation && hasSystemDetails && !isGeneratingReport);
-
-  const recommendationSection =
-    showRecommendationContent && recommendation && solutionLead ? (
-      <div>
-        <h2 className={`max-w-3xl ${workspaceTitleClassName}`}>{solutionLead.title}</h2>
-        {(solutionLead.detail || solutionLead.profile) && (
-          <div className={`mt-1 max-w-3xl space-y-2 ${workspaceContentValueClassName}`}>
-            {solutionLead.detail ? (
-              <p>
-                <span className={analysisMetricValueBaseClassName}>{t("analysis.execution")}</span> {solutionLead.detail}.
-              </p>
-            ) : null}
-            {solutionLead.profile ? (
-              <p>
-                <span className={analysisMetricValueBaseClassName}>{t("analysis.profile")}</span> {solutionLead.profile}.
-              </p>
-            ) : null}
-          </div>
-        )}
-      </div>
-    ) : null;
 
   return (
     <main className={workspacePageClassName}>
@@ -605,32 +637,32 @@ export default function AnalysisPage() {
           unit: "kWh",
         },
         { kicker: "FORBRUK", value: visibleAnnualTotals ? formatNumber(visibleAnnualTotals.annualLoadDemandKWh, 0) : "-", unit: "kWh" },
-        { kicker: "RESERVEDRIFT", value: visibleAnnualTotals ? formatNumber(visibleAnnualTotals.annualSecondaryRuntimeHours, 0) : "-", unit: "t" },
+        { kicker: "SEKUNDÆRDRIFT", value: visibleAnnualTotals ? formatNumber(visibleAnnualTotals.annualSecondaryRuntimeHours, 0) : "-", unit: "t" },
         { kicker: "BATTERIAUTONOMI", value: derivedResults ? formatNumber(derivedResults.systemRecommendation.batteryAutonomyDays, 1) : "-", unit: "dager" },
       ]} />
 
       {derivedResults ? (
         <>
-          {showRecommendationContent ? recommendationSection : null}
-
           <EditorialSection
             title={t("analysis.systemAndReserve")}
-            description={t("analysis.systemAndReserveDesc")}
-            actions={hasBackupSource ? <ReserveSourceToggle value={activeReserveSource} onChange={handleReserveSourceChange} /> : undefined}
+            actions={
+              hasBackupSource && secondaryDisplayOptions.length > 1
+                ? <SecondarySourceToggle value={activeSecondarySource} options={secondaryDisplayOptions} onChange={handleSecondarySourceChange} />
+                : undefined
+            }
           >
             {isGuidedMode ? (
               <div className="grid gap-6 lg:grid-cols-2 lg:gap-0 lg:divide-x lg:divide-[var(--hg-hairline)]">
                 <InfoColumn title={t("analysis.system")} items={systemSummaryItems} className="lg:pr-8" />
-                <InfoColumn title={t("analysis.reserve")} items={reserveSummaryItems} className="lg:pl-8" />
+                <InfoColumn title={t("analysis.reserve")} items={secondarySummaryItems} className="lg:pl-8" />
               </div>
             ) : (
-              <InfoColumn title={t("analysis.reserve")} items={reserveSummaryItems} />
+              <InfoColumn title={t("analysis.reserve")} items={secondarySummaryItems} />
             )}
           </EditorialSection>
 
           <EditorialSection
             title={t("analysis.energyAndConsumption")}
-            description={t("analysis.energyAndConsumptionDesc")}
           >
             <div className="hidden md:grid md:grid-cols-3 md:divide-x md:divide-[var(--hg-hairline)]">
               <div className="divide-y divide-[var(--hg-hairline)] md:px-6">
@@ -707,7 +739,7 @@ export default function AnalysisPage() {
                 rows={visibleMonthlyEnergyBalance}
                 backupSource={
                   hasBackupSource
-                    ? activeReserveSource
+                    ? activeSecondarySource
                     : derivedResults.systemRecommendation.secondarySource === "NotComputed"
                       ? undefined
                       : derivedResults.systemRecommendation.secondarySource
@@ -783,8 +815,6 @@ export default function AnalysisPage() {
         </>
       ) : (
         <>
-          {showRecommendationContent ? recommendationSection : null}
-
           {isGuidedMode && missingBlockers.length > 0 ? (
             <EditorialSection
               title={t("analysis.missingForFull")}
@@ -804,10 +834,10 @@ export default function AnalysisPage() {
             >
               <div className="flex flex-wrap gap-3">
                 <NavLink to="/parametere" className={blockerLinkClass}>
-                  Tekniske parameterar
+                  Tekniske parametere
                 </NavLink>
                 <NavLink to="/komponenter" className={blockerLinkClass}>
-                  Komponentar
+                  Komponenter
                 </NavLink>
               </div>
             </EditorialSection>

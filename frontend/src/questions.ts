@@ -40,6 +40,13 @@ function inputFor(answerModel: (typeof hydroGuideCriteria)[number]["answerModel"
   return "select";
 }
 
+function matchesWhen(answers: Answers, showWhen: NonNullable<(typeof hydroGuideCriteria)[number]["visibleWhen"]>) {
+  return Object.entries(showWhen).every(([key, expected]) => {
+    const actual = answers[key];
+    return Array.isArray(expected) ? expected.includes(String(actual)) : actual === expected;
+  });
+}
+
 function criterionToQuestion(criterionId: string): Question {
   const criterion = criteriaById.get(criterionId);
   if (!criterion) {
@@ -61,7 +68,8 @@ function criterionToQuestion(criterionId: string): Question {
       semanticMeaning: item.semanticMeaning,
       isAppOperationalization: item.isAppOperationalization
     })),
-    required: criterion.required ?? true
+    required: criterion.required ?? true,
+    condition: criterion.visibleWhen ? (answers) => matchesWhen(answers, criterion.visibleWhen!) : undefined
   };
 }
 

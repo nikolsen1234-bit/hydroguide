@@ -101,16 +101,6 @@ function validateImportFile(file: File) {
   }
 }
 
-function clearStoredConfigurationState() {
-  for (const storageName of ["sessionStorage", "localStorage"] as const) {
-    try {
-      const storage = window[storageName];
-      storage.removeItem(STORAGE_KEYS.CONFIGS);
-      storage.removeItem(STORAGE_KEYS.ACTIVE_ID);
-    } catch {}
-  }
-}
-
 function stripEmptyValues<T extends object>(obj: T): Partial<T> {
   const cleaned: Partial<T> = {};
 
@@ -163,7 +153,7 @@ function createExportPayload(configuration: PlantConfiguration) {
       lineLossDb: configuration.radioLink.lineLossDb
     },
     equipmentRows: configuration.equipmentRows
-        .filter((row) => row.name.trim() || row.powerW !== "" || row.runtimeHoursPerDay !== "" || row.purchaseCost !== "" || row.lifetimeHours !== "" || row.annualMaintenance !== "" || row.supplier.trim() || row.comment.trim())
+        .filter((row) => row.name.trim() || row.powerW !== "" || row.runtimeHoursPerDay !== "" || row.purchaseCost !== "" || row.lifetimeHours !== "" || row.supplier.trim() || row.comment.trim())
         .map((row) => ({
           id: row.id,
           active: row.active,
@@ -172,7 +162,6 @@ function createExportPayload(configuration: PlantConfiguration) {
           runtimeHoursPerDay: row.runtimeHoursPerDay,
           purchaseCost: row.purchaseCost,
           lifetimeHours: row.lifetimeHours,
-          annualMaintenance: row.annualMaintenance,
           supplier: row.supplier,
           comment: row.comment
         }))
@@ -191,6 +180,73 @@ function downloadExport(name: string, content: string) {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+function getConfigurationStorage(): Storage | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function readStoredConfigurationState(): {
+  configurations: PlantConfiguration[];
+  activeDraft: PlantConfiguration;
+  baselineDraft: PlantConfiguration;
+} | null {
+  const storage = getConfigurationStorage();
+  if (!storage) {
+    return null;
+  }
+
+  try {
+    const rawConfigurations = storage.getItem(STORAGE_KEYS.CONFIGS);
+    if (!rawConfigurations) {
+      return null;
+    }
+
+    const parsed = JSON.parse(rawConfigurations) as unknown;
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+
+    const configurations = parsed
+      .filter((item): item is Partial<PlantConfiguration> => Boolean(item) && typeof item === "object" && !Array.isArray(item))
+      .map((item, index) => normalizeConfiguration(item, index + 1));
+
+    if (configurations.length === 0) {
+      return null;
+    }
+
+    const activeId = storage.getItem(STORAGE_KEYS.ACTIVE_ID);
+    const activeConfiguration = configurations.find((cfg) => cfg.id === activeId) ?? configurations[0];
+    const activeDraft = cloneConfiguration(activeConfiguration);
+
+    return {
+      configurations,
+      activeDraft,
+      baselineDraft: cloneConfiguration(activeDraft)
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredConfigurationState(configurations: PlantConfiguration[], activeId: string) {
+  const storage = getConfigurationStorage();
+  if (!storage || configurations.length === 0) {
+    return;
+  }
+
+  try {
+    storage.setItem(STORAGE_KEYS.CONFIGS, JSON.stringify(configurations));
+    storage.setItem(STORAGE_KEYS.ACTIVE_ID, activeId);
+  } catch {}
 }
 
 function toImportedPartialConfiguration(raw: Record<string, unknown>): Partial<PlantConfiguration> {
@@ -222,19 +278,24 @@ function toImportedPartialConfiguration(raw: Record<string, unknown>): Partial<P
 }
 
 export function ConfigurationProvider({ children }: { children: ReactNode }) {
+  const storedStateRef = useRef<ReturnType<typeof readStoredConfigurationState>>(null);
   const initialDraftRef = useRef<PlantConfiguration | null>(null);
   if (!initialDraftRef.current) {
-    initialDraftRef.current = createBlankConfiguration(1);
+    const storedState = readStoredConfigurationState();
+    storedStateRef.current = storedState;
+    initialDraftRef.current = storedState?.activeDraft ?? createBlankConfiguration(1);
   }
 
   const initialDraft = initialDraftRef.current;
-  const [configurations, setConfigurations] = useState<PlantConfiguration[]>([]);
-  const [activeDraft, setActiveDraft] = useState<PlantConfiguration>(initialDraft);
-  const [baselineDraft, setBaselineDraft] = useState<PlantConfiguration>(() => cloneConfiguration(initialDraft));
+  const [configurations, setConfigurations] = useState<PlantConfiguration[]>(() => storedStateRef.current?.configurations ?? []);
+  const [activeDraft, setActiveDraft] = useState<PlantConfiguration>(() => cloneConfiguration(initialDraft));
+  const [baselineDraft, setBaselineDraft] = useState<PlantConfiguration>(
+    () => storedStateRef.current?.baselineDraft ?? cloneConfiguration(initialDraft)
+  );
 
   useEffect(() => {
-    clearStoredConfigurationState();
-  }, []);
+    writeStoredConfigurationState(configurations, activeDraft.id);
+  }, [activeDraft.id, configurations]);
 
   const hasUnsavedChanges = JSON.stringify(activeDraft) !== JSON.stringify(baselineDraft);
 
@@ -366,7 +427,6 @@ export function ConfigurationProvider({ children }: { children: ReactNode }) {
             runtimeHoursPerDay: "",
             purchaseCost: "",
             lifetimeHours: "",
-            annualMaintenance: "",
             supplier: "",
             comment: ""
           }

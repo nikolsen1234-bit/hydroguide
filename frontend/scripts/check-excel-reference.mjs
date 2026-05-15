@@ -27,16 +27,14 @@ const referenceRequest = {
     powerW: 82,
     fuelConsumptionPerKWh: 0.9,
     fuelPrice: 75,
-    lifetime: 6500,
-    annualMaintenance: 100
+    lifetime: 6500
   },
   diesel: {
     purchaseCost: 35000,
     powerW: 6500,
     fuelConsumptionPerKWh: 0.5,
     fuelPrice: 18.1,
-    lifetime: 43800,
-    annualMaintenance: 25000
+    lifetime: 43800
   },
   other: {
     co2Methanol: 1.088,
@@ -79,8 +77,8 @@ const expected = {
   annualEnergyDeficitKWh: 102.63,
   dieselFuelLitersPerYear: 51.32,
   dieselFuelCostPerYear: 928.82,
-  fuelCellToc: 237475.25,
-  dieselToc: 294288.16
+  fuelCellToc: 236475.25,
+  dieselToc: 44288.16
 };
 
 function assertClose(label, actual, expectedValue, tolerance = 0.02) {
@@ -147,8 +145,7 @@ assertClose(
   "fuelCell TOC includes replacementCount",
   replacementFuelCell?.toc ?? Number.NaN,
   (replacementFuelCell?.purchaseCost ?? 0) +
-    ((replacementFuelCell?.operatingCostPerYear ?? 0) + (replacementFuelCell?.annualMaintenance ?? 0)) *
-      (replacementFuelCell?.evaluationHorizonYears ?? 0) +
+    (replacementFuelCell?.operatingCostPerYear ?? 0) * (replacementFuelCell?.evaluationHorizonYears ?? 0) +
     (replacementFuelCell?.replacementCount ?? 0) * (replacementFuelCell?.purchaseCost ?? 0),
   0.1
 );
@@ -156,8 +153,7 @@ assertClose(
   "diesel TOC includes replacementCount",
   replacementDiesel?.toc ?? Number.NaN,
   (replacementDiesel?.purchaseCost ?? 0) +
-    ((replacementDiesel?.operatingCostPerYear ?? 0) + (replacementDiesel?.annualMaintenance ?? 0)) *
-      (replacementDiesel?.evaluationHorizonYears ?? 0) +
+    (replacementDiesel?.operatingCostPerYear ?? 0) * (replacementDiesel?.evaluationHorizonYears ?? 0) +
     (replacementDiesel?.replacementCount ?? 0) * (replacementDiesel?.purchaseCost ?? 0),
   0.1
 );

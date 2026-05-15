@@ -114,7 +114,6 @@ export interface Translations {
   "system.fuelPrice": string;
   "system.technicalLifetime": string;
   "system.hours": string;
-  "system.annualMaintenance": string;
   "system.krPerYear": string;
   "system.co2FactorFuelCell": string;
   "system.co2FactorDiesel": string;
@@ -195,7 +194,6 @@ export interface Translations {
   "analysis.tocComparisonDesc": string;
   "analysis.purchase": string;
   "analysis.fuelCostPerYearLabel": string;
-  "analysis.maintenancePerYear": string;
   "analysis.evaluationHorizon": string;
   "analysis.fuelPerYearLabel": string;
   "analysis.co2PerYear": string;
@@ -324,7 +322,6 @@ export interface Translations {
   "docs.purchaseCost": string;
   "docs.horizonYears": string;
   "docs.fuelCostPerYear": string;
-  "docs.maintenanceCostPerYear": string;
   "docs.radioLinkSection": string;
   "docs.radioLinkDesc": string;
   "docs.terrainDistance": string;

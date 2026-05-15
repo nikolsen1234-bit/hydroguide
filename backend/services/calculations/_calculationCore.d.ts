@@ -44,7 +44,6 @@ export interface ApiCostComparisonItem {
   source: "Brenselcelle" | "Dieselaggregat";
   purchaseCost: number;
   operatingCostPerYear: number;
-  annualMaintenance: number;
   evaluationHorizonYears: number;
   technicalLifetimeHours: number;
   totalRuntimeHours: number;
@@ -54,13 +53,15 @@ export interface ApiCostComparisonItem {
   toc: number;
 }
 
-export interface ApiReserveScenario {
+export interface ApiSecondaryScenario {
   source: "Brenselcelle" | "Dieselaggregat";
   monthlyEnergyBalance: ApiMonthlyEnergyBalanceRow[];
   annualTotals: ApiAnnualTotals;
   secondarySourcePowerW: number;
   costItem: ApiCostComparisonItem | null;
 }
+
+export type ApiReserveScenario = ApiSecondaryScenario;
 
 export interface ApiCalculationResults {
   equipmentBudgetRows: ApiEquipmentBudgetRow[];
@@ -85,8 +86,8 @@ export interface ApiCalculationResults {
     alternatives: ApiCostComparisonItem[];
   };
   scenarios: {
-    fuelCell: ApiReserveScenario;
-    diesel: ApiReserveScenario;
+    fuelCell: ApiSecondaryScenario;
+    diesel: ApiSecondaryScenario;
   };
 }
 

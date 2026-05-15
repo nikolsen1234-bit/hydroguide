@@ -1,11 +1,11 @@
 import {
   EMPTY_ANSWERS,
-  EMPTY_BACKUP_SOURCE,
   EMPTY_BATTERY,
   EMPTY_EQUIPMENT_BUDGET_SETTINGS,
   MAX_CONFIGURATION_EQUIPMENT_ROWS,
-  EMPTY_MONTHLY_SOLAR_RADIATION,
-  EMPTY_OTHER,
+  DEFAULT_BACKUP_SOURCES,
+  DEFAULT_MONTHLY_SOLAR_RADIATION,
+  DEFAULT_OTHER,
   EMPTY_RADIO_LINK_CONFIGURATION,
   EMPTY_SOLAR,
   EMPTY_SYSTEM_PARAMETERS
@@ -15,6 +15,7 @@ import {
   Answers,
   BackupSourceConfiguration,
   BatteryConfiguration,
+  SecondarySourceKey,
   EquipmentBudgetSettings,
   DerivedResults,
   EditableNumber,
@@ -59,23 +60,86 @@ function normalizeBoolean(value: unknown): NullableBoolean {
   return typeof value === "boolean" ? value : null;
 }
 
+function normalizeSecondarySourceKey(value: unknown): SecondarySourceKey | null {
+  const source = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (source === "diesel" || source === "dieselaggregat" || source === "dieselgenerator") {
+    return "diesel";
+  }
+  if (source === "fuelcell" || source === "fuel_cell" || source === "fuel-cell" || source === "brenselcelle") {
+    return "fuelCell";
+  }
+  return null;
+}
+
+function normalizeSecondarySourceOptions(value: unknown, fallback: SecondarySourceKey): SecondarySourceKey[] {
+  const rawValues =
+    value === "both" || value === "begge"
+      ? ["fuelCell", "diesel"]
+      : Array.isArray(value)
+        ? value
+        : typeof value === "string"
+          ? value.split(",")
+          : [];
+  const sources: SecondarySourceKey[] = [];
+
+  rawValues.forEach((item) => {
+    const source = normalizeSecondarySourceKey(item);
+    if (source && !sources.includes(source)) {
+      sources.push(source);
+    }
+  });
+
+  return sources.length > 0 ? sources : [fallback];
+}
+
+function normalizeMinimumFlowRequirement(value: unknown): unknown {
+  const numericValue =
+    typeof value === "number" && Number.isFinite(value)
+      ? value
+      : typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value))
+        ? Number(value)
+        : null;
+
+  if (numericValue === null || numericValue < 0) {
+    return value;
+  }
+
+  if (numericValue <= 50) return "flow_0_50_lps";
+  if (numericValue <= 200) return "flow_50_200_lps";
+  if (numericValue <= 500) return "flow_200_500_lps";
+  return "flow_over_500_lps";
+}
+
 function migrateAnswers(value: unknown): Answers {
   const v = (value ?? {}) as Record<string, unknown>;
   const existing = Object.keys(EMPTY_ANSWERS).some((key) => Object.prototype.hasOwnProperty.call(v, key))
     ? Object.fromEntries(Object.keys(EMPTY_ANSWERS).map((key) => [key, v[key] ?? EMPTY_ANSWERS[key]])) as HydroGuideAnswers
     : null;
 
-  if (existing) return existing;
+  if (existing) {
+    return {
+      ...existing,
+      minimum_flow_requirement_lps: normalizeMinimumFlowRequirement(existing.minimum_flow_requirement_lps) as HydroGuideAnswers[string]
+    };
+  }
   return { ...EMPTY_ANSWERS };
 }
 
 function normalizeSystemParameters(value: Partial<SystemParameters> | undefined): SystemParameters {
+  const rawSelectedSecondarySource = value?.selectedSecondarySource ?? value?.selectedBackupSource;
+  const selectedSecondarySource = rawSelectedSecondarySource === "diesel" ? "diesel" : "fuelCell";
+
   return {
     "4gCoverage": normalizeBoolean(value?.["4gCoverage"]),
     nbIotCoverage: normalizeBoolean(value?.nbIotCoverage),
     lineOfSightUnder15km: normalizeBoolean(value?.lineOfSightUnder15km),
     inspectionsPerYear: normalizeNumber(value?.inspectionsPerYear),
     hasBackupSource: normalizeBoolean(value?.hasBackupSource),
+    selectedSecondarySource,
+    secondarySourceOptions: normalizeSecondarySourceOptions(
+      value?.secondarySourceOptions ?? value?.reserveComparisonSources,
+      selectedSecondarySource
+    ),
     batteryMode: value?.batteryMode === "ah" || value?.batteryMode === "autonomyDays" ? value.batteryMode : "",
     batteryValue: normalizeNumber(value?.batteryValue)
   };
@@ -102,34 +166,33 @@ function normalizeBackupSource(value: Partial<BackupSourceConfiguration> | undef
     powerW: normalizeNumber(value?.powerW),
     fuelConsumptionPerKWh: normalizeNumber(value?.fuelConsumptionPerKWh),
     fuelPrice: normalizeNumber(value?.fuelPrice),
-    lifetime: normalizeNumber(value?.lifetime),
-    annualMaintenance: normalizeNumber(value?.annualMaintenance)
+    lifetime: normalizeNumber(value?.lifetime)
   };
 }
 
 function normalizeOther(value: Partial<OtherParameters> | undefined): OtherParameters {
   return {
-    co2Methanol: normalizeNumber(value?.co2Methanol),
-    co2Diesel: normalizeNumber(value?.co2Diesel),
-    evaluationHorizonYears: normalizeNumber(value?.evaluationHorizonYears)
+    co2Methanol: normalizeNumber(value?.co2Methanol ?? DEFAULT_OTHER.co2Methanol),
+    co2Diesel: normalizeNumber(value?.co2Diesel ?? DEFAULT_OTHER.co2Diesel),
+    evaluationHorizonYears: normalizeNumber(value?.evaluationHorizonYears ?? DEFAULT_OTHER.evaluationHorizonYears)
   };
 }
 
 function normalizeMonthlySolarRadiation(value: unknown): MonthlySolarRadiation {
   const v = (value ?? {}) as Record<string, unknown>;
   return {
-    jan: normalizeNumber(v.jan),
-    feb: normalizeNumber(v.feb),
-    mar: normalizeNumber(v.mar),
-    apr: normalizeNumber(v.apr),
-    may: normalizeNumber(v.may ?? v.mai),
-    jun: normalizeNumber(v.jun),
-    jul: normalizeNumber(v.jul),
-    aug: normalizeNumber(v.aug),
-    sep: normalizeNumber(v.sep),
-    oct: normalizeNumber(v.oct ?? v.okt),
-    nov: normalizeNumber(v.nov),
-    dec: normalizeNumber(v.dec ?? v.des)
+    jan: normalizeNumber(v.jan ?? DEFAULT_MONTHLY_SOLAR_RADIATION.jan),
+    feb: normalizeNumber(v.feb ?? DEFAULT_MONTHLY_SOLAR_RADIATION.feb),
+    mar: normalizeNumber(v.mar ?? DEFAULT_MONTHLY_SOLAR_RADIATION.mar),
+    apr: normalizeNumber(v.apr ?? DEFAULT_MONTHLY_SOLAR_RADIATION.apr),
+    may: normalizeNumber(v.may ?? v.mai ?? DEFAULT_MONTHLY_SOLAR_RADIATION.may),
+    jun: normalizeNumber(v.jun ?? DEFAULT_MONTHLY_SOLAR_RADIATION.jun),
+    jul: normalizeNumber(v.jul ?? DEFAULT_MONTHLY_SOLAR_RADIATION.jul),
+    aug: normalizeNumber(v.aug ?? DEFAULT_MONTHLY_SOLAR_RADIATION.aug),
+    sep: normalizeNumber(v.sep ?? DEFAULT_MONTHLY_SOLAR_RADIATION.sep),
+    oct: normalizeNumber(v.oct ?? v.okt ?? DEFAULT_MONTHLY_SOLAR_RADIATION.oct),
+    nov: normalizeNumber(v.nov ?? DEFAULT_MONTHLY_SOLAR_RADIATION.nov),
+    dec: normalizeNumber(v.dec ?? v.des ?? DEFAULT_MONTHLY_SOLAR_RADIATION.dec)
   };
 }
 
@@ -219,7 +282,6 @@ function normalizeEquipmentRows(rows: unknown): EquipmentRow[] {
         runtimeHoursPerDay: normalizeNumber(maybeRow.runtimeHoursPerDay),
         purchaseCost: normalizeNumber(maybeRow.purchaseCost),
         lifetimeHours: normalizeNumber(maybeRow.lifetimeHours),
-        annualMaintenance: normalizeNumber(maybeRow.annualMaintenance),
         supplier: typeof maybeRow.supplier === "string" ? maybeRow.supplier : "",
         comment: typeof maybeRow.comment === "string" ? maybeRow.comment : ""
       };
@@ -342,10 +404,10 @@ function baseConfiguration(_index: number): Omit<PlantConfiguration, "lastRecomm
     systemParameters: { ...EMPTY_SYSTEM_PARAMETERS },
     solar: { ...EMPTY_SOLAR },
     battery: { ...EMPTY_BATTERY },
-    fuelCell: { ...EMPTY_BACKUP_SOURCE },
-    diesel: { ...EMPTY_BACKUP_SOURCE },
-    other: { ...EMPTY_OTHER },
-    monthlySolarRadiation: { ...EMPTY_MONTHLY_SOLAR_RADIATION },
+    fuelCell: { ...DEFAULT_BACKUP_SOURCES.fuelCell },
+    diesel: { ...DEFAULT_BACKUP_SOURCES.diesel },
+    other: { ...DEFAULT_OTHER },
+    monthlySolarRadiation: { ...DEFAULT_MONTHLY_SOLAR_RADIATION },
     equipmentBudgetSettings: { ...EMPTY_EQUIPMENT_BUDGET_SETTINGS },
     equipmentRows: [],
     radioLink: {

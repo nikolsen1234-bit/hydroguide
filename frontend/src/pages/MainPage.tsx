@@ -27,7 +27,7 @@ function isAnswered(value: unknown) {
 }
 
 function displayValue(value: unknown) {
-  return value === "not_documented_yet" ? "" : value;
+  return value;
 }
 
 function selectedValuesForDisplay(value: unknown) {
@@ -122,11 +122,11 @@ export default function MainPage() {
         <select
           value={String(displayValue(value))}
           onChange={(event) => setQuestionValue(question.key, event.target.value)}
-          className={`${workspaceInputClassName} h-10 py-1.5 leading-[1.2] text-right hg-mono`}
+          className={`${workspaceInputClassName} h-10 !py-[2px] leading-[1.2] text-right hg-mono`}
           aria-invalid={error ? true : undefined}
         >
           <option value="">{t("shared.selectOption")}</option>
-          {qOptions?.filter((option) => option.value !== "not_documented_yet").map((option) => (
+          {qOptions?.map((option) => (
             <option key={option.value} value={option.value} title={option.title}>
               {option.label}
             </option>
@@ -196,7 +196,7 @@ export default function MainPage() {
       />
 
       <div className="space-y-4">
-        <EditorialSection title="Kildedata" description="Koordinater, NVE-punkt og prosjektidentitet samles før vurderingsspørsmålene.">
+        <EditorialSection title="Kildedata">
           <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,360px)] md:items-start">
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-x-8">
@@ -234,7 +234,7 @@ export default function MainPage() {
           </div>
         </EditorialSection>
 
-        <EditorialSection title={t("main.operatingAssumptions")} description="Prosjektforutsetninger som brukes videre i anbefaling og kostnadsbilde.">
+        <EditorialSection title={t("main.operatingAssumptions")}>
           <div className="grid gap-4 md:grid-cols-5">
             <NumberField
               label={t("main.evaluationHorizon")}
@@ -267,45 +267,54 @@ export default function MainPage() {
             description={`${completedQuestions} / ${visibleQuestions.length} fullført`}
           >
             <div className="space-y-5">
-              {visibleSections.map((section) => (
-                <section key={section.id} className="border-t border-[var(--hg-hairline-2)] pt-4 first:border-t-0 first:pt-0">
-                  <div className="mb-3 grid gap-1">
-                    <h3 className={workspaceSubsectionTitleClassName}>{section.title}</h3>
-                  </div>
-                  <div className="grid gap-x-8 md:grid-cols-2">
-                    {section.questions.map((question, index) => {
-                      const error = errors[question.key];
+              {visibleSections.map((section) => {
+                const sectionQuestions = section.questions.filter(
+                  (question) => !question.hidden && (!question.condition || question.condition(activeDraft.answers))
+                );
+                if (sectionQuestions.length === 0) return null;
 
-                      return (
-                        <div
-                          key={question.key}
-                          className={`grid gap-3 py-3 ${
-                            index > 1 ? "border-t border-[var(--hg-hairline-2)]" : "md:border-t-0"
-                          } ${index > 0 ? "max-md:border-t max-md:border-[var(--hg-hairline-2)]" : ""}`}
-                        >
-                          <div className="min-w-0">
-                            <p className={workspaceSubsectionTitleClassName}>{question.label}</p>
+                return (
+                  <section key={section.id} className="border-t border-[var(--hg-hairline-2)] pt-4 first:border-t-0 first:pt-0">
+                    <div className="mb-3 grid gap-1">
+                      <h3 className={workspaceSubsectionTitleClassName}>{section.title}</h3>
+                    </div>
+                    <div className="grid gap-x-8 md:grid-cols-2">
+                      {sectionQuestions.map((question, index) => {
+                        const error = errors[question.key];
+
+                        return (
+                          <div
+                            key={question.key}
+                            className={`grid gap-3 py-3 ${
+                              index > 1 ? "border-t border-[var(--hg-hairline-2)]" : "md:border-t-0"
+                            } ${index > 0 ? "max-md:border-t max-md:border-[var(--hg-hairline-2)]" : ""}`}
+                          >
+                            <div className="min-w-0">
+                              <p className={workspaceSubsectionTitleClassName}>{question.label}</p>
+                            </div>
+                            <div className="grid grid-cols-[minmax(0,1fr)_1.25rem] items-center gap-3">
+                              {renderQuestionControl(question)}
+                              <span
+                                className={`flex h-5 w-5 items-center justify-center rounded-md border text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-extra)] ${
+                                  isAnswered(activeDraft.answers[question.key])
+                                    ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
+                                    : "border-[var(--hg-hairline)] text-[var(--hg-muted)]"
+                                }`}
+                                aria-hidden="true"
+                              >
+                                {isAnswered(activeDraft.answers[question.key]) ? "OK" : ""}
+                              </span>
+                            </div>
+                            {error ? (
+                              <p className="text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-rose-600">{error}</p>
+                            ) : null}
                           </div>
-                          <div className="grid grid-cols-[minmax(0,1fr)_1.25rem] items-center gap-3">
-                            {renderQuestionControl(question)}
-                            <span
-                              className={`flex h-5 w-5 items-center justify-center rounded-md border text-[length:var(--hg-type-overline-size)] font-[var(--hg-type-weight-extra)] ${
-                                isAnswered(activeDraft.answers[question.key])
-                                  ? "border-[var(--hg-accent-2)] bg-[var(--hg-accent-soft)] text-[var(--hg-accent)]"
-                                  : "border-[var(--hg-hairline)] text-[var(--hg-muted)]"
-                              }`}
-                              aria-hidden="true"
-                            >
-                              {isAnswered(activeDraft.answers[question.key]) ? "OK" : ""}
-                            </span>
-                          </div>
-                          {error ? <p className="text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-rose-600">{error}</p> : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              ))}
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           </EditorialSection>
         )}

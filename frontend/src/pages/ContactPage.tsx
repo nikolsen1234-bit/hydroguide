@@ -9,7 +9,7 @@ import {
 const teamMembers = [
   { name: "Nikolas Olsen", email: "nikolas.o@live.com", imageSrc: "/team/nikolas-olsen.jpg", imagePosition: "center 38%" },
   { name: "Dan Roald Larsen", email: "larsedr@gmail.com", imageSrc: "/team/dan-roald-larsen.jpg", imagePosition: "42% 34%" },
-  { name: "Jin-Marie Bakke", email: "jinm97@hotmail.com" },
+  { name: "Jin-Marie Bakke", email: "jinm97@hotmail.com", imageSrc: "/team/jin-marie-bakke.jpg", imagePosition: "center 35%" },
   { name: "Espen Espeland", email: "Espenask.espeland@gmail.com", imageSrc: "/team/espen-espeland.jpg" }
 ];
 

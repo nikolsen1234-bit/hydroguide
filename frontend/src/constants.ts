@@ -11,6 +11,7 @@ import {
   RadioLinkConfiguration,
   SolarConfiguration,
   SystemParameters,
+  BackupSourceKey,
   BackupSourceConfiguration
 } from "./types";
 import { createEmptyHydroGuideAnswers } from "./hydroguide/sourceAnchoredDecision";
@@ -32,11 +33,6 @@ export const IMPORT_FILE_EXTENSION = ".txt";
 export const IMPORT_FILE_MAX_BYTES = 64 * 1024;
 export const MAX_CONFIGURATION_EQUIPMENT_ROWS = 200;
 
-export const FLOW_THRESHOLDS = {
-  smallMax: 30,
-  mediumMax: 120
-};
-
 export const EMPTY_ANSWERS: Answers = createEmptyHydroGuideAnswers();
 
 export const ANSWER_KEYS = Object.keys(EMPTY_ANSWERS) as (keyof Answers)[];
@@ -47,6 +43,8 @@ export const EMPTY_SYSTEM_PARAMETERS: SystemParameters = {
   lineOfSightUnder15km: null,
   inspectionsPerYear: "",
   hasBackupSource: null,
+  selectedSecondarySource: "fuelCell",
+  secondarySourceOptions: ["fuelCell", "diesel"],
   batteryMode: "",
   batteryValue: ""
 };
@@ -62,19 +60,27 @@ export const EMPTY_BATTERY: BatteryConfiguration = {
   maxDepthOfDischarge: ""
 };
 
-export const EMPTY_BACKUP_SOURCE: BackupSourceConfiguration = {
-  purchaseCost: "",
-  powerW: "",
-  fuelConsumptionPerKWh: "",
-  fuelPrice: "",
-  lifetime: "",
-  annualMaintenance: ""
+export const DEFAULT_BACKUP_SOURCES: Record<BackupSourceKey, BackupSourceConfiguration> = {
+  fuelCell: {
+    purchaseCost: 88000,
+    powerW: 42,
+    fuelConsumptionPerKWh: 0.9,
+    fuelPrice: 65,
+    lifetime: 6500
+  },
+  diesel: {
+    purchaseCost: 35000,
+    powerW: 3500,
+    fuelConsumptionPerKWh: 0.5,
+    fuelPrice: 30,
+    lifetime: 43800
+  }
 };
 
-export const EMPTY_OTHER: OtherParameters = {
-  co2Methanol: "",
-  co2Diesel: "",
-  evaluationHorizonYears: ""
+export const DEFAULT_OTHER: OtherParameters = {
+  co2Methanol: 1.088,
+  co2Diesel: 2.68,
+  evaluationHorizonYears: 10
 };
 
 export const MONTH_KEYS: MonthKey[] = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
@@ -94,19 +100,19 @@ export const MONTH_LABELS: Record<MonthKey, string> = {
   dec: "Des"
 };
 
-export const EMPTY_MONTHLY_SOLAR_RADIATION: MonthlySolarRadiation = {
-  jan: "",
-  feb: "",
-  mar: "",
-  apr: "",
-  may: "",
-  jun: "",
-  jul: "",
-  aug: "",
-  sep: "",
-  oct: "",
-  nov: "",
-  dec: ""
+export const DEFAULT_MONTHLY_SOLAR_RADIATION: MonthlySolarRadiation = {
+  jan: 0.11064530284,
+  feb: 1.02081508839,
+  mar: 21.44387486665,
+  apr: 61.43870641884,
+  may: 79.35391031094,
+  jun: 79.30232678362,
+  jul: 80.63345578117,
+  aug: 71.41789862748,
+  sep: 37.71410191662,
+  oct: 3.05505664524,
+  nov: 0.25973765459,
+  dec: 0.01700974846
 };
 
 export const EMPTY_EQUIPMENT_BUDGET_SETTINGS: EquipmentBudgetSettings = {

@@ -94,3 +94,6 @@ venv/
 
 # Local drafts
 utkast.md
+
+# Playwright CLI session artifacts (local only)
+.playwright-cli/

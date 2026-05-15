@@ -22,22 +22,21 @@ const batterySchema = {
 };
 
 const fuelSourceSchema = {
-  type: "object", required: ["purchaseCost", "powerW", "fuelConsumptionPerKWh", "fuelPrice", "lifetime", "annualMaintenance"],
+  type: "object", required: ["purchaseCost", "powerW", "fuelConsumptionPerKWh", "fuelPrice", "lifetime"],
   properties: {
     purchaseCost: { ...n, description: "Purchase cost (NOK)" },
     powerW: { ...n, description: "Power output (W)" },
     fuelConsumptionPerKWh: { ...n, description: "Fuel consumption (l/kWh)" },
     fuelPrice: { ...n, description: "Fuel price (NOK/l)" },
-    lifetime: { ...n, description: "Technical lifetime (hours)" },
-    annualMaintenance: { ...n, description: "Annual maintenance cost (NOK)" }
+    lifetime: { ...n, description: "Technical lifetime (hours)" }
   }
 };
 
 const backupSourceSchema = {
   type: "object", required: ["hasBackupSource"],
-  description: "Backup power source. When hasBackupSource=true, fuelCell, diesel and other must be provided.",
+  description: "Secondary source state. When hasBackupSource=true, fuelCell, diesel and other must be provided for the selected secondary sources.",
   properties: {
-    hasBackupSource: { ...b, description: "Does the system have a backup source?" },
+    hasBackupSource: { ...b, description: "Does the system have a secondary source?" },
     fuelCell: { ...fuelSourceSchema, description: "Fuel cell (methanol)" },
     diesel: { ...fuelSourceSchema, description: "Diesel generator" }
   }
@@ -68,7 +67,6 @@ const equipmentRowSchema = {
     runtimeHoursPerDay: { ...n, description: "Runtime hours per day (0-24)", minimum: 0, maximum: 24 },
     purchaseCost: { ...n, description: "Purchase cost (NOK)" },
     lifetimeHours: { ...n, description: "Technical lifetime (hours)" },
-    annualMaintenance: { ...n, description: "Annual maintenance cost (NOK)" },
     supplier: { ...s, description: "Supplier name or URL" },
     comment: { ...s, description: "Equipment note" }
   }
@@ -86,7 +84,7 @@ const monthlyBalanceSchema = {
 
 const costItemSchema = {
   type: "object",
-  properties: { source: s, purchaseCost: n, operatingCostPerYear: n, annualMaintenance: n, evaluationHorizonYears: n, technicalLifetimeHours: n, totalRuntimeHours: n, replacementCount: n, annualFuelConsumption: n, annualCo2: n, toc: { ...n, description: "Total cost of ownership over evaluation period (NOK)" } }
+  properties: { source: s, purchaseCost: n, operatingCostPerYear: n, evaluationHorizonYears: n, technicalLifetimeHours: n, totalRuntimeHours: n, replacementCount: n, annualFuelConsumption: n, annualCo2: n, toc: { ...n, description: "Total cost of ownership over evaluation period (NOK)" } }
 };
 
 const scenarioSchema = {
@@ -103,9 +101,9 @@ const calculationsResponseSchema = {
     annualEnergyDeficitKWh: { ...n, description: "Annual energy deficit (kWh)" },
     monthlyEnergyBalance: { type: "array", items: monthlyBalanceSchema, description: "Energy balance per month" },
     annualTotals: { type: "object", description: "Annual totals for solar production, load, balance, fuel and CO2" },
-    selectedSource: { ...s, description: "Selected reserve source for monthlyEnergyBalance and annualTotals" },
+    selectedSource: { ...s, description: "Selected secondary source for monthlyEnergyBalance and annualTotals" },
     costComparison: { type: "object", properties: { annualEnergyDeficitKWh: n, alternatives: { type: "array", items: costItemSchema } }, description: "Cost comparison fuel cell vs diesel" },
-    scenarios: { type: "object", properties: { fuelCell: scenarioSchema, diesel: scenarioSchema }, description: "Full scenario for each backup source" }
+    scenarios: { type: "object", properties: { fuelCell: scenarioSchema, diesel: scenarioSchema }, description: "Full scenario for each secondary source" }
   }
 };
 
@@ -203,7 +201,7 @@ const SPEC = {
       post: {
         tags: ["Calculations"],
         summary: "Run calculations",
-        description: "Send the same payload as the website export file. systemParameters/systemparametere and may/oct/dec or mai/okt/des month keys are accepted. Backup source fields (fuelCell, diesel, other) are required when hasBackupSource=true.",
+        description: "Send the same payload as the website export file. systemParameters/systemparametere and may/oct/dec or mai/okt/des month keys are accepted. Secondary source fields (fuelCell, diesel, other) are required when hasBackupSource=true.",
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -231,6 +229,8 @@ const SPEC = {
           solar: solarSchema,
           battery: batterySchema,
           backupSource: backupSourceSchema,
+          preferred_secondary_source: { ...s, enum: ["fuelCell", "diesel"], description: "Optional preferred secondary source when only one source should be used for the main result." },
+          secondary_sources: { type: "array", items: { type: "string", enum: ["fuelCell", "diesel"] }, description: "Secondary sources to include. Send one source for a single-source run or both for side-by-side comparison." },
           other: otherSchema,
           monthlySolarRadiation: monthlySchema,
           equipmentRows: { type: "array", items: equipmentRowSchema, description: "Equipment list. Max 200 rows." }

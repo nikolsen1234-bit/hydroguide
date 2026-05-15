@@ -11,6 +11,7 @@
     "build:test": "npm run build && node scripts/copy-build-to-test.mjs",
     "smoke:recommendations": "node scripts/recommendation-smoke.mjs",
     "test:source-engine": "node scripts/source-anchored-engine.test.mjs",
+    "solar:chart": "node scripts/render-clean-solar-chart.mjs",
     "preview": "vite preview",
     "api:keys": "node scripts/manage-api-keys.mjs",
     "check:excel": "node scripts/check-excel-reference.mjs",

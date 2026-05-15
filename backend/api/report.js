@@ -125,13 +125,90 @@ function readPayloadValue(body, primaryKey, legacyKey) {
   return body?.[primaryKey] ?? body?.[legacyKey];
 }
 
+const REMOVED_HYDROGUIDE_QUESTION_IDS = new Set([
+  "pipe_calibration_control",
+  "water_level_rating_curve",
+  "water_level_electronic_registration",
+  "water_level_unambiguous_relationship",
+  "natural_profile_sufficient_measurements",
+  "dam_gate_opening_downstream_measurement",
+  "artificial_profile_five_percent_verification",
+  "artificial_profile_control_measurements"
+]);
+
+const REMOVED_HYDROGUIDE_QUESTION_TEXTS = [
+  "Vannstandsmåling med vannføringskurve er dokumentert",
+  "Elektronisk vannstandsregistrering er dokumentert",
+  "Entydig sammenheng mellom vannstand og vannføring er dokumentert",
+  "Tilstrekkelige målinger og kurvekvalitet rundt minstevannføring",
+  "Nedstrøms målepunkt dokumenterer slippet",
+  "Kunstig profil er verifisert med kontrollmålinger rundt kravsatt slipp",
+  "Er kalibrering og kontrollmåling dokumentert?",
+  "Kontrollmålinger og skade-/endringsrutiner er dokumentert"
+];
+
+function includesRemovedHydroGuideQuestionText(value) {
+  if (typeof value !== "string") return false;
+  return (
+    REMOVED_HYDROGUIDE_QUESTION_IDS.has(value) ||
+    REMOVED_HYDROGUIDE_QUESTION_TEXTS.some((text) => value.includes(text))
+  );
+}
+
+function sanitizeReportString(value) {
+  let sanitized = value;
+  for (const id of REMOVED_HYDROGUIDE_QUESTION_IDS) {
+    sanitized = sanitized.split(id).join("");
+  }
+  for (const text of REMOVED_HYDROGUIDE_QUESTION_TEXTS) {
+    sanitized = sanitized.split(text).join("");
+  }
+  sanitized = sanitized.replace(/\s{2,}/g, " ").trim();
+  return sanitized || undefined;
+}
+
+function isRemovedHydroGuideQuestionObject(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const ids = [value.id, value.key, value.criterionId, value.questionId].filter((item) => typeof item === "string");
+  if (ids.some((id) => REMOVED_HYDROGUIDE_QUESTION_IDS.has(id))) return true;
+
+  const labels = [value.title, value.label, value.question, value.text].filter((item) => typeof item === "string");
+  return labels.some((label) => includesRemovedHydroGuideQuestionText(label));
+}
+
+function sanitizeReportValue(value) {
+  if (typeof value === "string") {
+    return sanitizeReportString(value);
+  }
+
+  if (Array.isArray(value)) {
+    const sanitizedItems = value
+      .map((item) => sanitizeReportValue(item))
+      .filter((item) => item !== undefined);
+    return sanitizedItems.length > 0 ? sanitizedItems : undefined;
+  }
+
+  if (value && typeof value === "object") {
+    if (isRemovedHydroGuideQuestionObject(value)) return undefined;
+
+    const sanitizedEntries = Object.entries(value)
+      .filter(([key]) => !REMOVED_HYDROGUIDE_QUESTION_IDS.has(key) && !includesRemovedHydroGuideQuestionText(key))
+      .map(([key, item]) => [key, sanitizeReportValue(item)])
+      .filter(([, item]) => item !== undefined);
+
+    return sanitizedEntries.length > 0 ? Object.fromEntries(sanitizedEntries) : undefined;
+  }
+
+  return value;
+}
+
 function readSourceAnchoredArray(body, key) {
-  return Array.isArray(body?.[key]) ? body[key] : [];
+  return Array.isArray(body?.[key]) ? sanitizeReportValue(body[key]) ?? [] : [];
 }
 
 function readSourceAnchoredObject(body, key) {
   const value = body?.[key];
-  return value && typeof value === "object" && !Array.isArray(value) ? value : undefined;
+  return value && typeof value === "object" && !Array.isArray(value) ? sanitizeReportValue(value) : undefined;
 }
 
 export async function onRequestPost(context) {
@@ -210,7 +287,7 @@ export async function onRequestPost(context) {
   try {
     const bridgeUrl = buildBridgeReportUrl(rawBridgeUrl);
     const requestId = crypto.randomUUID();
-    const sanitizedBody = {
+    const sanitizedBody = sanitizeReportValue({
       project: readPayloadValue(rawBody, "project", "prosjekt"),
       location: readPayloadValue(rawBody, "location", "lokasjon"),
       projectDescription: readPayloadValue(rawBody, "projectDescription", "prosjektbeskrivelse"),
@@ -219,7 +296,6 @@ export async function onRequestPost(context) {
       mainSolution: readPayloadValue(rawBody, "mainSolution", "hovudloysing"),
       releaseMethod: readPayloadValue(rawBody, "releaseMethod", "slippmetode"),
       primaryMeasurement: readPayloadValue(rawBody, "primaryMeasurement", "primaermaaling"),
-      controlMeasurement: readPayloadValue(rawBody, "controlMeasurement", "kontrollmaaling"),
       measurementPrinciple: readPayloadValue(rawBody, "measurementPrinciple", "maleprinsipp"),
       measurementEquipment: readPayloadValue(rawBody, "measurementEquipment", "maleutstyr"),
       loggerSetup: readPayloadValue(rawBody, "loggerSetup", "loggeroppsett"),
@@ -276,7 +352,7 @@ export async function onRequestPost(context) {
       publicControl: readPayloadValue(rawBody, "publicControl", "allmentaKontroll"),
       include_recommendations: rawBody.include_recommendations, ai_on: rawBody.ai_on,
       reportExtract: readPayloadValue(rawBody, "reportExtract", "rapportutdrag")
-    };
+    }) ?? {};
 
     const bridgeRequest = new Request(bridgeUrl, {
       method: "POST",

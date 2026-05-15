@@ -42,9 +42,13 @@ const BACKUP_SOURCE_VALIDATION_FIELDS = [
   ["powerW", "Effekt"],
   ["fuelConsumptionPerKWh", "Drivstofforbruk", { min: 0, allowZero: true }],
   ["fuelPrice", "Drivstoffpris", { min: 0, allowZero: true }],
-  ["lifetime", "Levetid"],
-  ["annualMaintenance", "Årleg vedlikehald", { min: 0, allowZero: true }]
+  ["lifetime", "Levetid"]
 ];
+const SECONDARY_SOURCE_KEYS = ["fuelCell", "diesel"];
+const SECONDARY_SOURCE_LABELS = {
+  fuelCell: "Brenselcelle",
+  diesel: "Dieselaggregat"
+};
 
 function makeId(prefix = "cfg") {
   return `${prefix}-${crypto.randomUUID()}`;
@@ -79,6 +83,38 @@ function normalizeBoolean(value) {
   return typeof value === "boolean" ? value : null;
 }
 
+function normalizeBackupSourceKey(value) {
+  const source = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (source === "diesel" || source === "dieselaggregat" || source === "dieselgenerator") {
+    return "diesel";
+  }
+  if (source === "fuelcell" || source === "fuel_cell" || source === "fuel-cell" || source === "brenselcelle") {
+    return "fuelCell";
+  }
+  return null;
+}
+
+function normalizeBackupSourceKeys(value) {
+  const values =
+    value === "both" || value === "begge"
+      ? SECONDARY_SOURCE_KEYS
+      : Array.isArray(value)
+        ? value
+        : typeof value === "string"
+          ? value.split(",")
+          : [];
+  const keys = [];
+
+  for (const item of values) {
+    const key = normalizeBackupSourceKey(item);
+    if (key && !keys.includes(key)) {
+      keys.push(key);
+    }
+  }
+
+  return keys;
+}
+
 function normalizeSolar(value = {}) {
   return {
     panelPowerWp: normalizeNumber(value.panelPowerWp),
@@ -102,8 +138,7 @@ function normalizeBackupSourceOption(value = {}) {
     powerW: normalizeNumber(value.powerW),
     fuelConsumptionPerKWh: normalizeNumber(value.fuelConsumptionPerKWh),
     fuelPrice: normalizeNumber(value.fuelPrice),
-    lifetime: normalizeNumber(value.lifetime),
-    annualMaintenance: normalizeNumber(value.annualMaintenance)
+    lifetime: normalizeNumber(value.lifetime)
   };
 }
 
@@ -161,7 +196,6 @@ function normalizeEquipmentRows(rows) {
       runtimeHoursPerDay: normalizeNumber(maybeRow.runtimeHoursPerDay),
       purchaseCost: normalizeNumber(maybeRow.purchaseCost),
       lifetimeHours: normalizeNumber(maybeRow.lifetimeHours),
-      annualMaintenance: normalizeNumber(maybeRow.annualMaintenance),
       supplier: typeof maybeRow.supplier === "string" ? maybeRow.supplier : "",
       comment: typeof maybeRow.comment === "string" ? maybeRow.comment : ""
     };
@@ -210,6 +244,9 @@ export function normalizeCalculationRequest(raw) {
     raw?.configuration && typeof raw.configuration === "object" && !Array.isArray(raw.configuration)
       ? raw.configuration
       : raw;
+  const rawOptions = payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
+  const rawSystemParameters = rawOptions.systemparametere ?? rawOptions.systemParameters ?? {};
+  const rawBackupSource = rawOptions.backupSource ?? {};
   const source = mapImportedPayload(payload);
 
   return {
@@ -222,7 +259,30 @@ export function normalizeCalculationRequest(raw) {
     monthlySolarRadiation: normalizeMonthlySolarRadiation(source.monthlySolarRadiation),
     equipmentBudgetSettings: normalizeEquipmentBudgetSettings(source.equipmentBudgetSettings),
     equipmentRows: normalizeEquipmentRows(source.equipmentRows),
-    _backupSource: typeof raw?.preferred_backup === "string" ? raw.preferred_backup : ""
+    _backupSource:
+      typeof rawOptions.preferred_secondary_source === "string"
+        ? rawOptions.preferred_secondary_source
+        : typeof rawOptions.preferredSecondarySource === "string"
+          ? rawOptions.preferredSecondarySource
+          : typeof rawOptions.preferred_backup === "string"
+            ? rawOptions.preferred_backup
+            : "",
+    _backupSources: normalizeBackupSourceKeys(
+      rawOptions.secondary_sources ??
+        rawOptions.secondarySources ??
+        rawSystemParameters.secondarySourceOptions ??
+        rawSystemParameters.secondaryComparisonSources ??
+        rawSystemParameters.selectedSecondarySources ??
+        rawBackupSource.secondarySourceOptions ??
+        rawBackupSource.secondaryComparisonSources ??
+        rawBackupSource.selectedSecondarySources ??
+        rawOptions.backup_sources ??
+        rawOptions.backupSources ??
+        rawSystemParameters.reserveComparisonSources ??
+        rawSystemParameters.selectedBackupSources ??
+        rawBackupSource.reserveComparisonSources ??
+        rawBackupSource.selectedBackupSources
+    )
   };
 }
 
@@ -267,11 +327,35 @@ function validateBackupSourceOption(errors, key, values, label) {
   }
 }
 
+function preferredBackupSourceKey(configuration) {
+  return normalizeBackupSourceKey(configuration._backupSource);
+}
+
+function comparisonBackupSourceKeys(configuration) {
+  if (Array.isArray(configuration._backupSources) && configuration._backupSources.length > 0) {
+    return configuration._backupSources;
+  }
+
+  const preferredKey = preferredBackupSourceKey(configuration);
+  return preferredKey ? [preferredKey] : SECONDARY_SOURCE_KEYS;
+}
+
+function preferredBackupSource(configuration) {
+  const preferredKey = preferredBackupSourceKey(configuration);
+  if (!preferredKey) {
+    return null;
+  }
+  if (Array.isArray(configuration._backupSources) && configuration._backupSources.length > 0 && !configuration._backupSources.includes(preferredKey)) {
+    return null;
+  }
+  return SECONDARY_SOURCE_LABELS[preferredKey];
+}
+
 export function validateCalculationRequest(configuration) {
   const errors = {};
 
   if (configuration.backupSource.hasBackupSource === null) {
-    errors["backupSource.hasBackupSource"] = "Det må avklarast om systemet har reservekjelde.";
+    errors["backupSource.hasBackupSource"] = "Det må avklarast om systemet har sekundærkjelde.";
   }
 
   if (!configuration.battery.batteryMode) {
@@ -301,28 +385,38 @@ export function validateCalculationRequest(configuration) {
   );
 
   if (configuration.backupSource.hasBackupSource === true) {
-    validateBackupSourceOption(errors, "fuelCell", configuration.fuelCell, "brenselcelle");
-    validateBackupSourceOption(errors, "diesel", configuration.diesel, "diesel");
+    const sourceKeys = comparisonBackupSourceKeys(configuration);
+
+    if (sourceKeys.includes("fuelCell")) {
+      validateBackupSourceOption(errors, "fuelCell", configuration.fuelCell, "brenselcelle");
+    }
+    if (sourceKeys.includes("diesel")) {
+      validateBackupSourceOption(errors, "diesel", configuration.diesel, "diesel");
+    }
     validateRequiredNumber(
       errors,
       "other.evaluationHorizonYears",
       configuration.other.evaluationHorizonYears,
       "Vurderingshorisont"
     );
-    validateRequiredNumber(
-      errors,
-      "other.co2Methanol",
-      configuration.other.co2Methanol,
-      "CO2-faktor for brenselcelle",
-      { min: 0, allowZero: true }
-    );
-    validateRequiredNumber(
-      errors,
-      "other.co2Diesel",
-      configuration.other.co2Diesel,
-      "CO2-faktor for diesel",
-      { min: 0, allowZero: true }
-    );
+    if (sourceKeys.includes("fuelCell")) {
+      validateRequiredNumber(
+        errors,
+        "other.co2Methanol",
+        configuration.other.co2Methanol,
+        "CO2-faktor for brenselcelle",
+        { min: 0, allowZero: true }
+      );
+    }
+    if (sourceKeys.includes("diesel")) {
+      validateRequiredNumber(
+        errors,
+        "other.co2Diesel",
+        configuration.other.co2Diesel,
+        "CO2-faktor for diesel",
+        { min: 0, allowZero: true }
+      );
+    }
   }
 
   for (const month of MONTH_KEYS) {
@@ -466,8 +560,7 @@ function selectedSourceConfig(configuration, source) {
     powerW: "",
     fuelConsumptionPerKWh: "",
     fuelPrice: "",
-    lifetime: "",
-    annualMaintenance: ""
+    lifetime: ""
   };
 }
 
@@ -522,7 +615,6 @@ function calculateCostComparison(configuration, annualEnergyDeficitKWh) {
     const config = selectedSourceConfig(configuration, source);
     const annualFuelConsumption = annualEnergyDeficitKWh * toNumber(config.fuelConsumptionPerKWh);
     const operatingCostPerYear = annualFuelConsumption * toNumber(config.fuelPrice);
-    const annualMaintenance = toNumber(config.annualMaintenance);
     const purchaseCost = toNumber(config.purchaseCost);
     const technicalLifetimeHours = toNumber(config.lifetime);
     const totalRuntimeHours =
@@ -539,7 +631,6 @@ function calculateCostComparison(configuration, annualEnergyDeficitKWh) {
       source,
       purchaseCost: round(purchaseCost, 2),
       operatingCostPerYear: round(operatingCostPerYear, 2),
-      annualMaintenance: round(annualMaintenance, 2),
       evaluationHorizonYears: round(evaluationHorizonYears, 2),
       technicalLifetimeHours: round(technicalLifetimeHours, 2),
       totalRuntimeHours: round(totalRuntimeHours, 2),
@@ -548,16 +639,18 @@ function calculateCostComparison(configuration, annualEnergyDeficitKWh) {
       annualCo2: round(annualCo2, 2),
       toc: round(
         purchaseCost +
-          (operatingCostPerYear + annualMaintenance) * evaluationHorizonYears +
+          operatingCostPerYear * evaluationHorizonYears +
           replacementCount * purchaseCost,
         2
       )
     };
   };
 
+  const sourceNames = comparisonBackupSourceKeys(configuration).map((key) => SECONDARY_SOURCE_LABELS[key]);
+
   return {
     annualEnergyDeficitKWh: round(annualEnergyDeficitKWh, 2),
-    alternatives: [buildItem("Brenselcelle"), buildItem("Dieselaggregat")]
+    alternatives: sourceNames.map(buildItem)
   };
 }
 
@@ -566,12 +659,9 @@ function selectRecommendedBackupSource(configuration, alternatives) {
     return "Ikkje berekna";
   }
 
-  const backupSourceInput = (configuration._backupSource ?? "").toLowerCase();
-  if (backupSourceInput === "diesel") {
-    return "Dieselaggregat";
-  }
-  if (backupSourceInput === "fuelcell" || backupSourceInput === "fuel_cell" || backupSourceInput === "brenselcelle") {
-    return "Brenselcelle";
+  const preferredSource = preferredBackupSource(configuration);
+  if (preferredSource) {
+    return preferredSource;
   }
 
   const bestItem = alternatives.reduce((best, item) => {
@@ -619,7 +709,7 @@ function describeFieldList(fields) {
 
 function humanizeQuestionLabel(key, configuration) {
   const labels = {
-    "backupSource.hasBackupSource": "om systemet har reservekjelde",
+    "backupSource.hasBackupSource": "om systemet har sekundærkjelde",
     "battery.batteryMode": "korleis batteribanken skal oppgivast",
     "battery.batteryValue":
       configuration.battery.batteryMode === "ah"
@@ -636,13 +726,11 @@ function humanizeQuestionLabel(key, configuration) {
     "fuelCell.fuelConsumptionPerKWh": "drivstofforbruk for brenselcelle",
     "fuelCell.fuelPrice": "drivstoffpris for brenselcelle",
     "fuelCell.lifetime": "teknisk levetid for brenselcelle i timar",
-    "fuelCell.annualMaintenance": "årleg vedlikehald for brenselcelle",
     "diesel.purchaseCost": "innkjøpskostnad for dieselaggregat",
     "diesel.powerW": "effekt for dieselaggregat",
     "diesel.fuelConsumptionPerKWh": "drivstofforbruk for dieselaggregat",
     "diesel.fuelPrice": "drivstoffpris for dieselaggregat",
-    "diesel.lifetime": "teknisk levetid for dieselaggregat i timar",
-    "diesel.annualMaintenance": "årleg vedlikehald for dieselaggregat"
+    "diesel.lifetime": "teknisk levetid for dieselaggregat i timar"
   };
 
   if (labels[key]) {
@@ -678,16 +766,14 @@ function pickCalculationInputs(configuration) {
       powerW: configuration.fuelCell.powerW,
       fuelConsumptionPerKWh: configuration.fuelCell.fuelConsumptionPerKWh,
       fuelPrice: configuration.fuelCell.fuelPrice,
-      lifetime: configuration.fuelCell.lifetime,
-      annualMaintenance: configuration.fuelCell.annualMaintenance
+      lifetime: configuration.fuelCell.lifetime
     },
     diesel: {
       purchaseCost: configuration.diesel.purchaseCost,
       powerW: configuration.diesel.powerW,
       fuelConsumptionPerKWh: configuration.diesel.fuelConsumptionPerKWh,
       fuelPrice: configuration.diesel.fuelPrice,
-      lifetime: configuration.diesel.lifetime,
-      annualMaintenance: configuration.diesel.annualMaintenance
+      lifetime: configuration.diesel.lifetime
     },
     other: {
       evaluationHorizonYears: configuration.other.evaluationHorizonYears,
@@ -718,7 +804,7 @@ function buildCalculationQuestions(validationErrors, configuration) {
   if (hasError("backupSource.hasBackupSource")) {
     questions.push({
       id: "has_backup_source",
-      question: "Har systemet reservekjelde?",
+      question: "Har systemet sekundærkjelde?",
       fields: ["backupSource.hasBackupSource"],
       allowed_values: QUESTION_ALLOWED_VALUES["backupSource.hasBackupSource"]
     });
@@ -763,8 +849,7 @@ function buildCalculationQuestions(validationErrors, configuration) {
         "fuelCell.powerW",
         "fuelCell.fuelConsumptionPerKWh",
         "fuelCell.fuelPrice",
-        "fuelCell.lifetime",
-        "fuelCell.annualMaintenance"
+        "fuelCell.lifetime"
       ],
       questionPrefix: "Fyll inn manglande verdiar for brenselcelle"
     },
@@ -775,8 +860,7 @@ function buildCalculationQuestions(validationErrors, configuration) {
         "diesel.powerW",
         "diesel.fuelConsumptionPerKWh",
         "diesel.fuelPrice",
-        "diesel.lifetime",
-        "diesel.annualMaintenance"
+        "diesel.lifetime"
       ],
       questionPrefix: "Fyll inn manglande verdiar for dieselaggregat"
     },

@@ -139,6 +139,62 @@ test("report Worker forwards source-anchored AI contract and drops legacy obliga
   assert.equal(forwarded.report.completenessNinetySevenPercent, undefined);
 });
 
+test("report Worker strips removed HydroGuide question fields from stale direct callers", async () => {
+  const accessCodeHash = await sha256Hex("rapport");
+  let capturedRequest;
+  globalThis.fetch = async (request) => {
+    capturedRequest = request;
+    return Response.json({
+      fields: {
+        recommendationNote: "Valgt metode er kildeforankret.",
+        measurementNote: "Måleopplegget har sporbare kriterier.",
+        energyNote: "Energioppsettet er dokumentert.",
+        evidenceNote: "Kildegrunnlaget er brukt som avgrensing."
+      },
+      evidenceIds: []
+    });
+  };
+
+  const response = await onRequestPost({
+    request: reportRequest({
+      accessCodeHash,
+      reportExtract:
+        "Er kalibrering og kontrollmåling dokumentert? Kontrollmålinger og skade-/endringsrutiner er dokumentert.",
+      controlMeasurement: "Kontrollmålinger og skade-/endringsrutiner er dokumentert",
+      deterministicSelection: {
+        methodCode: "pipe_via_intake_with_pipe_flow_meter",
+        missingDocumentation: ["pipe_calibration_control", "pipe_full_through_meter"],
+        "Er kalibrering og kontrollmåling dokumentert?": "old title key leaked"
+      },
+      answerFacts: [
+        { id: "pipe_calibration_control", label: "Er kalibrering og kontrollmåling dokumentert?" },
+        { id: "pipe_full_through_meter", label: "Er røret vannfylt gjennom hele rørstrekket?" }
+      ],
+      sourceChunks: [
+        { id: "artificial_profile_control_measurements", text: "Kontrollmålinger og skade-/endringsrutiner er dokumentert" },
+        { id: "NVE_2020_4_2", text: "Rørmåling må ha fylt rør." }
+      ]
+    }),
+    env: {
+      REPORT_ACCESS_CODE_HASH: accessCodeHash,
+      REPORT_BRIDGE_URL: "https://agent-bridge.hydroguide.no",
+      REPORT_BRIDGE_TOKEN: "bridge-token"
+    }
+  });
+
+  assert.equal(response.status, 200);
+  const forwarded = await capturedRequest.json();
+  const forwardedText = JSON.stringify(forwarded.report);
+  assert.equal(forwardedText.includes("pipe_calibration_control"), false);
+  assert.equal(forwardedText.includes("artificial_profile_control_measurements"), false);
+  assert.equal(forwardedText.includes("Er kalibrering og kontrollmåling dokumentert?"), false);
+  assert.equal(forwardedText.includes("Kontrollmålinger og skade-/endringsrutiner er dokumentert"), false);
+  assert.equal(forwarded.report.controlMeasurement, undefined);
+  assert.deepEqual(forwarded.report.deterministicSelection.missingDocumentation, ["pipe_full_through_meter"]);
+  assert.deepEqual(forwarded.report.answerFacts.map((item) => item.id), ["pipe_full_through_meter"]);
+  assert.deepEqual(forwarded.report.sourceChunks.map((item) => item.id), ["NVE_2020_4_2"]);
+});
+
 test("report Worker accepts structured report fields without narrative text", async () => {
   const accessCodeHash = await sha256Hex("rapport");
   globalThis.fetch = async () =>

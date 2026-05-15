@@ -4,38 +4,19 @@
   "location": "Markåni kraftverk (Vaksdal)",
   "locationPlaceId": "2034",
   "answers": {
-    "q01ConcessionRequirement": "yes",
-    "q02ProjectType": "new",
-    "q03FlowClass": "0_50",
-    "q04RequirementPattern": "inflowControlled",
-    "q05PassAllInflowWhenLow": "yes",
-    "q06CanChangeRelease": "yes",
-    "q07ReleaseSolution": "pipeIntake",
-    "q08FishMigration": "no",
-    "q09CoandaExists": "no",
-    "q10SiteChallenges": ["freezing", "difficultAccess"],
-    "q11PowerCommunication": ["solarBattery", "mobileCoverage"],
-    "q12PublicDisplay": ["sign"],
-    "q13AfterIntakeRack": "yes",
-    "q14DryFrostFreePlacement": "protectedSump",
-    "q15ReturnNearDam": "yes",
-    "q16PipeCapacityLowWater": "yes",
-    "q17PipeFull": "yes",
-    "q18PipeAirFree": "yes",
-    "q19StraightRunCalmFlow": "yes",
-    "q20ValveDownstream": "yes",
-    "q21ServiceValveBefore": "yes",
-    "q22PipeGeometryType": "fullPressurePipe",
-    "q23ConductivityForMagmeter": "yes",
-    "q24UltrasonicMountPossible": "yes",
-    "q25AdpGeometryKnown": "yes",
-    "q26AirEntrainedAtMeasurement": "no",
-    "q27RegulationFrequency": "continuousAutomatic",
-    "q65HourlyAutomaticLogging": "yes",
-    "q66AccuracyWithinFivePercent": "yes",
-    "q67CompletenessNinetySevenPercent": "yes",
-    "q68SecureDataStorageForNve": "yes",
-    "q69AlternativeMethod": "no"
+    "legal_requirement_documented": "documented_satisfies_source_criterion",
+    "minimum_flow_requirement_lps": "flow_0_50_lps",
+    "requirement_pattern": "seasonal_or_conditional_requirement",
+    "release_solution_category": "pipe_via_intake",
+    "site_constraints": [
+      "winter_ice_or_frost",
+      "difficult_access"
+    ],
+    "pipe_after_rack": "documented_satisfies_source_criterion",
+    "pipe_dry_frost_free": "documented_satisfies_source_criterion",
+    "pipe_full_through_meter": "documented_satisfies_source_criterion",
+    "pipe_air_handled": "documented_satisfies_source_criterion",
+    "pipe_straight_run_supplier_requirements": "documented_satisfies_source_criterion"
   },
   "systemParameters": {
     "4gCoverage": true,
@@ -44,7 +25,11 @@
     "inspectionsPerYear": 3,
     "hasBackupSource": true,
     "batteryMode": "ah",
-    "batteryValue": 600
+    "batteryValue": 600,
+    "selectedSecondarySource": "fuelCell",
+    "secondarySourceOptions": [
+      "fuelCell"
+    ]
   },
   "solar": {
     "panelPowerWp": 425,
@@ -60,16 +45,14 @@
     "powerW": 42,
     "fuelConsumptionPerKWh": 0.9,
     "fuelPrice": 65,
-    "lifetime": 6500,
-    "annualMaintenance": 100
+    "lifetime": 6500
   },
   "diesel": {
     "purchaseCost": 35000,
     "powerW": 3500,
     "fuelConsumptionPerKWh": 0.5,
     "fuelPrice": 30,
-    "lifetime": 43800,
-    "annualMaintenance": 6500
+    "lifetime": 43800
   },
   "other": {
     "co2Methanol": 1.088,
@@ -98,7 +81,6 @@
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
       "lifetimeHours": "",
-      "annualMaintenance": "",
       "supplier": "",
       "comment": ""
     },
@@ -109,7 +91,6 @@
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
       "lifetimeHours": "",
-      "annualMaintenance": "",
       "supplier": "",
       "comment": ""
     },
@@ -120,7 +101,6 @@
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
       "lifetimeHours": "",
-      "annualMaintenance": "",
       "supplier": "",
       "comment": ""
     },
@@ -131,7 +111,6 @@
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
       "lifetimeHours": "",
-      "annualMaintenance": "",
       "supplier": "",
       "comment": ""
     },
@@ -142,7 +121,6 @@
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
       "lifetimeHours": "",
-      "annualMaintenance": "",
       "supplier": "",
       "comment": ""
     },
@@ -153,7 +131,6 @@
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
       "lifetimeHours": "",
-      "annualMaintenance": "",
       "supplier": "",
       "comment": ""
     },
@@ -164,7 +141,6 @@
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
       "lifetimeHours": "",
-      "annualMaintenance": "",
       "supplier": "",
       "comment": ""
     },
@@ -175,7 +151,6 @@
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
       "lifetimeHours": "",
-      "annualMaintenance": "",
       "supplier": "",
       "comment": ""
     },
@@ -186,7 +161,6 @@
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
       "lifetimeHours": "",
-      "annualMaintenance": "",
       "supplier": "",
       "comment": ""
     },
@@ -197,7 +171,6 @@
       "runtimeHoursPerDay": 24,
       "purchaseCost": "",
       "lifetimeHours": "",
-      "annualMaintenance": "",
       "supplier": "",
       "comment": ""
     }

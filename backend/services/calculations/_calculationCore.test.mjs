@@ -64,13 +64,13 @@ const basePayload = {
 };
 
 describe("validateCalculationRequest", () => {
-  it("does not require reserve-source fields when reserve source is disabled", () => {
+  it("does not require secondary-source fields when secondary source is disabled", () => {
     const configuration = normalizeCalculationRequest(basePayload);
 
     assert.deepEqual(validateCalculationRequest(configuration), {});
   });
 
-  it("requires both reserve-source alternatives and economic inputs when reserve source is enabled", () => {
+  it("requires both secondary-source alternatives and economic inputs when secondary source is enabled", () => {
     const configuration = normalizeCalculationRequest({
       ...basePayload,
       backupSource: { hasBackupSource: true }
@@ -82,15 +82,63 @@ describe("validateCalculationRequest", () => {
     assert.equal(errors["fuelCell.fuelConsumptionPerKWh"], "Drivstofforbruk brenselcelle må fyllast ut.");
     assert.equal(errors["fuelCell.fuelPrice"], "Drivstoffpris brenselcelle må fyllast ut.");
     assert.equal(errors["fuelCell.lifetime"], "Levetid brenselcelle må fyllast ut.");
-    assert.equal(errors["fuelCell.annualMaintenance"], "Årleg vedlikehald brenselcelle må fyllast ut.");
+    assert.equal(errors["fuelCell.annualMaintenance"], undefined);
     assert.equal(errors["diesel.purchaseCost"], "Innkjøpskostnad diesel må fyllast ut.");
     assert.equal(errors["diesel.powerW"], "Effekt diesel må fyllast ut.");
     assert.equal(errors["diesel.fuelConsumptionPerKWh"], "Drivstofforbruk diesel må fyllast ut.");
     assert.equal(errors["diesel.fuelPrice"], "Drivstoffpris diesel må fyllast ut.");
     assert.equal(errors["diesel.lifetime"], "Levetid diesel må fyllast ut.");
-    assert.equal(errors["diesel.annualMaintenance"], "Årleg vedlikehald diesel må fyllast ut.");
+    assert.equal(errors["diesel.annualMaintenance"], undefined);
     assert.equal(errors["other.evaluationHorizonYears"], "Vurderingshorisont må fyllast ut.");
     assert.equal(errors["other.co2Methanol"], "CO2-faktor for brenselcelle må fyllast ut.");
+    assert.equal(errors["other.co2Diesel"], "CO2-faktor for diesel må fyllast ut.");
+  });
+
+  it("requires only the preferred secondary source when one is selected", () => {
+    const configuration = normalizeCalculationRequest({
+      ...basePayload,
+      preferred_secondary_source: "fuelCell",
+      backupSource: { hasBackupSource: true },
+      fuelCell: {
+        purchaseCost: 1000,
+        powerW: 1000,
+        fuelConsumptionPerKWh: 0,
+        fuelPrice: 0,
+        lifetime: 10000,
+        annualMaintenance: 0
+      },
+      other: {
+        co2Methanol: 0,
+        evaluationHorizonYears: 10
+      }
+    });
+
+    assert.deepEqual(validateCalculationRequest(configuration), {});
+  });
+
+  it("requires every secondary source included in the comparison", () => {
+    const configuration = normalizeCalculationRequest({
+      ...basePayload,
+      preferred_secondary_source: "fuelCell",
+      secondary_sources: ["fuelCell", "diesel"],
+      backupSource: { hasBackupSource: true },
+      fuelCell: {
+        purchaseCost: 1000,
+        powerW: 1000,
+        fuelConsumptionPerKWh: 0,
+        fuelPrice: 0,
+        lifetime: 10000,
+        annualMaintenance: 0
+      },
+      other: {
+        co2Methanol: 0,
+        evaluationHorizonYears: 10
+      }
+    });
+    const errors = validateCalculationRequest(configuration);
+
+    assert.equal(errors["fuelCell.purchaseCost"], undefined);
+    assert.equal(errors["diesel.purchaseCost"], "Innkjøpskostnad diesel må fyllast ut.");
     assert.equal(errors["other.co2Diesel"], "CO2-faktor for diesel må fyllast ut.");
   });
 
@@ -137,14 +185,14 @@ describe("normalizeCalculationRequest", () => {
 
     assert.equal(configuration.equipmentRows[0].lifetimeHours, 20000);
     assert.equal(configuration.equipmentRows[0].purchaseCost, 1200);
-    assert.equal(configuration.equipmentRows[0].annualMaintenance, 100);
+    assert.equal("annualMaintenance" in configuration.equipmentRows[0], false);
     assert.equal(configuration.equipmentRows[0].supplier, "Vendor");
     assert.equal(configuration.equipmentRows[0].comment, "Main logger");
   });
 });
 
 describe("calculateNumericResults", () => {
-  it("includes fractional replacement cost when reserve runtime exceeds lifetime", () => {
+  it("includes fractional replacement cost when secondary runtime exceeds lifetime", () => {
     const configuration = normalizeCalculationRequest({
       ...basePayload,
       backupSource: { hasBackupSource: true },
@@ -200,7 +248,7 @@ describe("calculateNumericResults", () => {
     assert.equal(fuelCell.toc, 8800);
   });
 
-  it("selects the cheapest reserve source by default", () => {
+  it("selects the cheapest secondary source by default", () => {
     const configuration = normalizeCalculationRequest({
       ...basePayload,
       backupSource: { hasBackupSource: true },
@@ -245,5 +293,155 @@ describe("calculateNumericResults", () => {
 
     assert.equal(results.selectedSource, "Dieselaggregat");
     assert.equal(results.annualTotals.annualFuelCost, 0);
+  });
+
+  it("uses the preferred secondary source when provided", () => {
+    const configuration = normalizeCalculationRequest({
+      ...basePayload,
+      preferred_secondary_source: "fuelCell",
+      backupSource: { hasBackupSource: true },
+      fuelCell: {
+        purchaseCost: 100000,
+        powerW: 1000,
+        fuelConsumptionPerKWh: 10,
+        fuelPrice: 100,
+        lifetime: 10000,
+        annualMaintenance: 10000
+      },
+      diesel: {
+        purchaseCost: 1000,
+        powerW: 1000,
+        fuelConsumptionPerKWh: 0,
+        fuelPrice: 0,
+        lifetime: 10000,
+        annualMaintenance: 0
+      },
+      other: {
+        co2Methanol: 0,
+        co2Diesel: 0,
+        evaluationHorizonYears: 10
+      },
+      monthlySolarRadiation: {
+        jan: 0,
+        feb: 0,
+        mar: 0,
+        apr: 0,
+        mai: 0,
+        jun: 0,
+        jul: 0,
+        aug: 0,
+        sep: 0,
+        okt: 0,
+        nov: 0,
+        des: 0
+      }
+    });
+
+    const results = calculateNumericResults(configuration);
+
+    assert.equal(results.selectedSource, "Brenselcelle");
+    assert.deepEqual(results.costComparison.alternatives.map((item) => item.source), ["Brenselcelle"]);
+  });
+
+  it("keeps both secondary alternatives in the cost comparison when requested", () => {
+    const configuration = normalizeCalculationRequest({
+      ...basePayload,
+      preferred_secondary_source: "fuelCell",
+      secondary_sources: ["fuelCell", "diesel"],
+      backupSource: { hasBackupSource: true },
+      fuelCell: {
+        purchaseCost: 100000,
+        powerW: 1000,
+        fuelConsumptionPerKWh: 10,
+        fuelPrice: 100,
+        lifetime: 10000,
+        annualMaintenance: 10000
+      },
+      diesel: {
+        purchaseCost: 1000,
+        powerW: 1000,
+        fuelConsumptionPerKWh: 0,
+        fuelPrice: 0,
+        lifetime: 10000,
+        annualMaintenance: 0
+      },
+      other: {
+        co2Methanol: 0,
+        co2Diesel: 0,
+        evaluationHorizonYears: 10
+      },
+      monthlySolarRadiation: {
+        jan: 0,
+        feb: 0,
+        mar: 0,
+        apr: 0,
+        mai: 0,
+        jun: 0,
+        jul: 0,
+        aug: 0,
+        sep: 0,
+        okt: 0,
+        nov: 0,
+        des: 0
+      }
+    });
+
+    const results = calculateNumericResults(configuration);
+
+    assert.equal(results.selectedSource, "Brenselcelle");
+    assert.deepEqual(results.costComparison.alternatives.map((item) => item.source), ["Brenselcelle", "Dieselaggregat"]);
+  });
+
+  it("ignores legacy annual maintenance inputs in secondary source costs", () => {
+    const configuration = normalizeCalculationRequest({
+      ...basePayload,
+      preferred_secondary_source: "fuelCell",
+      secondary_sources: ["fuelCell", "diesel"],
+      backupSource: { hasBackupSource: true },
+      fuelCell: {
+        purchaseCost: 1000,
+        powerW: 100000,
+        fuelConsumptionPerKWh: 0,
+        fuelPrice: 0,
+        lifetime: 10000,
+        annualMaintenance: 999999
+      },
+      diesel: {
+        purchaseCost: 2000,
+        powerW: 100000,
+        fuelConsumptionPerKWh: 0,
+        fuelPrice: 0,
+        lifetime: 10000,
+        annualMaintenance: 999999
+      },
+      other: {
+        co2Methanol: 0,
+        co2Diesel: 0,
+        evaluationHorizonYears: 10
+      },
+      monthlySolarRadiation: {
+        jan: 0,
+        feb: 0,
+        mar: 0,
+        apr: 0,
+        mai: 0,
+        jun: 0,
+        jul: 0,
+        aug: 0,
+        sep: 0,
+        okt: 0,
+        nov: 0,
+        des: 0
+      }
+    });
+
+    const results = calculateNumericResults(configuration);
+    const fuelCell = results.costComparison.alternatives.find((item) => item.source === "Brenselcelle");
+    const diesel = results.costComparison.alternatives.find((item) => item.source === "Dieselaggregat");
+
+    assert.equal("annualMaintenance" in fuelCell, false);
+    assert.equal("annualMaintenance" in diesel, false);
+    assert.equal(fuelCell.toc, 1000);
+    assert.equal(diesel.toc, 2000);
   });
 });

@@ -137,6 +137,8 @@ export interface HydroGuideDecision {
   status: HydroGuideDecisionStatus;
   methodId: string;
   methodLabel: string;
+  releaseSolutionCode?: string;
+  measurementMethodCode?: string;
   sourceRefs: string[];
   satisfiedCriteria: string[];
   failedCriteria: string[];
@@ -161,30 +163,24 @@ export interface SourceAnchoredReportSummary {
   implicitObligations: UniversalNveObligation[];
 }
 
-export interface UnanchoredCandidate {
-  id: string;
-  label: string;
-  reason: string;
-}
-
 export const EVIDENCE_OPTIONS: HydroGuideAnswerOption[] = [
   {
     id: "documented_satisfies_source_criterion",
-    label: "Dokumentert oppfylt",
+    label: "Ja",
     sourceRefs: [],
     semanticMeaning: "HydroGuide records that project documentation shows the source-backed criterion is satisfied.",
     isAppOperationalization: true
   },
   {
     id: "documented_does_not_satisfy_source_criterion",
-    label: "Dokumentert ikke oppfylt",
+    label: "Nei",
     sourceRefs: [],
     semanticMeaning: "HydroGuide records that project documentation shows the source-backed criterion is not satisfied.",
     isAppOperationalization: true
   },
   {
     id: "not_documented_yet",
-    label: "Ikke dokumentert ennå",
+    label: "Ikke oppgitt",
     sourceRefs: [],
     semanticMeaning: "HydroGuide records that the source-backed criterion has not yet been documented.",
     isAppOperationalization: true

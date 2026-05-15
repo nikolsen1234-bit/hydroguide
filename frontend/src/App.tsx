@@ -215,8 +215,33 @@ function SidebarContent({
   setTheme: (theme: ThemeMode) => void;
 }) {
   const { t } = useLanguage();
-  const { activeDraft } = useConfigurationContext();
+  const { activeDraft, updateConfigurationName } = useConfigurationContext();
   const isCalculatorMode = (activeDraft.engineMode ?? "calculator") === "calculator";
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState(activeDraft.name);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!editingName) {
+      setDraftName(activeDraft.name);
+    }
+  }, [activeDraft.name, editingName]);
+
+  useEffect(() => {
+    if (editingName) {
+      nameInputRef.current?.focus();
+      nameInputRef.current?.select();
+    }
+  }, [editingName]);
+
+  const commitName = () => {
+    updateConfigurationName(draftName.trim());
+    setEditingName(false);
+  };
+  const cancelName = () => {
+    setDraftName(activeDraft.name);
+    setEditingName(false);
+  };
 
   return (
     <>
@@ -237,9 +262,37 @@ function SidebarContent({
         <p className="truncate text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-bold)] text-white">
           {t("overview.projectName")}
         </p>
-        <p className="hg-mono mt-1 truncate text-[length:var(--hg-type-meta-size)] text-[#7e8ca6]">
-          {activeDraft.name.trim() || t("shared.unnamed")}
-        </p>
+        {editingName ? (
+          <input
+            ref={nameInputRef}
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            onBlur={commitName}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitName();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                cancelName();
+              }
+            }}
+            placeholder={t("shared.unnamed")}
+            className="hg-mono mt-1 block w-full truncate border-0 bg-transparent p-0 text-[length:var(--hg-type-meta-size)] text-[#e3e7ef] outline-none placeholder:text-[#7e8ca6] focus:text-white"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setDraftName(activeDraft.name);
+              setEditingName(true);
+            }}
+            className="hg-mono mt-1 block w-full cursor-text truncate border-0 bg-transparent p-0 text-left text-[length:var(--hg-type-meta-size)] text-[#7e8ca6] outline-none transition-colors hover:text-[#e3e7ef] focus:text-white"
+            title="Klikk for å endre prosjektnavn"
+          >
+            {activeDraft.name.trim() || t("shared.unnamed")}
+          </button>
+        )}
       </div>
 
       <div className="hide-scrollbar min-h-0 flex-1 overflow-y-auto">
@@ -280,6 +333,7 @@ export default function App() {
   const { activeDraft } = useConfigurationContext();
   const location = useLocation();
   const isCalculatorMode = (activeDraft.engineMode ?? "calculator") === "calculator";
+  const cleanRenderMode = new URLSearchParams(location.search).has("cleanSolarChart");
 
   const setTheme = (nextTheme: ThemeMode) => {
     setThemeState(nextTheme);
@@ -370,6 +424,36 @@ export default function App() {
     };
   }, [menuOpen]);
 
+  const routeContent = (
+    <RouteErrorBoundary key={location.pathname}>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<WelcomePage />} />
+          <Route path="/oversikt" element={<OverviewPage />} />
+          <Route path="/prosjektgrunnlag" element={isCalculatorMode ? <Navigate to="/oversikt" replace /> : <MainPage />} />
+          <Route path="/parametere" element={<SystemPage />} />
+          <Route path="/komponenter" element={<ComponentsPage />} />
+          <Route path="/analyse" element={<AnalysisPage />} />
+          <Route path="/radiolinje" element={<RadioLinkPage />} />
+          <Route path="/dokumentasjon" element={<DocumentationPage />} />
+          <Route path="/kontakt" element={<ContactPage />} />
+          <Route path="/api" element={<ApiPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </RouteErrorBoundary>
+  );
+
+  if (cleanRenderMode) {
+    return (
+      <div className="hg-app-shell" data-theme={theme}>
+        <div className="min-h-screen bg-[var(--hg-bg)] text-[var(--hg-ink)]">
+          {routeContent}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="hg-app-shell" data-theme={theme}>
       <ImportDropZone />
@@ -437,23 +521,7 @@ export default function App() {
 
         <div className="min-w-0 pt-14 md:h-screen md:pt-0">
           <div className="hg-workspace-frame hide-scrollbar min-h-[calc(100vh-3.5rem)] overflow-x-hidden md:h-screen md:overflow-y-auto">
-            <RouteErrorBoundary key={location.pathname}>
-              <Suspense fallback={<RouteFallback />}>
-                <Routes>
-                  <Route path="/" element={<WelcomePage />} />
-                  <Route path="/oversikt" element={<OverviewPage />} />
-                  <Route path="/prosjektgrunnlag" element={isCalculatorMode ? <Navigate to="/oversikt" replace /> : <MainPage />} />
-                  <Route path="/parametere" element={<SystemPage />} />
-                  <Route path="/komponenter" element={<ComponentsPage />} />
-                  <Route path="/analyse" element={<AnalysisPage />} />
-                  <Route path="/radiolinje" element={<RadioLinkPage />} />
-                  <Route path="/dokumentasjon" element={<DocumentationPage />} />
-                  <Route path="/kontakt" element={<ContactPage />} />
-                  <Route path="/api" element={<ApiPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Suspense>
-            </RouteErrorBoundary>
+            {routeContent}
           </div>
         </div>
       </div>

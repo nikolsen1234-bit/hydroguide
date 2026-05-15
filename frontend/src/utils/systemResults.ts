@@ -6,6 +6,7 @@ import {
 import {
   BackupSourceConfiguration,
   BackupSourceName,
+  SecondarySourceKey,
   CostComparisonItem,
   DerivedResults,
   EditableNumber,
@@ -50,8 +51,7 @@ function selectedSourceConfig(
     powerW: "",
     fuelConsumptionPerKWh: "",
     fuelPrice: "",
-    lifetime: "",
-    annualMaintenance: ""
+    lifetime: ""
   };
 }
 
@@ -195,16 +195,10 @@ function calculateSystemRecommendation(
       : "Stabilt og frostvurdert vannstandspunkt";
 
   const operationsRequirements = calculatorMode ? [] : dedupe([
-    recommendation.criteriaSatisfied?.length
-      ? `Kildeforankrede kriterier dokumentert: ${recommendation.criteriaSatisfied.join(", ")}`
-      : "",
-    recommendation.criteriaNotSatisfied?.length
-      ? `Kildeforankrede kriterier ikke oppfylt: ${recommendation.criteriaNotSatisfied.join(", ")}`
-      : "",
-    recommendation.missingDocumentation?.length
-      ? `Mangler dokumentasjon: ${recommendation.missingDocumentation.join(", ")}`
-      : "",
-    ...(recommendation.silentNveRequirements ?? []),
+    ...(recommendation.criteriaSatisfied ?? []).map((item) => `Kriterium dokumentert: ${item}`),
+    ...(recommendation.criteriaNotSatisfied ?? []).map((item) => `Kriterium ikke oppfylt: ${item}`),
+    ...(recommendation.missingDocumentation ?? []).map((item) => `Mangler dokumentasjon: ${item}`),
+    ...(recommendation.silentNveRequirements ?? []).map((item) => `Driftsforutsetning: ${item}`),
     recommendation.status === "NeedsClarification"
       ? `Avklar prosjekteringsgrunnlaget for ${recommendation.controlMeasurementMethod.toLowerCase()}`
       : ""
@@ -270,7 +264,6 @@ function mapCostItem(item: {
   source: ApiSourceName;
   purchaseCost: number;
   operatingCostPerYear: number;
-  annualMaintenance: number;
   evaluationHorizonYears: number;
   technicalLifetimeHours: number;
   totalRuntimeHours: number;
@@ -283,7 +276,6 @@ function mapCostItem(item: {
     source: mapApiSource(item.source) === "DieselGenerator" ? "DieselGenerator" : "FuelCell",
     purchaseCost: item.purchaseCost,
     operatingCostPerYear: item.operatingCostPerYear,
-    annualMaintenance: item.annualMaintenance,
     evaluationHorizonYears: item.evaluationHorizonYears,
     technicalLifetimeHours: item.technicalLifetimeHours,
     totalRuntimeHours: item.totalRuntimeHours,
@@ -294,8 +286,20 @@ function mapCostItem(item: {
   };
 }
 
+function secondarySourceOptions(configuration: PlantConfiguration): SecondarySourceKey[] {
+  const sources = configuration.systemParameters.secondarySourceOptions.filter(
+    (source): source is SecondarySourceKey => source === "fuelCell" || source === "diesel"
+  );
+  return sources.length > 0 ? sources : [configuration.systemParameters.selectedSecondarySource];
+}
+
 function toCalculationPayload(configuration: PlantConfiguration) {
+  const sources = secondarySourceOptions(configuration);
+  const preferredSecondarySource = sources.length === 1 ? sources[0] : "";
+
   return {
+    preferred_secondary_source: preferredSecondarySource,
+    secondary_sources: sources,
     systemParameters: configuration.systemParameters,
     solar: configuration.solar,
     battery: {

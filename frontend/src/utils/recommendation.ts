@@ -17,6 +17,53 @@ function sourceLabel(sourceId: string): string {
   return source ? `${source.documentTitle}, pkt. ${source.section}` : sourceId;
 }
 
+function shortSourceTitle(documentTitle: string): string {
+  if (documentTitle.startsWith("NVE Veileder nr. 3/2020")) return "NVE veileder 3/2020";
+  if (documentTitle.startsWith("Retningslinje for registrering av konsesjonspålagte minstevannføringer")) {
+    return "Retningslinje minstevannføring 12.02.24";
+  }
+  if (documentTitle.startsWith("Retningslinje for registrering av vannføring i elver")) {
+    return "Retningslinje vannføring i elver 12.02.24";
+  }
+  return documentTitle;
+}
+
+function dedupe(values: string[]): string[] {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function sourceList(sourceIds: string[]): string {
+  const grouped = new Map<string, string[]>();
+  const unknown: string[] = [];
+
+  for (const sourceId of sourceIds) {
+    const source = nveSourceRegister[sourceId as keyof typeof nveSourceRegister];
+    if (!source) {
+      unknown.push(sourceId);
+      continue;
+    }
+
+    const title = shortSourceTitle(source.documentTitle);
+    grouped.set(title, [...(grouped.get(title) ?? []), source.section]);
+  }
+
+  return [
+    ...Array.from(grouped.entries()).map(([title, sections]) => `${title} pkt. ${dedupe(sections).join(", ")}`),
+    ...unknown
+  ].join("; ");
+}
+
+function criterionLabel(item: { title: string; sourceRefs: string[] }): string {
+  const refs = sourceList(item.sourceRefs);
+  return refs ? `${item.title} (${refs})` : item.title;
+}
+
+function displayMeasurementMethod(code: MeasurementMethodCode | undefined): string {
+  return code && code !== "NONE"
+    ? code
+    : "Måleprinsipp må fastsettes fra kildeforankrede kriterier";
+}
+
 function methodSummary(methodId: string): MethodSummary | null {
   const method = hydroGuideMethodCandidates.find((item) => item.id === methodId);
   if (!method) return null;
@@ -28,7 +75,7 @@ function methodSummary(methodId: string): MethodSummary | null {
     solutionName: method.label,
     rank: hydroGuideMethodCandidates.indexOf(method) + 1,
     nveAnchors: method.sourceRefs,
-    reason: method.sourceRefs.map(sourceLabel).join("; ")
+    reason: sourceList(method.sourceRefs)
   };
 }
 
@@ -36,40 +83,42 @@ export function calculateRecommendation(answers: Answers): Recommendation {
   const decision = calculateHydroGuideDecision(answers);
   const summary = buildSourceAnchoredReportSummary(decision);
   const selectedMethod = hydroGuideMethodCandidates.find((item) => item.id === decision.methodId);
+  const releaseSolutionCode = (decision.releaseSolutionCode ?? selectedMethod?.releaseSolutionCode) as ReleaseSolutionCode | undefined;
+  const measurementMethodCode = (decision.measurementMethodCode ?? selectedMethod?.measurementMethodCode) as MeasurementMethodCode | undefined;
   const alternatives = hydroGuideMethodCandidates
     .filter((item) => item.id !== decision.methodId && item.id !== "alternative_method_requires_nve_clarification")
     .map((item) => methodSummary(item.id))
     .filter((item): item is MethodSummary => Boolean(item));
 
   return {
-    mainSolution: `${decision.methodId} - ${decision.methodLabel}`,
-    controlMeasurementMethod: selectedMethod?.measurementMethodCode ?? "Måleprinsipp må fastsettes fra kildeforankrede kriterier",
+    mainSolution: decision.methodLabel,
+    controlMeasurementMethod: displayMeasurementMethod(measurementMethodCode),
     justification: [decision.explanation, ...decision.sourceRefs.slice(0, 6).map((sourceId) => `Kilde: ${sourceLabel(sourceId)}`)],
     additionalRequirements: [
-      ...summary.missingDocumentation.map((item) => `Mangler dokumentasjon: ${item.title} (${item.sourceRefs.join(", ")})`),
-      ...summary.failedCriteria.map((item) => `Dokumentert ikke oppfylt: ${item.title} (${item.sourceRefs.join(", ")})`),
-      ...decision.warnings.map((item) => `${item.title} (${item.sourceRefs.join(", ")})`),
-      ...summary.implicitObligations.map((item) => `${item.obligationText} (${item.sourceRefs.join(", ")})`)
+      ...summary.missingDocumentation.map((item) => `Mangler dokumentasjon: ${criterionLabel(item)}`),
+      ...summary.failedCriteria.map((item) => `Svar Nei: ${criterionLabel(item)}`),
+      ...decision.warnings.map((item) => `${item.title} (${sourceList(item.sourceRefs)})`),
+      ...summary.implicitObligations.map((item) => `${item.obligationText} (${sourceList(item.sourceRefs)})`)
     ],
     status: confidenceFromDecision(decision.status),
     decisionStatus: decision.status,
-    releaseSolutionCode: selectedMethod?.releaseSolutionCode as ReleaseSolutionCode | undefined,
+    releaseSolutionCode,
     releaseSolutionName: selectedMethod?.label,
-    measurementMethodCode: selectedMethod?.measurementMethodCode as MeasurementMethodCode | undefined,
-    measurementMethodName: selectedMethod?.measurementMethodCode,
+    measurementMethodCode,
+    measurementMethodName: measurementMethodCode,
     methodCode: decision.methodId,
     methodName: decision.methodLabel,
     rank: selectedMethod ? hydroGuideMethodCandidates.indexOf(selectedMethod) + 1 : undefined,
     nveAnchors: decision.sourceRefs,
     sourceRefs: decision.sourceRefs,
-    criteriaSatisfied: decision.criteriaSatisfied,
-    criteriaNotSatisfied: decision.criteriaNotSatisfied,
-    missingDocumentation: decision.missingDocumentation,
+    criteriaSatisfied: summary.satisfiedCriteria.map(criterionLabel),
+    criteriaNotSatisfied: summary.failedCriteria.map(criterionLabel),
+    missingDocumentation: summary.missingDocumentation.map(criterionLabel),
     explanationSourceRefs: decision.explanationSourceRefs,
     alternatives,
-    discouragedMethods: decision.warnings.map((item) => ({ methodCode: item.id, methodName: item.title, reason: item.sourceRefs.map(sourceLabel).join("; ") })),
-    missingForFinalChoice: summary.missingDocumentation.map((item) => `${item.title} (${item.sourceRefs.join(", ")})`),
+    discouragedMethods: decision.warnings.map((item) => ({ methodCode: item.id, methodName: item.title, reason: sourceList(item.sourceRefs) })),
+    missingForFinalChoice: summary.missingDocumentation.map(criterionLabel),
     documentationRequirements: summary.sourceReferences.map((source) => `${source.documentTitle}, pkt. ${source.section}: ${source.shortParaphrase}`),
-    silentNveRequirements: summary.implicitObligations.map((item) => `${item.obligationText} (${item.sourceRefs.join(", ")})`)
+    silentNveRequirements: summary.implicitObligations.map((item) => `${item.obligationText} (${sourceList(item.sourceRefs)})`)
   };
 }

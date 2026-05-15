@@ -266,7 +266,7 @@ export default function OverviewPage() {
   );
 
   const isAutonomyMode = activeDraft.systemParameters.batteryMode === "autonomyDays";
-  const reservePct = outputs
+  const secondaryRuntimePct = outputs
     ? (outputs.derivedResults.annualTotals.annualSecondaryRuntimeHours / (365 * 24)) * 100
     : null;
   const overviewKpiItems: KpiStripItem[] = [
@@ -281,8 +281,8 @@ export default function OverviewPage() {
       unit: "kWh"
     },
     {
-      kicker: "RESERVEDRIFT",
-      value: reservePct !== null ? formatNumber(reservePct, 1) : "-",
+      kicker: "SEKUNDÆRDRIFT",
+      value: secondaryRuntimePct !== null ? formatNumber(secondaryRuntimePct, 1) : "-",
       unit: "%"
     },
     isAutonomyMode

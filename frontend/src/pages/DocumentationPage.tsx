@@ -187,13 +187,12 @@ F = E_{underskudd} \cdot r_{forbruk}\ \text{eller} \Rightarrow\ F = t_{drift} \c
           title: "TOC",
           lead: t("docs.tocLead"),
           formula: String.raw`\displaystyle
-TOC = C_{innkjøp} + H \cdot \left(C_{drivstoff} + C_{vedlikehold}\right)`,
+TOC = C_{innkjøp} + H \cdot C_{drivstoff}`,
           items: [
             { symbol: "TOC", unit: "\\mathrm{kr}", description: t("docs.tocSymbol") },
             { symbol: "C_{innkjøp}", unit: "\\mathrm{kr}", description: t("docs.purchaseCost") },
             { symbol: "H", unit: "\\text{år}", description: t("docs.horizonYears") },
-            { symbol: "C_{drivstoff}", unit: "\\mathrm{kr}/\\text{år}", description: t("docs.fuelCostPerYear") },
-            { symbol: "C_{vedlikehold}", unit: "\\mathrm{kr}/\\text{år}", description: t("docs.maintenanceCostPerYear") }
+            { symbol: "C_{drivstoff}", unit: "\\mathrm{kr}/\\text{år}", description: t("docs.fuelCostPerYear") }
           ]
         }
       ]

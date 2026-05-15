@@ -8,7 +8,7 @@ import type { EngineMode } from "../types";
 const team = [
   { name: "Nikolas Olsen", imageSrc: "/team/nikolas-olsen.jpg", imagePosition: "center 38%" },
   { name: "Dan Roald Larsen", imageSrc: "/team/dan-roald-larsen.jpg", imagePosition: "42% 34%" },
-  { name: "Jin-Marie Bakke" },
+  { name: "Jin-Marie Bakke", imageSrc: "/team/jin-marie-bakke.jpg", imagePosition: "center 35%" },
   { name: "Espen Espeland", imageSrc: "/team/espen-espeland.jpg" }
 ];
 

@@ -69,10 +69,10 @@ export async function onRequestGet() {
         contentType: "application/json",
         requiredBodyFields: ["solar", "battery", "monthlySolarRadiation", "equipmentRows"],
         conditionalBodyFields: {
-          backupSource: "Required when hasBackupSource is true.",
-          fuelCell: "Required when backupSource.hasBackupSource is true.",
-          diesel: "Required when backupSource.hasBackupSource is true.",
-          other: "Required when backupSource.hasBackupSource is true."
+          backupSource: "Required when hasBackupSource is true; represents whether a secondary source is used.",
+          fuelCell: "Required when the secondary source selection includes fuelCell.",
+          diesel: "Required when the secondary source selection includes diesel.",
+          other: "Required when hasBackupSource is true."
         },
         docs: "/api"
       }

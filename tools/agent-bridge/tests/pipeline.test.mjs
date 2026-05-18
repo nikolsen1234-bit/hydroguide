@@ -106,16 +106,16 @@ test("normalizeReportPayload keeps source-anchored AI contract separate from ans
   const report = normalizeReportPayload({
     reportExtract: "Anbefalt hovedløsning: Rørslipp.",
     deterministicSelection: {
-      methodCode: "pipe_via_intake_with_pipe_flow_meter",
+      methodCode: "intake_pipe",
       decisionStatus: "ANBEFALT_KILDEFORANKRET",
       sourceRefs: ["NVE_2020_4_2"]
     },
     answerFacts: [
       {
-        id: "pipe_full_through_meter",
-        label: "Rør er vannfylt gjennom måleren",
-        value: "documented_satisfies_source_criterion",
-        sourceRefs: ["NVE_2020_4_2"],
+        id: "doc_method",
+        label: "Hvordan dokumenteres vannføringen?",
+        value: "doc_direct_flow",
+        sourceRefs: ["NVE_2020_6_2"],
         sourceScope: "documentation_requirement"
       },
       {
@@ -142,8 +142,8 @@ test("normalizeReportPayload keeps source-anchored AI contract separate from ans
     ]
   });
 
-  assert.equal(report.deterministicSelection.methodCode, "pipe_via_intake_with_pipe_flow_meter");
-  assert.deepEqual(report.answerFacts.map((fact) => fact.id), ["pipe_full_through_meter"]);
+  assert.equal(report.deterministicSelection.methodCode, "intake_pipe");
+  assert.deepEqual(report.answerFacts.map((fact) => fact.id), ["doc_method"]);
   assert.equal(report.implicitObligations[0].id, "nve_hourly_registration");
   assert.equal(report.sourceChunks[0].id, "NVE_2020_4_2");
 });

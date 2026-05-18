@@ -109,11 +109,16 @@ export function NumberField({
 }: NumberFieldProps) {
   const [draftValue, setDraftValue] = useState(() => formatNumberDraft(value));
   const isEditingRef = useRef(false);
+  const lastEmittedRef = useRef<number | "">(value);
   const allowNegative = min === undefined || min < 0;
   const fieldId = useId();
   const errorId = error ? `${fieldId}-error` : undefined;
 
   useEffect(() => {
+    if (value === lastEmittedRef.current) {
+      return;
+    }
+    lastEmittedRef.current = value;
     if (!isEditingRef.current) {
       setDraftValue(formatNumberDraft(value));
     }
@@ -132,16 +137,12 @@ export function NumberField({
             isEditingRef.current = true;
           }}
           onChange={(event) => {
+            isEditingRef.current = true;
             const normalized = event.target.value.replace(",", ".");
-            const pattern = allowNegative ? /^-?\d*(?:\.\d*)?$/ : /^\d*(?:\.\d*)?$/;
-
-            if (!pattern.test(normalized)) {
-              return;
-            }
-
             setDraftValue(normalized);
 
             if (normalized === "") {
+              lastEmittedRef.current = "";
               onChange("");
               return;
             }
@@ -155,11 +156,7 @@ export function NumberField({
               return;
             }
 
-            if ((min !== undefined && numericValue < min) || (max !== undefined && numericValue > max)) {
-              onChange(numericValue);
-              return;
-            }
-
+            lastEmittedRef.current = numericValue;
             onChange(numericValue);
           }}
           onBlur={() => {

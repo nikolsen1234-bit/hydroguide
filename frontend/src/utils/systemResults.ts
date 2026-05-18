@@ -25,11 +25,6 @@ function toNumber(value: EditableNumber): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-function round(value: number, digits = 2): number {
-  const factor = 10 ** digits;
-  return Math.round((value + Number.EPSILON) * factor) / factor;
-}
-
 function inspectionsForLogic(value: EditableNumber): number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : Number.POSITIVE_INFINITY;
 }
@@ -159,9 +154,9 @@ function calculateSystemRecommendation(
   const inspectionsPerYear = inspectionsForLogic(systemParameters.inspectionsPerYear);
   const sourceConfig = selectedSourceConfig(configuration, sourceName);
 
-  const siteConstraints = Array.isArray(answers.site_constraints) ? answers.site_constraints : [];
+  const siteFactors = Array.isArray(answers.site_factors) ? answers.site_factors : [];
   const has4gCoverage = systemParameters["4gCoverage"] === true;
-  const hasRadioOrSatellite = siteConstraints.includes("power_or_communication_constraint");
+  const hasRadioOrSatellite = siteFactors.includes("site_limited_power_comm");
   let communication = "Satellittmodem";
   if (calculatorMode) {
     communication = "Ikke beregnet";
@@ -169,7 +164,7 @@ function calculateSystemRecommendation(
     communication = "4G-ruter";
   } else if (hasRadioOrSatellite) {
     communication = "Kommunikasjon må velges fra dokumentert infrastruktur";
-  } else if (siteConstraints.includes("power_or_communication_constraint")) {
+  } else if (siteFactors.includes("site_limited_power_comm")) {
     communication = "Kommunikasjon må velges fra tilgjengelig infrastruktur";
   }
 
@@ -190,7 +185,7 @@ function calculateSystemRecommendation(
 
   const icingAdaptation = calculatorMode
     ? "Ikke beregnet"
-    : answers.release_solution_category === "pipe_via_intake"
+    : answers.release_method === "intake_pipe"
       ? "Beskyttet rør- og sensorpunkt"
       : "Stabilt og frostvurdert vannstandspunkt";
 
@@ -213,7 +208,7 @@ function calculateSystemRecommendation(
     loggerSetup,
     energyMonitoring,
     secondarySource: sourceName,
-    secondarySourcePowerW: round(toNumber(sourceConfig.powerW), 2),
+    secondarySourcePowerW: toNumber(sourceConfig.powerW),
     batteryCapacityAh,
     batteryAutonomyDays,
     icingAdaptation,
@@ -221,7 +216,7 @@ function calculateSystemRecommendation(
   } as const;
 }
 
-type ApiSourceName = "Brenselcelle" | "Dieselaggregat" | "Ikkje berekna";
+type ApiSourceName = "Brenselcelle" | "Dieselaggregat" | "Ikkje berekna" | "FuelCell" | "DieselGenerator" | "NotComputed";
 
 const API_TO_FRONTEND_MONTH: Record<string, MonthKey> = {
   jan: "jan",
@@ -242,8 +237,8 @@ const API_TO_FRONTEND_MONTH: Record<string, MonthKey> = {
 };
 
 function mapApiSource(source: ApiSourceName): BackupSourceName | "NotComputed" {
-  if (source === "Brenselcelle") return "FuelCell";
-  if (source === "Dieselaggregat") return "DieselGenerator";
+  if (source === "Brenselcelle" || source === "FuelCell") return "FuelCell";
+  if (source === "Dieselaggregat" || source === "DieselGenerator") return "DieselGenerator";
   return "NotComputed";
 }
 
@@ -272,8 +267,9 @@ function mapCostItem(item: {
   annualCo2: number;
   toc: number;
 }): CostComparisonItem {
+  const source = mapApiSource(item.source);
   return {
-    source: mapApiSource(item.source) === "DieselGenerator" ? "DieselGenerator" : "FuelCell",
+    source: source === "DieselGenerator" ? "DieselGenerator" : "FuelCell",
     purchaseCost: item.purchaseCost,
     operatingCostPerYear: item.operatingCostPerYear,
     evaluationHorizonYears: item.evaluationHorizonYears,
@@ -284,6 +280,14 @@ function mapCostItem(item: {
     annualCo2: item.annualCo2,
     totalOwnershipCost: item.toc
   };
+}
+
+function dedupeCostItems(items: CostComparisonItem[]): CostComparisonItem[] {
+  const bySource = new Map<BackupSourceName, CostComparisonItem>();
+  for (const item of items) {
+    bySource.set(item.source, item);
+  }
+  return [...bySource.values()];
 }
 
 function secondarySourceOptions(configuration: PlantConfiguration): SecondarySourceKey[] {
@@ -338,7 +342,7 @@ function calculateDerivedResults(
   const monthlyEnergyBalance = mapMonthlyEnergyBalance(numericResults.monthlyEnergyBalance);
   const costComparison = {
     annualEnergyDeficitKWh: numericResults.costComparison.annualEnergyDeficitKWh,
-    alternatives: numericResults.costComparison.alternatives.map(mapCostItem)
+    alternatives: dedupeCostItems(numericResults.costComparison.alternatives.map(mapCostItem))
   };
   const reserveScenarios = {
     fuelCell: {

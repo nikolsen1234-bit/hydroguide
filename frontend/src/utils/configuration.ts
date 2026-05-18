@@ -104,10 +104,10 @@ function normalizeMinimumFlowRequirement(value: unknown): unknown {
     return value;
   }
 
-  if (numericValue <= 50) return "flow_0_50_lps";
-  if (numericValue <= 200) return "flow_50_200_lps";
-  if (numericValue <= 500) return "flow_200_500_lps";
-  return "flow_over_500_lps";
+  if (numericValue <= 50) return "flow_0_50";
+  if (numericValue <= 200) return "flow_50_200";
+  if (numericValue <= 500) return "flow_200_500";
+  return "flow_over_500";
 }
 
 function migrateAnswers(value: unknown): Answers {
@@ -119,7 +119,7 @@ function migrateAnswers(value: unknown): Answers {
   if (existing) {
     return {
       ...existing,
-      minimum_flow_requirement_lps: normalizeMinimumFlowRequirement(existing.minimum_flow_requirement_lps) as HydroGuideAnswers[string]
+      flow_requirement: normalizeMinimumFlowRequirement(existing.flow_requirement) as HydroGuideAnswers[string]
     };
   }
   return { ...EMPTY_ANSWERS };

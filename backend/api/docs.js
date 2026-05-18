@@ -6,69 +6,64 @@ const b = { type: "boolean" };
 
 const solarSchema = {
   type: "object", required: ["panelPowerWp", "panelCount", "systemEfficiency"],
-  description: "Solar panel configuration",
-  properties: { panelPowerWp: { ...n, description: "Power per panel (Wp)" }, panelCount: { ...n, description: "Number of panels" }, systemEfficiency: { ...n, description: "System efficiency (0-1)", minimum: 0, maximum: 1 } }
+  properties: { panelPowerWp: n, panelCount: n, systemEfficiency: { ...n, minimum: 0, maximum: 1 } }
 };
 
 const batterySchema = {
   type: "object", required: ["batteryMode", "batteryValue", "nominalVoltage", "maxDepthOfDischarge"],
-  description: "Battery configuration. batteryMode and batteryValue can also be sent via systemParameters for backwards compatibility.",
   properties: {
-    batteryMode: { type: "string", enum: ["ah", "autonomyDays"], description: "ah = specify capacity directly, autonomyDays = specify desired autonomy in days" },
-    batteryValue: { ...n, description: "Capacity in Ah or autonomy in days (depends on batteryMode)" },
-    nominalVoltage: { ...n, description: "Nominal battery voltage (V)" },
-    maxDepthOfDischarge: { ...n, description: "Max depth of discharge (0-1)", minimum: 0, maximum: 1 }
+    batteryMode: { type: "string", enum: ["ah", "autonomyDays"] },
+    batteryValue: n,
+    nominalVoltage: n,
+    maxDepthOfDischarge: { ...n, minimum: 0, maximum: 1 }
   }
 };
 
 const fuelSourceSchema = {
   type: "object", required: ["purchaseCost", "powerW", "fuelConsumptionPerKWh", "fuelPrice", "lifetime"],
   properties: {
-    purchaseCost: { ...n, description: "Purchase cost (NOK)" },
-    powerW: { ...n, description: "Power output (W)" },
-    fuelConsumptionPerKWh: { ...n, description: "Fuel consumption (l/kWh)" },
-    fuelPrice: { ...n, description: "Fuel price (NOK/l)" },
-    lifetime: { ...n, description: "Technical lifetime (hours)" }
+    purchaseCost: n,
+    powerW: n,
+    fuelConsumptionPerKWh: n,
+    fuelPrice: n,
+    lifetime: n
   }
 };
 
 const backupSourceSchema = {
   type: "object", required: ["hasBackupSource"],
-  description: "Secondary source state. When hasBackupSource=true, fuelCell, diesel and other must be provided for the selected secondary sources.",
   properties: {
-    hasBackupSource: { ...b, description: "Does the system have a secondary source?" },
-    fuelCell: { ...fuelSourceSchema, description: "Fuel cell (methanol)" },
-    diesel: { ...fuelSourceSchema, description: "Diesel generator" }
+    hasBackupSource: b,
+    fuelCell: fuelSourceSchema,
+    diesel: fuelSourceSchema
   }
 };
 
 const otherSchema = {
   type: "object", required: ["co2Methanol", "co2Diesel", "evaluationHorizonYears"],
-  description: "Economic and environmental parameters. Required when hasBackupSource=true.",
   properties: {
-    co2Methanol: { ...n, description: "CO2 factor fuel cell (kg/l)" },
-    co2Diesel: { ...n, description: "CO2 factor diesel (kg/l)" },
-    evaluationHorizonYears: { ...n, description: "Evaluation horizon (years)" }
+    co2Methanol: n,
+    co2Diesel: n,
+    evaluationHorizonYears: n
   }
 };
 
 const monthlySchema = {
   type: "object", required: ["jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "nov"],
-  description: "Monthly solar radiation (kWh/m2/day). May/October/December may be sent as mai/okt/des or may/oct/dec.",
   properties: { jan: n, feb: n, mar: n, apr: n, mai: n, may: n, jun: n, jul: n, aug: n, sep: n, okt: n, oct: n, nov: n, des: n, dec: n }
 };
 
 const equipmentRowSchema = {
   type: "object", required: ["active", "name", "powerW", "runtimeHoursPerDay"],
   properties: {
-    active: { ...b, description: "Is the row active?" },
-    name: { ...s, description: "Equipment name" },
-    powerW: { ...n, description: "Power (W)" },
-    runtimeHoursPerDay: { ...n, description: "Runtime hours per day (0-24)", minimum: 0, maximum: 24 },
-    purchaseCost: { ...n, description: "Purchase cost (NOK)" },
-    lifetimeHours: { ...n, description: "Technical lifetime (hours)" },
-    supplier: { ...s, description: "Supplier name or URL" },
-    comment: { ...s, description: "Equipment note" }
+    active: b,
+    name: s,
+    powerW: n,
+    runtimeHoursPerDay: { ...n, minimum: 0, maximum: 24 },
+    purchaseCost: n,
+    lifetimeHours: n,
+    supplier: s,
+    comment: s
   }
 };
 
@@ -84,7 +79,7 @@ const monthlyBalanceSchema = {
 
 const costItemSchema = {
   type: "object",
-  properties: { source: s, purchaseCost: n, operatingCostPerYear: n, evaluationHorizonYears: n, technicalLifetimeHours: n, totalRuntimeHours: n, replacementCount: n, annualFuelConsumption: n, annualCo2: n, toc: { ...n, description: "Total cost of ownership over evaluation period (NOK)" } }
+  properties: { source: s, purchaseCost: n, operatingCostPerYear: n, evaluationHorizonYears: n, technicalLifetimeHours: n, totalRuntimeHours: n, replacementCount: n, annualFuelConsumption: n, annualCo2: n, toc: n }
 };
 
 const scenarioSchema = {
@@ -95,15 +90,15 @@ const scenarioSchema = {
 const calculationsResponseSchema = {
   type: "object",
   properties: {
-    equipmentBudgetRows: { type: "array", items: equipmentBudgetRowSchema, description: "Power budget per equipment row" },
-    totals: { type: "object", properties: { totalWhPerDay: n, totalAhPerDay: n, totalWhPerWeek: n, totalAhPerWeek: n }, description: "Total consumption" },
-    battery: { type: "object", properties: { inputMode: s, inputValue: n, capacityAh: n, autonomyDays: n }, description: "Battery result" },
-    annualEnergyDeficitKWh: { ...n, description: "Annual energy deficit (kWh)" },
-    monthlyEnergyBalance: { type: "array", items: monthlyBalanceSchema, description: "Energy balance per month" },
-    annualTotals: { type: "object", description: "Annual totals for solar production, load, balance, fuel and CO2" },
-    selectedSource: { ...s, description: "Selected secondary source for monthlyEnergyBalance and annualTotals" },
-    costComparison: { type: "object", properties: { annualEnergyDeficitKWh: n, alternatives: { type: "array", items: costItemSchema } }, description: "Cost comparison fuel cell vs diesel" },
-    scenarios: { type: "object", properties: { fuelCell: scenarioSchema, diesel: scenarioSchema }, description: "Full scenario for each secondary source" }
+    equipmentBudgetRows: { type: "array", items: equipmentBudgetRowSchema },
+    totals: { type: "object", properties: { totalWhPerDay: n, totalAhPerDay: n, totalWhPerWeek: n, totalAhPerWeek: n } },
+    battery: { type: "object", properties: { inputMode: s, inputValue: n, capacityAh: n, autonomyDays: n } },
+    annualEnergyDeficitKWh: n,
+    monthlyEnergyBalance: { type: "array", items: monthlyBalanceSchema },
+    annualTotals: { type: "object" },
+    selectedSource: s,
+    costComparison: { type: "object", properties: { annualEnergyDeficitKWh: n, alternatives: { type: "array", items: costItemSchema } } },
+    scenarios: { type: "object", properties: { fuelCell: scenarioSchema, diesel: scenarioSchema } }
   }
 };
 
@@ -111,8 +106,7 @@ const nveidPathParameter = {
   name: "NVEID",
   in: "path",
   required: true,
-  schema: { type: "integer", minimum: 1 },
-  description: "NVE power station ID"
+  schema: { type: "integer", minimum: 1 }
 };
 
 const nullableNumber = { oneOf: [n, { type: "null" }] };
@@ -150,7 +144,6 @@ const nveidStationSchema = {
 
 const nveidResponseSchema = {
   type: "object",
-  description: "Minimum-flow data for the requested power station.",
   additionalProperties: nveidStationSchema
 };
 
@@ -174,26 +167,24 @@ const SPEC = {
   openapi: "3.1.0",
   info: {
     title: "HydroGuide API",
-    version: "1.0.0",
-    description: "Public API for HydroGuide calculations and minimum-flow data."
+    version: "1.0.0"
   },
   servers: [{ url: "/api" }],
   tags: [
-    { name: "Calculations", description: "Energy calculations" },
-    { name: "NVEID", description: "Minimum-flow data by NVEID" }
+    { name: "Calculations" },
+    { name: "NVEID" }
   ],
   paths: {
     "/NVEID/{NVEID}": {
       get: {
         tags: ["NVEID"],
         summary: "Get minimum-flow data by NVEID",
-        description: "Returns minimum-flow data for the requested power station.",
         parameters: [nveidPathParameter],
         responses: {
-          "200": { description: "Minimum-flow data", content: { "application/json": { schema: { $ref: "#/components/schemas/NveidResponse" }, example: nveidResponseExample } } },
-          "400": { description: "Invalid NVEID" },
-          "404": { description: "No data for NVEID" },
-          "503": { description: "Minimum-flow data unavailable" }
+          "200": { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/NveidResponse" }, example: nveidResponseExample } } },
+          "400": { description: "Bad Request" },
+          "404": { description: "Not Found" },
+          "503": { description: "Unavailable" }
         }
       }
     },
@@ -201,25 +192,24 @@ const SPEC = {
       post: {
         tags: ["Calculations"],
         summary: "Run calculations",
-        description: "Send the same payload as the website export file. systemParameters/systemparametere and may/oct/dec or mai/okt/des month keys are accepted. Secondary source fields (fuelCell, diesel, other) are required when hasBackupSource=true.",
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
           content: { "application/json": { schema: { $ref: "#/components/schemas/CalculationsRequest" } } }
         },
         responses: {
-          "200": { description: "Successful calculation", content: { "application/json": { schema: { $ref: "#/components/schemas/CalculationsResponse" } } } },
-          "400": { description: "Invalid request (bad JSON, empty body, too large)" },
-          "401": { description: "Invalid or missing API key" },
-          "422": { description: "Validation error. Field keys in validationErrors show what is missing.", content: { "application/json": { schema: { $ref: "#/components/schemas/ValidationError" } } } },
-          "429": { description: "Rate limited. retry-after header indicates wait time." }
+          "200": { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/CalculationsResponse" } } } },
+          "400": { description: "Bad Request" },
+          "401": { description: "Unauthorized" },
+          "422": { description: "Validation Error", content: { "application/json": { schema: { $ref: "#/components/schemas/ValidationError" } } } },
+          "429": { description: "Too Many Requests" }
         }
       }
     }
   },
   components: {
     securitySchemes: {
-      bearerAuth: { type: "http", scheme: "bearer", description: "API key" }
+      bearerAuth: { type: "http", scheme: "bearer" }
     },
     schemas: {
       CalculationsRequest: {
@@ -229,11 +219,11 @@ const SPEC = {
           solar: solarSchema,
           battery: batterySchema,
           backupSource: backupSourceSchema,
-          preferred_secondary_source: { ...s, enum: ["fuelCell", "diesel"], description: "Optional preferred secondary source when only one source should be used for the main result." },
-          secondary_sources: { type: "array", items: { type: "string", enum: ["fuelCell", "diesel"] }, description: "Secondary sources to include. Send one source for a single-source run or both for side-by-side comparison." },
+          preferred_secondary_source: { ...s, enum: ["fuelCell", "diesel"] },
+          secondary_sources: { type: "array", items: { type: "string", enum: ["fuelCell", "diesel"] } },
           other: otherSchema,
           monthlySolarRadiation: monthlySchema,
-          equipmentRows: { type: "array", items: equipmentRowSchema, description: "Equipment list. Max 200 rows." }
+          equipmentRows: { type: "array", items: equipmentRowSchema }
         }
       },
       CalculationsResponse: {

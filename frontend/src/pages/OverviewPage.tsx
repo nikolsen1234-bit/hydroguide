@@ -143,7 +143,7 @@ function MonthlyOverviewChart({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
       <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[length:var(--hg-type-content-size)] font-[var(--hg-type-weight-semibold)] text-[var(--hg-ink)]">
         <span className="inline-flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-sm bg-[var(--hg-accent-2)]" />
-          Solcelleprod.
+          Solcelleproduksjon
         </span>
         <span className="inline-flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-sm bg-[var(--hg-muted)]" />
@@ -271,14 +271,14 @@ export default function OverviewPage() {
     : null;
   const overviewKpiItems: KpiStripItem[] = [
     {
-      kicker: "SOLCELLEPROD.",
+      kicker: "SOLCELLEPRODUKSJON",
       value: outputs ? formatNumber(outputs.derivedResults.annualTotals.annualSolarProductionKWh, 0) : "-",
-      unit: "kWh"
+      unit: "kWh/år"
     },
     {
       kicker: "FORBRUK",
       value: outputs ? formatNumber(outputs.derivedResults.annualTotals.annualLoadDemandKWh, 0) : "-",
-      unit: "kWh"
+      unit: "kWh/år"
     },
     {
       kicker: "SEKUNDÆRDRIFT",
@@ -307,7 +307,7 @@ export default function OverviewPage() {
           ["Maks ytelse", plantDetails.maxOutputMW !== null ? `${formatNumber(plantDetails.maxOutputMW)} MW` : "-"],
           ["Produksjon", plantDetails.productionGWh !== null ? `${formatNumber(plantDetails.productionGWh)} GWh/år` : "-"],
           [
-            "Minstevannføring",
+            "Minstevannføringskrav",
             plantDetails.minFlowItems.length ? <DetailList items={plantDetails.minFlowItems} /> : plantDetails.minFlowText ?? "-"
           ],
           [`Magasin${plantDetails.reservoirCount !== null ? ` (${plantDetails.reservoirCount})` : ""}`, <DetailList items={plantDetails.reservoirItems} />],

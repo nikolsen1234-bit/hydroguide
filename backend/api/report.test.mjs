@@ -88,16 +88,16 @@ test("report Worker forwards source-anchored AI contract and drops legacy obliga
       accessCodeHash,
       reportExtract: "Anbefalt hovedløsning: Rørslipp.",
       deterministicSelection: {
-        methodCode: "pipe_via_intake_with_pipe_flow_meter",
+        methodCode: "intake_pipe",
         decisionStatus: "ANBEFALT_KILDEFORANKRET",
         sourceRefs: ["NVE_2020_4_2"]
       },
       answerFacts: [
         {
-          id: "pipe_full_through_meter",
-          label: "Rør er vannfylt gjennom måleren",
-          value: "documented_satisfies_source_criterion",
-          sourceRefs: ["NVE_2020_4_2"],
+          id: "doc_method",
+          label: "Hvordan dokumenteres vannføringen?",
+          value: "doc_direct_flow",
+          sourceRefs: ["NVE_2020_6_2"],
           sourceScope: "documentation_requirement"
         }
       ],
@@ -129,8 +129,8 @@ test("report Worker forwards source-anchored AI contract and drops legacy obliga
 
   assert.equal(response.status, 200);
   const forwarded = await capturedRequest.json();
-  assert.equal(forwarded.report.deterministicSelection.methodCode, "pipe_via_intake_with_pipe_flow_meter");
-  assert.equal(forwarded.report.answerFacts[0].id, "pipe_full_through_meter");
+  assert.equal(forwarded.report.deterministicSelection.methodCode, "intake_pipe");
+  assert.equal(forwarded.report.answerFacts[0].id, "doc_method");
   assert.equal(forwarded.report.implicitObligations[0].id, "nve_hourly_registration");
   assert.equal(forwarded.report.sourceChunks[0].id, "NVE_2020_4_2");
   assert.equal(forwarded.report.hourlyAutomaticLogging, undefined);
@@ -162,13 +162,13 @@ test("report Worker strips removed HydroGuide question fields from stale direct 
         "Er kalibrering og kontrollmåling dokumentert? Kontrollmålinger og skade-/endringsrutiner er dokumentert.",
       controlMeasurement: "Kontrollmålinger og skade-/endringsrutiner er dokumentert",
       deterministicSelection: {
-        methodCode: "pipe_via_intake_with_pipe_flow_meter",
-        missingDocumentation: ["pipe_calibration_control", "pipe_full_through_meter"],
+        methodCode: "intake_pipe",
+        missingDocumentation: ["pipe_calibration_control", "doc_method"],
         "Er kalibrering og kontrollmåling dokumentert?": "old title key leaked"
       },
       answerFacts: [
         { id: "pipe_calibration_control", label: "Er kalibrering og kontrollmåling dokumentert?" },
-        { id: "pipe_full_through_meter", label: "Er røret vannfylt gjennom hele rørstrekket?" }
+        { id: "doc_method", label: "Hvordan dokumenteres vannføringen?" }
       ],
       sourceChunks: [
         { id: "artificial_profile_control_measurements", text: "Kontrollmålinger og skade-/endringsrutiner er dokumentert" },
@@ -190,8 +190,8 @@ test("report Worker strips removed HydroGuide question fields from stale direct 
   assert.equal(forwardedText.includes("Er kalibrering og kontrollmåling dokumentert?"), false);
   assert.equal(forwardedText.includes("Kontrollmålinger og skade-/endringsrutiner er dokumentert"), false);
   assert.equal(forwarded.report.controlMeasurement, undefined);
-  assert.deepEqual(forwarded.report.deterministicSelection.missingDocumentation, ["pipe_full_through_meter"]);
-  assert.deepEqual(forwarded.report.answerFacts.map((item) => item.id), ["pipe_full_through_meter"]);
+  assert.deepEqual(forwarded.report.deterministicSelection.missingDocumentation, ["doc_method"]);
+  assert.deepEqual(forwarded.report.answerFacts.map((item) => item.id), ["doc_method"]);
   assert.deepEqual(forwarded.report.sourceChunks.map((item) => item.id), ["NVE_2020_4_2"]);
 });
 

@@ -1,9 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { CostComparisonChart, EnergyOverviewChart } from "../components/SystemCharts";
+import { EnergyOverviewChart } from "../components/SystemCharts";
 import WorkspaceHeader, { WorkspaceHeaderActionButton, workspaceHeaderActionIcons } from "../components/WorkspaceHeader";
 import EditorialSection from "../components/EditorialSection";
-import KpiStrip from "../components/KpiStrip";
 import { ANSWER_KEYS, API_ENDPOINTS, STORAGE_KEYS } from "../constants";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { hydroGuideCriteria } from "../hydroguide/sourceAnchoredDecision";
@@ -15,7 +14,7 @@ import {
   workspaceOverlineClassName,
   workspacePageClassName
 } from "../styles/workspace";
-import { BackupSourceName, CostComparisonItem, MonthlyEnergyBalanceRow, ValidationErrors } from "../types";
+import { Answers, BackupSourceName, CostComparisonItem, MonthlyEnergyBalanceRow, ValidationErrors } from "../types";
 import { formatNumber } from "../utils/format";
 import { buildAiReportPayload, openReportWindow, type AiReportFields } from "../utils/report";
 import { calculateRecommendation } from "../utils/recommendation";
@@ -133,16 +132,39 @@ function InfoColumn({
 }
 
 const SOURCE_SUFFIX_RE = /\s+\(([^()]*?(?:NVE|Retningslinje)[^()]*)\)\.?$/i;
+const SOURCE_GLOBAL_RE = /\s*\(([^()]*?(?:NVE|Retningslinje)[^()]*)\)/gi;
 const DETAIL_LABEL_RE = /^(Kriterium dokumentert|Kriterium ikke oppfylt|Mangler dokumentasjon|Driftsforutsetning|Svar Nei|Dokumentert|Ikke oppfylt):\s*/i;
+const DOCUMENTED_YES = "documented_satisfies_source_criterion";
+const DOCUMENTED_NO = "documented_does_not_satisfy_source_criterion";
 
-function sentence(value: string): string {
-  const trimmed = value.trim();
-  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
-}
+type MeasurementRecommendationText = {
+  mappedConditions: string;
+  recommendedMethod: string;
+  unsuitableMethods: string;
+  requirements: string;
+  sources: string[];
+};
+
+const MEASUREMENT_RECOMMENDATION_SOURCES = [
+  "NVE Veileder nr. 3/2020, Slipp, måling og dokumentasjon av minstevannføring, pkt. 4.2, 5.2, 6.1, 6.2, 6.3, 8 og 9",
+  "Retningslinje for registrering av konsesjonspålagte minstevannføringer, vedtatt 12.02.24, pkt. 4.1-4.5",
+  "Retningslinje for registrering av vannføring i elver, vedtatt 12.02.24, pkt. 4.2.1, 4.5, 4.6 og 4.7",
+  "Veiledning for etablering av pålagt vannføringsstasjon, NVE 2024, kap. 3"
+];
 
 function parseDetailItem(item: string): { label: string; text: string; source: string } {
   let text = item.trim();
   let source = "";
+
+  if (text.startsWith("Kilde:")) {
+    return { label: "", text: "", source: text.slice("Kilde:".length).trim().replace(/\.$/, "") };
+  }
+
+  const inlineSourceIndex = text.indexOf("\n\nKilde:");
+  if (inlineSourceIndex >= 0) {
+    source = text.slice(inlineSourceIndex + "\n\nKilde:".length).trim().replace(/\.$/, "");
+    text = text.slice(0, inlineSourceIndex).trim();
+  }
 
   const sourceMatch = text.match(SOURCE_SUFFIX_RE);
   if (sourceMatch?.index !== undefined) {
@@ -159,45 +181,199 @@ function parseDetailItem(item: string): { label: string; text: string; source: s
   return { label, text, source };
 }
 
-function DetailGroupsPanel({
-  groups
+function isDocumentedYes(answers: Answers, key: string): boolean {
+  return answers[key] === DOCUMENTED_YES;
+}
+
+function isDocumentedNo(answers: Answers, key: string): boolean {
+  return answers[key] === DOCUMENTED_NO;
+}
+
+function isMissingEvidence(answers: Answers, key: string): boolean {
+  const value = answers[key];
+  return value === "" || value === undefined || value === null || value === "not_documented_yet";
+}
+
+function selectedSiteFactors(answers: Answers): string[] {
+  return Array.isArray(answers.site_factors) ? answers.site_factors.map(String) : [];
+}
+
+function buildMeasurementRecommendation(answers: Answers): MeasurementRecommendationText {
+  const conditions: string[] = [];
+  const unsuitable: string[] = [];
+  const requirements: string[] = [];
+  const siteFactors = selectedSiteFactors(answers);
+  const release = String(answers.release_method || "");
+  const docMethod = String(answers.doc_method || "");
+  const reportFreq = String(answers.report_freq || "");
+  const redundancy = String(answers.redundancy || "");
+  const isPipeLike = release === "intake_pipe" || release === "intake_coanda";
+
+  if (siteFactors.includes("site_ice_frost")) {
+    conditions.push("is eller frost ved inntak/målepunkt");
+    requirements.push("målepunkt, sensor og elektronikk må plasseres eller beskyttes slik at is og frost ikke gir bortfall eller feil måling");
+  }
+  if (siteFactors.includes("site_debris_sediment")) {
+    conditions.push("drivgods eller sediment i vannet");
+    requirements.push("målepunktet må sikres mot sediment, rusk og profilendringer");
+  }
+  if (siteFactors.includes("site_low_conductivity")) {
+    conditions.push("rent vann med lav ledningsevne");
+    unsuitable.push("elektromagnetisk vannmåler kan være uegnet uten dokumentert lav-ledningsevne-spesifikasjon");
+  }
+  if (siteFactors.includes("site_limited_power_comm")) {
+    conditions.push("begrenset strøm eller kommunikasjon");
+    requirements.push("strømforsyning og kommunikasjon må dimensjoneres for kontinuerlig drift og lokal lagring");
+  }
+  if (siteFactors.includes("site_hard_access")) {
+    conditions.push("vanskelig adkomst");
+    requirements.push("redundant logging og robust feltløsning bør vurderes for vanskelig tilgjengelig stasjon");
+  }
+
+  if (isPipeLike) {
+    conditions.push("slipp gjennom rør eller lukket kanal");
+  } else if (release === "intake_dam_pipe" || release === "intake_dam_gate" || release === "intake_dam_opening") {
+    conditions.push("slipp via damrør, luke eller utsparing der dokumentasjonen normalt bør knyttes til nedstrøms måleprofil");
+  } else if (release === "intake_fish_passage") {
+    conditions.push("minstevannføringen kan helt eller delvis føres gjennom fiskepassasje");
+  } else if (release === "intake_alternative") {
+    conditions.push("alternativ måleløsning utenfor normal kildeforankret metode");
+  }
+
+  if (docMethod === "doc_direct_flow") conditions.push("direkte flowmåling i rør er valgt som dokumentasjonsmetode");
+  else if (docMethod === "doc_level_to_flow") conditions.push("indirekte dokumentasjon via vannstand og vannføringskurve er valgt");
+  else if (docMethod === "doc_level_only") conditions.push("bare vannstandsmåling er valgt som dokumentasjon");
+
+  if (reportFreq === "freq_frequent") requirements.push("rapporteringsfrekvensen skal være 15-30 min med stabil kommunikasjon eller lokal buffer");
+  else if (reportFreq === "freq_hourly") conditions.push("standard rapporteringsfrekvens (1 gang per time)");
+
+  if (redundancy === "redundancy_yes") {
+    conditions.push("redundans (to uavhengige sensorer/loggere) er ønsket");
+    requirements.push("to uavhengige målepunkt/loggere må prosjekteres og dokumenteres");
+  }
+
+  let recommendedMethod = "";
+  if (isPipeLike && docMethod === "doc_direct_flow") {
+    if (siteFactors.includes("site_low_conductivity")) {
+      recommendedMethod = "Direkte flowmåling i rør anbefales. På grunn av lav ledningsevne bør elektromagnetisk måler spesifiseres for lav konduktivitet (eksempel Siemens SITRANS FMS520) eller ultralydmåler vurderes som alternativ.";
+    } else {
+      recommendedMethod = "Direkte flowmåling i rør med elektromagnetisk vannmåler anbefales. Måleren må monteres etter leverandørens spesifikasjoner.";
+    }
+  } else if (release === "intake_dam_pipe" || release === "intake_dam_gate" || release === "intake_dam_opening" || docMethod === "doc_level_to_flow") {
+    recommendedMethod = "Vannstandsmåling med vannføringskurve (h-Q) i et stabilt nedstrøms måleprofil anbefales som dokumentasjon av minstevannføringen.";
+  } else if (docMethod === "doc_level_only") {
+    recommendedMethod = "Vannstandsmåling alene anbefales der det er tilstrekkelig som dokumentasjon for det aktuelle anlegget.";
+  } else if (release === "intake_fish_passage") {
+    recommendedMethod = "Målingen bør dokumentere vannføringen gjennom fiskepassasjen uten å skape vandringshinder, normalt med vannstand/lukeåpning og kontrollert nedstrøms måleprofil.";
+  } else if (release === "intake_coanda") {
+    recommendedMethod = "Ved coanda-/tyrolerrist bør målingen legges til et luftfritt og kontrollerbart målepunkt; åpen bypass bør normalt dokumenteres med vannstandsmåling over kalibrert profil.";
+  } else if (release === "intake_alternative") {
+    recommendedMethod = "Alternativ metode krever særskilt begrunnelse og NVE-avklaring.";
+  } else {
+    recommendedMethod = "Anbefalt målemetode kan ikke fastsettes før slippmetode og dokumentasjonsmetode er valgt.";
+  }
+
+  const mappedConditions =
+    conditions.length > 0
+      ? `Det er kartlagt ${joinNorwegianList(conditions)}.`
+      : "Det er ikke registrert nok stedsspesifikke måleforhold til å gi en tydelig metodeanbefaling.";
+  const unsuitableMethods = unsuitable.length > 0 ? `${joinReportSentences(unsuitable)}` : "";
+  const requirementText =
+    requirements.length > 0
+      ? `Før anbefalingen legges til grunn må ${joinNorwegianList(Array.from(new Set(requirements)))}.`
+      : "De registrerte forholdene gir ikke egne avklaringspunkter utover ordinær dokumentasjon, logging og kontroll.";
+
+  return {
+    mappedConditions,
+    recommendedMethod,
+    unsuitableMethods,
+    requirements: requirementText,
+    sources: MEASUREMENT_RECOMMENDATION_SOURCES
+  };
+}
+
+function extractDetailSources(item: string): string[] {
+  const sources: string[] = [];
+  const parsed = parseDetailItem(item);
+  if (parsed.source) {
+    sources.push(parsed.source);
+  }
+
+  item.replace(SOURCE_GLOBAL_RE, (_match, source: string) => {
+    sources.push(source);
+    return "";
+  });
+
+  return sources;
+}
+
+function dedupeSources(items: string[]): string[] {
+  const seen = new Set<string>();
+  const sources: string[] = [];
+
+  items
+    .flatMap(extractDetailSources)
+    .flatMap((source) => source.split(/\s*;\s*/))
+    .map((source) => source.trim().replace(/\.$/, ""))
+    .filter(Boolean)
+    .forEach((source) => {
+      if (!seen.has(source)) {
+        seen.add(source);
+        sources.push(source);
+      }
+    });
+
+  return sources;
+}
+
+function joinNorwegianList(items: string[]): string {
+  const visible = items.map((item) => item.trim()).filter(Boolean);
+  if (visible.length === 0) return "";
+  if (visible.length === 1) return visible[0];
+  if (visible.length === 2) return `${visible[0]} og ${visible[1]}`;
+  return `${visible.slice(0, -1).join(", ")} og ${visible[visible.length - 1]}`;
+}
+
+function joinReportSentences(items: string[]): string {
+  return items.map((item) => item.trim()).filter(Boolean).map((item) => (/[.!?]$/.test(item) ? item : `${item}.`)).join(" ");
+}
+
+function operationsReport(items: string[]): string {
+  if (items.length === 0) return "";
+
+  return "Valgt metode forutsetter timeslogging, nøyaktighet innen +/-5 prosent ved kravsatt slipp, minst 97 prosent korrekte og komplette registreringer, kontinuerlig datatilgang, relevant backup, periodiske kontroller og lagring av dokumentasjon og måledata for NVE.";
+}
+
+function ReasoningReportPanel({
+  sections,
+  sources
 }: {
-  groups: Array<{ title: string; items: string[]; emptyText: string }>;
+  sections: Array<{ title: string; text: string }>;
+  sources: string[];
 }) {
+  const visibleSections = sections.filter((section) => section.text.trim());
+
+  if (visibleSections.length === 0 && sources.length === 0) return null;
+
   return (
-    <div className="grid gap-6 md:grid-cols-3 md:gap-8">
-      {groups.map((group, index) => (
-        <div key={group.title} className={index === 0 ? "" : "md:border-l md:border-[var(--hg-hairline)] md:pl-8"}>
-          <h3 className={analysisMetricTitleClassName}>{group.title}</h3>
-          <div className="mt-3 space-y-2">
-            {group.items.length === 0 ? (
-              <p className={analysisMetricValueClassName}>{group.emptyText}</p>
-            ) : (
-              group.items.map((item, itemIndex) => {
-                const detail = parseDetailItem(item);
-                return (
-                  <div
-                    key={`${group.title}-${itemIndex}`}
-                    className="border-t border-[var(--hg-hairline)] pt-2 first:border-t-0 first:pt-0"
-                  >
-                    {detail.label ? (
-                      <p className={`${analysisMetricTitleClassName} mb-1 text-[10px] uppercase tracking-[0.16em]`}>
-                        {detail.label}
-                      </p>
-                    ) : null}
-                    <p className={analysisMetricValueClassName}>{sentence(detail.text)}</p>
-                    {detail.source ? (
-                      <p className={`${analysisMetricValueClassName} mt-1 text-[11px] text-[var(--hg-muted)]`}>
-                        Kilde: {detail.source}.
-                      </p>
-                    ) : null}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
+    <div className="space-y-5">
+      {visibleSections.map((section) => (
+        <section key={section.title} className="border-t border-[var(--hg-hairline)] pt-4 first:border-t-0 first:pt-0">
+          <h3 className={analysisMetricTitleClassName}>{section.title}</h3>
+          <p className={`${analysisMetricValueClassName} mt-2 leading-7`}>{section.text}</p>
+        </section>
       ))}
+
+      {sources.length > 0 ? (
+        <details className="border-t border-[var(--hg-hairline)] pt-4 text-[11px] text-[var(--hg-muted)]">
+          <summary className="cursor-pointer select-none font-[var(--hg-type-weight-semibold)]">Kilder</summary>
+          <div className="mt-2 space-y-1 leading-5">
+            {sources.map((source) => (
+              <p key={source}>{source}.</p>
+            ))}
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }
@@ -271,12 +447,14 @@ function MonthlyTable({ rows }: { rows: MonthlyEnergyBalanceRow[] }) {
 }
 
 function CostCard({ item }: { item: CostComparisonItem }) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
+  const runtimeShare =
+    item.technicalLifetimeHours > 0 ? (item.totalRuntimeHours / item.technicalLifetimeHours) * 100 : null;
 
   return (
     <div className="border-t border-[var(--hg-hairline)] pt-4 first:border-t-0 first:pt-0">
       <div className="flex items-center justify-between gap-3">
-        <h3 className={analysisMetricTitleClassName}>{translateDynamic(item.source, language)}</h3>
+        <h3 className={analysisMetricTitleClassName}>{displaySecondarySource(item.source)}</h3>
         <p className={`${analysisMetricValueClassName} text-right`}>{formatNumber(item.totalOwnershipCost)} kr</p>
       </div>
 
@@ -286,38 +464,14 @@ function CostCard({ item }: { item: CostComparisonItem }) {
         <InfoRow label={t("analysis.evaluationHorizon")} value={`${formatNumber(item.evaluationHorizonYears)} ${t("main.year")}`} />
         <InfoRow label={t("analysis.fuelPerYearLabel")} value={`${formatNumber(item.annualFuelConsumption)} l`} />
         <InfoRow label={t("analysis.co2PerYear")} value={`${formatNumber(item.annualCo2)} kg`} />
-      </div>
-    </div>
-  );
-}
-
-function LifetimePanel({ items }: { items: CostComparisonItem[] }) {
-  const { t, language } = useLanguage();
-
-  return (
-    <div>
-      <div className="grid gap-0 md:grid-cols-2 md:divide-x md:divide-[var(--hg-hairline)]">
-        {items.map((item) => {
-          const runtimeShare =
-            item.technicalLifetimeHours > 0 ? (item.totalRuntimeHours / item.technicalLifetimeHours) * 100 : null;
-
-          return (
-            <div key={item.source} className="md:px-6 md:first:pl-0 md:last:pr-0">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className={analysisMetricTitleClassName}>{translateDynamic(item.source, language)}</h3>
-                <p className={`${analysisMetricValueClassName} text-right`}>{formatNumber(item.evaluationHorizonYears)} {t("analysis.yearsAnalysis")}</p>
-              </div>
-
-              <div className="mt-3">
-                <InfoRow label={t("analysis.totalRuntime")} value={`${formatNumber(item.totalRuntimeHours)} t`} />
-                <InfoRow label={t("analysis.technicalLifetime")} value={`${formatNumber(item.technicalLifetimeHours)} t`} />
-                {runtimeShare !== null ? (
-                  <InfoRow label={t("analysis.usedLifetime")} value={`${formatNumber(runtimeShare)} %`} />
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
+        <div className="mt-4 border-t border-[var(--hg-hairline)] pt-3">
+          <p className={`${analysisMetricTitleClassName} mb-1`}>{t("analysis.reserveLifetime")}</p>
+          <InfoRow label={t("analysis.totalRuntime")} value={`${formatNumber(item.totalRuntimeHours)} t`} />
+          <InfoRow label={t("analysis.technicalLifetime")} value={`${formatNumber(item.technicalLifetimeHours)} t`} />
+          {runtimeShare !== null ? (
+            <InfoRow label={t("analysis.usedLifetime")} value={`${formatNumber(runtimeShare)} %`} />
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -366,6 +520,12 @@ function SecondarySourceToggle({
 
 function countMatchingErrors(errors: ValidationErrors, predicate: (key: string) => boolean) {
   return Object.keys(errors).filter(predicate).length;
+}
+
+function displaySecondarySource(source: BackupSourceName | "NotComputed") {
+  if (source === "FuelCell") return "Brenselcelle";
+  if (source === "DieselGenerator") return "Dieselaggregat";
+  return "Ikke beregnet";
 }
 
 export default function AnalysisPage() {
@@ -461,6 +621,7 @@ export default function AnalysisPage() {
       : derivedResults?.systemRecommendation.secondarySourcePowerW ?? 0;
   const visibleSecondarySourceValue =
     hasBackupSource ? activeSecondarySource : derivedResults?.systemRecommendation.secondarySource ?? "NotComputed";
+  const visibleSecondarySourceLabel = displaySecondarySource(visibleSecondarySourceValue);
 
   const handleSave = () => {
     if (foundationReady && hasSystemDetails) {
@@ -600,7 +761,7 @@ export default function AnalysisPage() {
 
   const secondarySummaryItems = derivedResults
     ? [
-        { label: t("analysis.reserveSource"), value: d(visibleSecondarySourceValue) },
+        { label: t("analysis.reserveSource"), value: d(visibleSecondarySourceLabel) },
         { label: t("analysis.reserveSourcePower"), value: `${formatNumber(visibleSecondarySourcePowerW)} W` },
         { label: t("analysis.batteryBank"), value: `${formatNumber(derivedResults.systemRecommendation.batteryCapacityAh)} Ah` },
         {
@@ -615,6 +776,17 @@ export default function AnalysisPage() {
 
   const showRecommendationContent = isGuidedMode && Boolean(recommendation && solutionLead);
   const canGenerateReport = Boolean(derivedResults && visibleAnnualTotals && recommendation && hasSystemDetails && !isGeneratingReport);
+  const operationalRequirementItems = recommendation?.silentNveRequirements?.map(d) ?? [];
+  const measurementRecommendation = recommendation
+    ? buildMeasurementRecommendation(activeDraft.answers)
+    : null;
+  const operationsText = operationsReport(operationalRequirementItems);
+  const reasoningSources = dedupeSources([
+    ...(recommendation?.justification.map(d) ?? []),
+    ...(recommendation?.additionalRequirements.map(d) ?? []),
+    ...(recommendation?.silentNveRequirements?.map(d) ?? []),
+    ...(measurementRecommendation?.sources ?? [])
+  ]);
 
   return (
     <main className={workspacePageClassName}>
@@ -642,19 +814,6 @@ export default function AnalysisPage() {
           </>
         }
       />
-
-      <KpiStrip items={[
-        {
-          kicker: "ENERGIBALANSE",
-          value: visibleAnnualTotals
-            ? formatNumber(visibleAnnualTotals.annualEnergyBalanceKWh, 0)
-            : "-",
-          unit: "kWh",
-        },
-        { kicker: "FORBRUK", value: visibleAnnualTotals ? formatNumber(visibleAnnualTotals.annualLoadDemandKWh, 0) : "-", unit: "kWh" },
-        { kicker: "SEKUNDÆRDRIFT", value: visibleAnnualTotals ? formatNumber(visibleAnnualTotals.annualSecondaryRuntimeHours, 0) : "-", unit: "t" },
-        { kicker: "BATTERIAUTONOMI", value: derivedResults ? formatNumber(derivedResults.systemRecommendation.batteryAutonomyDays, 1) : "-", unit: "dager" },
-      ]} />
 
       {derivedResults ? (
         <>
@@ -685,14 +844,6 @@ export default function AnalysisPage() {
                   <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.solarPerYear")}</p>
                   <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
                     {formatNumber(visibleAnnualTotals?.annualSolarProductionKWh ?? 0)} kWh
-                  </p>
-                </div>
-                <div className="py-4 text-center">
-                  <p className={`${analysisMetricTitleClassName} text-center`}>{t("analysis.reserveProductionPerYear")}</p>
-                  <p className={`mt-2 text-center ${analysisMetricValueClassName}`}>
-                    {formatNumber(
-                      ((visibleAnnualTotals?.annualSecondaryRuntimeHours ?? 0) * visibleSecondarySourcePowerW) / 1000
-                    )} kWh
                   </p>
                 </div>
                 <div className="py-4 text-center last:pb-0">
@@ -735,7 +886,6 @@ export default function AnalysisPage() {
             <div className="divide-y divide-[var(--hg-hairline)] md:hidden">
               {[
                 { label: t("analysis.solarPerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualSolarProductionKWh ?? 0)} kWh` },
-                { label: t("analysis.reserveProductionPerYearShort"), value: `${formatNumber(((visibleAnnualTotals?.annualSecondaryRuntimeHours ?? 0) * visibleSecondarySourcePowerW) / 1000)} kWh` },
                 { label: t("analysis.loadPerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualLoadDemandKWh ?? 0)} kWh` },
                 { label: t("analysis.balancePerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualEnergyBalanceKWh ?? 0)} kWh` },
                 { label: t("analysis.reservePerYearShort"), value: `${formatNumber(visibleAnnualTotals?.annualSecondaryRuntimeHours ?? 0)} h` },
@@ -763,28 +913,13 @@ export default function AnalysisPage() {
             </div>
           </EditorialSection>
 
-          <EditorialSection
-            title={t("analysis.monthByMonth")}
-            description={t("analysis.monthByMonthDesc")}
-          >
+          <EditorialSection title={t("analysis.monthByMonth")}>
             <MonthlyTable rows={visibleMonthlyEnergyBalance} />
           </EditorialSection>
 
-          <EditorialSection
-            title={t("analysis.reserveLifetime")}
-            description={t("analysis.reserveLifetimeDesc")}
-          >
-            <LifetimePanel items={derivedResults.costComparison.alternatives} />
-          </EditorialSection>
-
-          <EditorialSection
-            title={t("analysis.tocComparison")}
-            description={t("analysis.tocComparisonDesc")}
-          >
+          <EditorialSection title={t("analysis.tocComparison")}>
             <div className="space-y-6">
-              <CostComparisonChart items={derivedResults.costComparison.alternatives} />
-
-              <div className="border-t border-[var(--hg-hairline)] pt-5 md:grid md:gap-0 md:grid-cols-2 md:divide-x md:divide-[var(--hg-hairline)]">
+              <div className="md:grid md:gap-0 md:grid-cols-2 md:divide-x md:divide-[var(--hg-hairline)]">
                 {derivedResults.costComparison.alternatives.map((item, index) => (
                   <div
                     key={item.source}
@@ -797,50 +932,33 @@ export default function AnalysisPage() {
             </div>
           </EditorialSection>
 
+          {reportError ? <p className={`${analysisMetricValueClassName} text-[var(--hg-warn)]`}>{reportError}</p> : null}
+
           {showRecommendationContent && recommendation ? (
-            <EditorialSection
-              title={t("analysis.reasoningTitle")}
-              description={t("analysis.reasoningDesc")}
-            >
-              <div>
-                <DetailGroupsPanel
-                  groups={[
-                    {
-                      title: t("analysis.reasoning"),
-                      items: recommendation.justification.map(d),
-                      emptyText: t("analysis.noReasoning")
-                    },
-                    {
-                      title: t("analysis.additionalRequirements"),
-                      items: recommendation.additionalRequirements.map(d),
-                      emptyText: t("analysis.noAdditionalReq")
-                    },
-                    {
-                      title: t("analysis.operationsAdaptation"),
-                      items: derivedResults.systemRecommendation.operationsRequirements.map(d),
-                      emptyText: t("analysis.noOperationsReq")
-                    }
-                  ]}
-                />
-              </div>
+            <EditorialSection title={t("analysis.reasoningTitle")}>
+              <ReasoningReportPanel
+                sections={[
+                  { title: t("analysis.reasoning"), text: measurementRecommendation?.mappedConditions ?? "" },
+                  { title: t("analysis.recommendedMeasurement"), text: measurementRecommendation?.recommendedMethod ?? "" },
+                  { title: t("analysis.unsuitableMeasurement"), text: measurementRecommendation?.unsuitableMethods ?? "" },
+                  { title: t("analysis.additionalRequirements"), text: measurementRecommendation?.requirements ?? "" },
+                  { title: t("analysis.operationsAdaptation"), text: operationsText }
+                ]}
+                sources={reasoningSources}
+              />
             </EditorialSection>
           ) : null}
-
-          {reportError ? <p className={`${analysisMetricValueClassName} text-[var(--hg-warn)]`}>{reportError}</p> : null}
         </>
       ) : (
         <>
           {isGuidedMode && missingBlockers.length > 0 ? (
             <EditorialSection
               title={t("analysis.missingForFull")}
-              description={t("analysis.missingForFullDesc")}
             >
               <div className="flex flex-wrap gap-3">
                 {missingBlockers.map((blocker) => (
                   <NavLink key={blocker.label} to={blocker.path} className={blockerLinkClass}>
-                    {blocker.missingFields && blocker.missingFields.length > 0
-                      ? `${blocker.label}: ${blocker.missingFields.join(", ")}`
-                      : `${blocker.label}: ${blocker.count} ${t("analysis.fields")}`}
+                    {`${blocker.label}: ${blocker.count} ${t("analysis.fields")}`}
                   </NavLink>
                 ))}
               </div>

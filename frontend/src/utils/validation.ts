@@ -281,10 +281,7 @@ export function validateConfiguration(configuration: PlantConfiguration): Valida
 
   validateRequiredNumber(errors, "solar.panelPowerWp", configuration.solar.panelPowerWp, s().panelPowerLabel);
   validateRequiredNumber(errors, "solar.panelCount", configuration.solar.panelCount, s().panelCountLabel);
-  validateRequiredNumber(errors, "solar.systemEfficiency", configuration.solar.systemEfficiency, s().systemEfficiencyLabel, {
-    min: 0,
-    max: 1
-  });
+  validateRequiredNumber(errors, "solar.systemEfficiency", configuration.solar.systemEfficiency, s().systemEfficiencyLabel);
 
   validateRequiredNumber(errors, "battery.nominalVoltage", configuration.battery.nominalVoltage, s().nominalVoltageLabel);
   validateRequiredNumber(
@@ -292,7 +289,7 @@ export function validateConfiguration(configuration: PlantConfiguration): Valida
     "battery.maxDepthOfDischarge",
     configuration.battery.maxDepthOfDischarge,
     s().maxDodLabel,
-    { min: 0, max: 1 }
+    { min: 0 }
   );
 
   if (configuration.systemParameters.hasBackupSource === true) {

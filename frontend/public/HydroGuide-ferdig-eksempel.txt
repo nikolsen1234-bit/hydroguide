@@ -1,8 +1,37 @@
 {
   "engineMode": "hydroguide",
-  "name": "Markåni kraftverk — Kombinert",
+  "name": "HydroGuide ferdig eksempel - Markåni",
   "location": "Markåni kraftverk (Vaksdal)",
   "locationPlaceId": "2034",
+  "locationLat": 60.6154,
+  "locationLng": 5.80658,
+  "nvePlantDetails": {
+    "name": "Markåni kraftverk",
+    "stationId": "2034",
+    "owner": "Eksempel AS",
+    "municipality": "Vaksdal",
+    "county": "Vestland",
+    "maxOutputMW": 4.9,
+    "productionGWh": 15.2,
+    "grossHeadM": 285,
+    "commissionedYear": "2010",
+    "plantType": "Elvekraftverk",
+    "kdbNumber": "2034",
+    "concessionUrl": "",
+    "wikiUrl": "",
+    "imageUrl": "",
+    "minFlowText": "Eksempelgrunnlag: minstevannføring 45 l/s i sommersesong og 20 l/s i vintersesong.",
+    "minFlowItems": [
+      "45 l/s i sommersesong",
+      "20 l/s i vintersesong"
+    ],
+    "intakeCount": 1,
+    "intakeItems": [
+      "Inntak med varegrind og separat røruttak for minstevannføring"
+    ],
+    "reservoirCount": 0,
+    "reservoirItems": []
+  },
   "answers": {
     "has_requirement": "documented_satisfies_source_criterion",
     "flow_requirement": "flow_0_50",
@@ -11,10 +40,12 @@
     "doc_method": "doc_direct_flow",
     "site_factors": [
       "site_ice_frost",
-      "site_hard_access"
+      "site_debris_sediment",
+      "site_hard_access",
+      "site_limited_power_comm"
     ],
     "report_freq": "freq_hourly",
-    "redundancy": "redundancy_no"
+    "redundancy": "redundancy_yes"
   },
   "systemParameters": {
     "4gCoverage": true,
@@ -26,7 +57,8 @@
     "batteryValue": 600,
     "selectedSecondarySource": "fuelCell",
     "secondarySourceOptions": [
-      "fuelCell"
+      "fuelCell",
+      "diesel"
     ]
   },
   "solar": {
@@ -62,137 +94,151 @@
     "feb": 1.02,
     "mar": 21.44,
     "apr": 61.44,
-    "mai": 79.35,
+    "may": 79.35,
     "jun": 79.3,
     "jul": 80.63,
     "aug": 71.42,
     "sep": 37.71,
-    "okt": 3.06,
+    "oct": 3.06,
     "nov": 0.26,
-    "des": 0.02
+    "dec": 0.02
   },
   "equipmentRows": [
     {
+      "id": "eq-example-bms",
       "active": true,
       "name": "Victron BMS",
       "powerW": 0.1,
       "runtimeHoursPerDay": 24,
-      "purchaseCost": "",
+      "purchaseCost": 2400,
       "lifetimeHours": "",
-      "supplier": "",
-      "comment": ""
+      "supplier": "Victron",
+      "comment": "Batteriovervåking"
     },
     {
+      "id": "eq-example-distributor",
       "active": true,
-      "name": "VICTRON Lynx Distributor",
+      "name": "Victron Lynx Distributor",
       "powerW": 2.4,
       "runtimeHoursPerDay": 24,
-      "purchaseCost": "",
+      "purchaseCost": 2800,
       "lifetimeHours": "",
-      "supplier": "",
-      "comment": ""
+      "supplier": "Victron",
+      "comment": "DC-fordeling"
     },
     {
+      "id": "eq-example-dcdc",
       "active": true,
-      "name": "VICTRON Orion TR Omformer DC-DC",
+      "name": "Victron Orion TR DC-DC",
       "powerW": 1.2,
       "runtimeHoursPerDay": 24,
-      "purchaseCost": "",
+      "purchaseCost": 1800,
       "lifetimeHours": "",
-      "supplier": "",
-      "comment": ""
+      "supplier": "Victron",
+      "comment": "DC-DC omformer"
     },
     {
+      "id": "eq-example-cerbo",
       "active": true,
-      "name": "Victron Cerbo GX - MK2",
+      "name": "Victron Cerbo GX MK2",
       "powerW": 2.8,
       "runtimeHoursPerDay": 24,
-      "purchaseCost": "",
+      "purchaseCost": 3900,
       "lifetimeHours": "",
-      "supplier": "",
-      "comment": ""
+      "supplier": "Victron",
+      "comment": "Systemovervåking"
     },
     {
+      "id": "eq-example-mppt",
       "active": true,
-      "name": "VICTRON SmartSolar MPPT 250/100",
+      "name": "Victron SmartSolar MPPT 250/100",
       "powerW": 0.042,
       "runtimeHoursPerDay": 24,
-      "purchaseCost": "",
+      "purchaseCost": 8500,
       "lifetimeHours": "",
-      "supplier": "",
-      "comment": ""
+      "supplier": "Victron",
+      "comment": "Solcelleregulator"
     },
     {
+      "id": "eq-example-flowmeter",
       "active": true,
-      "name": "Siemens FMS5020",
+      "name": "Ultralyd flowmåler",
       "powerW": 6.45,
       "runtimeHoursPerDay": 24,
-      "purchaseCost": "",
+      "purchaseCost": 42000,
       "lifetimeHours": "",
-      "supplier": "",
-      "comment": ""
+      "supplier": "Eksempel",
+      "comment": "Primærmåling i vannfylt rør"
     },
     {
+      "id": "eq-example-router",
       "active": true,
       "name": "Teltonika RUT956",
       "powerW": 7,
       "runtimeHoursPerDay": 24,
-      "purchaseCost": "",
+      "purchaseCost": 3900,
       "lifetimeHours": "",
-      "supplier": "",
-      "comment": ""
+      "supplier": "Teltonika",
+      "comment": "4G-ruter"
     },
     {
+      "id": "eq-example-fuelcell",
       "active": true,
       "name": "Efoy Pro 1800",
       "powerW": 0.5,
       "runtimeHoursPerDay": 24,
-      "purchaseCost": "",
-      "lifetimeHours": "",
-      "supplier": "",
-      "comment": ""
+      "purchaseCost": 88000,
+      "lifetimeHours": 6500,
+      "supplier": "Efoy",
+      "comment": "Brenselcelle som sekundærkilde"
     },
     {
+      "id": "eq-example-fuel-manager",
       "active": true,
       "name": "Efoy Fuel Manager FM4",
       "powerW": 0.0374,
       "runtimeHoursPerDay": 24,
-      "purchaseCost": "",
+      "purchaseCost": 9500,
       "lifetimeHours": "",
-      "supplier": "",
-      "comment": ""
+      "supplier": "Efoy",
+      "comment": "Drivstoffstyring"
     },
     {
+      "id": "eq-example-logger",
       "active": true,
-      "name": "Dataloggar",
+      "name": "Datalogger",
       "powerW": 7,
       "runtimeHoursPerDay": 24,
-      "purchaseCost": "",
+      "purchaseCost": 12500,
       "lifetimeHours": "",
-      "supplier": "",
-      "comment": ""
+      "supplier": "Eksempel",
+      "comment": "Timeslogging og lokal datalagring"
     }
   ],
   "equipmentBudgetSettings": {
     "displayUnit": "wh",
-    "useRuntimeHoursPerDay": true,
-    "showPurchaseCost": false
+    "useRuntimeHoursPerDay": true
   },
   "radioLink": {
     "pointA": {
       "coordinate": "60.61540, 5.80658",
       "antennaHeight": 10,
-      "heightScale": "AGL"
+      "heightScale": "AGL",
+      "antennaGainDbi": 8
     },
     "pointB": {
       "coordinate": "60.62914, 5.81839",
       "antennaHeight": 10,
-      "heightScale": "AGL"
+      "heightScale": "AGL",
+      "antennaGainDbi": 12
     },
-    "frequencyMHz": 868.5,
+    "frequencyMHz": 450,
     "fresnelFactor": 0.6,
     "kFactor": "4/3",
     "polarization": "horizontal",
-    "rainFactor": 25
+    "rainFactor": 25,
+    "txPowerDbm": 27,
+    "rxSensitivityDbm": -110,
+    "lineLossDb": 3.5
   }
 }

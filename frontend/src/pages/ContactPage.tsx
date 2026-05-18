@@ -46,11 +46,7 @@ export default function ContactPage() {
       <div className="flex flex-col gap-4">
         <EditorialSection title="Teamet" description="Fagskulen Vestland · 2026">
           <div>
-            <p className={`max-w-2xl ${workspaceBodyMutedClassName}`}>
-              Hovedprosjekt i elektroautomasjon, utviklet av fire studenter med fagbakgrunn i hydraulikk,
-              kraftsystem og kommunikasjon.
-            </p>
-            <div className="mt-4 grid gap-x-12 gap-y-6 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-x-12 gap-y-6 sm:grid-cols-2 xl:grid-cols-4">
               {teamMembers.map((member) => (
                 <div key={member.name} className="flex min-w-0 flex-col items-center gap-2 text-center">
                   <div className="hg-mono flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--hg-hairline)] bg-[var(--hg-surface)] text-[length:calc(var(--hg-type-content-size)_+_1px)] font-[var(--hg-type-weight-bold)] text-[var(--hg-accent)] shadow-sm">
@@ -102,8 +98,7 @@ export default function ContactPage() {
 
         <EditorialSection title="Ansvar">
           <p className={`max-w-2xl ${workspaceBodyMutedClassName}`}>
-            HydroGuide er veiledende og erstatter ikke faglig skjønn. Resultater, anbefalinger og eksportert
-            materiale må kontrolleres før de brukes i prosjektering eller myndighetsdialog.
+            All bruk av HydroGuide gjøres på eget ansvar.
           </p>
         </EditorialSection>
       </div>

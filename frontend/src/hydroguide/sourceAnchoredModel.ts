@@ -54,19 +54,8 @@ export interface HydroGuideCriterion {
   branch:
     | "project_requirement"
     | "release_solution"
-    | "pipe_measurement"
-    | "water_level_measurement"
-    | "natural_profile"
-    | "artificial_profile"
-    | "dam_pipe"
-    | "gate"
-    | "opening_in_dam"
-    | "fish_passage"
-    | "coanda_tyrolean_screen"
     | "nve_documentation"
-    | "operation_and_control"
-    | "public_information"
-    | "alternative_method";
+    | "operation_and_control";
   sourceRefs: string[];
   sourceInterpretation: string;
   sourceScope: SourceScope;
@@ -111,14 +100,7 @@ export interface UniversalNveObligation {
   sourceRefs: string[];
   sourceInterpretation: string;
   obligationText: string;
-  appliesTo:
-    | "all_methods"
-    | "pipe_measurement"
-    | "water_level_measurement"
-    | "natural_profile"
-    | "artificial_profile"
-    | "river_station"
-    | "minimum_flow_station";
+  appliesTo: "all_methods";
   visibleToUserAsQuestion: false;
   mayAppearInReport: true;
   mayAppearInAiNarrative: true;

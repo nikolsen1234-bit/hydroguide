@@ -56,7 +56,6 @@ function criterionToQuestion(criterionId: string): Question {
   return {
     key: criterion.id,
     label: criterion.title,
-    helper: criterion.sourceInterpretation,
     sourceRefs: criterion.sourceRefs,
     sourceInterpretation: criterion.sourceInterpretation,
     sourceScope: criterion.sourceScope,

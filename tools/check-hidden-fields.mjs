@@ -11,7 +11,7 @@
 //   8. No criterion in hydroGuideCriteria is unused by every card
 //   9. visibleWhen doesn't depend on a parent criterion that itself can be hidden when the child should be visible (deadlock)
 //
-// Also reports, per release_solution_category, which fields will block AnalysisPage.
+// Also reports, per release_method, which fields will block AnalysisPage.
 
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
@@ -354,7 +354,7 @@ if (unreachable.length) {
 // ---- check: every multi-select / category has at least one non-placeholder option ----
 for (const c of criteria) {
   if (c.answerModel !== "source_anchored_category" && c.answerModel !== "multi_select_source_anchored") continue;
-  const real = c.options.filter((o) => o !== "not_documented_yet" && o !== "none_documented");
+  const real = c.options.filter((o) => o !== "not_documented_yet" && o !== "site_none" && o !== "unknown");
   if (real.length === 0) fail("NO_REAL_OPTIONS", `criterion ${c.id} has no real options (only placeholders)`);
 }
 
@@ -414,8 +414,8 @@ note(`\nFresh project (all defaults):`);
   note(`  visible: ${vqs.length} fields`);
   note(`  empty required: ${errs.map((q) => q.id).join(", ")}`);
 }
-for (const rsc of ["pipe_via_intake", "pipe_through_dam", "gate", "opening_in_dam", "fish_passage", "coanda_tyrolean_screen", "other_alternative"]) {
-  const ans = buildAnswers({ release_solution_category: rsc });
+for (const rsc of ["intake_pipe", "intake_dam_pipe", "intake_dam_gate", "intake_dam_opening", "intake_fish_passage", "intake_coanda", "intake_alternative"]) {
+  const ans = buildAnswers({ release_method: rsc });
   const vqs = visibleQuestions(ans);
   const errs = vqs.filter((q) => q.required !== false && isEmpty(ans[q.id]));
   note(`  release=${rsc}: ${vqs.length} visible, ${errs.length} need answer -> ${errs.map((q) => q.id).join(", ")}`);

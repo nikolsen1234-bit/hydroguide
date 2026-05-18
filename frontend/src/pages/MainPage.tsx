@@ -21,9 +21,9 @@ import { validateConfiguration } from "../utils/validation";
 
 function isAnswered(value: unknown) {
   if (Array.isArray(value)) {
-    return value.length > 0 && !(value.length === 1 && value[0] === "none_documented");
+    return value.length > 0;
   }
-  return value !== "" && value !== "not_documented_yet" && value !== null && value !== undefined;
+  return value !== "" && value !== null && value !== undefined;
 }
 
 function displayValue(value: unknown) {
@@ -32,7 +32,7 @@ function displayValue(value: unknown) {
 
 function selectedValuesForDisplay(value: unknown) {
   if (!Array.isArray(value)) return [];
-  return value.length === 1 && value[0] === "none_documented" ? [] : value;
+  return value;
 }
 
 export default function MainPage() {
@@ -74,8 +74,7 @@ export default function MainPage() {
     const error = errors[question.key];
     const qOptions = question.options?.map((option) => ({
       value: option.value,
-      label: option.label,
-      title: option.semanticMeaning
+      label: option.label
     }));
     const exclusiveMultiOptions = new Set(["unknown", "none", "noneKnown", "no", "unresolved", "notRelevant"]);
 
@@ -92,7 +91,6 @@ export default function MainPage() {
                 key={option.value}
                 type="button"
                 aria-pressed={selected}
-                title={option.title}
                 onClick={() => {
                   const withoutCurrent = selectedValues.filter((item) => item !== option.value);
                   const next = selected
@@ -127,7 +125,7 @@ export default function MainPage() {
         >
           <option value="">{t("shared.selectOption")}</option>
           {qOptions?.map((option) => (
-            <option key={option.value} value={option.value} title={option.title}>
+            <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
@@ -203,7 +201,7 @@ export default function MainPage() {
                 {[
                   ["Prosjekt", activeDraft.name.trim() || t("shared.unnamed")],
                   ["Stasjon", activeDraft.location || "Ikke valgt"],
-                  ["NVE-id", activeDraft.locationPlaceId || "Ikke valgt"],
+                  ["NVEID", activeDraft.locationPlaceId || "Ikke valgt"],
                   [
                     "Koordinater",
                     activeDraft.locationLat !== null && activeDraft.locationLng !== null
@@ -305,9 +303,12 @@ export default function MainPage() {
                                 {isAnswered(activeDraft.answers[question.key]) ? "OK" : ""}
                               </span>
                             </div>
-                            {error ? (
-                              <p className="text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-rose-600">{error}</p>
-                            ) : null}
+                            <p
+                              className="min-h-5 text-[length:var(--hg-type-ui-size)] font-[var(--hg-type-weight-semibold)] text-rose-600"
+                              style={{ visibility: error ? "visible" : "hidden" }}
+                            >
+                              {error ?? " "}
+                            </p>
                           </div>
                         );
                       })}

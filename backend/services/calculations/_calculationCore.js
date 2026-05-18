@@ -54,11 +54,6 @@ function makeId(prefix = "cfg") {
   return `${prefix}-${crypto.randomUUID()}`;
 }
 
-function round(value, digits = 2) {
-  const factor = 10 ** digits;
-  return Math.round((value + Number.EPSILON) * factor) / factor;
-}
-
 function toNumber(value) {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
@@ -476,15 +471,15 @@ export function calculateEquipmentBudgetRows(equipmentRows, nominalVoltageValue)
       id: row.id,
       active: row.active,
       name: row.name,
-      powerW: round(powerW, 2),
-      currentA: round(currentA, 3),
-      runtimeHoursPerDay: round(runtimeHoursPerDay, 2),
-      whPerDay: round(whPerDay, 2),
-      ahPerDay: round(ahPerDay, 2),
-      whPerMonth: round(whPerDay * BUDGET_MONTH_DAYS, 2),
-      ahPerMonth: round(ahPerDay * BUDGET_MONTH_DAYS, 2),
-      whPerWeek: round(whPerDay * 7, 2),
-      ahPerWeek: round(ahPerDay * 7, 2)
+      powerW,
+      currentA,
+      runtimeHoursPerDay,
+      whPerDay,
+      ahPerDay,
+      whPerMonth: whPerDay * BUDGET_MONTH_DAYS,
+      ahPerMonth: ahPerDay * BUDGET_MONTH_DAYS,
+      whPerWeek: whPerDay * 7,
+      ahPerWeek: ahPerDay * 7
     };
   });
 }
@@ -495,11 +490,11 @@ function calculateBatteryCapacityAh(configuration, totalWhPerDay) {
   const maxDepthOfDischarge = toNumber(configuration.battery.maxDepthOfDischarge);
 
   if (batteryMode === "ah") {
-    return round(toNumber(batteryValue), 2);
+    return toNumber(batteryValue);
   }
 
   if (batteryMode === "autonomyDays" && nominalVoltage > 0 && maxDepthOfDischarge > 0) {
-    return round((totalWhPerDay * toNumber(batteryValue)) / (nominalVoltage * maxDepthOfDischarge), 0);
+    return (totalWhPerDay * toNumber(batteryValue)) / (nominalVoltage * maxDepthOfDischarge);
   }
 
   return 0;
@@ -513,21 +508,21 @@ function calculateBatteryAutonomyDays(configuration, totalWhPerDay, batteryCapac
     return 0;
   }
 
-  return round((batteryCapacityAh * nominalVoltage * maxDepthOfDischarge) / totalWhPerDay, 2);
+  return (batteryCapacityAh * nominalVoltage * maxDepthOfDischarge) / totalWhPerDay;
 }
 
 function createAnnualTotals(monthlyEnergyBalance, totalWhPerDay, totalAhPerDay) {
   return {
     totalWhPerDay,
     totalAhPerDay,
-    totalWhPerWeek: round(totalWhPerDay * 7, 2),
-    totalAhPerWeek: round(totalAhPerDay * 7, 2),
-    annualSolarProductionKWh: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.solarProductionKWh, 0), 2),
-    annualLoadDemandKWh: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.loadDemandKWh, 0), 2),
-    annualEnergyBalanceKWh: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.energyBalanceKWh, 0), 2),
-    annualSecondaryRuntimeHours: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.secondaryRuntimeHours, 0), 2),
-    annualFuelConsumption: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.fuelLiters, 0), 2),
-    annualFuelCost: round(monthlyEnergyBalance.reduce((sum, row) => sum + row.fuelCost, 0), 2)
+    totalWhPerWeek: totalWhPerDay * 7,
+    totalAhPerWeek: totalAhPerDay * 7,
+    annualSolarProductionKWh: monthlyEnergyBalance.reduce((sum, row) => sum + row.solarProductionKWh, 0),
+    annualLoadDemandKWh: monthlyEnergyBalance.reduce((sum, row) => sum + row.loadDemandKWh, 0),
+    annualEnergyBalanceKWh: monthlyEnergyBalance.reduce((sum, row) => sum + row.energyBalanceKWh, 0),
+    annualSecondaryRuntimeHours: monthlyEnergyBalance.reduce((sum, row) => sum + row.secondaryRuntimeHours, 0),
+    annualFuelConsumption: monthlyEnergyBalance.reduce((sum, row) => sum + row.fuelLiters, 0),
+    annualFuelCost: monthlyEnergyBalance.reduce((sum, row) => sum + row.fuelCost, 0)
   };
 }
 
@@ -535,8 +530,8 @@ function createEmptyAnnualTotals(totalWhPerDay, totalAhPerDay) {
   return {
     totalWhPerDay,
     totalAhPerDay,
-    totalWhPerWeek: round(totalWhPerDay * 7, 2),
-    totalAhPerWeek: round(totalAhPerDay * 7, 2),
+    totalWhPerWeek: totalWhPerDay * 7,
+    totalAhPerWeek: totalAhPerDay * 7,
     annualSolarProductionKWh: 0,
     annualLoadDemandKWh: 0,
     annualEnergyBalanceKWh: 0,
@@ -605,7 +600,7 @@ function calculateMonthlyEnergyBalance(configuration, totalWhPerDay, source) {
 function calculateCostComparison(configuration, annualEnergyDeficitKWh) {
   if (configuration.backupSource.hasBackupSource !== true) {
     return {
-      annualEnergyDeficitKWh: round(annualEnergyDeficitKWh, 2),
+      annualEnergyDeficitKWh,
       alternatives: []
     };
   }
@@ -623,33 +618,28 @@ function calculateCostComparison(configuration, annualEnergyDeficitKWh) {
         : (annualEnergyDeficitKWh / (toNumber(config.powerW) / 1000)) * evaluationHorizonYears;
     const replacementCount =
       technicalLifetimeHours > 0 && totalRuntimeHours > technicalLifetimeHours
-        ? round(totalRuntimeHours / technicalLifetimeHours - 1, 1)
+        ? totalRuntimeHours / technicalLifetimeHours - 1
         : 0;
     const annualCo2 = annualFuelConsumption * selectedCo2Factor(configuration, source);
 
     return {
       source,
-      purchaseCost: round(purchaseCost, 2),
-      operatingCostPerYear: round(operatingCostPerYear, 2),
-      evaluationHorizonYears: round(evaluationHorizonYears, 2),
-      technicalLifetimeHours: round(technicalLifetimeHours, 2),
-      totalRuntimeHours: round(totalRuntimeHours, 2),
-      replacementCount: round(replacementCount, 2),
-      annualFuelConsumption: round(annualFuelConsumption, 2),
-      annualCo2: round(annualCo2, 2),
-      toc: round(
-        purchaseCost +
-          operatingCostPerYear * evaluationHorizonYears +
-          replacementCount * purchaseCost,
-        2
-      )
+      purchaseCost,
+      operatingCostPerYear,
+      evaluationHorizonYears,
+      technicalLifetimeHours,
+      totalRuntimeHours,
+      replacementCount,
+      annualFuelConsumption,
+      annualCo2,
+      toc: purchaseCost + operatingCostPerYear * evaluationHorizonYears + replacementCount * purchaseCost
     };
   };
 
   const sourceNames = comparisonBackupSourceKeys(configuration).map((key) => SECONDARY_SOURCE_LABELS[key]);
 
   return {
-    annualEnergyDeficitKWh: round(annualEnergyDeficitKWh, 2),
+    annualEnergyDeficitKWh,
     alternatives: sourceNames.map(buildItem)
   };
 }
@@ -684,7 +674,7 @@ function createScenario(configuration, source, totalWhPerDay, totalAhPerDay, cos
     source,
     monthlyEnergyBalance,
     annualTotals: createAnnualTotals(monthlyEnergyBalance, totalWhPerDay, totalAhPerDay),
-    secondarySourcePowerW: round(toNumber(selectedSourceConfig(configuration, source).powerW), 2),
+    secondarySourcePowerW: toNumber(selectedSourceConfig(configuration, source).powerW),
     costItem
   };
 }
@@ -946,20 +936,18 @@ export function calculateNumericResults(configuration) {
     configuration.equipmentRows,
     configuration.battery.nominalVoltage
   );
-  const totalWhPerDay = round(equipmentBudgetRows.reduce((sum, row) => sum + row.whPerDay, 0), 2);
-  const totalAhPerDay = round(equipmentBudgetRows.reduce((sum, row) => sum + row.ahPerDay, 0), 2);
+  const totalWhPerDay = equipmentBudgetRows.reduce((sum, row) => sum + row.whPerDay, 0);
+  const totalAhPerDay = equipmentBudgetRows.reduce((sum, row) => sum + row.ahPerDay, 0);
   const batteryCapacityAh = calculateBatteryCapacityAh(configuration, totalWhPerDay);
   const batteryAutonomyDays = calculateBatteryAutonomyDays(configuration, totalWhPerDay, batteryCapacityAh);
 
   const baseMonthlyEnergyBalance = calculateMonthlyEnergyBalance(configuration, totalWhPerDay, "Ikkje berekna");
-  const annualEnergyDeficitKWh = round(
-    baseMonthlyEnergyBalance.reduce(
-      (sum, row) => sum + Math.max(0, row.loadDemandKWh - row.solarProductionKWh),
-      0
-    ),
-    2
+  const rawAnnualEnergyDeficitKWh = baseMonthlyEnergyBalance.reduce(
+    (sum, row) => sum + Math.max(0, row.loadDemandKWh - row.solarProductionKWh),
+    0
   );
-  const costComparison = calculateCostComparison(configuration, annualEnergyDeficitKWh);
+  const annualEnergyDeficitKWh = rawAnnualEnergyDeficitKWh;
+  const costComparison = calculateCostComparison(configuration, rawAnnualEnergyDeficitKWh);
   const selectedSource = selectRecommendedBackupSource(configuration, costComparison.alternatives);
   const monthlyEnergyBalance = calculateMonthlyEnergyBalance(configuration, totalWhPerDay, selectedSource);
   const costItemsBySource = new Map(costComparison.alternatives.map((item) => [item.source, item]));
@@ -985,8 +973,8 @@ export function calculateNumericResults(configuration) {
     totals: {
       totalWhPerDay,
       totalAhPerDay,
-      totalWhPerWeek: round(totalWhPerDay * 7, 2),
-      totalAhPerWeek: round(totalAhPerDay * 7, 2)
+      totalWhPerWeek: totalWhPerDay * 7,
+      totalAhPerWeek: totalAhPerDay * 7
     },
     battery: {
       inputMode: configuration.battery.batteryMode,

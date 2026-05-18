@@ -49,7 +49,6 @@ export interface Translations {
   "main.inspectionsPerYear": string;
   "main.perYear": string;
   "main.locationAndCommunication": string;
-  "main.locationDescription": string;
   "main.4gCoverage": string;
   "main.nbIotCoverage": string;
   "main.lineOfSight": string;
@@ -76,38 +75,24 @@ export interface Translations {
   // System Page
   "system.title": string;
   "system.solarTitle": string;
-  "system.solarDescription": string;
   "system.panelPower": string;
   "system.panelCount": string;
   "system.pcs": string;
   "system.systemEfficiency": string;
-  "system.efficiencyHelper": string;
   "system.monthlySolarRadiation": string;
-  "system.solarTableHelper": string;
-  "system.panelPowerHelper": string;
-  "system.panelCountHelper": string;
   "system.batteryTitle": string;
-  "system.batteryDescription": string;
   "system.autonomyInput": string;
-  "system.autonomyInputHelper": string;
   "system.autonomyDays": string;
   "system.batteryBankSize": string;
   "system.nominalVoltage": string;
-  "system.nominalVoltageHelper": string;
   "system.desiredAutonomy": string;
   "system.days": string;
-  "system.batteryModeHelper": string;
   "system.maxDod": string;
-  "system.maxDodHelper": string;
   "system.reserveSourceTitle": string;
-  "system.reserveSourceDescription": string;
   "system.hasReserveSource": string;
-  "system.reserveSourceHelper": string;
   "system.secondarySourceTitle": string;
-  "system.secondarySourceDescription": string;
   "system.fuelCell": string;
   "system.dieselGenerator": string;
-  "system.sameInputHelper": string;
   "system.purchaseCost": string;
   "system.power": string;
   "system.fuelConsumption": string;
@@ -117,7 +102,6 @@ export interface Translations {
   "system.krPerYear": string;
   "system.co2FactorFuelCell": string;
   "system.co2FactorDiesel": string;
-  "system.co2Helper": string;
 
   // Components Page
   "components.title": string;
@@ -144,7 +128,6 @@ export interface Translations {
   "analysis.execution": string;
   "analysis.profile": string;
   "analysis.systemAndReserve": string;
-  "analysis.systemAndReserveDesc": string;
   "analysis.system": string;
   "analysis.reserve": string;
   "analysis.releaseArrangement": string;
@@ -159,16 +142,13 @@ export interface Translations {
   "analysis.autonomy": string;
   "analysis.autonomyFromBattery": string;
   "analysis.energyAndConsumption": string;
-  "analysis.energyAndConsumptionDesc": string;
   "analysis.solarPerYear": string;
-  "analysis.reserveProductionPerYear": string;
   "analysis.loadPerYear": string;
   "analysis.energyBalancePerYear": string;
   "analysis.reserveRunPerYear": string;
   "analysis.fuelPerYear": string;
   "analysis.fuelCostPerYear": string;
   "analysis.solarPerYearShort": string;
-  "analysis.reserveProductionPerYearShort": string;
   "analysis.loadPerYearShort": string;
   "analysis.balancePerYearShort": string;
   "analysis.reservePerYearShort": string;
@@ -183,30 +163,27 @@ export interface Translations {
   "analysis.days": string;
   "analysis.reserveHours": string;
   "analysis.monthByMonth": string;
-  "analysis.monthByMonthDesc": string;
   "analysis.reserveLifetime": string;
-  "analysis.reserveLifetimeDesc": string;
   "analysis.totalRuntime": string;
   "analysis.technicalLifetime": string;
   "analysis.usedLifetime": string;
   "analysis.yearsAnalysis": string;
   "analysis.tocComparison": string;
-  "analysis.tocComparisonDesc": string;
   "analysis.purchase": string;
   "analysis.fuelCostPerYearLabel": string;
   "analysis.evaluationHorizon": string;
   "analysis.fuelPerYearLabel": string;
   "analysis.co2PerYear": string;
   "analysis.reasoningTitle": string;
-  "analysis.reasoningDesc": string;
   "analysis.reasoning": string;
+  "analysis.recommendedMeasurement": string;
+  "analysis.unsuitableMeasurement": string;
   "analysis.additionalRequirements": string;
   "analysis.operationsAdaptation": string;
   "analysis.noReasoning": string;
   "analysis.noAdditionalReq": string;
   "analysis.noOperationsReq": string;
   "analysis.missingForFull": string;
-  "analysis.missingForFullDesc": string;
   "analysis.technicalParameters": string;
   "analysis.powerLabel": string;
   "analysis.reserveSourceForDisplay": string;
@@ -323,7 +300,6 @@ export interface Translations {
   "docs.horizonYears": string;
   "docs.fuelCostPerYear": string;
   "docs.radioLinkSection": string;
-  "docs.radioLinkDesc": string;
   "docs.terrainDistance": string;
   "docs.terrainDistanceLead": string;
   "docs.terrainDistanceSymbol": string;
@@ -360,13 +336,11 @@ export interface Translations {
   "contact.projectLeader": string;
   "contact.placeholder": string;
   "contact.gettingStarted": string;
-  "contact.gettingStartedDesc": string;
   "contact.gettingStartedStep1": string;
   "contact.gettingStartedStep2": string;
   "contact.gettingStartedStep3": string;
   "contact.downloadExample": string;
   "contact.aboutTitle": string;
-  "contact.aboutDesc": string;
   "contact.aboutBullet1": string;
   "contact.aboutBullet2": string;
   "contact.aboutBullet3": string;
@@ -434,9 +408,6 @@ export interface Translations {
   "charts.fuelCell": string;
   "charts.dieselGenerator": string;
   "charts.notCalculated": string;
-  "charts.energyOverviewHelper": string;
-  "charts.energyOverviewHelperNoReserve": string;
-  "charts.energyBalanceHelper": string;
 
   // Months
   "month.jan": string;

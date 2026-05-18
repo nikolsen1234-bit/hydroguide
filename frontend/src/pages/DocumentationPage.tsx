@@ -55,36 +55,13 @@ function buildSections(t: (key: TranslationKey) => string): DocSection[] {
       description: "",
       entries: [
         {
-          title: t("docs.powerEntry"),
-          lead: t("docs.powerEntryLead"),
-          formula: String.raw`\displaystyle
-P = P_{komponent}`,
-          items: [
-            { symbol: "P", unit: "\\mathrm{W}", description: t("docs.power") },
-            { symbol: "P_{komponent}", unit: "\\mathrm{W}", description: t("docs.componentPower") }
-          ]
-        },
-        {
-          title: t("docs.currentEntry"),
-          lead: t("docs.currentEntryLead"),
-          formula: String.raw`\displaystyle
-I = \frac{P}{V_{nom}}`,
-          items: [
-            { symbol: "I", unit: "\\mathrm{A}", description: t("docs.current") },
-            { symbol: "P", unit: "\\mathrm{W}", description: t("docs.power") },
-            { symbol: "V_{nom}", unit: "\\mathrm{V}", description: t("docs.nominalVoltage") }
-          ]
-        },
-        {
           title: t("docs.dailyEntry"),
           lead: t("docs.dailyEntryLead"),
           formula: String.raw`\displaystyle
-E_{dag} = P \cdot t, \qquad Q_{dag} = I \cdot t`,
+E_{dag} = P \cdot t`,
           items: [
             { symbol: "E_{dag}", unit: "\\mathrm{Wh}", description: t("docs.dailyConsumption") },
-            { symbol: "Q_{dag}", unit: "\\mathrm{Ah}", description: t("docs.dailyCurrent") },
             { symbol: "P", unit: "\\mathrm{W}", description: t("docs.power") },
-            { symbol: "I", unit: "\\mathrm{A}", description: t("docs.current") },
             { symbol: "t", unit: "\\mathrm{h}", description: t("docs.hoursPerDay") }
           ]
         }
@@ -98,63 +75,56 @@ E_{dag} = P \cdot t, \qquad Q_{dag} = I \cdot t`,
           title: t("docs.solarProduction"),
           lead: t("docs.solarProductionLead"),
           formula: String.raw`\displaystyle
-E_{sol} = G \cdot P_{panel} \cdot n_{panel} \cdot \eta_{system}`,
+E_{prod} = G \cdot P_{panel} \cdot n \cdot \eta`,
           items: [
-            { symbol: "E_{sol}", unit: "\\mathrm{Wh}", description: t("docs.solarProductionSymbol") },
+            { symbol: "E_{prod}", unit: "\\mathrm{kWh}", description: t("docs.solarProductionSymbol") },
             { symbol: "G", unit: "\\mathrm{kWh}/\\mathrm{m}^2", description: t("docs.solarRadiation") },
-            { symbol: "P_{panel}", unit: "\\mathrm{W}", description: t("docs.panelPower") },
-            { symbol: "n_{panel}", unit: "\\text{stk}", description: t("docs.panelCount") },
-            { symbol: "\\eta_{system}", description: t("docs.systemEfficiency") }
-          ]
-        },
-        {
-          title: t("docs.consumptionAndDeficit"),
-          lead: t("docs.consumptionAndDeficitLead"),
-          formula: String.raw`\displaystyle
-E_{forbruk} = E_{dag} \cdot n_{dager}, \qquad E_{underskudd} = E_{forbruk} - E_{sol}`,
-          items: [
-            { symbol: "E_{forbruk}", unit: "\\mathrm{Wh}", description: t("docs.totalConsumption") },
-            { symbol: "E_{dag}", unit: "\\mathrm{Wh}", description: t("docs.dailyConsumptionSymbol") },
-            { symbol: "n_{dager}", unit: "\\text{dagar}", description: t("docs.numberOfDays") },
-            { symbol: "E_{underskudd}", unit: "\\mathrm{Wh}", description: t("docs.energyDeficit") },
-            { symbol: "E_{sol}", unit: "\\mathrm{Wh}", description: t("docs.solarProductionSymbol") }
+            { symbol: "P_{panel}", unit: "\\mathrm{kW}", description: t("docs.panelPower") },
+            { symbol: "n", unit: "\\text{stk}", description: t("docs.panelCount") },
+            { symbol: "\\eta", description: t("docs.systemEfficiency") }
           ]
         },
         {
           title: t("docs.energyBalanceTitle"),
           lead: t("docs.energyBalanceLead"),
           formula: String.raw`\displaystyle
-E_{bal} = E_{sol} - E_{forbruk}`,
+E_{bal} = E_{prod} - E_{forbruk}`,
           items: [
-            { symbol: "E_{bal}", unit: "\\mathrm{Wh}", description: t("docs.energyBalanceSymbol") },
-            { symbol: "E_{sol}", unit: "\\mathrm{Wh}", description: t("docs.solarProductionSymbol") },
-            { symbol: "E_{forbruk}", unit: "\\mathrm{Wh}", description: t("docs.totalConsumption") }
+            { symbol: "E_{bal}", unit: "\\mathrm{kWh}", description: t("docs.energyBalanceSymbol") },
+            { symbol: "E_{prod}", unit: "\\mathrm{kWh}", description: t("docs.solarProductionSymbol") },
+            { symbol: "E_{forbruk}", unit: "\\mathrm{kWh}", description: t("docs.totalConsumption") }
           ]
         },
         {
           title: t("docs.runtimeHours"),
           lead: t("docs.runtimeHoursLead"),
           formula: String.raw`\displaystyle
-t_{drift} = \frac{E_{underskudd}}{P_{sek}}, \qquad t_{tot} = \sum t_{drift}`,
+t_{drift} = \frac{E_{underskudd}}{P_{sek}}`,
           items: [
             { symbol: "t_{drift}", unit: "\\mathrm{h}", description: t("docs.runtimeHoursSymbol") },
-            { symbol: "t_{tot}", unit: "\\mathrm{h}", description: t("docs.totalRuntimeHours") },
-            { symbol: "E_{underskudd}", unit: "\\mathrm{Wh}", description: t("docs.energyDeficitSymbol") },
-            { symbol: "P_{sek}", unit: "\\mathrm{W}", description: t("docs.secondaryPower") }
+            { symbol: "E_{underskudd}", unit: "\\mathrm{kWh}", description: t("docs.energyDeficitSymbol") },
+            { symbol: "P_{sek}", unit: "\\mathrm{kW}", description: t("docs.secondaryPower") }
           ]
         },
         {
-          title: t("docs.fuelConsumption"),
+          title: "Drivstofforbruk",
           lead: t("docs.fuelConsumptionLead"),
           formula: String.raw`\displaystyle
-F = E_{underskudd} \cdot r_{forbruk}\ \text{eller} \Rightarrow\ F = t_{drift} \cdot P_{sek} \cdot r_{forbruk}, \qquad C_{drivstoff} = F \cdot p_{drivstoff}`,
+F = E_{underskudd} \cdot r_{forbruk}`,
           items: [
             { symbol: "F", unit: "\\mathrm{L}", description: t("docs.fuelSymbol") },
-            { symbol: "E_{underskudd}", unit: "\\mathrm{Wh}", description: t("docs.energyDeficitSymbol") },
-            { symbol: "t_{drift}", unit: "\\mathrm{h}", description: t("docs.runtimeHoursSymbol") },
-            { symbol: "P_{sek}", unit: "\\mathrm{W}", description: t("docs.secondaryPower") },
-            { symbol: "r_{forbruk}", unit: "\\mathrm{L}/\\mathrm{kWh}", description: t("docs.consumptionRate") },
+            { symbol: "E_{underskudd}", unit: "\\mathrm{kWh}", description: t("docs.energyDeficitSymbol") },
+            { symbol: "r_{forbruk}", unit: "\\mathrm{L}/\\mathrm{kWh}", description: t("docs.consumptionRate") }
+          ]
+        },
+        {
+          title: "Drivstoffkostnader",
+          lead: "",
+          formula: String.raw`\displaystyle
+C_{drivstoff} = F \cdot p_{drivstoff}`,
+          items: [
             { symbol: "C_{drivstoff}", unit: "\\mathrm{kr}", description: t("docs.fuelCost") },
+            { symbol: "F", unit: "\\mathrm{L}", description: t("docs.fuelSymbol") },
             { symbol: "p_{drivstoff}", unit: "\\mathrm{kr}/\\mathrm{L}", description: t("docs.fuelPriceSymbol") }
           ]
         }
@@ -168,31 +138,13 @@ F = E_{underskudd} \cdot r_{forbruk}\ \text{eller} \Rightarrow\ F = t_{drift} \c
           title: t("docs.batteryCapacity"),
           lead: t("docs.batteryCapacityLead"),
           formula: String.raw`\displaystyle
- C_{batt} = \frac{E_{dag} \cdot n_{autonomi}}{V_{nom} \cdot DoD}`,
+ C_{batt} = \frac{E_{dag} \cdot n_{autonomi}}{U \cdot DoD}`,
           items: [
             { symbol: "C_{batt}", unit: "\\mathrm{Ah}", description: t("docs.batteryCapacitySymbol") },
             { symbol: "E_{dag}", unit: "\\mathrm{Wh}", description: t("docs.dailyConsumptionSymbol") },
             { symbol: "n_{autonomi}", unit: "\\text{dagar}", description: t("docs.autonomyDays") },
-            { symbol: "V_{nom}", unit: "\\mathrm{V}", description: t("docs.nominalVoltage") },
+            { symbol: "U", unit: "\\mathrm{V}", description: t("docs.nominalVoltage") },
             { symbol: "DoD", description: t("docs.dodSymbol") }
-          ]
-        }
-      ]
-    },
-    {
-      title: t("docs.tocSection"),
-      description: "",
-      entries: [
-        {
-          title: "TOC",
-          lead: t("docs.tocLead"),
-          formula: String.raw`\displaystyle
-TOC = C_{innkjøp} + H \cdot C_{drivstoff}`,
-          items: [
-            { symbol: "TOC", unit: "\\mathrm{kr}", description: t("docs.tocSymbol") },
-            { symbol: "C_{innkjøp}", unit: "\\mathrm{kr}", description: t("docs.purchaseCost") },
-            { symbol: "H", unit: "\\text{år}", description: t("docs.horizonYears") },
-            { symbol: "C_{drivstoff}", unit: "\\mathrm{kr}/\\text{år}", description: t("docs.fuelCostPerYear") }
           ]
         }
       ]
@@ -215,27 +167,52 @@ d_g = 2R_E \cdot \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta \phi}{2}\right) + \
           ]
         },
         {
-          title: t("docs.fresnelAndFreeSpace"),
+          title: "Fresnel-radius",
           lead: t("docs.fresnelAndFreeSpaceLead"),
           formula: String.raw`\displaystyle
-F_1 = \sqrt{\frac{\lambda d_1 d_2}{d_1 + d_2}} \cdot k_F, \qquad L_{fs} = 20 \log_{10}\left(\frac{4 \pi d_g}{\lambda}\right)`,
+F_1 = \sqrt{\frac{\lambda d_1 d_2}{d_1 + d_2}} \cdot k_F`,
           items: [
             { symbol: "F_1", unit: "\\mathrm{m}", description: t("docs.fresnelRadius") },
             { symbol: "\\lambda", unit: "\\mathrm{m}", description: t("docs.wavelength") },
             { symbol: "d_1, d_2", unit: "\\mathrm{m}", description: t("docs.obstructionDistance") },
-            { symbol: "k_F", description: t("docs.fresnelFactor") },
+            { symbol: "k_F", description: t("docs.fresnelFactor") }
+          ]
+        },
+        {
+          title: "Friromsdemping",
+          lead: "",
+          formula: String.raw`\displaystyle
+L_{fs} = 20 \log_{10}\left(\frac{4 \pi d_g}{\lambda}\right)`,
+          items: [
             { symbol: "L_{fs}", unit: "\\mathrm{dB}", description: t("docs.freeSpaceLoss") }
           ]
         },
         {
-          title: t("docs.earthCurvature"),
+          title: "Effektiv jordradius",
           lead: t("docs.earthCurvatureLead"),
           formula: String.raw`\displaystyle
-R_{eff} = k \cdot R_E, \qquad K_{LOS} = \min_x \left(h_{LOS}(x) - \left(h_{terr}(x) + h_E(x)\right)\right), \qquad K_F = \min_x \left(h_{LOS}(x) - F_1(x) - \left(h_{terr}(x) + h_E(x)\right)\right)`,
+R_{eff} = k \cdot R_E`,
           items: [
             { symbol: "R_{eff}", unit: "\\mathrm{m}", description: t("docs.effectiveEarthRadius") },
-            { symbol: "k", description: t("docs.kFactorChosen") },
+            { symbol: "k", description: t("docs.kFactorChosen") }
+          ]
+        },
+        {
+          title: "Siktlinjeklaring",
+          lead: "",
+          formula: String.raw`\displaystyle
+K_{LOS} = \min_x \left(h_{LOS}(x) - \left(h_{terr}(x) + h_E(x)\right)\right)`,
+          items: [
             { symbol: "K_{LOS}", unit: "\\mathrm{m}", description: t("docs.losClearance") },
+            { symbol: "h_E(x)", unit: "\\mathrm{m}", description: t("docs.earthCurveCorrection") }
+          ]
+        },
+        {
+          title: "Fresnel-klaring",
+          lead: "",
+          formula: String.raw`\displaystyle
+K_F = \min_x \left(h_{LOS}(x) - F_1(x) - \left(h_{terr}(x) + h_E(x)\right)\right)`,
+          items: [
             { symbol: "K_F", unit: "\\mathrm{m}", description: t("docs.fresnelClearance") },
             { symbol: "h_E(x)", unit: "\\mathrm{m}", description: t("docs.earthCurveCorrection") }
           ]
@@ -244,12 +221,21 @@ R_{eff} = k \cdot R_E, \qquad K_{LOS} = \min_x \left(h_{LOS}(x) - \left(h_{terr}
           title: t("docs.rainAttenuation"),
           lead: t("docs.rainAttenuationLead"),
           formula: String.raw`\displaystyle
-A_r = \gamma_R \cdot r \cdot d, \qquad \gamma_R = k_R \cdot R^\alpha`,
+A_r = \gamma_R \cdot r \cdot d`,
           items: [
             { symbol: "A_r", unit: "\\mathrm{dB}", description: t("docs.totalRainAtt") },
             { symbol: "\\gamma_R", unit: "\\mathrm{dB}/\\mathrm{km}", description: t("docs.specificRainAtt") },
             { symbol: "r", description: t("docs.reductionFactor") },
-            { symbol: "d", unit: "\\mathrm{km}", description: t("docs.linkLength") },
+            { symbol: "d", unit: "\\mathrm{km}", description: t("docs.linkLength") }
+          ]
+        },
+        {
+          title: "Spesifikk regndemping",
+          lead: "",
+          formula: String.raw`\displaystyle
+\gamma_R = k_R \cdot R^\alpha`,
+          items: [
+            { symbol: "\\gamma_R", unit: "\\mathrm{dB}/\\mathrm{km}", description: t("docs.specificRainAtt") },
             { symbol: "R", unit: "\\mathrm{mm}/\\mathrm{h}", description: t("docs.rainRate") },
             { symbol: "k_R, \\alpha", description: t("docs.rainCoefficients") }
           ]
@@ -427,12 +413,11 @@ export default function DocumentationPage() {
                   className="border-t border-[var(--hg-hairline-2)] pt-6 first:border-t-0 first:pt-0"
                 >
                   {entry.title ? <h3 className={workspaceSubsectionTitleClassName}>{entry.title}</h3> : null}
-                  {entry.lead ? <p className={`mt-1 max-w-3xl ${workspaceBodyClassName}`}>{entry.lead}</p> : null}
                   {entry.formula ? <FormulaBlock tex={entry.formula} /> : null}
                   {entry.items && entry.items.length > 0 ? (
                     <DefinitionList
                       items={entry.items}
-                      heading="Forklaringer"
+                      heading="Symbol"
                       descriptionHeading="Forklaring"
                     />
                   ) : null}

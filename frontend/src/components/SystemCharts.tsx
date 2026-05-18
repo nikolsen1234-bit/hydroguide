@@ -162,9 +162,6 @@ export function EnergyOverviewChart({
         ? CHART_COLORS.diesel
         : CHART_COLORS.reserve;
   const fuelLabel = backupSource === "FuelCell" ? t("charts.fuelCell") : t("charts.dieselGenerator");
-  const chartHelper = hasReserveCoverage
-    ? t("charts.energyOverviewHelper").replace("{fuel}", fuelLabel.toLowerCase())
-    : t("charts.energyOverviewHelperNoReserve");
   const loadPath = buildLinePath(
     rows.map((row) => row.loadDemandKWh),
     toEnergyY,
@@ -220,7 +217,7 @@ export function EnergyOverviewChart({
     : 0;
 
   return (
-    <ChartCard title={t("charts.energyThroughYear")} helper={chartHelper}>
+    <ChartCard title={t("charts.energyThroughYear")}>
       <div className="-mx-1 overflow-x-auto pb-2 pl-1 pr-1 [scrollbar-width:thin]">
         <svg
           viewBox={`0 0 ${width} ${height}`}
@@ -237,7 +234,7 @@ export function EnergyOverviewChart({
           aria-labelledby={`${chartTitleId} ${chartDescId}`}
         >
           <title id={chartTitleId}>{t("charts.energyThroughYear")}</title>
-          <desc id={chartDescId}>{chartHelper}</desc>
+          <desc id={chartDescId}>{t("charts.energyThroughYear")}</desc>
           {axisRatios.map((ratio) => {
             const y = zeroY - positiveHeight * ratio;
             const energyLabel = maxPositiveEnergy * ratio;

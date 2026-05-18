@@ -105,10 +105,10 @@ export default function SystemPage() {
 
     if (!outputs) {
       return [
-        { kicker: "SOLCELLEPROD.", value: "-", unit: "kWh" },
+        { kicker: "SOLCELLEPRODUKSJON", value: "-", unit: "kWh/år" },
         { kicker: batteryTileKicker, value: "-", unit: batteryTileUnit },
         { kicker: "SEKUNDÆRDRIFT", value: "-", unit: "%" },
-        { kicker: "CO₂", value: "-", unit: "kg" },
+        { kicker: "CO₂", value: "-", unit: "kg/år" },
       ];
     }
     const annualSolarKWh = outputs.derivedResults.annualTotals.annualSolarProductionKWh;
@@ -129,10 +129,10 @@ export default function SystemPage() {
     const annualCo2Kg = co2Item ? co2Item.annualCo2 : 0;
 
     return [
-      { kicker: "SOLCELLEPROD.", value: formatNumber(annualSolarKWh, 0), unit: "kWh" },
+      { kicker: "SOLCELLEPRODUKSJON", value: formatNumber(annualSolarKWh, 0), unit: "kWh/år" },
       { kicker: batteryTileKicker, value: batteryTileValue, unit: batteryTileUnit },
       { kicker: "SEKUNDÆRDRIFT", value: formatNumber(secondaryRuntimePct, 1), unit: "%" },
-      { kicker: "CO₂", value: formatNumber(annualCo2Kg, 0), unit: "kg" },
+      { kicker: "CO₂", value: formatNumber(annualCo2Kg, 0), unit: "kg/år" },
     ];
   }, [outputs, isAutonomyMode]);
 
@@ -203,7 +203,7 @@ function FlatField({ label, value, unit, hint, info, highlighted, onChange, read
   const isControlled = onChange !== undefined;
   const [internal, setInternal] = useState(value ?? "");
   const [focused, setFocused] = useState(false);
-  const displayValue = isControlled ? value ?? "" : internal;
+  const displayValue = isControlled && !focused ? value ?? "" : internal;
   const borderColor = focused
     ? "border-[var(--hg-accent)]"
     : highlighted
@@ -219,14 +219,14 @@ function FlatField({ label, value, unit, hint, info, highlighted, onChange, read
           readOnly={readOnly}
           onChange={(e) => {
             if (readOnly) return;
+            setInternal(e.target.value);
             if (isControlled) {
               onChange?.(e.target.value);
-            } else {
-              setInternal(e.target.value);
             }
           }}
           onFocus={(e) => {
             setFocused(true);
+            setInternal(value ?? "");
             e.target.select();
           }}
           onBlur={() => setFocused(false)}
@@ -399,7 +399,7 @@ function EnergiSeksjon() {
               onChange={(v) => updateConfigSectionField("battery", "maxDepthOfDischarge", parseEditableNumber(v))}
             />
             <FlatField
-              label={batteryMode === "autonomyDays" ? "AUTONOMI" : "BATTERIBANKSTØRRELSE"}
+              label={batteryMode === "autonomyDays" ? "AUTONOMI" : "STØRRELSE BATTERIBANK"}
               value={formatEditable(bankSize)}
               unit={batteryMode === "autonomyDays" ? "dager" : "Ah"}
               onChange={(v) => updateConfigSectionField("systemParameters", "batteryValue", parseEditableNumber(v))}
@@ -794,9 +794,9 @@ function SecondarySourceFields({ sourceKey }: { sourceKey: SecondarySourceKey })
           onChange={(v) => updateConfigSectionField(sourceKey, "fuelPrice", parseEditableNumber(v))}
         />
         <FlatField
-          label="CO₂-FAKTOR"
+          label="CO₂-UTSLIPPSFAKTOR"
           value={formatEditable(co2Factor)}
-          unit="kg/L"
+          unit="kg CO₂/L"
           onChange={(v) => updateConfigSectionField("other", co2FactorKey, parseEditableNumber(v))}
         />
       </div>

@@ -43,7 +43,7 @@ export default function KpiStrip({ items, className }: KpiStripProps): JSX.Eleme
             <span className={kpiLabelClassName}>{item.kicker}</span>
             <div className="flex items-baseline gap-1.5">
               <span className={kpiValueClassName}>{item.value}</span>
-              {item.unit ? <span className={kpiUnitClassName}>{item.unit}</span> : null}
+              {item.unit ? <span className={kpiUnitClassName}>{item.unit.toUpperCase()}</span> : null}
             </div>
             {item.trend ? (
               <span className="truncate text-[length:var(--hg-type-meta-size)] text-[var(--hg-muted)] max-sm:whitespace-normal max-sm:leading-tight max-sm:[overflow-wrap:anywhere]">

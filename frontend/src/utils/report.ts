@@ -408,12 +408,7 @@ function renderEnergyStack(rows: MonthlyEnergyBalanceRow[]) {
 }
 
 function reportOwnershipCost(item: CostComparisonItem): number {
-  if (finite(item.totalOwnershipCost)) return item.totalOwnershipCost;
-  const annualCost = finite(item.operatingCostPerYear) ? item.operatingCostPerYear : 0;
-  const horizon = finite(item.evaluationHorizonYears) ? item.evaluationHorizonYears : 1;
-  const purchaseCost = finite(item.purchaseCost) ? item.purchaseCost : 0;
-  const replacementCount = finite(item.replacementCount) ? item.replacementCount : 0;
-  return purchaseCost + annualCost * horizon + replacementCount * purchaseCost;
+  return finite(item.totalOwnershipCost) ? item.totalOwnershipCost : 0;
 }
 
 function costRow(item: CostComparisonItem, powerW: number | null, recommended: boolean): string {
@@ -429,45 +424,6 @@ function costRow(item: CostComparisonItem, powerW: number | null, recommended: b
     <td>${num(finite(item.operatingCostPerYear) ? item.operatingCostPerYear : 0, 0)}<small>kr/år</small></td>
     <td>${num(reportOwnershipCost(item), 0)}<small>kr</small></td>
   </tr>`;
-}
-
-function annualEnergyDeficitKWh(rows: MonthlyEnergyBalanceRow[], fallback: unknown): number {
-  if (finite(fallback) && fallback > 0) return fallback;
-  return rows.reduce((sum, row) => {
-    const solar = finite(row?.solarProductionKWh) ? row.solarProductionKWh : 0;
-    const load = finite(row?.loadDemandKWh) ? row.loadDemandKWh : 0;
-    return sum + Math.max(0, load - solar);
-  }, 0);
-}
-
-function fallbackCostRow(config: PlantConfiguration, source: BackupSourceName, deficitKWh: number): CostComparisonItem {
-  const sourceConfig = source === "FuelCell" ? config.fuelCell : config.diesel;
-  const powerW = finite(sourceConfig.powerW) && sourceConfig.powerW > 0 ? sourceConfig.powerW : 0;
-  const horizon = finite(config.other.evaluationHorizonYears) && config.other.evaluationHorizonYears > 0 ? config.other.evaluationHorizonYears : 10;
-  const fuelRate = finite(sourceConfig.fuelConsumptionPerKWh) ? sourceConfig.fuelConsumptionPerKWh : 0;
-  const fuelPrice = finite(sourceConfig.fuelPrice) ? sourceConfig.fuelPrice : 0;
-  const purchaseCost = finite(sourceConfig.purchaseCost) ? sourceConfig.purchaseCost : 0;
-  const annualFuelConsumption = deficitKWh * fuelRate;
-  const operatingCostPerYear = annualFuelConsumption * fuelPrice;
-  const totalRuntimeHours = powerW > 0 ? (deficitKWh / (powerW / 1000)) * horizon : 0;
-  const technicalLifetimeHours = finite(sourceConfig.lifetime) ? sourceConfig.lifetime : 0;
-  const replacementCount =
-    technicalLifetimeHours > 0 && totalRuntimeHours > technicalLifetimeHours
-      ? Math.round((totalRuntimeHours / technicalLifetimeHours - 1) * 10) / 10
-      : 0;
-
-  return {
-    source,
-    purchaseCost,
-    operatingCostPerYear,
-    evaluationHorizonYears: horizon,
-    technicalLifetimeHours,
-    totalRuntimeHours,
-    replacementCount,
-    annualFuelConsumption,
-    annualCo2: annualFuelConsumption * (source === "FuelCell" ? (finite(config.other.co2Methanol) ? config.other.co2Methanol : 0) : (finite(config.other.co2Diesel) ? config.other.co2Diesel : 0)),
-    totalOwnershipCost: purchaseCost + operatingCostPerYear * horizon + replacementCount * purchaseCost
-  };
 }
 
 function shortProjectName(title: string): string {
@@ -581,14 +537,13 @@ function buildReportHtml(
   const secondaryKWh: number | null = annualFuelCellKWh > 0 ? annualFuelCellKWh : null;
   const energy = renderEnergyStack(visibleMonthlyEnergyBalance);
   const costs = derivedResults.costComparison?.alternatives ?? [];
-  const comparisonDeficitKWh = annualEnergyDeficitKWh(visibleMonthlyEnergyBalance, derivedResults.costComparison?.annualEnergyDeficitKWh);
   const radio = radioRows(config);
   const radioGraph = renderRadioGraph(config);
   const freeText = renderFreeText(aiRecommendationText);
   void renderSourceBackedEvidence;
   const lead = normalizeAiReportFields(aiRecommendationText)?.recommendationNote || text(recommendation.justification[0]);
-  const fuelCell = costs.find((item) => item.source === "FuelCell") ?? fallbackCostRow(config, "FuelCell", comparisonDeficitKWh);
-  const diesel = costs.find((item) => item.source === "DieselGenerator") ?? fallbackCostRow(config, "DieselGenerator", comparisonDeficitKWh);
+  const fuelCell = costs.find((item) => item.source === "FuelCell") ?? null;
+  const diesel = costs.find((item) => item.source === "DieselGenerator") ?? null;
   const projectShort = shortProjectName(title);
   const comparisonRows = [
     fuelCell ? costRow(fuelCell, activeReserveSource === "FuelCell" ? backupPowerW : (finite(config.fuelCell.powerW) ? config.fuelCell.powerW : null), activeReserveSource === "FuelCell") : "",

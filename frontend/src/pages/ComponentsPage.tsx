@@ -28,7 +28,7 @@ type UpdateEquipmentRow = <K extends keyof EquipmentRow>(id: string, key: K, val
 
 const equipmentNumberFields = [
   { key: "powerW", label: "Effekt", unit: "W", errorKey: "powerW" },
-  { key: "runtimeHoursPerDay", label: "Timer/dag", unit: "timer", errorKey: "runtimeHoursPerDay" }
+  { key: "runtimeHoursPerDay", label: "Timer/dag", unit: "t", errorKey: "runtimeHoursPerDay" }
 ] as const;
 
 const equipmentPurchaseFields = [
@@ -348,8 +348,8 @@ export default function ComponentsPage() {
     { kicker: "AKTIVE ENHETER", value: `${activeCount}`, unit: `/ ${rows.length}` },
     {
       kicker: "FORBRUK",
-      value: displayUnit === "ah" ? (canShowAh ? formatNumber(totalAhPerDay) : "-") : formatNumber(totalWhPerDay),
-      unit: displayUnit === "ah" ? "Ah" : "Wh"
+      value: displayUnit === "ah" ? (activeCount === 0 || canShowAh ? formatNumber(totalAhPerDay) : "-") : formatNumber(totalWhPerDay),
+      unit: `${displayUnit === "ah" ? "Ah" : "Wh"} / DAG`
     },
     { kicker: "TOTALPRIS", value: formatNumber(totalPurchaseCost, 0), unit: "kr" }
   ];
@@ -437,7 +437,7 @@ export default function ComponentsPage() {
                           </td>
                           {[
                             ["power", `${formatNumber(row.powerW)} W`],
-                            ["runtime", `${formatNumber(row.runtimeHoursPerDay)} timer`],
+                            ["runtime", `${formatNumber(row.runtimeHoursPerDay)} t`],
                             ["consumption", formatConsumption(row)]
                           ].map(([key, value]) => (
                             <td key={key} className={`${componentNumberCellClassName} ${dimmedTextCls}`}>{value}</td>

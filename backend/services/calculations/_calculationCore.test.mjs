@@ -7,6 +7,10 @@ import {
   validateCalculationRequest
 } from "./_calculationCore.js";
 
+function assertClose(actual, expected, tolerance = 1e-9) {
+  assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} is not within ${tolerance} of ${expected}`);
+}
+
 const monthlySolarRadiation = {
   jan: 1,
   feb: 1,
@@ -244,8 +248,8 @@ describe("calculateNumericResults", () => {
     const results = calculateNumericResults(configuration);
     const fuelCell = results.costComparison.alternatives.find((item) => item.source === "Brenselcelle");
 
-    assert.equal(fuelCell.replacementCount, 7.8);
-    assert.equal(fuelCell.toc, 8800);
+    assert.equal(fuelCell.replacementCount, 7.76);
+    assert.equal(fuelCell.toc, 8760);
   });
 
   it("selects the cheapest secondary source by default", () => {
@@ -443,5 +447,65 @@ describe("calculateNumericResults", () => {
     assert.equal("annualMaintenance" in diesel, false);
     assert.equal(fuelCell.toc, 1000);
     assert.equal(diesel.toc, 2000);
+  });
+
+  it("uses the unrounded annual deficit for secondary-source costs", () => {
+    const configuration = normalizeCalculationRequest({
+      ...basePayload,
+      preferred_secondary_source: "fuelCell",
+      backupSource: { hasBackupSource: true },
+      fuelCell: {
+        purchaseCost: 0,
+        powerW: 42,
+        fuelConsumptionPerKWh: 0.75,
+        fuelPrice: 65,
+        lifetime: 6500,
+        annualMaintenance: 0
+      },
+      other: {
+        co2Methanol: 0,
+        evaluationHorizonYears: 1
+      },
+      solar: {
+        panelPowerWp: 420,
+        panelCount: 2,
+        systemEfficiency: 0.77
+      },
+      monthlySolarRadiation: {
+        jan: 10,
+        feb: 20,
+        mar: 30,
+        apr: 40,
+        mai: 50,
+        jun: 60,
+        jul: 70,
+        aug: 80,
+        sep: 90,
+        okt: 100,
+        nov: 110,
+        des: 120
+      },
+      equipmentRows: [
+        {
+          active: true,
+          name: "Logger",
+          powerW: 10,
+          runtimeHoursPerDay: 24
+        },
+        {
+          active: true,
+          name: "Router",
+          powerW: 8,
+          runtimeHoursPerDay: 12
+        }
+      ]
+    });
+
+    const results = calculateNumericResults(configuration);
+    const fuelCell = results.costComparison.alternatives.find((item) => item.source === "Brenselcelle");
+
+    assertClose(results.annualEnergyDeficitKWh, 3.948);
+    assertClose(results.annualTotals.annualFuelCost, 192.465);
+    assertClose(fuelCell.operatingCostPerYear, 192.465);
   });
 });

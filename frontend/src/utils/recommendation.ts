@@ -58,10 +58,29 @@ function criterionLabel(item: { title: string; sourceRefs: string[] }): string {
   return refs ? `${item.title} (${refs})` : item.title;
 }
 
+const MEASUREMENT_METHOD_LABELS: Partial<Record<MeasurementMethodCode, string>> = {
+  M1: "Direkte vannføringsmåler i rør",
+  M1a: "Elektromagnetisk vannmåler",
+  M1b: "Ultralydmåler i rør",
+  M1c: "Måleblende/måledyse",
+  M1d: "ADP i rør/kanal",
+  M2: "Vannstand + vannføringskurve i naturlig elveprofil",
+  M3: "Vannstand + kunstig V-profil",
+  M4: "Vannstand + rektangulært/sammensatt profil",
+  M5: "Vannstand + Crump-overløp",
+  M6: "Vannstand/lukeåpning + nedstrøms måleprofil",
+  M7: "Vannstand ved utsparing + nedstrøms måleprofil",
+  M8: "Alternativ metode må avklares",
+  X1: "Måleprinsipp må fastsettes",
+  X2: "Måleprinsipp må fastsettes"
+};
+
 function displayMeasurementMethod(code: MeasurementMethodCode | undefined): string {
-  return code && code !== "NONE"
-    ? code
-    : "Måleprinsipp må fastsettes fra kildeforankrede kriterier";
+  if (!code || code === "NONE") {
+    return "Måleprinsipp må fastsettes fra kildeforankrede kriterier";
+  }
+
+  return MEASUREMENT_METHOD_LABELS[code] ?? "Måleprinsipp må fastsettes";
 }
 
 function methodSummary(methodId: string): MethodSummary | null {
@@ -86,7 +105,7 @@ export function calculateRecommendation(answers: Answers): Recommendation {
   const releaseSolutionCode = (decision.releaseSolutionCode ?? selectedMethod?.releaseSolutionCode) as ReleaseSolutionCode | undefined;
   const measurementMethodCode = (decision.measurementMethodCode ?? selectedMethod?.measurementMethodCode) as MeasurementMethodCode | undefined;
   const alternatives = hydroGuideMethodCandidates
-    .filter((item) => item.id !== decision.methodId && item.id !== "alternative_method_requires_nve_clarification")
+    .filter((item) => item.id !== decision.methodId && item.id !== "intake_alternative")
     .map((item) => methodSummary(item.id))
     .filter((item): item is MethodSummary => Boolean(item));
 
@@ -105,7 +124,7 @@ export function calculateRecommendation(answers: Answers): Recommendation {
     releaseSolutionCode,
     releaseSolutionName: selectedMethod?.label,
     measurementMethodCode,
-    measurementMethodName: measurementMethodCode,
+    measurementMethodName: displayMeasurementMethod(measurementMethodCode),
     methodCode: decision.methodId,
     methodName: decision.methodLabel,
     rank: selectedMethod ? hydroGuideMethodCandidates.indexOf(selectedMethod) + 1 : undefined,

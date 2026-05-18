@@ -6,6 +6,7 @@ import EditorialSection from "../components/EditorialSection";
 import KpiStrip from "../components/KpiStrip";
 import { ANSWER_KEYS, API_ENDPOINTS, STORAGE_KEYS } from "../constants";
 import { useConfigurationContext } from "../context/ConfigurationContext";
+import { hydroGuideCriteria } from "../hydroguide/sourceAnchoredDecision";
 import { useLanguage, translateDynamic } from "../i18n";
 import {
   workspaceContentCategoryClassName,
@@ -36,6 +37,16 @@ const WHITESPACE_RE = /\s+/g;
 const MAIN_SOLUTION_PARTS_RE = /^(.*?)(?: med (.*?))?(?: \((.*)\))?$/;
 const ACCESS_HASH_RE = /^[a-f0-9]{64}$/;
 const ANSWER_KEY_SET = new Set<string>(ANSWER_KEYS);
+
+const CRITERION_LABELS: Record<string, string> = Object.fromEntries(
+  hydroGuideCriteria.map((criterion) => [criterion.id, criterion.title])
+);
+
+function foundationFieldLabel(key: string, t: (k: any) => string): string {
+  if (key === "other.evaluationHorizonYears") return t("main.evaluationHorizon");
+  if (key === "systemParameters.inspectionsPerYear") return t("main.inspectionsPerYear");
+  return CRITERION_LABELS[key] ?? key;
+}
 
 async function getAiExportHash(promptText: string) {
   const storedHash = window.sessionStorage.getItem(STORAGE_KEYS.AI_EXPORT_HASH)?.trim().toLowerCase() ?? "";
@@ -537,13 +548,15 @@ export default function AnalysisPage() {
     setIsGeneratingReport(false);
   };
 
+  const foundationMissingKeys = Object.keys(foundationErrors).filter(foundationErrorPredicate);
   const foundationBlockers =
     isGuidedMode && (!foundationReady || !recommendation) && usesFoundationQuestions
       ? [
           {
             label: t("main.title"),
             path: "/prosjektgrunnlag",
-            count: countMatchingErrors(foundationErrors, foundationErrorPredicate)
+            count: foundationMissingKeys.length,
+            missingFields: foundationMissingKeys.map((key) => foundationFieldLabel(key, t))
           }
         ].filter((item) => item.count > 0)
       : [];
@@ -563,12 +576,14 @@ export default function AnalysisPage() {
           key.startsWith("diesel.") ||
           key.startsWith("other.") ||
           key.startsWith("monthlySolarRadiation.")
-      )
+      ),
+      missingFields: [] as string[]
     },
     {
       label: t("analysis.powerLabel"),
       path: "/komponenter",
-      count: countMatchingErrors(detailErrors, (key) => key.startsWith("equipmentRows."))
+      count: countMatchingErrors(detailErrors, (key) => key.startsWith("equipmentRows.")),
+      missingFields: [] as string[]
     }
   ].filter((item) => item.count > 0);
   const missingBlockers = foundationBlockers.length > 0 ? foundationBlockers : detailBlockers;
@@ -823,7 +838,9 @@ export default function AnalysisPage() {
               <div className="flex flex-wrap gap-3">
                 {missingBlockers.map((blocker) => (
                   <NavLink key={blocker.label} to={blocker.path} className={blockerLinkClass}>
-                    {`${blocker.label}: ${blocker.count} ${t("analysis.fields")}`}
+                    {blocker.missingFields && blocker.missingFields.length > 0
+                      ? `${blocker.label}: ${blocker.missingFields.join(", ")}`
+                      : `${blocker.label}: ${blocker.count} ${t("analysis.fields")}`}
                   </NavLink>
                 ))}
               </div>

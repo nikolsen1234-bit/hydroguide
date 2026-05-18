@@ -39,9 +39,9 @@ export default function MainPage() {
   const { activeDraft, resetDraft, updateAnswer, updateConfigSectionField, updateConfigurationLocation, saveDraftMetadata } =
     useConfigurationContext();
   const { t, language } = useLanguage();
-  const [showValidationErrors, setShowValidationErrors] = useState(false);
   const calculatorMode = (activeDraft.engineMode ?? "calculator") === "calculator";
   const validationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
+  const [showValidationErrors, setShowValidationErrors] = useState(() => Object.keys(validationErrors).length > 0);
   const visibleValidationErrors = showValidationErrors ? validationErrors : {};
   const errors = calculatorMode
     ? { "other.evaluationHorizonYears": visibleValidationErrors["other.evaluationHorizonYears"] }

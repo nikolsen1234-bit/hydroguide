@@ -29,6 +29,8 @@ export const API_ENDPOINTS = {
 
 export const FEEDBACK_TIMEOUT_MS = 3000;
 
+export const NOT_COMPUTED_LABEL = "Ikke beregnet";
+
 export const IMPORT_FILE_EXTENSION = ".txt";
 export const IMPORT_FILE_MAX_BYTES = 64 * 1024;
 export const MAX_CONFIGURATION_EQUIPMENT_ROWS = 200;

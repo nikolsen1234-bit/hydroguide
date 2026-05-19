@@ -20,6 +20,7 @@ import {
 } from "../types";
 import { dedupe } from "./format";
 import { calculateRecommendation } from "./recommendation";
+import { resolveSecondarySources } from "./secondarySource";
 
 function toNumber(value: EditableNumber): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
@@ -71,19 +72,14 @@ function simplifyReleaseArrangement(mainSolution: string): string {
   if (h.includes("+m3")) return "Kunstig V-profil";
   if (h.includes("+m4")) return "Rektangulært eller sammensatt kunstig profil";
   if (h.includes("+m5")) return "Crump-overløp";
-  if (h.includes("+m6")) return "Fiskepassasjebasert MVF-måling";
-  if (h.includes("+m7")) return "Coanda-spesifikk kombinasjonsløsning";
-  if (h.includes("m8")) return "Alternativ metode med NVE-samråd";
+  if (h.includes("+m6") || h.startsWith("m6")) return "Tappeluke med nedstrøms måleprofil";
+  if (h.includes("+m7") || h.startsWith("m7")) return "Utsparing i dam med nedstrøms måleprofil";
+  if (h.includes("+m8") || h.startsWith("m8")) return "Alternativ metode med NVE-samråd";
   if (h.startsWith("m1")) return "Rørbasert MVF-måling";
   if (h.startsWith("m2")) return "Naturlig måleprofil nedstrøms slipp";
   if (h.startsWith("m3")) return "Kunstig V-profil";
   if (h.startsWith("m4")) return "Rektangulært eller sammensatt kunstig profil";
   if (h.startsWith("m5")) return "Crump-overløp";
-  if (h.startsWith("m6")) return "Tappeluke med nedstrøms måleprofil";
-  if (h.startsWith("m7")) return "Utsparing i dam med nedstrøms måleprofil";
-  if (h.startsWith("m8")) return "Fiskepassasjebasert MVF-måling";
-  if (h.startsWith("m9")) return "Coanda-spesifikk kombinasjonsløsning";
-  if (h.startsWith("m10")) return "Alternativ metode med NVE-samråd";
   if (h.includes("fiskepassasje")) return "Fiskepassasje med dokumentert MVF-måling";
   if (h.includes("coanda") || h.includes("tyroler")) return "Slipp ved coanda-/tyrolerrist";
   if (h.includes("rør") || h.includes("pipe")) return "Måling i rør eller lukket kanal";
@@ -290,15 +286,8 @@ function dedupeCostItems(items: CostComparisonItem[]): CostComparisonItem[] {
   return [...bySource.values()];
 }
 
-function secondarySourceOptions(configuration: PlantConfiguration): SecondarySourceKey[] {
-  const sources = configuration.systemParameters.secondarySourceOptions.filter(
-    (source): source is SecondarySourceKey => source === "fuelCell" || source === "diesel"
-  );
-  return sources.length > 0 ? sources : [configuration.systemParameters.selectedSecondarySource];
-}
-
 function toCalculationPayload(configuration: PlantConfiguration) {
-  const sources = secondarySourceOptions(configuration);
+  const sources = resolveSecondarySources(configuration);
   const preferredSecondarySource = sources.length === 1 ? sources[0] : "";
 
   return {

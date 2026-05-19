@@ -15,7 +15,8 @@ import {
   nveSourceRegister,
   visibleHydroGuideCards
 } from "../hydroguide/sourceAnchoredDecision";
-import { formatNumber } from "./format";
+import { dedupe, formatNumber } from "./format";
+import { backupSourceLabel } from "./secondarySource";
 import type { RadioLinkAnalysis } from "./radioLink";
 // @ts-ignore Shared browser-safe trace guard also runs as the Node hook script.
 import { stampTraceId, TRACE_PLACEHOLDER } from "../../../backend/scripts/check-trace-id.mjs";
@@ -79,9 +80,7 @@ function num(value: unknown, digits = 0): string {
 }
 
 function localizeBackupSource(source: BackupSourceName | "NotComputed" | string | undefined): string {
-  if (source === "FuelCell") return "Brenselcelle";
-  if (source === "DieselGenerator") return "Dieselaggregat";
-  return "";
+  return backupSourceLabel(source, "");
 }
 
 function visibleText(value: string | undefined): string {
@@ -143,10 +142,6 @@ function renderSourceBackedEvidence(recommendation: Recommendation): string {
   return rows
     .map(([label, value]) => `<p><b>${esc(label)}:</b> ${esc(value)}</p>`)
     .join("");
-}
-
-function dedupe(values: string[]): string[] {
-  return Array.from(new Set(values.filter(Boolean)));
 }
 
 function isFactValue(value: unknown): boolean {

@@ -7,6 +7,7 @@ import EditorialSection from "../components/EditorialSection";
 import { useConfigurationContext } from "../context/ConfigurationContext";
 import { useLanguage } from "../i18n";
 import { Question, sectionsForAnswers } from "../questions";
+import { useResetDraftWithConfirm } from "../hooks/useResetDraftWithConfirm";
 import {
   workspaceBodyMutedClassName,
   workspaceContentValueClassName,
@@ -26,18 +27,10 @@ function isAnswered(value: unknown) {
   return value !== "" && value !== null && value !== undefined;
 }
 
-function displayValue(value: unknown) {
-  return value;
-}
-
-function selectedValuesForDisplay(value: unknown) {
-  if (!Array.isArray(value)) return [];
-  return value;
-}
-
 export default function MainPage() {
-  const { activeDraft, resetDraft, updateAnswer, updateConfigSectionField, updateConfigurationLocation, saveDraftMetadata } =
+  const { activeDraft, updateAnswer, updateConfigSectionField, updateConfigurationLocation, saveDraftMetadata } =
     useConfigurationContext();
+  const handleReset = useResetDraftWithConfirm();
   const { t, language } = useLanguage();
   const calculatorMode = (activeDraft.engineMode ?? "calculator") === "calculator";
   const validationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
@@ -58,13 +51,6 @@ export default function MainPage() {
     saveDraftMetadata();
   };
 
-  const handleReset = () => {
-    const configurationName = activeDraft.name.trim() || t("shared.thisConfiguration");
-    if (window.confirm(t("shared.resetConfirm").replace("{name}", configurationName))) {
-      resetDraft();
-    }
-  };
-
   const setQuestionValue = (key: keyof Answers, value: unknown) => {
     updateAnswer(key, value as Answers[keyof Answers]);
   };
@@ -79,7 +65,7 @@ export default function MainPage() {
     const exclusiveMultiOptions = new Set(["unknown", "none", "noneKnown", "no", "unresolved", "notRelevant"]);
 
     if (question.input === "multiSelect") {
-      const selectedValues = selectedValuesForDisplay(value);
+      const selectedValues = Array.isArray(value) ? value : [];
 
       return (
         <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
@@ -118,7 +104,7 @@ export default function MainPage() {
     if (question.input === "select") {
       return (
         <select
-          value={String(displayValue(value))}
+          value={value == null ? "" : String(value)}
           onChange={(event) => setQuestionValue(question.key, event.target.value)}
           className={`${workspaceInputClassName} h-10 !py-[2px] leading-[1.2] text-right hg-mono`}
           aria-invalid={error ? true : undefined}

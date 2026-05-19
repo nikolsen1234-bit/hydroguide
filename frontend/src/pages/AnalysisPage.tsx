@@ -19,6 +19,7 @@ import { formatNumber } from "../utils/format";
 import { buildAiReportPayload, openReportWindow, type AiReportFields } from "../utils/report";
 import { calculateRecommendation } from "../utils/recommendation";
 import { calculateConfigurationOutputs } from "../utils/systemResults";
+import { backupSourceLabel } from "../utils/secondarySource";
 import { validateConfiguration } from "../utils/validation";
 
 const blockerLinkClass =
@@ -523,9 +524,7 @@ function countMatchingErrors(errors: ValidationErrors, predicate: (key: string) 
 }
 
 function displaySecondarySource(source: BackupSourceName | "NotComputed") {
-  if (source === "FuelCell") return "Brenselcelle";
-  if (source === "DieselGenerator") return "Dieselaggregat";
-  return "Ikke beregnet";
+  return backupSourceLabel(source, "Ikke beregnet");
 }
 
 export default function AnalysisPage() {
@@ -542,7 +541,7 @@ export default function AnalysisPage() {
   const isGuidedMode = !isCalculatorMode;
   const usesFoundationQuestions = isGuidedMode;
 
-  const allValidationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft]);
+  const allValidationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
   const foundationErrorPredicate = useCallback(
     (key: string) =>
       usesFoundationQuestions &&

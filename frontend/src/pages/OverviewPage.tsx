@@ -14,6 +14,7 @@ import { formatNumber } from "../utils/format";
 import { fetchNvePlantDetails } from "../utils/nvePlantDetails";
 import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
+import { useResetDraftWithConfirm } from "../hooks/useResetDraftWithConfirm";
 
 function KeyValueGrid({ rows }: { rows: Array<[string, ReactNode, boolean?]> }) {
   return (
@@ -199,7 +200,6 @@ export default function OverviewPage() {
   const { t, language } = useLanguage();
   const {
     activeDraft,
-    resetDraft,
     saveDraftMetadata
   } = useConfigurationContext();
   const [loadedPlantDetails, setLoadedPlantDetails] = useState<NvePlantDetails | null>(null);
@@ -252,12 +252,7 @@ export default function OverviewPage() {
     };
   }, [activeDraft.locationPlaceId]);
 
-  const handleReset = () => {
-    const configurationName = activeDraft.name.trim() || t("shared.thisConfiguration");
-    if (window.confirm(t("shared.resetConfirm").replace("{name}", configurationName))) {
-      resetDraft();
-    }
-  };
+  const handleReset = useResetDraftWithConfirm();
   const headerActions = (
     <>
       <WorkspaceHeaderActionButton icon={workspaceHeaderActionIcons.reset} label={t("shared.reset")} subLabel="Tilbakestill" onClick={handleReset} />

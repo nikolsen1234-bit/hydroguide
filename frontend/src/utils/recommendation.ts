@@ -5,6 +5,7 @@ import {
   nveSourceRegister
 } from "../hydroguide/sourceAnchoredDecision";
 import { Answers, ConfidenceStatus, DecisionStatus, MeasurementMethodCode, MethodSummary, Recommendation, ReleaseSolutionCode } from "../types";
+import { dedupe } from "./format";
 
 function confidenceFromDecision(status: DecisionStatus): ConfidenceStatus {
   if (status === "ANBEFALT_KILDEFORANKRET") return "Recommended";
@@ -26,10 +27,6 @@ function shortSourceTitle(documentTitle: string): string {
     return "Retningslinje vannføring i elver 12.02.24";
   }
   return documentTitle;
-}
-
-function dedupe(values: string[]): string[] {
-  return Array.from(new Set(values.filter(Boolean)));
 }
 
 function sourceList(sourceIds: string[]): string {

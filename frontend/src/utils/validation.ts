@@ -2,6 +2,7 @@ import type { Language } from "../i18n";
 import { MONTH_KEYS } from "../constants";
 import { visibleQuestionsForAnswers } from "../questions";
 import { Answers, BackupSourceConfiguration, EditableNumber, PlantConfiguration, SecondarySourceKey, ValidationErrors } from "../types";
+import { resolveSecondarySources } from "./secondarySource";
 
 interface ValidationStrings {
   fieldRequired: (label: string) => string;
@@ -232,13 +233,6 @@ function validateBackupSource(
   validateRequiredNumber(errors, `${sourceKey}.lifetime`, source.lifetime, labels.lifetime);
 }
 
-function secondarySourceOptions(configuration: PlantConfiguration): SecondarySourceKey[] {
-  const sources = configuration.systemParameters.secondarySourceOptions.filter(
-    (source): source is SecondarySourceKey => source === "fuelCell" || source === "diesel"
-  );
-  return sources.length > 0 ? sources : [configuration.systemParameters.selectedSecondarySource];
-}
-
 function validateRecommendationAccess(configuration: Pick<PlantConfiguration, "name" | "answers">): ValidationErrors {
   return validateAnswers(configuration.answers);
 }
@@ -293,7 +287,7 @@ export function validateConfiguration(configuration: PlantConfiguration): Valida
   );
 
   if (configuration.systemParameters.hasBackupSource === true) {
-    secondarySourceOptions(configuration).forEach((sourceKey) => {
+    resolveSecondarySources(configuration).forEach((sourceKey) => {
       const labels = secondarySourceLabels(sourceKey);
       validateBackupSource(errors, sourceKey, configuration[sourceKey]);
       validateRequiredNumber(

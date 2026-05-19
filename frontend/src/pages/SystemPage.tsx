@@ -9,6 +9,7 @@ import type { MonthlySolarRadiation, SecondarySourceKey } from "../types";
 import { formatNumber } from "../utils/format";
 import { calculateConfigurationOutputs } from "../utils/systemResults";
 import { validateConfiguration } from "../utils/validation";
+import { useResetDraftWithConfirm } from "../hooks/useResetDraftWithConfirm";
 
 const FIELD_LABEL_CLASS = workspaceOverlineClassName;
 const PANEL_LABEL_CLASS = `${workspaceOverlineClassName} text-[var(--hg-ink-2)]`;
@@ -87,8 +88,9 @@ function cleanSolarValuesFromUrl(fallback: number[]): number[] {
 }
 
 export default function SystemPage() {
-  const { activeDraft, resetDraft, saveDraftMetadata } = useConfigurationContext();
+  const { activeDraft, saveDraftMetadata } = useConfigurationContext();
   const { t, language } = useLanguage();
+  const handleReset = useResetDraftWithConfirm();
   const cleanSolarChartMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("cleanSolarChart");
   const activeSolarValues = monthlyRadiationValues(activeDraft.monthlySolarRadiation);
   const validationErrors = useMemo(() => validateConfiguration(activeDraft), [activeDraft, language]);
@@ -140,12 +142,6 @@ export default function SystemPage() {
     return <CleanSolinnstralingChart values={cleanSolarValuesFromUrl(activeSolarValues)} />;
   }
 
-  const handleReset = () => {
-    const configurationName = activeDraft.name.trim() || t("shared.thisConfiguration");
-    if (window.confirm(t("shared.resetConfirm").replace("{name}", configurationName))) {
-      resetDraft();
-    }
-  };
 
   return (
     <main className={`${workspacePageClassName} hg-tp hg-tp-fullheight flex h-full flex-col !pb-3`}>

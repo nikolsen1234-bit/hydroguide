@@ -2,6 +2,14 @@ export function dedupe(items: string[]): string[] {
   return Array.from(new Set(items.filter(Boolean)));
 }
 
+export function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+export function finiteOr<T>(value: unknown, fallback: T): number | T {
+  return isFiniteNumber(value) ? value : fallback;
+}
+
 export function formatNumber(value: number, digits = 2): string {
   return new Intl.NumberFormat("nb-NO", {
     minimumFractionDigits: 0,

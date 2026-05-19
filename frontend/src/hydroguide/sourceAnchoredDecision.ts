@@ -200,16 +200,6 @@ export const hydroGuideMethodCandidates: HydroGuideMethodCandidate[] = [
   { id: "intake_alternative", label: "Alternativ metode som krever særskilt begrunnelse eller NVE-avklaring", releaseSolutionCode: "S7", measurementMethodCode: "M8", sourceRefs: ["NVE_2020_6_1", "NVE_2024_MVF_4"], requiredCriteria: ["has_requirement", "flow_requirement", "release_method"], warningCriteria: [], rejectionCriteria: [], implicitObligationIds: [...universalNveObligationIds] }
 ];
 
-const methodByRelease: Record<string, string> = {
-  intake_pipe: "intake_pipe",
-  intake_dam_pipe: "intake_dam_pipe",
-  intake_dam_gate: "intake_dam_gate",
-  intake_dam_opening: "intake_dam_opening",
-  intake_fish_passage: "intake_fish_passage",
-  intake_coanda: "intake_coanda",
-  intake_alternative: "intake_alternative"
-};
-
 export function createEmptyHydroGuideAnswers(): HydroGuideAnswers {
   const answers: HydroGuideAnswers = {};
   for (const criterion of hydroGuideCriteria) {
@@ -226,8 +216,7 @@ function criterionMap() {
 
 function selectedMethod(answers: HydroGuideAnswers): HydroGuideMethodCandidate {
   const release = String(answers.release_method || "");
-  const method = hydroGuideMethodCandidates.find((item) => item.id === methodByRelease[release]) ?? hydroGuideMethodCandidates[6];
-  return method;
+  return hydroGuideMethodCandidates.find((item) => item.id === release) ?? hydroGuideMethodCandidates[6];
 }
 
 function checkCriterionValue(answers: HydroGuideAnswers, id: string): "satisfied" | "failed" | "missing" {

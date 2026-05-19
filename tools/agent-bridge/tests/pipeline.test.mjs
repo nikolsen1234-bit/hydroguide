@@ -251,3 +251,47 @@ test("generateReport falls back to deterministic text when agent returns invalid
   assert.equal(result.body.fallback_step, "agent-fallback");
   assert.equal(result.body.source, "local-codex-bridge");
 });
+
+test("generateReport skips validation retry when request budget is low", async () => {
+  const tempDir = await mkdtemp(resolve(tmpdir(), "hydroguide-agent-"));
+  let chatCalls = 0;
+  const result = await generateReport(reportPayload(), {
+    fetchImpl: async (url, init) => {
+      const href = String(url);
+      const body = JSON.parse(init.body);
+
+      if (href.endsWith("/embeddings")) {
+        const input = Array.isArray(body.input) ? body.input : [body.input];
+        return Response.json({
+          data: input.map((text) => ({ embedding: vectorFor(text) }))
+        });
+      }
+
+      if (href.endsWith("/chat/completions")) {
+        chatCalls += 1;
+        return Response.json({
+          choices: [{ message: { content: JSON.stringify({ fields: {}, evidenceIds: [] }) } }]
+        });
+      }
+
+      throw new Error(`Unexpected mock fetch URL: ${href}`);
+    },
+    config: {
+      repoRoot,
+      knowledgePath,
+      indexPath: resolve(tempDir, "report-index.json"),
+      embeddingsBaseUrl: "http://embedding.local/v1",
+      embeddingsModel: "qwen-test",
+      cliproxyBaseUrl: "http://cliproxy.local/v1",
+      codexModel: "gpt-test",
+      totalBudgetMs: 20000,
+      responseReserveMs: 5000,
+      validationRetryMinBudgetMs: 30000,
+      minimumAgentCallMs: 1000
+    }
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.body.fallback_step, "validation-fallback");
+  assert.equal(chatCalls, 1);
+});

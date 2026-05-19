@@ -36,7 +36,9 @@ Optional:
 - `LOCAL_EMBEDDINGS_BASE_URL` - default `http://127.0.0.1:1234/v1`.
 - `EMBEDDINGS_MODEL` - default `text-embedding-qwen3-embedding-4b`.
 - `REPORT_EMBEDDINGS_BATCH_SIZE` - default `8`.
-- `REPORT_EMBEDDINGS_TIMEOUT_MS` - timeout before keyword fallback, default `8000`.
+- `REPORT_EMBEDDINGS_TIMEOUT_MS` - timeout before keyword fallback, default `15000`.
+- `REPORT_TOTAL_BUDGET_MS` - total bridge budget before Cloudflare should give up, default `90000`.
+- `REPORT_VALIDATION_RETRY_MIN_BUDGET_MS` - minimum remaining budget required before a validation retry, default `35000`.
 
 ## Commands
 
